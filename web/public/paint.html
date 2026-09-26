@@ -148,6 +148,9 @@
         width: 100%;
         aspect-ratio: 1;
         touch-action: none;
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-touch-callout: none;
         cursor: crosshair;
         background: var(--art-bg);
       }
@@ -230,8 +233,8 @@
 
       .mini-wrap {
         position: fixed;
-        right: 14px;
-        bottom: 96px;
+        top: 74px;
+        right: 12px;
         z-index: 40;
         background: var(--surface);
         border: 2px solid var(--border);
@@ -1086,6 +1089,7 @@
       const fullCanvas = document.createElement('canvas')
       fullCanvas.width = fullCanvas.height = 512 * dpr
       const fullCtx = fullCanvas.getContext('2d')
+      let fullDirty = true
 
       /* ---------- 撤销 ---------- */
       const undoStack = []
@@ -1103,6 +1107,7 @@
       function undo() {
         if (!undoStack.length) return
         pixels = undoStack.pop()
+        fullDirty = true
         redraw()
         updateUndoBtn()
         toast('已撤销')
@@ -1390,7 +1395,7 @@
         panY = 0
         clampPan()
         zoomRow.hidden = size === 16
-        miniWrap.hidden = size === 16
+        updateMiniVis()
         updateZoomUI()
       }
 
@@ -1402,6 +1407,7 @@
         }
         zoom = nz
         clampPan()
+        updateMiniVis()
         redraw()
         updateZoomUI()
       }
@@ -1410,6 +1416,10 @@
         const maxPan = 512 - 512 / zoom
         panX = Math.max(0, Math.min(maxPan, panX))
         panY = Math.max(0, Math.min(maxPan, panY))
+      }
+
+      function updateMiniVis() {
+        miniWrap.hidden = size === 16 || zoom <= 1
       }
 
       function updateZoomUI() {
@@ -1423,6 +1433,7 @@
         pixels = Array.from({ length: size }, () =>
           Array.from({ length: size }, () => [255, 255, 255])
         )
+        fullDirty = true
         undoStack.length = 0
         updateUndoBtn()
         document.querySelectorAll('.size-btn').forEach((b) =>
@@ -1469,13 +1480,19 @@
       }
 
       function redraw() {
-        renderFull()
+        ensureFull()
         ctx.imageSmoothingEnabled = false
         ctx.setTransform(zoom * dpr, 0, 0, zoom * dpr, -panX * zoom * dpr, -panY * zoom * dpr)
         ctx.clearRect(0, 0, 512, 512)
         ctx.drawImage(fullCanvas, 0, 0)
         drawGrid()
         renderMini()
+      }
+
+      function ensureFull() {
+        if (!fullDirty) return
+        renderFull()
+        fullDirty = false
       }
 
       function renderFull() {
@@ -1543,6 +1560,7 @@
       }
 
       function paint(e) {
+        fullDirty = true
         const { row, col } = cellFromEvent(e)
         if (activeTool === 'fill') {
           floodFill(row, col)
@@ -1624,6 +1642,7 @@
         pixels = Array.from({ length: size }, () =>
           Array.from({ length: size }, () => [255, 255, 255])
         )
+        fullDirty = true
         redraw()
         scheduleSave()
         toast('已清空')
@@ -1716,6 +1735,7 @@
           }
 
           pixels = out
+          fullDirty = true
           redraw()
           return true
         } catch (err) {
@@ -1812,6 +1832,7 @@
           }
           pixels.push(row)
         }
+        fullDirty = true
         undoStack.length = 0
         updateUndoBtn()
         redraw()
