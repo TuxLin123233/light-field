@@ -270,6 +270,17 @@
       </section>
 
       <section class="group">
+        <div class="group-title">启动</div>
+        <div class="row">
+          <div>
+            <div class="row-label">启动直达社区</div>
+            <div class="row-desc">每次进入先打开社区；若有未完成的绘画内容，则自动进入画板继续创作</div>
+          </div>
+          <input class="switch" id="entranceSwitch" type="checkbox" role="switch">
+        </div>
+      </section>
+
+      <section class="group">
         <div class="group-title">我的数据</div>
         <div class="row">
           <div>
@@ -318,7 +329,7 @@
         <div class="group-title">赞赏支持</div>
         <div class="qr-row">
           <img src="/images/赞赏码.jpg" alt="赞赏码">
-          <div class="qr-note">喜欢像素小镇？扫码赞赏，感谢你的支持！<br>每一格光，都由大家点亮</div>
+          <div class="qr-note">喜欢像素小镇？长按识别二维码 → 扫码赞赏，感谢你的支持！<br>每一格光，都由大家点亮</div>
         </div>
       </section>
 
@@ -339,6 +350,17 @@
     <script>
       const darkSwitch = document.getElementById('darkSwitch')
       const themeBtn = document.getElementById('themeBtn')
+      const entranceSwitch = document.getElementById('entranceSwitch')
+
+      try {
+        entranceSwitch.checked = localStorage.getItem('lw-entrance') === 'community'
+      } catch (e) {}
+
+      entranceSwitch.addEventListener('change', () => {
+        try {
+          localStorage.setItem('lw-entrance', entranceSwitch.checked ? 'community' : '')
+        } catch (e) {}
+      })
 
       function syncThemeUI() {
         const dark = document.documentElement.getAttribute('data-theme') === 'dark'

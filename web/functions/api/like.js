@@ -86,6 +86,8 @@ export async function onRequestGet(context) {
         size: e.size === 32 || e.size === 64 ? e.size : 16,
         time: e.time || 0,
         likes: e.likes || 0,
+        type: e.type,
+        anim: e.anim ? { frames: e.anim.frames, delay: e.anim.delay || 10 } : undefined,
       }
     })
 

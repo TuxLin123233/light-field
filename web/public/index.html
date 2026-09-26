@@ -5,7 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>像素小镇</title>
     <meta http-equiv="refresh" content="0;url=/paint">
-    <script>location.replace('/paint')</script>
+    <script>
+      ;(function () {
+        var target = '/paint'
+        try {
+          var hasDraft = false
+          var raw = localStorage.getItem('paintDraft')
+          if (raw) {
+            var d = JSON.parse(raw)
+            if (d && Array.isArray(d.pixels)) hasDraft = true
+          }
+          if (localStorage.getItem('lw-entrance') === 'community' && !hasDraft) {
+            target = '/gallery'
+          }
+        } catch (e) {}
+        location.replace(target)
+      })()
+    </script>
   </head>
   <body>
     <p>正在前往 <a href="/paint">像素小镇</a>…</p>

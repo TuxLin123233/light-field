@@ -28,6 +28,33 @@ function samePixels(a, b) {
   return true
 }
 
+function norm(val, max) {
+  return Array.isArray(val) && val.length === 3 && [val[0], val[1], val[2]].every((v) => Number.isFinite(Number(v)))
+    ? [0, 1, 2].map((i) => Math.max(0, Math.min(max || 255, Math.round(Number(val[i])))))
+    : null
+}
+
+function normalizeFrames(frames) {
+  if (!Array.isArray(frames) || frames.length < 2 || frames.length > 16) return null
+  const out = []
+  for (const f of frames) {
+    if (!Array.isArray(f) || f.length !== 16) return null
+    const row = []
+    for (const r of f) {
+      if (!Array.isArray(r) || r.length !== 16) return null
+      const cells = []
+      for (const px of r) {
+        const c = norm(px)
+        if (!c) return null
+        cells.push(c)
+      }
+      row.push(cells)
+    }
+    out.push(row)
+  }
+  return out
+}
+
 export async function onRequestOptions() {
   return new Response(null, { status: 204, headers: CORS_HEADERS })
 }
@@ -46,13 +73,27 @@ export async function onRequestPost(context) {
   const size = sizeParam === 32 || sizeParam === 64 ? sizeParam : 16
   const expected = size * size
 
-  const pixels = Array.isArray(body) ? body : body && body.pixels
-  const isValid =
-    Array.isArray(pixels) &&
-    pixels.length === expected &&
-    pixels.every((p) => Array.isArray(p) && p.length === 3)
-  if (!isValid) {
-    return json({ error: `pixels 必须是 ${expected}×3 的二维数组（每个元素是 [r,g,b]）` }, 400)
+  const rawAnim = body && body.anim
+  let animObj = null
+  let pixels = null
+  if (rawAnim && typeof rawAnim === 'object') {
+    const frames = normalizeFrames(rawAnim.frames)
+    if (!frames) {
+      return json({ error: 'anim.frames 必须是 2~16 帧的 16×16 数组（每像素 [r,g,b]）' }, 400)
+    }
+    const d = Number(rawAnim.delay)
+    const delay = Number.isFinite(d) ? Math.max(1, Math.min(200, Math.round(d))) : 10
+    pixels = frames[0].reduce((acc, r) => acc.concat(r), [])
+    animObj = { frames, delay }
+  } else {
+    pixels = Array.isArray(body) ? body : body && body.pixels
+    const isValid =
+      Array.isArray(pixels) &&
+      pixels.length === expected &&
+      pixels.every((p) => Array.isArray(p) && p.length === 3)
+    if (!isValid) {
+      return json({ error: `pixels 必须是 ${expected}×3 的二维数组（每个元素是 [r,g,b]）` }, 400)
+    }
   }
 
   const bodyName = body && typeof body.name === 'string' ? body.name : ''
@@ -84,14 +125,24 @@ export async function onRequestPost(context) {
   }
 
   const { entries } = await recentHistory(env.LIGHTFIELD_KV, { limit: 300 })
-  if (entries.some((e) => samePixels(entryPixels(e), pixels))) {
+  if (animObj) {
+    if (entries.some((e) => e && e.anim && JSON.stringify(e.anim.frames) === JSON.stringify(animObj.frames))) {
+      return json({ error: '内容重复，不能重复发布' }, 409)
+    }
+  } else if (entries.some((e) => samePixels(entryPixels(e), pixels))) {
     return json({ error: '内容重复，不能重复发布' }, 409)
   }
 
   const entry = { name, workName, author, size, pixels, time: Date.now(), likes: 0 }
+  if (animObj) entry.type = 'anim'
+  if (animObj) entry.anim = animObj
+  const entryJson = JSON.stringify(entry)
+  if (entryJson.length > 90000) {
+    return json({ error: '动画帧数据过大，请减少帧数或简化画面后再试' }, 413)
+  }
 
   try {
-    await env.LIGHTFIELD_KV.put('pixels', JSON.stringify(entry))
+    await env.LIGHTFIELD_KV.put('pixels', entryJson)
 
     const res = await appendEntry(env.LIGHTFIELD_KV, entry)
     if (res.status === 'full') {

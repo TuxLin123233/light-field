@@ -26,6 +26,8 @@ function normalizeEntry(e) {
     size: e && (e.size === 32 || e.size === 64) ? e.size : 16,
     time: (e && e.time) || 0,
     likes: (e && e.likes) || 0,
+    type: e && e.type,
+    anim: e && e.anim ? { frames: e.anim.frames, delay: e.anim.delay || 10 } : undefined,
   }
 }
 

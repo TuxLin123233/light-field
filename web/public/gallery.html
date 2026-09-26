@@ -289,6 +289,17 @@
         50% { box-shadow: 0 0 0 7px rgba(91, 141, 239, 0.45), 0 8px 22px var(--shadow-hover); }
       }
 
+      .anim-badge {
+        flex: 0 0 auto;
+        font-size: 10px;
+        font-weight: 800;
+        color: #fff;
+        background: linear-gradient(135deg, #7ce0c0, #5b8def);
+        border-radius: 999px;
+        padding: 2px 8px;
+        white-space: nowrap;
+      }
+
       .art {
         width: 100%;
         aspect-ratio: 1;
@@ -512,6 +523,20 @@
         cursor: pointer;
       }
 
+      #previewCanvas {
+        width: 240px;
+        height: 240px;
+        image-rendering: pixelated;
+        border-radius: 12px;
+        border: 2px solid var(--border);
+        background: var(--art-bg);
+        margin: 0 auto;
+        display: block;
+      }
+
+      #previewCanvas[hidden],
+      #previewImg[hidden] { display: none; }
+
       #previewImg {
         width: 240px;
         height: 240px;
@@ -574,6 +599,20 @@
         color: var(--text-faint);
         line-height: 1.6;
       }
+
+      #previewCanvas {
+        width: 240px;
+        height: 240px;
+        image-rendering: pixelated;
+        border-radius: 12px;
+        border: 2px solid var(--border);
+        background: var(--art-bg);
+        margin: 0 auto;
+        display: block;
+      }
+
+      #previewCanvas[hidden],
+      #previewImg[hidden] { display: none; }
 
       #previewImg {
         width: 240px;
@@ -752,6 +791,7 @@
           <span class="preview-title" id="previewTitle">作品预览</span>
           <button class="preview-close" id="previewClose" type="button">关闭</button>
         </div>
+        <canvas id="previewCanvas" width="16" height="16" hidden></canvas>
         <img id="previewImg" alt="作品预览">
         <div class="preview-info">
           <span id="previewAuthor"></span>
@@ -1134,7 +1174,7 @@
 
             const nm = document.createElement('div')
             nm.className = 'f-name'
-            nm.textContent = w.workName || w.name || '未命名'
+            nm.textContent = (w.type === 'anim' ? '🎞️ ' : '') + (w.workName || w.name || '未命名')
 
             const metaRow = document.createElement('div')
             metaRow.className = 'f-meta'
@@ -1189,7 +1229,14 @@
           const nm = document.createElement('span')
           nm.className = 'card-name'
           nm.textContent = rec.workName || rec.name || '未命名'
-          meta.append(nm, makeLikeButton(rec))
+          meta.append(nm)
+          if (rec.type === 'anim') {
+            const b = document.createElement('span')
+            b.className = 'anim-badge'
+            b.textContent = '🎞️ 动画'
+            meta.append(b)
+          }
+          meta.append(makeLikeButton(rec))
 
           const sub = document.createElement('div')
           sub.className = 'card-sub'
@@ -1303,12 +1350,54 @@
       /* ---------- 预览弹窗 ---------- */
       const previewOverlay = document.getElementById('previewOverlay')
       let currentPreview = null
+      let animTimer = null
+      let animIdx = 0
+
+      function drawAnimFrame(cv, frame) {
+        const tc = cv.getContext('2d')
+        tc.clearRect(0, 0, 16, 16)
+        for (let y = 0; y < 16; y++) {
+          for (let x = 0; x < 16; x++) {
+            const p = frame && frame[y] && frame[y][x]
+            if (!p) continue
+            tc.fillStyle = `rgb(${p[0]},${p[1]},${p[2]})`
+            tc.fillRect(x, y, 1, 1)
+          }
+        }
+      }
+
+      function stopAnimPlay() {
+        if (animTimer) {
+          clearInterval(animTimer)
+          animTimer = null
+        }
+      }
 
       function preview(rec) {
+        stopAnimPlay()
         const img = document.getElementById('previewImg')
+        const cv = document.getElementById('previewCanvas')
         const rs = workSize(rec)
-        img.src = pixelsToURL(rec.pixels, rs)
-        document.getElementById('previewTitle').textContent = rec.workName || rec.name || '未命名'
+        const frames = rec.type === 'anim' && rec.anim && Array.isArray(rec.anim.frames) ? rec.anim.frames : null
+
+        if (frames && frames.length >= 2) {
+          img.hidden = true
+          cv.hidden = false
+          animIdx = 0
+          drawAnimFrame(cv, frames[0])
+          const delay = Math.max(1, Math.min(200, rec.anim.delay || 10))
+          animTimer = setInterval(() => {
+            animIdx = (animIdx + 1) % frames.length
+            drawAnimFrame(cv, frames[animIdx])
+          }, delay * 10)
+          document.getElementById('previewTitle').textContent =
+            '🎞️ 动画 · ' + (rec.workName || rec.name || '未命名')
+        } else {
+          cv.hidden = true
+          img.hidden = false
+          img.src = pixelsToURL(rec.pixels, rs)
+          document.getElementById('previewTitle').textContent = rec.workName || rec.name || '未命名'
+        }
         document.getElementById('previewAuthor').textContent = '作者：' + (rec.author || (rec.workName ? '匿名' : rec.name || '匿名')) + ' · ' + rs + '×' + rs
         document.getElementById('previewTime').textContent = formatTime(rec.time)
         document.getElementById('previewLikeCount').textContent = rec.likes || 0
@@ -1318,6 +1407,7 @@
       }
 
       function closePreview() {
+        stopAnimPlay()
         previewOverlay.hidden = true
         currentPreview = null
       }

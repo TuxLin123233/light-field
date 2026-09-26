@@ -89,21 +89,37 @@
       }
 
       .ver {
-        display: flex;
-        gap: 12px;
+        position: relative;
+        padding-left: 18px;
       }
 
-      .ver-badge {
-        flex: 0 0 auto;
-        margin-top: 2px;
-        font-size: 11px;
-        font-weight: 700;
-        color: #fff;
-        background: var(--accent);
-        border-radius: 999px;
-        padding: 4px 10px;
-        white-space: nowrap;
+      .ver::before {
+        content: '';
+        position: absolute;
+        left: 5px;
+        top: 8px;
+        bottom: -14px;
+        width: 2px;
+        background: var(--border-strong);
       }
+
+      .ver:last-child::before { bottom: auto; height: 28px; }
+
+      .ver::after {
+        content: '';
+        position: absolute;
+        left: 1px;
+        top: 6px;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--ver-color, var(--accent));
+        border: 2px solid var(--surface);
+      }
+
+      .ver.blue { --ver-color: #5b8def; }
+      .ver.green { --ver-color: #5bb883; }
+      .ver.red { --ver-color: #e5484d; }
 
       .ver-body { flex: 1; min-width: 0; }
 
@@ -117,20 +133,60 @@
         flex-wrap: wrap;
       }
 
+      .ver-tag {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--text-faint);
+        font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+        border: 1px solid var(--border-strong);
+        border-radius: 6px;
+        padding: 1px 6px;
+      }
+
       .ver-date { font-size: 11px; color: var(--text-faint); font-weight: 400; }
 
-      .ver-list { margin-top: 8px; padding-left: 18px; }
+      .ver-list { margin-top: 8px; padding-left: 4px; }
 
       .ver-list li {
         font-size: 13px;
         line-height: 1.7;
         color: var(--text-muted);
+        list-style: none;
+        position: relative;
+        padding-left: 10px;
       }
+
+      .ver-list li + li { margin-top: 2px; }
+
+      .ver-list li::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 9px;
+        width: 3px;
+        height: 3px;
+        border-radius: 50%;
+        background: var(--text-faint);
+      }
+
+      .li-tag {
+        display: inline-block;
+        font-size: 10px;
+        font-weight: 700;
+        border-radius: 999px;
+        padding: 1px 8px;
+        margin-right: 6px;
+        vertical-align: 1px;
+      }
+
+      .tag-update { background: rgba(91, 141, 239, 0.15); color: #5b8def; }
+      .tag-fix { background: rgba(91, 184, 131, 0.18); color: #5bb883; }
+      .tag-announce { background: rgba(229, 72, 77, 0.15); color: #e5484d; }
 
       .ver + .ver {
         margin-top: 14px;
-        padding-top: 14px;
-        border-top: 1px dashed var(--border-strong);
+        padding-top: 0;
+        border-top: none;
       }
 
       .copyright { margin-top: 18px; text-align: center; font-size: 12px; color: var(--text-faint); }
@@ -183,75 +239,87 @@
       </div>
 
       <section class="group">
-        <div class="ver">
-          <span class="ver-badge">v0.9.0</span>
+        <div class="ver red">
           <div class="ver-body">
-            <div class="ver-title">社区容量与维护者计划 <span class="ver-date">2026-09-26</span></div>
+            <div class="ver-title"><span class="ver-tag">v1.0.0</span> 更名像素小镇 · 动画进社区 <span class="ver-date">2026-09-26</span></div>
             <ul class="ver-list">
-              <li>你画我猜：全新 100 个题库，进房前可选择游戏模式</li>
-              <li>画板：16×16 逐帧动画，可导出循环 GIF 分享</li>
-              <li>历史记录改为「我的绘画历史」，只看自己发布的作品</li>
-              <li>朋友圈小卡片重绘为像素画风，简约不花哨</li>
-              <li>社区作品容量提升至 5000 件，存储改为分块管理</li>
-              <li>新增「维护社区稳定」维护者计划与更新日志页</li>
-              <li>画板移除联机快捷入口与黑夜模式按钮，界面更简洁（主题仍在设置页切换）</li>
+              <li><span class="li-tag tag-announce">公告</span>项目更名「像素小镇」（原“光域”），与知名游戏名称保持区隔；英文项目名 light field 不变</li>
+              <li><span class="li-tag tag-update">更新</span>画板升级创作模式：自由模式 / 题目模式 / 帧动画，进板先选模式</li>
+              <li><span class="li-tag tag-update">更新</span>帧动画可发布到社区，社区可点击动画实时播放、可点赞</li>
+              <li><span class="li-tag tag-update">更新</span>帧动画新增播放速度：快 ×2 / 标准 / 慢 / 更慢</li>
+              <li><span class="li-tag tag-update">更新</span>有未完成画作时自动进入上次模式，不再反复要求选择</li>
+              <li><span class="li-tag tag-update">更新</span>设置新增启动直达：进入社区，有画作时进入画板</li>
+              <li><span class="li-tag tag-update">更新</span>赞赏码长按识别提示</li>
+              <li><span class="li-tag tag-fix">修复</span>画板底部提示被导航栏遮挡看不见</li>
+              <li><span class="li-tag tag-fix">修复</span>作品详情移除多余的复制文案入口</li>
+              <li><span class="li-tag tag-fix">修复</span>手机端找不到帧动画入口</li>
             </ul>
           </div>
         </div>
 
-        <div class="ver">
-          <span class="ver-badge">v0.8.0</span>
+        <div class="ver blue">
           <div class="ver-body">
-            <div class="ver-title">分享卡片与设置 <span class="ver-date">2026-09</span></div>
+            <div class="ver-title"><span class="ver-tag">v0.9.0</span> 社区容量与维护者计划 <span class="ver-date">2026-09-26</span></div>
             <ul class="ver-list">
-              <li>朋友圈小卡片：把作品生成卡片分享到朋友圈</li>
-              <li>新增设置页：深色模式开关、主题切换</li>
-              <li>底部导航栏，画板 / 联机 / 社区 / 设置一键直达</li>
+              <li><span class="li-tag tag-update">更新</span>你画我猜：全新 100 个题库，进房前可选择游戏模式</li>
+              <li><span class="li-tag tag-update">更新</span>画板：16×16 逐帧动画，可导出循环 GIF 分享</li>
+              <li><span class="li-tag tag-update">更新</span>历史记录改为「我的绘画历史」，只看自己发布的作品</li>
+              <li><span class="li-tag tag-update">更新</span>朋友圈小卡片重绘为像素画风，简约不花哨</li>
+              <li><span class="li-tag tag-update">更新</span>社区作品容量提升至 5000 件，存储改为分块管理</li>
+              <li><span class="li-tag tag-announce">公告</span>新增「维护社区稳定」维护者计划与更新日志页</li>
+              <li><span class="li-tag tag-update">更新</span>画板移除联机快捷入口与黑夜模式按钮，界面更简洁（主题仍在设置页切换）</li>
             </ul>
           </div>
         </div>
 
-        <div class="ver">
-          <span class="ver-badge">v0.7.0</span>
+        <div class="ver blue">
           <div class="ver-body">
-            <div class="ver-title">联机模式 <span class="ver-date">2026-09</span></div>
+            <div class="ver-title"><span class="ver-tag">v0.8.0</span> 分享卡片与设置 <span class="ver-date">2026-09</span></div>
             <ul class="ver-list">
-              <li>你画我猜：自由模式与积分模式，房间对战</li>
-              <li>实时同步画笔、橡皮、填充操作</li>
+              <li><span class="li-tag tag-update">更新</span>朋友圈小卡片：把作品生成卡片分享到朋友圈</li>
+              <li><span class="li-tag tag-update">更新</span>新增设置页：深色模式开关、主题切换</li>
+              <li><span class="li-tag tag-update">更新</span>底部导航栏，画板 / 联机 / 社区 / 设置一键直达</li>
             </ul>
           </div>
         </div>
 
-        <div class="ver">
-          <span class="ver-badge">v0.6.0</span>
+        <div class="ver blue">
           <div class="ver-body">
-            <div class="ver-title">社区与多尺寸画布 <span class="ver-date">2026-08</span></div>
+            <div class="ver-title"><span class="ver-tag">v0.7.0</span> 联机模式 <span class="ver-date">2026-09</span></div>
             <ul class="ver-list">
-              <li>上传作品到社区，互相点赞</li>
-              <li>画布支持 16×16 / 32×32 / 64×64</li>
-              <li>作品墙时间线展示，佳作榜展示高赞作品</li>
+              <li><span class="li-tag tag-update">更新</span>你画我猜：自由模式与积分模式，房间对战</li>
+              <li><span class="li-tag tag-update">更新</span>实时同步画笔、橡皮、填充操作</li>
             </ul>
           </div>
         </div>
 
-        <div class="ver">
-          <span class="ver-badge">v0.5.0</span>
+        <div class="ver blue">
           <div class="ver-body">
-            <div class="ver-title">命题与取色 <span class="ver-date">2026-08</span></div>
+            <div class="ver-title"><span class="ver-tag">v0.6.0</span> 社区与多尺寸画布 <span class="ver-date">2026-08</span></div>
             <ul class="ver-list">
-              <li>命题绘画：按主题出题，激发创作灵感</li>
-              <li>撤销与重绘、HSV 自由取色、#RRGGBB 输入</li>
+              <li><span class="li-tag tag-update">更新</span>上传作品到社区，互相点赞</li>
+              <li><span class="li-tag tag-update">更新</span>画布支持 16×16 / 32×32 / 64×64</li>
+              <li><span class="li-tag tag-update">更新</span>作品墙时间线展示，佳作榜展示高赞作品</li>
             </ul>
           </div>
         </div>
 
-        <div class="ver">
-          <span class="ver-badge">v0.1.0</span>
+        <div class="ver blue">
           <div class="ver-body">
-            <div class="ver-title">像素小镇诞生 <span class="ver-date">2026-07</span></div>
+            <div class="ver-title"><span class="ver-tag">v0.5.0</span> 命题与取色 <span class="ver-date">2026-08</span></div>
             <ul class="ver-list">
-              <li>16×16 像素画创作，朴素又可爱</li>
-              <li>本地保存，随时继续画</li>
+              <li><span class="li-tag tag-update">更新</span>命题绘画：按主题出题，激发创作灵感</li>
+              <li><span class="li-tag tag-update">更新</span>撤销与重绘、HSV 自由取色、#RRGGBB 输入</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="ver blue">
+          <div class="ver-body">
+            <div class="ver-title"><span class="ver-tag">v0.1.0</span> 像素小镇诞生 <span class="ver-date">2026-07</span></div>
+            <ul class="ver-list">
+              <li><span class="li-tag tag-update">更新</span>16×16 像素画创作，朴素又可爱</li>
+              <li><span class="li-tag tag-update">更新</span>本地保存，随时继续画</li>
             </ul>
           </div>
         </div>
