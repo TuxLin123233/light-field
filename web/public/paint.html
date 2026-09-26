@@ -647,6 +647,13 @@ color: var(--text-muted);
 
       .name-row input:focus { border-color: var(--accent); }
 
+      .name-row input:disabled {
+        border-color: var(--accent);
+        background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+        opacity: 1;
+        cursor: default;
+      }
+
       .actions {
         width: 100%;
         max-width: 460px;
@@ -2571,6 +2578,19 @@ color: var(--text-muted);
       const contestCheck = document.getElementById('contestCheck')
       const contestLabel = document.getElementById('contestLabel')
       let contestWeek = ''
+      let contestTheme = ''
+
+      function syncContestFields() {
+        const on = contestCheck.checked
+        if (on) {
+          if (!titleInput.disabled) titleInput.dataset.keep = titleInput.value
+          titleInput.disabled = true
+          if (contestTheme) titleInput.value = '《' + contestTheme + '》'
+        } else {
+          titleInput.disabled = false
+          titleInput.value = titleInput.dataset.keep || ''
+        }
+      }
 
       ;(async () => {
         try {
@@ -2579,13 +2599,17 @@ color: var(--text-muted);
           const c = await res.json()
           if (c && c.open) {
             contestWeek = c.week
+            contestTheme = c.theme ? c.theme.zh : ''
             contestLabel.textContent =
-              '🏆 参与本周主题《' + (c.theme && c.theme.zh) + '》' + ((c.theme && c.theme.prompt) ? ' · ' + c.theme.prompt : '')
+              '🏆 参与本周主题《' + contestTheme + '》' + ((c.theme && c.theme.prompt) ? ' · ' + c.theme.prompt : '')
             contestRow.hidden = false
             if (new URLSearchParams(location.search).get('contest') === '1') contestCheck.checked = true
+            syncContestFields()
           }
         } catch (e) {}
       })()
+
+      contestCheck.addEventListener('change', syncContestFields)
 
       function readCookie(name) {
         const match = document.cookie.match(new RegExp('(?:^|; )' + encodeURIComponent(name) + '=([^;]*)'))
@@ -3111,7 +3135,7 @@ color: var(--text-muted);
         for (const row of pixels) for (const px of row) flat.push(normalizePixel(px))
         const payload = { pixels: flat, size }
         if (author) payload.author = author
-        const workName = titleInput.value.trim()
+        const workName = (contestCheck.checked && contestTheme) ? '《' + contestTheme + '》' : titleInput.value.trim()
         if (workName) payload.workName = workName
         if (contestCheck.checked && contestWeek) payload.contest = contestWeek
 
@@ -3131,7 +3155,7 @@ color: var(--text-muted);
         }
         const author = resolveAuthor()
         if (author) payload.author = author
-        const workName = titleInput.value.trim()
+        const workName = (contestCheck.checked && contestTheme) ? '《' + contestTheme + '》' : titleInput.value.trim()
         if (workName) payload.workName = workName
         if (contestCheck.checked && contestWeek) payload.contest = contestWeek
         await doPublish(payload, animPublishBtn)

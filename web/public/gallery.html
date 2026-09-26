@@ -1125,7 +1125,7 @@
         <div class="featured-row" id="featuredRow"></div>
       </section>
 
-      <section class="calendar" id="calendarSection" hidden>
+      <section class="calendar" id="calendarSection">
         <div class="cal-head">
           <span class="cal-title">📅 好作品日历</span>
           <div class="cal-nav">
@@ -1684,9 +1684,9 @@ loadFeatured()
       loadContest()
 
       /* ---------- 好作品日历（含农历） ---------- */
-      const calendarSection = document.getElementById('calendarSection')
       const calGrid = document.getElementById('calGrid')
       const calLabel = document.getElementById('calLabel')
+      const calNote = document.querySelector('.calendar .cal-note')
       const calWorks = new Map()
 
       const nowCal = new Date()
@@ -1700,16 +1700,18 @@ loadFeatured()
         return y + '-' + pad2(m) + '-' + pad2(d)
       }
 
-      async function loadCal(silent) {
+      renderCal()
+
+      async function loadCal() {
         try {
           const res = await fetch(`/api/daily?year=${calY}&month=${calM}&top=3`)
           if (!res.ok) throw new Error('HTTP ' + res.status)
           const data = await res.json()
           dailyDays = data.days || {}
+          calNote.textContent = '每日展示当天点赞最高的作品（按东八区发布时间）· 农历与节气同步 · 点击作品可预览'
           renderCal()
-          calendarSection.hidden = false
         } catch (e) {
-          if (!silent) calendarSection.hidden = true
+          calNote.textContent = '每日优秀作品加载失败，可稍后刷新重试；农历日期仍正常显示。'
         }
       }
 
@@ -1809,7 +1811,8 @@ loadFeatured()
           calM = 12
           calY -= 1
         }
-        loadCal(true)
+        renderCal()
+        loadCal()
       })
       document.getElementById('calNext').addEventListener('click', () => {
         calM += 1
@@ -1817,7 +1820,8 @@ loadFeatured()
           calM = 1
           calY += 1
         }
-        loadCal(true)
+        renderCal()
+        loadCal()
       })
 
       loadCal()
