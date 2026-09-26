@@ -523,15 +523,17 @@
         margin-top: 8px;
       }
 
-      .mode-row {
+      .mode-row,
+      .mode-btn,
+      .landing-mode {
         display: flex;
         gap: 8px;
         margin: 10px 0 12px;
       }
 
-      .mode-btn {
+      .mode-btn,
+      .lmode-btn {
         flex: 1;
-        padding: 10px 0;
         border-radius: 12px;
         border: 2px solid var(--border);
         background: var(--surface);
@@ -542,11 +544,39 @@
         transition: border-color 0.2s, background 0.2s, color 0.2s;
       }
 
-      .mode-btn.active {
-        border-color: var(--accent);
-        background: var(--accent);
-        color: #fff;
+      .lmode-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+        padding: 12px;
+        text-align: left;
       }
+
+      .lmode-ico { font-size: 22px; line-height: 1; }
+
+      .lmode-body { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+
+      .lmode-name {
+        font-size: 14px;
+        font-weight: 800;
+        color: var(--text);
+      }
+
+      .lmode-desc {
+        font-size: 11px;
+        font-weight: 500;
+        color: var(--text-muted);
+        line-height: 1.4;
+      }
+
+      .mode-btn.active,
+      .lmode-btn.active {
+        border-color: var(--accent);
+        background: rgba(91, 141, 239, 0.10);
+      }
+
+      .lmode-btn.active .lmode-name { color: var(--accent); }
 
       .game-bar { padding: 14px; }
       .game-bar[hidden] { display: none; }
@@ -757,7 +787,23 @@
 
     <div class="panel landing" id="landing" hidden>
       <h2>创建或加入房间</h2>
-      <p>最多 6 人：可一起在 16×16 画板协同作画，或开一局「你画我猜」</p>
+      <p>最多 6 人 · 先选一个模式再进房</p>
+      <div class="landing-mode">
+        <button data-lmode="free" class="lmode-btn active" type="button">
+          <span class="lmode-ico">🖌️</span>
+          <span class="lmode-body">
+            <span class="lmode-name">自由模式</span>
+            <span class="lmode-desc">一起在这块 16×16 上协同画一幅画</span>
+          </span>
+        </button>
+        <button data-lmode="game" class="lmode-btn" type="button">
+          <span class="lmode-ico">🎮</span>
+          <span class="lmode-body">
+            <span class="lmode-name">你画我猜</span>
+            <span class="lmode-desc">一人看题作画，其他人猜词，轮流当画师</span>
+          </span>
+        </button>
+      </div>
       <input class="field" id="nameInput" placeholder="你的昵称（可留空）" maxlength="20">
       <button class="primary" id="createBtn" type="button">创建房间</button>
       <div class="divider">或</div>
@@ -776,11 +822,6 @@
         <button class="icon-btn" id="copyBtn" type="button" title="复制邀请链接" style="height:46px;width:46px;min-width:46px">📋</button>
       </div>
       <div class="members" id="members"></div>
-
-      <div class="mode-row" id="modeRow">
-        <button data-mode="free" class="mode-btn active" type="button">自由模式</button>
-        <button data-mode="game" class="mode-btn" type="button">🎮 你画我猜</button>
-      </div>
 
       <div class="panel game-bar" id="gameBar" hidden>
         <div id="gameStartRow" hidden>
@@ -1088,7 +1129,14 @@
       let commitTimer = null
       let committing = false
       let pollTimer = null
-      let mode = 'free'
+      let landMode = 'free'
+
+      document.querySelectorAll('.lmode-btn').forEach((b) => {
+        b.addEventListener('click', () => {
+          landMode = b.dataset.lmode
+          document.querySelectorAll('.lmode-btn').forEach((x) => x.classList.toggle('active', x === b))
+        })
+      })
 
       function flatPixels() {
         const out = []
@@ -1109,9 +1157,10 @@
       function renderRoom() {
         roomCodeEl.textContent = room.code
         const maxM = room.maxMembers || 6
+        const modeBadge = room.mode === 'game' ? '🎮 你画我猜' : '🖌️ 自由模式'
         roomMeta.innerHTML =
           '在线 <span class="ok">' + room.members.length + '</span> / ' + maxM + ' · ' +
-          '版本 v' + room.version + (room.title ? ' · 「' + room.title + '」' : '')
+          modeBadge + ' · 版本 v' + room.version + (room.title ? ' · 「' + room.title + '」' : '')
         membersEl.innerHTML = ''
         const g = room.game
         room.members.forEach((m) => {
@@ -1149,27 +1198,8 @@
       const startGameBtn = document.getElementById('startGameBtn')
 
       function isGameMode() {
-        return mode === 'game' || !!(room && room.game && room.game.active)
+        return room && room.mode === 'game'
       }
-
-      function updateModeBtns() {
-        const on = isGameMode() ? 'game' : 'free'
-        document.querySelectorAll('.mode-btn').forEach((b) => {
-          b.classList.toggle('active', b.dataset.mode === on)
-        })
-      }
-
-      document.querySelectorAll('.mode-btn').forEach((b) => {
-        b.addEventListener('click', () => {
-          if (b.dataset.mode === 'free' && room && room.game && room.game.active) {
-            toast('对局进行中，结束后再切回自由模式')
-            return
-          }
-          mode = b.dataset.mode
-          updateModeBtns()
-          renderGame()
-        })
-      })
 
       function myGameRole() {
         if (!room || !room.game || !room.game.active) return 'none'
@@ -1191,7 +1221,6 @@
         titleInput.hidden = !!(g && g.active)
         const publish = document.getElementById('publishBtn')
         if (publish) publish.hidden = !!(g && g.active)
-        updateModeBtns()
         if (!g || !g.active) {
           refreshHint()
           return
@@ -1462,7 +1491,7 @@
           const res = await fetch('/api/room', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'create', name }),
+            body: JSON.stringify({ action: 'create', name, mode: landMode }),
           })
           const data = await res.json().catch(() => ({}))
           if (!res.ok) {

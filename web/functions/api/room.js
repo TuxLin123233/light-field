@@ -17,21 +17,26 @@ const ROOM_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
 const ROUND_MS = 90000
 
 const GUESS_WORDS = [
-  '苹果', '香蕉', '西瓜', '草莓', '葡萄', '橙子', '柠檬', '樱桃', '桃子', '菠萝',
-  '椰子', '梨', '柿子', '石榴', '芒果',
-  '猫', '狗', '兔子', '老鼠', '熊猫', '大象', '狮子', '老虎', '猴子', '蛇',
-  '蝴蝶', '蜜蜂', '蜗牛', '金鱼', '螃蟹', '章鱼', '乌龟', '企鹅', '小鸟', '小鸡',
-  '恐龙', '独角兽', '骆驼', '刺猬',
-  '太阳', '月亮', '星星', '云朵', '雨滴', '彩虹', '雪人', '火山', '高山', '大树',
-  '花朵', '蘑菇', '竹子', '荷花', '树叶',
-  '蛋糕', '冰淇淋', '汉堡', '比萨', '热狗', '面包', '糖果', '棒棒糖', '面条', '包子',
-  '饺子', '鸡蛋', '薯条', '爆米花', '奶茶', '咖啡', '樱桃蛋糕',
-  '雨伞', '帽子', '鞋子', '眼镜', '手机', '钥匙', '剪刀', '杯子', '筷子', '勺子',
-  '灯泡', '台灯', '闹钟', '吉他', '钢琴', '小提琴', '鼓', '铃铛', '机器人', '火箭',
-  '风筝', '气球', '礼物', '信封', '锤子', '扫帚', '水桶', '电视机', '冰箱', '沙发',
-  '铅笔', '书本', '书包', '相机', '耳机',
-  '汽车', '火车', '轮船', '飞机', '自行车', '摩托车', '滑板', '热气球', '直升机',
-  '警车', '消防车', '救护车', '公交车', '帆船', '潜水艇', '卡车',
+  // 动物 10
+  '大象', '长颈鹿', '企鹅', '熊猫', '螃蟹', '章鱼', '刺猬', '袋鼠', '鳄鱼', '孔雀',
+  // 食物 10
+  '汉堡', '披萨', '寿司', '冰淇淋', '火锅', '烤鸭', '爆米花', '棒棒糖', '三明治', '珍珠奶茶',
+  // 日常物品 10
+  '雨伞', '牙刷', '眼镜', '闹钟', '台灯', '钥匙', '背包', '水杯', '剪刀', '吹风机',
+  // 自然与天气 10
+  '彩虹', '闪电', '龙卷风', '火山', '瀑布', '沙漠', '雪人', '流星', '海岛', '森林',
+  // 职业与人物 10
+  '医生', '消防员', '宇航员', '厨师', '警察', '老师', '魔术师', '小丑', '海盗', '忍者',
+  // 交通工具 10
+  '热气球', '潜水艇', '消防车', '火箭', '帆船', '直升机', '独轮车', '缆车', '雪橇', '飞碟',
+  // 建筑与地点 10
+  '灯塔', '城堡', '帐篷', '风车', '摩天轮', '过山车', '游泳池', '加油站', '图书馆', '游乐园',
+  // 动作与事件 10
+  '刷牙', '打喷嚏', '钓鱼', '跳绳', '拍照', '吹蜡烛', '放风筝', '堆雪人', '打篮球', '弹吉他',
+  // 幻想与角色 10
+  '美人鱼', '独角兽', '龙', '幽灵', '机器人', '外星人', '巫师', '雪怪', '木乃伊', '精灵',
+  // 节日与文化 10
+  '圣诞树', '南瓜灯', '红包', '舞龙', '月饼', '粽子', '孙悟空', '超人', '蜘蛛侠', '皮卡丘',
 ]
 
 function newCode() {
@@ -82,6 +87,7 @@ function stripId(room, viewerId) {
     title: room.title || '',
     updatedAt: room.updatedAt,
     maxMembers: MAX_MEMBERS,
+    mode: room.mode === 'game' ? 'game' : 'free',
     game: g
       ? {
           active: g.active,
@@ -191,6 +197,7 @@ export async function onRequestOptions() {
 
 async function handleCreate(env, body) {
   const name = (body && typeof body.name === 'string' ? body.name : '').trim()
+  const mode = body && body.mode === 'game' ? 'game' : 'free'
   let code = ''
   for (let attempt = 0; attempt < 5; attempt++) {
     code = newCode()
@@ -204,6 +211,7 @@ async function handleCreate(env, body) {
     members: [],
     title: '',
     updatedAt: Date.now(),
+    mode,
     game: null,
   }
   await writeRoom(env.LIGHTFIELD_KV, room)
@@ -319,6 +327,7 @@ async function handleGameStart(env, body) {
   if (!room) return json({ error: '房间不存在或已过期' }, 404)
   if (!room.members.some((m) => m.id === id)) return json({ error: '请先加入房间' }, 403)
   if (room.members.length < 2) return json({ error: '至少需要 2 人才能开始' }, 400)
+  if (room.mode !== 'game') return json({ error: '自由模式房间无法开始你画我猜' }, 403)
   if (room.game && room.game.active) return json({ error: '游戏已在进行中' }, 409)
 
   startGame(room)

@@ -13,6 +13,7 @@
         } catch (e) {}
       })()
     </script>
+    <script src="/omggif.js"></script>
     <style>
       :root {
         --bg: linear-gradient(160deg, #fdf8f2 0%, #f2ece2 100%);
@@ -644,12 +645,14 @@ color: var(--text-muted);
         width: 100%;
         max-width: 460px;
         display: flex;
+        flex-wrap: wrap;
         gap: 12px;
         margin-top: 18px;
       }
 
       .actions button {
         flex: 1;
+        min-width: 0;
         height: 52px;
         border-radius: 16px;
         font-size: 17px;
@@ -658,19 +661,31 @@ color: var(--text-muted);
       }
 
       #undoBtn, #clearBtn {
+        flex: 0 0 52px;
         background: var(--surface-2);
         color: var(--text-muted);
       }
 
       #uploadBtn {
+        flex: 1.2;
         background: var(--accent);
         color: #fff;
       }
 
       #cardBtn {
+        flex: 1.5;
         background: linear-gradient(135deg, #ff7eb3, #8f7bff);
         color: #fff;
       }
+
+      #animBtn {
+        flex: 0 0 auto;
+        padding: 0 14px;
+        background: linear-gradient(135deg, #7ce0c0, #5b8def);
+        color: #fff;
+      }
+
+      .anim-btn-text { font-size: 14px; }
 
       #toast {
         position: fixed;
@@ -1015,6 +1030,132 @@ color: var(--text-muted);
         background: var(--surface-2);
       }
 
+      /* ---------- 帧动画 ---------- */
+      .anim-editor {
+        width: 100%;
+        max-width: 460px;
+        margin-top: 16px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 16px;
+        box-shadow: var(--shadow3);
+      }
+
+      .anim-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 12px;
+      }
+
+      .anim-title { font-size: 15px; font-weight: 800; }
+
+      .anim-count-group {
+        display: flex;
+        background: var(--surface-2);
+        border-radius: 999px;
+        padding: 3px;
+        gap: 2px;
+      }
+
+      .anim-count-btn {
+        border: none;
+        background: transparent;
+        color: var(--text-muted);
+        border-radius: 999px;
+        padding: 6px 14px;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .anim-count-btn.active {
+        background: var(--accent);
+        color: #fff;
+      }
+
+      .anim-close {
+        border: none;
+        background: var(--surface-2);
+        color: var(--text-muted);
+        border-radius: 999px;
+        padding: 6px 14px;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .anim-frames {
+        display: flex;
+        gap: 10px;
+        overflow-x: auto;
+        padding-bottom: 6px;
+      }
+
+      .anim-frame {
+        flex: 0 0 auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        border: 2px solid var(--border-strong);
+        background: var(--surface-2);
+        border-radius: 12px;
+        padding: 6px;
+        cursor: pointer;
+        color: var(--text-muted);
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .anim-frame.active {
+        border-color: var(--accent);
+        background: var(--surface);
+        color: var(--accent);
+      }
+
+      .anim-frame canvas {
+        width: 48px;
+        height: 48px;
+        border-radius: 6px;
+        display: block;
+      }
+
+      .anim-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 12px;
+      }
+
+      .anim-actions button {
+        flex: 1;
+        height: 44px;
+        border-radius: 12px;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        border: 1px solid var(--border-strong);
+        background: var(--surface-3);
+        color: var(--text);
+      }
+
+      #animExport {
+        background: linear-gradient(135deg, #7ce0c0, #5b8def);
+        color: #fff;
+        border: none;
+      }
+
+      .anim-note { margin-top: 10px; font-size: 12px; color: var(--text-faint); }
+
+      #animImg {
+        width: 100%;
+        height: auto;
+        border-radius: 14px;
+        display: block;
+      }
+
       /* ---------- 朋友圈卡片弹层 ---------- */
       .card-overlay {
         position: fixed;
@@ -1205,7 +1346,26 @@ color: var(--text-muted);
       <button id="undoBtn" type="button" title="撤销（Z）" disabled>↩️</button>
       <button id="clearBtn" type="button" title="清空">🗑️</button>
       <button id="cardBtn" type="button" title="生成朋友圈分享卡片">✨ 分享卡片</button>
+      <button id="animBtn" type="button" title="16×16 逐帧动画">🎞️ <span class="anim-btn-text">帧动画</span></button>
       <button id="uploadBtn" type="button">上传</button>
+    </div>
+
+    <div class="anim-editor" id="animEditor" hidden>
+      <div class="anim-head">
+        <span class="anim-title">🎞️ 帧动画</span>
+        <div class="anim-count-group" id="animCountGroup">
+          <button class="anim-count-btn active" data-count="4" type="button">4 帧</button>
+          <button class="anim-count-btn" data-count="8" type="button">8 帧</button>
+        </div>
+        <button class="anim-close" id="animClose" type="button">完成</button>
+      </div>
+      <div class="anim-frames" id="animFrameStrip"></div>
+      <div class="anim-actions">
+        <button id="animCopy" type="button">复制上一帧</button>
+        <button id="animClear" type="button">清空本帧</button>
+        <button id="animExport" type="button">导出 GIF</button>
+      </div>
+      <div class="anim-note">点选下面的帧号切换画布逐帧作画；导出为 512×512 GIF，每帧约 0.1 秒循环播放。</div>
     </div>
 
     <div class="hint" id="hint">画笔：点按或滑动作画 · 画布 16/32/64× · B 画笔 / E 橡皮 / F 填充 / C 颜色 / Z 撤销 · 输入 #RRGGBB 自定义颜色</div>
@@ -1234,6 +1394,20 @@ color: var(--text-muted);
           <a id="cardDownload" class="card-btn" href="#" download="guangyu-card.png">⬇️ 保存图片</a>
         </div>
         <div class="card-note">长按图片也能保存到相册；作品若已填写标题和作者名，卡片会自动带上～</div>
+      </div>
+    </div>
+
+    <div class="card-overlay" id="animOverlay" hidden>
+      <div class="card-box">
+        <div class="card-head">
+          <span class="card-title">帧动画 GIF</span>
+          <button class="card-close" id="animOverlayClose" type="button">关闭</button>
+        </div>
+        <img id="animImg" alt="帧动画 GIF">
+        <div class="card-actions">
+          <a id="animDownload" class="card-btn" href="#" download="guangyu-anim.gif">⬇️ 保存 GIF</a>
+        </div>
+        <div class="card-note">长按图片也能保存到相册；GIF 会自动循环播放。</div>
       </div>
     </div>
 
@@ -1822,6 +1996,10 @@ color: var(--text-muted);
 
       function switchSize(n) {
         if (n === size) return
+        if (animOpen && n !== 16) {
+          animFrames = null
+          animCloseEditor()
+        }
         size = n
         CELL = 512 / size
         pixels = Array.from({ length: size }, () =>
@@ -2554,6 +2732,247 @@ color: var(--text-muted);
       cardOverlay.addEventListener('click', (e) => {
         if (e.target === cardOverlay) cardOverlay.hidden = true
       })
+
+      /* ---------- 帧动画 ---------- */
+      const animBtn = document.getElementById('animBtn')
+      const animEditor = document.getElementById('animEditor')
+      const animFrameStrip = document.getElementById('animFrameStrip')
+      const animCountBtns = document.querySelectorAll('.anim-count-btn')
+      const animOverlay = document.getElementById('animOverlay')
+      let animOpen = false
+      let animActive = 0
+      let animCount = 4
+      let animLastActive = 0
+      let animFrames = null
+
+      function animInitFrames() {
+        animFrames = []
+        for (let i = 0; i < animCount; i++) animFrames.push(snapshot())
+      }
+
+      function animFlush() {
+        if (!animFrames) return
+        animFrames[animActive] = snapshot()
+      }
+
+      function animRenderStrip() {
+        animFrameStrip.textContent = ''
+        const cur = Math.min(animActive, animFrames.length - 1)
+        for (let i = 0; i < animFrames.length; i++) {
+          const btn = document.createElement('button')
+          btn.type = 'button'
+          btn.className = 'anim-frame' + (i === cur ? ' active' : '')
+          const cv = document.createElement('canvas')
+          cv.width = cv.height = 48
+          const cx = cv.getContext('2d')
+          const m = animFrames[i]
+          cx.imageSmoothingEnabled = false
+          for (let y = 0; y < 16; y++) {
+            for (let x = 0; x < 16; x++) {
+              const px = m[y][x]
+              cx.fillStyle = 'rgb(' + px[0] + ',' + px[1] + ',' + px[2] + ')'
+              cx.fillRect(x * 3, y * 3, 3, 3)
+            }
+          }
+          btn.appendChild(cv)
+          const tag = document.createElement('span')
+          tag.textContent = '第 ' + (i + 1) + ' 帧'
+          btn.appendChild(tag)
+          btn.addEventListener('click', () => {
+            if (i === animActive) return
+            animFlush()
+            animActive = i
+            animLoad()
+          })
+          animFrameStrip.appendChild(btn)
+        }
+      }
+
+      function animLoad() {
+        const m = animFrames[animActive]
+        pixels = m.map((r) => r.map((px) => [px[0], px[1], px[2]]))
+        fullDirty = true
+        undoStack.length = 0
+        updateUndoBtn()
+        redraw()
+        scheduleSave()
+        animLastActive = animActive
+        animRenderStrip()
+      }
+
+      function animOpenEditor() {
+        animEditor.hidden = false
+        animOpen = true
+        if (!animFrames) {
+          animInitFrames()
+          animActive = 0
+          animLastActive = 0
+        } else {
+          animActive = animLastActive
+        }
+        animRenderStrip()
+        toast('开始编辑帧动画 · 当前第 ' + (animActive + 1) + ' 帧')
+      }
+
+      function animCloseEditor() {
+        animFlush()
+        animEditor.hidden = true
+        animOpen = false
+      }
+
+      animBtn.addEventListener('click', () => {
+        if (size !== 16) {
+          toast('帧动画仅支持 16×16 画布')
+          return
+        }
+        if (animOpen) animCloseEditor()
+        else animOpenEditor()
+      })
+
+      document.getElementById('animClose').addEventListener('click', () => {
+        if (animOpen) animCloseEditor()
+      })
+
+      animCountBtns.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const n = Number(btn.dataset.count)
+          if (n === animCount || !animOpen) return
+          animFlush()
+          animCount = n
+          if (animFrames.length > n) {
+            animFrames = animFrames.slice(0, n)
+          } else {
+            while (animFrames.length < n) {
+              const last = animFrames[animFrames.length - 1]
+              animFrames.push(last.map((r) => r.map((px) => [px[0], px[1], px[2]])))
+            }
+          }
+          if (animActive >= animFrames.length) {
+            animActive = animFrames.length - 1
+            animLoad()
+          } else {
+            animRenderStrip()
+          }
+          animCountBtns.forEach((b) => b.classList.toggle('active', Number(b.dataset.count) === animCount))
+          toast('帧数已切换为 ' + n + ' 帧')
+        })
+      })
+
+      document.getElementById('animCopy').addEventListener('click', () => {
+        if (!animOpen || !animFrames) return
+        animFlush()
+        if (animActive === 0) {
+          toast('已经是第一帧，无法复制上一帧')
+          return
+        }
+        const src = animFrames[animActive - 1]
+        animFrames[animActive] = src.map((r) => r.map((px) => [px[0], px[1], px[2]]))
+        animLoad()
+        toast('已把上一帧复制到第 ' + (animActive + 1) + ' 帧')
+      })
+
+      document.getElementById('animClear').addEventListener('click', () => {
+        if (!animOpen || !animFrames) return
+        animFrames[animActive] = Array.from({ length: 16 }, () =>
+          Array.from({ length: 16 }, () => [255, 255, 255])
+        )
+        animLoad()
+        toast('已清空第 ' + (animActive + 1) + ' 帧')
+      })
+
+      document.getElementById('animExport').addEventListener('click', () => {
+        if (!animOpen || !animFrames) return
+        animFlush()
+        try {
+          const dataURL = buildAnimGif(animFrames)
+          document.getElementById('animImg').src = dataURL
+          const dl = document.getElementById('animDownload')
+          dl.href = dataURL
+          animOverlay.hidden = false
+        } catch (err) {
+          toast('导出失败：' + err.message)
+        }
+      })
+
+      document.getElementById('animOverlayClose').addEventListener('click', () => {
+        animOverlay.hidden = true
+      })
+      animOverlay.addEventListener('click', (e) => {
+        if (e.target === animOverlay) animOverlay.hidden = true
+      })
+
+      function buildAnimGif(frames) {
+        const Q = (v) => Math.min(255, Math.round(v / 24) * 24)
+        const keyOf = (px, q) => {
+          const r = q ? Q(px[0]) : px[0]
+          const g = q ? Q(px[1]) : px[1]
+          const b = q ? Q(px[2]) : px[2]
+          return (r << 16) | (g << 8) | b
+        }
+        let map = new Map()
+        let ints = []
+        const collect = (quant) => {
+          map = new Map()
+          ints = []
+          for (const m of frames) for (const r of m) for (const px of r) {
+            const key = keyOf(px, quant)
+            if (map.has(key) || ints.length >= 256) continue
+            map.set(key, ints.length)
+            ints.push(key)
+          }
+        }
+        collect(false)
+        let q = false
+        outer: for (const m of frames) {
+          for (const r of m) {
+            for (const px of r) {
+              if (!map.has(keyOf(px, false))) { q = true; break outer }
+            }
+          }
+        }
+        if (q) collect(true)
+        const nearestIdx = (key) => {
+          const tr = (key >> 16) & 255, tg = (key >> 8) & 255, tb = key & 255
+          let best = 0, bd = Infinity
+          for (let i = 0; i < ints.length; i++) {
+            const cr = (ints[i] >> 16) & 255, cg = (ints[i] >> 8) & 255, cb = ints[i] & 255
+            const d = (tr - cr) * (tr - cr) + (tg - cg) * (tg - cg) + (tb - cb) * (tb - cb)
+            if (d < bd) { bd = d; best = i }
+          }
+          return best
+        }
+        const idxOf = (px) => {
+          const key = keyOf(px, q)
+          return map.has(key) ? map.get(key) : nearestIdx(key)
+        }
+        const mats = frames.map((m) => m.map((r) => r.map(idxOf)))
+        let p = 1
+        while ((1 << p) < ints.length) p++
+        const pad = new Uint32Array(1 << p)
+        for (let i = 0; i < ints.length; i++) pad[i] = ints[i]
+        const buf = new Uint8Array(1 << 21)
+        const writer = new GifWriter(buf, 512, 512, { palette: pad, loop: 0 })
+        for (const m of mats) {
+          const up = new Uint8Array(262144)
+          for (let y = 0; y < 16; y++) {
+            const rowBase = y * 32 * 512
+            for (let x = 0; x < 16; x++) {
+              const v = m[y][x]
+              const colBase = rowBase + x * 32
+              for (let dy = 0; dy < 32; dy++) up.fill(v, colBase + dy * 512, colBase + dy * 512 + 32)
+            }
+          }
+          writer.addFrame(0, 0, 512, 512, up, { delay: 10 })
+        }
+        const end = writer.end()
+        const bytes = buf.subarray(0, end)
+        let s = ''
+        const CHUNK = 0x8000
+        for (let i = 0; i < bytes.length; i += CHUNK) {
+          s += String.fromCharCode.apply(null, bytes.subarray(i, Math.min(i + CHUNK, bytes.length)))
+        }
+        return 'data:image/gif;base64,' + btoa(s)
+      }
 
       /* ---------- 赞赏 ---------- */
       const tipOverlay = document.getElementById('tipOverlay')
