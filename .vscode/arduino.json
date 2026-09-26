@@ -1,7 +1,7 @@
 {
     "sketch": "光域.ino",
     "output": "build",
-    "configuration": "CDCOnBoot=default,PartitionScheme=default,CPUFreq=160,FlashFreq=80,UploadSpeed=921600,DebugLevel=none,EraseFlash=none",
+    "configuration": "CDCOnBoot=default,PartitionScheme=default,CPUFreq=160,FlashFreq=80,UploadSpeed=115200,DebugLevel=none,EraseFlash=none",
     "board": "esp32:esp32:makergo_c3_supermini",
     "port": "/dev/ttyACM0"
 }
