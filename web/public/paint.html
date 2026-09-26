@@ -54,13 +54,13 @@
         --text-muted2: #a39582;
         --text-faint: #857b68;
         --text-report: #97896d;
-        --border: #3e372e;
-        --border-strong: #4f473c;
-        --border-input: #4a4136;
+        --border: #4a4238;
+        --border-strong: #5e5448;
+        --border-input: #554b3e;
         --ring: #2a251f;
-        --shadow1: rgba(0, 0, 0, 0.5);
-        --shadow2: rgba(0, 0, 0, 0.4);
-        --shadow3: rgba(0, 0, 0, 0.32);
+        --shadow1: rgba(0, 0, 0, 0.30);
+        --shadow2: rgba(0, 0, 0, 0.22);
+        --shadow3: rgba(0, 0, 0, 0.16);
         --accent: #76a3ff;
         --toast-bg: #3e372e;
         --tip-text: #e8b970;
@@ -71,6 +71,18 @@
         --like: #ff8577;
         --like-bg: #3d231f;
         --like-border: #5e352c;
+      }
+
+      [data-theme="dark"] .board-wrap,
+      [data-theme="dark"] .prompt-card,
+      [data-theme="dark"] .pick-wrap {
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        box-shadow: 0 8px 22px rgba(0, 0, 0, 0.30);
+      }
+
+      [data-theme="dark"] .mini-wrap {
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.30);
       }
 
       * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -115,7 +127,7 @@
         border-radius: 50%;
         border: 2px solid var(--border);
         background: var(--surface);
-        color: var(--text-muted);
+color: var(--text-muted);
         font-size: 18px;
         cursor: pointer;
         transition: border-color 0.2s, transform 0.12s;
@@ -123,8 +135,15 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        padding: 0;
-        text-decoration: none;
+      }
+
+      .theme-btn.pill {
+        width: auto;
+        padding: 0 18px;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: 1px;
       }
 
       .theme-btn:active { transform: scale(0.9); }
@@ -971,7 +990,7 @@
 
     <div class="page-head">
       <div class="head-right">
-        <a class="theme-btn room-link" href="room" title="联机房间" style="text-decoration:none">👥</a>
+        <a class="theme-btn room-link" href="room" title="联机房间" style="text-decoration:none">联机</a>
         <button id="themeBtn" class="theme-btn" type="button" title="切换主题">🌙</button>
       </div>
     </div>

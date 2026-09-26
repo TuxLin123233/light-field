@@ -523,6 +523,31 @@
         margin-top: 8px;
       }
 
+      .mode-row {
+        display: flex;
+        gap: 8px;
+        margin: 10px 0 12px;
+      }
+
+      .mode-btn {
+        flex: 1;
+        padding: 10px 0;
+        border-radius: 12px;
+        border: 2px solid var(--border);
+        background: var(--surface);
+        color: var(--text-muted);
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: border-color 0.2s, background 0.2s, color 0.2s;
+      }
+
+      .mode-btn.active {
+        border-color: var(--accent);
+        background: var(--accent);
+        color: #fff;
+      }
+
       .game-bar { padding: 14px; }
       .game-bar[hidden] { display: none; }
 
@@ -711,6 +736,11 @@
         <button class="icon-btn" id="copyBtn" type="button" title="复制邀请链接" style="height:46px;width:46px;min-width:46px">📋</button>
       </div>
       <div class="members" id="members"></div>
+
+      <div class="mode-row" id="modeRow">
+        <button data-mode="free" class="mode-btn active" type="button">自由模式</button>
+        <button data-mode="game" class="mode-btn" type="button">🎮 你画我猜</button>
+      </div>
 
       <div class="panel game-bar" id="gameBar" hidden>
         <div id="gameStartRow" hidden>
@@ -1018,6 +1048,7 @@
       let commitTimer = null
       let committing = false
       let pollTimer = null
+      let mode = 'free'
 
       function flatPixels() {
         const out = []
@@ -1077,6 +1108,29 @@
       const scoreList = document.getElementById('scoreList')
       const startGameBtn = document.getElementById('startGameBtn')
 
+      function isGameMode() {
+        return mode === 'game' || !!(room && room.game && room.game.active)
+      }
+
+      function updateModeBtns() {
+        const on = isGameMode() ? 'game' : 'free'
+        document.querySelectorAll('.mode-btn').forEach((b) => {
+          b.classList.toggle('active', b.dataset.mode === on)
+        })
+      }
+
+      document.querySelectorAll('.mode-btn').forEach((b) => {
+        b.addEventListener('click', () => {
+          if (b.dataset.mode === 'free' && room && room.game && room.game.active) {
+            toast('对局进行中，结束后再切回自由模式')
+            return
+          }
+          mode = b.dataset.mode
+          updateModeBtns()
+          renderGame()
+        })
+      })
+
       function myGameRole() {
         if (!room || !room.game || !room.game.active) return 'none'
         return room.game.painterId === memberId ? 'painter' : 'guesser'
@@ -1090,10 +1144,14 @@
 
       function renderGame() {
         const g = room && room.game
-        gameBar.hidden = !room
+        const gameOn = isGameMode()
+        gameBar.hidden = !room || !gameOn
         gameStartRow.hidden = !!(g && g.active)
         gamePlay.hidden = !(g && g.active)
         titleInput.hidden = !!(g && g.active)
+        const publish = document.getElementById('publishBtn')
+        if (publish) publish.hidden = !!(g && g.active)
+        updateModeBtns()
         if (!g || !g.active) {
           refreshHint()
           return
