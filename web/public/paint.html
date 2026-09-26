@@ -188,6 +188,46 @@
         color: #fff;
       }
 
+      .zoom-row {
+        width: 100%;
+        max-width: 460px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 8px;
+      }
+
+      .zoom-btn {
+        flex: 0 0 auto;
+        width: 44px;
+        height: 38px;
+        border-radius: 999px;
+        background: var(--surface);
+        border: 2px solid var(--border);
+        color: var(--text-muted);
+        font-size: 18px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: background 0.15s ease, transform 0.12s ease;
+        line-height: 1;
+      }
+
+      .zoom-btn:active { transform: scale(0.92); }
+
+      .zoom-level {
+        flex: 1;
+        text-align: center;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-muted2);
+        font-variant-numeric: tabular-nums;
+      }
+
+      .zoom-tip {
+        font-size: 12px;
+        color: var(--text-faint);
+      }
+
       .tools {
         width: 100%;
         max-width: 460px;
@@ -869,6 +909,14 @@
       <button data-size="64" class="size-btn" type="button">64×64</button>
     </div>
 
+    <div class="zoom-row" id="zoomRow" hidden>
+      <span class="size-label">视图</span>
+      <button id="zoomOut" class="zoom-btn" type="button" title="缩小">－</button>
+      <span class="zoom-level" id="zoomLevel">100%</span>
+      <button id="zoomIn" class="zoom-btn" type="button" title="放大">＋</button>
+      <span class="zoom-tip">拖动平移 · 点击涂色</span>
+    </div>
+
     <div class="tools">
       <button id="toolBrush" class="tool active" type="button" data-tool="brush" title="画笔（B）">✏️</button>
       <button id="toolEraser" class="tool" type="button" data-tool="eraser" title="橡皮擦（E）">🧽</button>
@@ -987,6 +1035,11 @@
       ctx.scale(dpr, dpr)
       let CELL = 512 / size
 
+      let zoom = 1
+      let panX = 0
+      let panY = 0
+      const MAX_ZOOM = 8
+
       let pixels = Array.from({ length: size }, () =>
         Array.from({ length: size }, () => [255, 255, 255])
       )
@@ -997,6 +1050,10 @@
       const curSwatch = document.getElementById('curSwatch')
       const curHex = document.getElementById('curHex')
       const undoBtn = document.getElementById('undoBtn')
+      const zoomRow = document.getElementById('zoomRow')
+      const zoomIn = document.getElementById('zoomIn')
+      const zoomOut = document.getElementById('zoomOut')
+      const zoomLevel = document.getElementById('zoomLevel')
 
       /* ---------- 撤销 ---------- */
       const undoStack = []
@@ -1287,7 +1344,43 @@
         document.querySelectorAll('.tool[data-tool]').forEach((b) =>
           b.classList.toggle('active', b.dataset.tool === tool)
         )
-        hint.textContent = TOOL_HINTS[tool]
+        refreshHint()
+      }
+
+      function refreshHint() {
+        const base = TOOL_HINTS[activeTool] || TOOL_HINTS.brush
+        hint.textContent = size > 16 ? base + ' · 拖动画布移动，点一下格子涂色，＋/－ 缩放' : base + ' · 拖动涂色'
+      }
+
+      function resetCamera() {
+        zoom = Math.max(1, size / 32)
+        panX = 0
+        panY = 0
+        clampPan()
+        zoomRow.hidden = size === 16
+        updateZoomUI()
+      }
+
+      function setCam(nz, c) {
+        nz = Math.max(1, Math.min(MAX_ZOOM, nz))
+        if (c) {
+          panX = c.x - 256 / nz
+          panY = c.y - 256 / nz
+        }
+        zoom = nz
+        clampPan()
+        redraw()
+        updateZoomUI()
+      }
+
+      function clampPan() {
+        const maxPan = 512 - 512 / zoom
+        panX = Math.max(0, Math.min(maxPan, panX))
+        panY = Math.max(0, Math.min(maxPan, panY))
+      }
+
+      function updateZoomUI() {
+        zoomLevel.textContent = Math.round(zoom * 100) + '%'
       }
 
       function switchSize(n) {
@@ -1302,6 +1395,8 @@
         document.querySelectorAll('.size-btn').forEach((b) =>
           b.classList.toggle('active', Number(b.dataset.size) === size)
         )
+        resetCamera()
+        refreshHint()
         redraw()
       }
 
@@ -1315,9 +1410,18 @@
         })
       })
 
+      zoomIn.addEventListener('click', () => {
+        const c = { x: 256 / zoom + panX, y: 256 / zoom + panY }
+        setCam(zoom * 1.5, c)
+      })
+      zoomOut.addEventListener('click', () => {
+        const c = { x: 256 / zoom + panX, y: 256 / zoom + panY }
+        setCam(zoom / 1.5, c)
+      })
+
       function drawGrid() {
         ctx.strokeStyle = 'rgba(0, 0, 0, 0.10)'
-        ctx.lineWidth = 1
+        ctx.lineWidth = 1 / zoom
         for (let i = 1; i < size; i++) {
           const p = i * CELL + 0.5
           ctx.beginPath()
@@ -1332,6 +1436,7 @@
       }
 
       function redraw() {
+        ctx.setTransform(zoom * dpr, 0, 0, zoom * dpr, -panX * zoom * dpr, -panY * zoom * dpr)
         ctx.clearRect(0, 0, 512, 512)
         for (let y = 0; y < size; y++) {
           for (let x = 0; x < size; x++) {
@@ -1345,8 +1450,10 @@
 
       function cellFromEvent(e) {
         const rect = canvas.getBoundingClientRect()
-        const col = Math.floor(((e.clientX - rect.left) / rect.width) * size)
-        const row = Math.floor(((e.clientY - rect.top) / rect.height) * size)
+        const boardX = ((e.clientX - rect.left) * (512 / rect.width)) / zoom + panX
+        const boardY = ((e.clientY - rect.top) * (512 / rect.height)) / zoom + panY
+        const col = Math.floor(boardX / CELL)
+        const row = Math.floor(boardY / CELL)
         return { row: Math.max(0, Math.min(size - 1, row)), col: Math.max(0, Math.min(size - 1, col)) }
       }
 
@@ -1379,26 +1486,71 @@
       }
 
       let painting = false
+      let panning = false
+      let startX = 0
+      let startY = 0
+      let startPanX = 0
+      let startPanY = 0
+      const PAN_DIST = 5
+
       canvas.addEventListener('pointerdown', (e) => {
         e.preventDefault()
-        painting = true
-        pushUndo()
         canvas.setPointerCapture(e.pointerId)
-        paint(e)
-        redraw()
-      })
-      canvas.addEventListener('pointermove', (e) => {
-        if (painting && activeTool !== 'fill') {
+        if (size > 16) {
+          painting = true
+          panning = false
+          startX = e.clientX
+          startY = e.clientY
+          startPanX = panX
+          startPanY = panY
+        } else {
+          painting = true
+          panning = false
+          pushUndo()
           paint(e)
           redraw()
         }
       })
-      const stop = () => {
-        if (painting) scheduleSave()
+
+      canvas.addEventListener('pointermove', (e) => {
+        if (!painting) return
+        if (size > 16) {
+          const dx = e.clientX - startX
+          const dy = e.clientY - startY
+          if (!panning && Math.hypot(dx, dy) >= PAN_DIST) {
+            panning = true
+          }
+          if (panning) {
+            const rect = canvas.getBoundingClientRect()
+            const s = 512 / rect.width
+            panX = startPanX - dx * s / zoom
+            panY = startPanY - dy * s / zoom
+            clampPan()
+            redraw()
+          }
+        } else if (activeTool !== 'fill') {
+          paint(e)
+          redraw()
+        }
+      })
+
+      canvas.addEventListener('pointerup', (e) => {
+        if (painting && size > 16 && !panning) {
+          pushUndo()
+          paint(e)
+          redraw()
+          scheduleSave()
+        } else if (painting && size <= 16) {
+          scheduleSave()
+        }
         painting = false
-      }
-      canvas.addEventListener('pointerup', stop)
-      canvas.addEventListener('pointercancel', stop)
+        panning = false
+      })
+
+      canvas.addEventListener('pointercancel', () => {
+        painting = false
+        panning = false
+      })
 
       document.getElementById('clearBtn').addEventListener('click', () => {
         pushUndo()
@@ -1468,6 +1620,8 @@
             document.querySelectorAll('.size-btn').forEach((b) =>
               b.classList.toggle('active', Number(b.dataset.size) === size)
             )
+            resetCamera()
+            refreshHint()
           }
 
           const src = data.pixels
@@ -1579,6 +1733,8 @@
           document.querySelectorAll('.size-btn').forEach((b) =>
             b.classList.toggle('active', Number(b.dataset.size) === size)
           )
+          resetCamera()
+          refreshHint()
         }
         pixels = []
         for (let i = 0; i < rs * rs; i += rs) {
@@ -1773,6 +1929,7 @@
       redraw()
       applyColor()
       initName()
+      refreshHint()
       fetchRecords()
 
       /* ---------- 点赞 ---------- */
