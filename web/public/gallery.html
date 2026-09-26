@@ -827,6 +827,7 @@
       <a href="/settings"><span class="nav-icon">⚙️</span>设置</a>
     </nav>
 
+    <script src="/qrcode.js"></script>
     <script>
       function workSize(rec) {
         const s = (rec && rec.size) || 0
@@ -968,17 +969,12 @@
         ctx.fillStyle = bg
         ctx.fillRect(0, 0, W, H)
 
-        ctx.fillStyle = ink
-        ctx.fillRect(36, 36, W - 72, H - 72)
-        ctx.fillStyle = bg
-        ctx.fillRect(54, 54, W - 108, H - 108)
-
         pixelBar(ctx, 60, 128, W - 120, 30, 16, stripe, true)
 
         ctx.textAlign = 'center'
         ctx.fillStyle = ink
         ctx.font = '900 62px "PingFang SC", "Microsoft YaHei", sans-serif'
-        ctx.fillText('光 域 画 板', W / 2, 260)
+        ctx.fillText('像 素 小 镇', W / 2, 260)
         ctx.font = '500 27px "PingFang SC", "Microsoft YaHei", sans-serif'
         ctx.fillStyle = muted
         ctx.fillText('每 一 格 光 ，点 亮 一 个 梦', W / 2, 306)
@@ -1014,17 +1010,36 @@
         ctx.fillStyle = muted
         ctx.fillText('画师 ' + tAuthor + '  ·  ' + n + '×' + n, W / 2, 1300)
 
-        pixelBar(ctx, 60, 1340, W - 120, 26, 16, stripe, true)
-        pixelIcon(ctx, 76, 1344, 24, '#e5484d', PX_HEART)
-        pixelIcon(ctx, W - 76 - 24, 1344, 24, '#f4a259', PX_STAR)
-
         const d = new Date()
-        ctx.font = '500 27px "PingFang SC", "Microsoft YaHei", sans-serif'
-        ctx.textAlign = 'left'
-        ctx.fillStyle = muted
-        ctx.fillText(d.getFullYear() + ' 年 ' + (d.getMonth() + 1) + ' 月 ' + d.getDate() + ' 日', 76, 1420)
+
+        let qy = 1316
+        if (window.qrcode) {
+          const QR_SITE = 'https://light-field.pages.dev'
+          const qr = qrcode(0, 'L')
+          qr.addData(QR_SITE)
+          qr.make()
+          const qS = qr.getModuleCount()
+          const qs = Math.max(2, Math.floor(96 / qS))
+          const qpad = 12
+          const qx = 104
+          ctx.fillStyle = '#ffffff'
+          ctx.fillRect(qx - qpad, qy - qpad, qS * qs + qpad * 2, qS * qs + qpad * 2)
+          ctx.fillStyle = ink
+          for (let yq = 0; yq < qS; yq++) {
+            for (let xq = 0; xq < qS; xq++) {
+              if (qr.isDark(yq, xq)) ctx.fillRect(qx + xq * qs, qy + yq * qs, qs, qs)
+            }
+          }
+          ctx.font = '500 22px "PingFang SC", "Microsoft YaHei", sans-serif'
+          ctx.textAlign = 'left'
+          ctx.fillStyle = muted
+          ctx.fillText(QR_SITE.replace('https://', ''), qx - qpad, qy + Math.max(87, qS * qs) + 34)
+        }
+
+        ctx.font = '500 26px "PingFang SC", "Microsoft YaHei", sans-serif'
         ctx.textAlign = 'right'
-        ctx.fillText('像素小镇 · 像素作品', W - 76, 1420)
+        ctx.fillStyle = muted
+        ctx.fillText('像素小镇 · 像素作品 · ' + d.getFullYear() + ' 年 ' + (d.getMonth() + 1) + ' 月 ' + d.getDate() + ' 日', W - 76, 1434)
 
         return cv
       }

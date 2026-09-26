@@ -341,8 +341,8 @@ color: var(--text-muted);
         flex: 1;
         height: 46px;
         border-radius: 999px;
-        background: var(--surface);
-        border: 1px solid var(--border-strong);
+        border: none;
+        background: var(--surface-2);
         color: var(--text-muted);
         font-size: 22px;
         line-height: 1;
@@ -352,9 +352,12 @@ color: var(--text-muted);
         transition: background 0.15s ease, color 0.15s ease, transform 0.12s ease;
       }
 
+      .tool:hover { background: var(--surface); }
+
       .tool.active {
         background: var(--accent);
         color: #fff;
+        box-shadow: 0 4px 14px rgba(91, 141, 239, 0.35);
       }
 
       .pick-wrap {
