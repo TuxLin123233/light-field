@@ -11,6 +11,7 @@
           var t = localStorage.getItem('lw-theme')
           if (!t) t = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
           document.documentElement.setAttribute('data-theme', t)
+          if (localStorage.getItem('lw-glass') === '0') document.documentElement.classList.add('glass-off')
         } catch (e) {}
       })()
     </script>
@@ -134,6 +135,176 @@
       }
 
       .featured[hidden] { display: none; }
+
+      .contest {
+        background: linear-gradient(135deg, #fff7e0, #ffeded);
+        border: 1px solid var(--border-strong);
+        border-radius: 18px;
+        padding: 16px;
+        margin-bottom: 18px;
+      }
+
+      [data-theme="dark"] .contest {
+        background: linear-gradient(135deg, #2b2620, #34261f);
+      }
+
+      .contest-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 15px;
+        font-weight: 800;
+        color: var(--text);
+      }
+
+      .contest-badge {
+        background: #e5484d;
+        color: #fff;
+        border-radius: 999px;
+        padding: 3px 10px;
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      .contest-theme {
+        margin-top: 10px;
+        font-size: 20px;
+        font-weight: 900;
+      }
+
+      .contest-theme b { color: var(--accent); }
+
+      .contest-prompt {
+        margin-top: 4px;
+        font-size: 13px;
+        color: var(--text-muted);
+      }
+
+      .contest-meta {
+        margin-top: 4px;
+        font-size: 12px;
+        color: var(--text-faint);
+      }
+
+      .contest-cta-row {
+        margin-top: 12px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .contest-cta {
+        background: var(--accent);
+        color: #fff;
+        border-radius: 999px;
+        padding: 9px 18px;
+        font-size: 14px;
+        font-weight: 800;
+        text-decoration: none;
+        transition: transform 0.12s;
+      }
+
+      .contest-cta:active { transform: scale(0.95); }
+
+      .contest-tip { font-size: 12px; color: var(--text-muted); }
+
+      .contest-top {
+        margin-top: 14px;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 10px;
+      }
+
+      .ct-card {
+        position: relative;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 10px;
+        cursor: pointer;
+        transition: transform 0.12s, box-shadow 0.15s;
+      }
+
+      .ct-card:active { transform: scale(0.96); }
+
+      .ct-rank {
+        position: absolute;
+        top: 6px;
+        left: 6px;
+        z-index: 1;
+        width: 22px;
+        height: 22px;
+        border-radius: 7px;
+        background: #8a7f6f;
+        color: #fff;
+        font-size: 12px;
+        font-weight: 900;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .ct-rank.r1 { background: #f6c343; }
+      .ct-rank.r2 { background: #aeb6c2; }
+      .ct-rank.r3 { background: #d18b5f; }
+
+      .ct-art {
+        width: 100%;
+        aspect-ratio: 1;
+        border-radius: 8px;
+        object-fit: cover;
+        image-rendering: pixelated;
+        background: #fff;
+        display: block;
+      }
+
+      .ct-name {
+        margin-top: 6px;
+        font-size: 12px;
+        font-weight: 700;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .ct-votes {
+        margin-top: 2px;
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--accent);
+      }
+
+      .contest-empty {
+        font-size: 13px;
+        color: var(--text-muted);
+        padding: 4px 0;
+      }
+
+      .vote-btn {
+        flex: 0 0 auto;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        border: 1px solid var(--accent);
+        background: rgba(91, 141, 239, 0.12);
+        color: var(--accent);
+        border-radius: 999px;
+        padding: 3px 10px;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: transform 0.12s;
+        line-height: 1.3;
+      }
+
+      .vote-btn:active { transform: scale(0.92); }
+
+      .vote-btn.voted {
+        border-color: #5bb883;
+        background: rgba(91, 184, 131, 0.16);
+        color: #3f9c68;
+      }
 
       .featured-head {
         display: flex;
@@ -738,6 +909,28 @@
       }
 
       .card-note { margin-top: 12px; font-size: 12px; color: var(--text-faint); }
+    
+      /* ---------- 导航栏毛玻璃（苹果 Liquid Glass） ---------- */
+      .bottom-nav {
+        background: rgba(255, 253, 250, 0.66) !important;
+        -webkit-backdrop-filter: blur(24px) saturate(180%);
+        backdrop-filter: blur(24px) saturate(180%);
+        border-color: rgba(180, 168, 150, 0.30) !important;
+        box-shadow: 0 14px 40px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+      }
+      [data-theme="dark"] .bottom-nav {
+        background: rgba(42, 38, 33, 0.62) !important;
+        border-color: rgba(255, 255, 255, 0.10) !important;
+        box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      }
+      html.glass-off .bottom-nav,
+      html.glass-off [data-theme="dark"] .bottom-nav {
+        background: var(--surface) !important;
+        border-color: var(--border) !important;
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+      }
+
     </style>
   </head>
   <body>
@@ -750,6 +943,21 @@
         </div>
         <button class="theme-btn" id="themeBtn" type="button" title="切换主题">🌙</button>
       </div>
+
+      <section class="contest" id="contestPanel" hidden>
+        <div class="contest-head">
+          <span class="contest-title">🏆 每周主题比赛</span>
+          <span class="contest-badge" id="contestBadge">进行中</span>
+        </div>
+        <div class="contest-theme">本周主题《<b id="contestTheme"></b>》</div>
+        <div class="contest-prompt" id="contestPrompt"></div>
+        <div class="contest-meta" id="contestMeta"></div>
+        <div class="contest-cta-row">
+          <a class="contest-cta" href="/paint?contest=1">🎨 去创作参赛</a>
+          <span class="contest-tip" id="contestTip"></span>
+        </div>
+        <div class="contest-top" id="contestTop"></div>
+      </section>
 
       <section class="featured" id="featured" hidden>
         <div class="featured-head">
@@ -799,6 +1007,7 @@
         </div>
         <div class="preview-like">
           <button class="like-btn" id="previewLike" type="button">♥ <span id="previewLikeCount">0</span></button>
+          <button class="vote-btn" id="previewVoteBtn" type="button" hidden>🏆 投一票</button>
           <button class="share-btn" id="previewShare" type="button">🔗 复制链接</button>
           <button class="share-btn" id="previewCard" type="button">🃏 生成朋友圈卡片</button>
         </div>
@@ -852,6 +1061,160 @@
         try {
           localStorage.setItem('lw-liked', JSON.stringify([...likedMap]))
         } catch (e) {}
+      }
+
+      /* ---------- 每周主题比赛 ---------- */
+      const contestPanel = document.getElementById('contestPanel')
+      const contestTop = document.getElementById('contestTop')
+      let contestCtx = { week: '', open: false, voted: [] }
+
+      function getVoterId() {
+        try {
+          let v = localStorage.getItem('lw-vid')
+          if (!v) {
+            v = crypto.randomUUID ? crypto.randomUUID() : 'v' + Date.now() + Math.random().toString(36).slice(2)
+            localStorage.setItem('lw-vid', v)
+          }
+          return v
+        } catch (e) {
+          return 'anon'
+        }
+      }
+
+      const vid = getVoterId()
+
+      function isCurrentContestEntry(rec) {
+        return !!contestCtx && contestCtx.week && contestCtx.open && rec.contest === contestCtx.week
+      }
+
+      function makeVoteButton(rec) {
+        const btn = document.createElement('button')
+        btn.type = 'button'
+        btn.className = 'vote-btn'
+        const span = document.createElement('span')
+        span.textContent = '🏆 ' + (rec.contestVotes || 0)
+        btn.appendChild(span)
+        if (contestCtx.voted.map(String).includes(String(rec.time))) btn.classList.add('voted')
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation()
+          voteContest(rec, btn)
+        })
+        return btn
+      }
+
+      async function voteContest(rec, btn) {
+        const key = String(rec.time)
+        if (contestCtx.voted.map(String).includes(key)) {
+          toast('本周你已为该作品投过票')
+          return
+        }
+        btn.disabled = true
+        try {
+          const res = await fetch('/api/contest', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ time: rec.time, vid }),
+          })
+          const data = await res.json().catch(() => ({}))
+          if (res.ok) {
+            rec.contestVotes = data.votes
+            contestCtx.voted.push(key)
+            const span = btn.querySelector('span') || btn
+            span.textContent = '🏆 ' + (rec.contestVotes || 0)
+            btn.classList.add('voted')
+            const pvBtn = document.getElementById('previewVoteBtn')
+            if (currentPreview && String(currentPreview.time) === key && pvBtn) {
+              pvBtn.textContent = '🏆 已投票 · ' + (rec.contestVotes || 0)
+              pvBtn.classList.add('voted')
+            }
+            loadContest(true)
+            toast('投票成功，感谢支持 🏆')
+          } else {
+            toast('投票失败：' + (data.error || res.status))
+          }
+        } catch (err) {
+          toast('投票失败：网络错误')
+        } finally {
+          btn.disabled = false
+        }
+      }
+
+      async function loadContest(silent) {
+        try {
+          const res = await fetch('/api/contest?top=12&vid=' + encodeURIComponent(vid))
+          if (!res.ok) {
+            contestPanel.hidden = true
+            return
+          }
+          const c = await res.json()
+          contestCtx = { week: c.week, open: !!c.open, voted: (c.voted || []).map(String) }
+          renderContestPanel(c)
+          refreshVoteChips()
+          const pvBtn = document.getElementById('previewVoteBtn')
+          if (currentPreview && pvBtn) syncPreviewVoteBtn()
+        } catch (e) {
+          contestPanel.hidden = true
+        }
+      }
+
+      function renderContestPanel(c) {
+        document.getElementById('contestTheme').textContent = c.theme.zh
+        document.getElementById('contestPrompt').textContent = c.theme.prompt || ''
+        const d1 = new Date(c.start)
+        const d2 = new Date(c.end)
+        const fmt = (d) => `${d.getMonth() + 1}月${d.getDate()}日`
+        document.getElementById('contestMeta').textContent =
+          '本期：' + fmt(d1) + ' - ' + fmt(d2) + ' · ' + c.entries + ' 幅参赛'
+        const badge = document.getElementById('contestBadge')
+        badge.textContent = c.open ? '🚀 投票进行中' : '已结束'
+        badge.style.background = c.open ? '#e5484d' : '#8a7f6f'
+        document.getElementById('contestTip').textContent =
+          '每人每周对每个作品可投一票，助它登上本周排行榜'
+        contestTop.innerHTML = ''
+        if (!c.works.length) {
+          const empty = document.createElement('div')
+          empty.className = 'contest-empty'
+          empty.textContent = '还没有人投稿，快去创作第一幅本周主题作品吧！'
+          contestTop.appendChild(empty)
+        } else {
+          c.works.forEach((w, i) => {
+            const card = document.createElement('div')
+            card.className = 'ct-card'
+            const rank = document.createElement('div')
+            rank.className = 'ct-rank ' + (i === 0 ? 'r1' : i === 1 ? 'r2' : i === 2 ? 'r3' : '')
+            rank.textContent = i + 1
+
+            const img = document.createElement('img')
+            img.className = 'ct-art'
+            img.alt = w.workName || w.name || '未命名'
+            img.loading = 'lazy'
+            img.decoding = 'async'
+            img.src = pixelsToURL(w.pixels, workSize(w))
+
+            const nm = document.createElement('div')
+            nm.className = 'ct-name'
+            nm.textContent = (w.type === 'anim' ? '🎞️ ' : '') + (w.workName || w.name || '未命名')
+
+            const votes = document.createElement('div')
+            votes.className = 'ct-votes'
+            votes.textContent = '🏆 ' + (w.contestVotes || 0) + ' 票' + (w.anim ? '' : '')
+
+            card.append(rank, img, nm, votes)
+            card.addEventListener('click', () => preview(w))
+            contestTop.appendChild(card)
+          })
+        }
+        contestPanel.hidden = false
+      }
+
+      function refreshVoteChips() {
+        document.querySelectorAll('.card .vote-btn').forEach((b) => {
+          const rec = b.__rec
+          if (rec && isCurrentContestEntry(rec)) {
+            b.hidden = false
+            b.classList.toggle('voted', contestCtx.voted.map(String).includes(String(rec.time)))
+          }
+        })
       }
 
       function formatTime(ts) {
@@ -1147,7 +1510,8 @@
         btn.addEventListener('click', () => {
           rangeTabs.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b === btn))
           featuredRange = btn.dataset.range
-          loadFeatured()
+loadFeatured()
+      loadContest()
         })
       })
 
@@ -1252,6 +1616,12 @@
             meta.append(b)
           }
           meta.append(makeLikeButton(rec))
+          if (rec.contest) {
+            const vb = makeVoteButton(rec)
+            vb.__rec = rec
+            vb.hidden = true
+            meta.append(vb)
+          }
 
           const sub = document.createElement('div')
           sub.className = 'card-sub'
@@ -1418,7 +1788,30 @@
         document.getElementById('previewLikeCount').textContent = rec.likes || 0
         updateLikedState(document.getElementById('previewLike'), rec.time)
         currentPreview = rec
+        syncPreviewVoteBtn()
         previewOverlay.hidden = false
+      }
+
+      function syncPreviewVoteBtn() {
+        const pv = document.getElementById('previewVoteBtn')
+        const rec = currentPreview
+        if (!pv || !rec) return
+        if (isCurrentContestEntry(rec)) {
+          const voted = contestCtx.voted.map(String).includes(String(rec.time))
+          pv.hidden = false
+          pv.textContent = voted
+            ? '🏆 已投票 · ' + (rec.contestVotes || 0)
+            : '🏆 投一票 · ' + (rec.contestVotes || 0)
+          pv.classList.toggle('voted', voted)
+          pv.disabled = false
+          pv.onclick = (e) => {
+            e.stopPropagation()
+            voteContest(rec, pv)
+          }
+        } else {
+          pv.hidden = true
+          pv.onclick = null
+        }
       }
 
       function closePreview() {

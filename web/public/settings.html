@@ -11,6 +11,7 @@
           var t = localStorage.getItem('lw-theme')
           if (!t) t = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
           document.documentElement.setAttribute('data-theme', t)
+          if (localStorage.getItem('lw-glass') === '0') document.documentElement.classList.add('glass-off')
         } catch (e) {}
       })()
     </script>
@@ -246,6 +247,28 @@
         color: var(--accent);
         background: var(--surface-2);
       }
+    
+      /* ---------- 导航栏毛玻璃（苹果 Liquid Glass） ---------- */
+      .bottom-nav {
+        background: rgba(255, 253, 250, 0.66) !important;
+        -webkit-backdrop-filter: blur(24px) saturate(180%);
+        backdrop-filter: blur(24px) saturate(180%);
+        border-color: rgba(180, 168, 150, 0.30) !important;
+        box-shadow: 0 14px 40px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+      }
+      [data-theme="dark"] .bottom-nav {
+        background: rgba(42, 38, 33, 0.62) !important;
+        border-color: rgba(255, 255, 255, 0.10) !important;
+        box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      }
+      html.glass-off .bottom-nav,
+      html.glass-off [data-theme="dark"] .bottom-nav {
+        background: var(--surface) !important;
+        border-color: var(--border) !important;
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+      }
+
     </style>
   </head>
   <body>
@@ -266,6 +289,13 @@
             <div class="row-desc">适合在夜里画画，保护眼睛</div>
           </div>
           <input class="switch" id="darkSwitch" type="checkbox" role="switch">
+        </div>
+        <div class="row">
+          <div>
+            <div class="row-label">玻璃导航</div>
+            <div class="row-desc">底部导航使用苹果风的毛玻璃质感</div>
+          </div>
+          <input class="switch" id="glassSwitch" type="checkbox" role="switch">
         </div>
       </section>
 
@@ -367,6 +397,19 @@
         darkSwitch.checked = dark
         themeBtn.textContent = dark ? '☀️' : '🌙'
       }
+
+      const glassSwitch = document.getElementById('glassSwitch')
+      glassSwitch.checked = localStorage.getItem('lw-glass') !== '0'
+      function applyGlass() {
+        document.documentElement.classList.toggle('glass-off', !glassSwitch.checked)
+      }
+      glassSwitch.addEventListener('change', () => {
+        try {
+          localStorage.setItem('lw-glass', glassSwitch.checked ? '1' : '0')
+        } catch (e) {}
+        applyGlass()
+      })
+      applyGlass()
 
       function setTheme(dark) {
         document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light')

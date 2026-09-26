@@ -1,4 +1,5 @@
 import { appendEntry, recentHistory, HISTORY_MAX } from './_history.js'
+import { contestInfo } from './_contest.js'
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -108,6 +109,14 @@ export async function onRequestPost(context) {
   const author = (rawAuthor || legacyName).trim().slice(0, 20) || '匿名'
   const name = workName || author
 
+  const rawContest = body && typeof body.contest === 'string' ? body.contest.trim() : ''
+  if (rawContest) {
+    const cinfo = contestInfo()
+    if (cinfo.week !== rawContest) {
+      return json({ error: 'contest 只能报名本周主题（当前为 ' + cinfo.week + '）' }, 400)
+    }
+  }
+
   if (!env.LIGHTFIELD_KV) {
     return json({ error: 'LIGHTFIELD_KV is not configured' }, 500)
   }
@@ -136,6 +145,7 @@ export async function onRequestPost(context) {
   const entry = { name, workName, author, size, pixels, time: Date.now(), likes: 0 }
   if (animObj) entry.type = 'anim'
   if (animObj) entry.anim = animObj
+  if (rawContest) entry.contest = rawContest
   const entryJson = JSON.stringify(entry)
   if (entryJson.length > 90000) {
     return json({ error: '动画帧数据过大，请减少帧数或简化画面后再试' }, 413)

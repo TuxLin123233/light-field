@@ -28,6 +28,8 @@ function normalizeEntry(e) {
     likes: (e && e.likes) || 0,
     type: e && e.type,
     anim: e && e.anim ? { frames: e.anim.frames, delay: e.anim.delay || 10 } : undefined,
+    contest: e && e.contest,
+    contestVotes: (e && e.contestVotes) || 0,
   }
 }
 

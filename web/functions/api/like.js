@@ -88,6 +88,8 @@ export async function onRequestGet(context) {
         likes: e.likes || 0,
         type: e.type,
         anim: e.anim ? { frames: e.anim.frames, delay: e.anim.delay || 10 } : undefined,
+        contest: e.contest,
+        contestVotes: e.contestVotes || 0,
       }
     })
 

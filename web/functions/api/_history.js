@@ -198,6 +198,12 @@ export async function incrementLikes(kv, time) {
   return { found: res.found, likes: res.entry ? res.entry.likes : 0 }
 }
 
+// 主题比赛投票 +1
+export async function incrementContestVotes(kv, time) {
+  const res = await findAndUpdate(kv, time, (e) => ({ ...e, contestVotes: (e.contestVotes || 0) + 1 }))
+  return { found: res.found, votes: res.entry ? res.entry.contestVotes : 0 }
+}
+
 // 删除某条作品；返回删除后的最新一条（用于修正 pixels）
 export async function removeByTime(kv, time) {
   const res = await findAndUpdate(kv, time, null)
