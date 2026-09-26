@@ -231,6 +231,69 @@
         color: var(--text-faint);
       }
 
+      .prompt-card {
+        width: 100%;
+        max-width: 460px;
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        margin-top: 12px;
+        background: var(--surface);
+        border: 2px solid var(--border);
+        border-radius: 14px;
+      }
+
+      .prompt-roll {
+        flex: 0 0 auto;
+        width: 42px;
+        height: 42px;
+        border-radius: 999px;
+        background: var(--accent);
+        border: none;
+        color: #fff;
+        font-size: 18px;
+        cursor: pointer;
+        transition: transform 0.15s ease;
+        line-height: 1;
+      }
+
+      .prompt-roll:active { transform: rotate(120deg) scale(0.94); }
+
+      .prompt-body {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .prompt-text {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--text);
+        line-height: 1.4;
+        word-break: break-all;
+      }
+
+      .prompt-meta {
+        font-size: 12px;
+        color: var(--text-faint);
+        margin-top: 2px;
+      }
+
+      .prompt-cat {
+        flex: 0 0 auto;
+        max-width: 120px;
+        height: 38px;
+        border-radius: 10px;
+        background: var(--surface);
+        border: 2px solid var(--border);
+        color: var(--text-muted);
+        font-size: 12px;
+        font-weight: 600;
+        padding: 0 6px;
+        cursor: pointer;
+      }
+
       .mini-wrap {
         position: fixed;
         top: 74px;
@@ -919,6 +982,27 @@
       </div>
     </div>
 
+    <div class="prompt-card" id="promptCard">
+      <button class="prompt-roll" id="promptRoll" type="button" title="换一题">🎲</button>
+      <div class="prompt-body">
+        <div class="prompt-text" id="promptText">正在出题…</div>
+        <div class="prompt-meta" id="promptMeta"></div>
+      </div>
+      <select class="prompt-cat" id="promptCat" title="命题分类" aria-label="命题分类">
+        <option value="all">全部</option>
+        <option value="0">日常与当下</option>
+        <option value="1">心情与感受</option>
+        <option value="2">喜好与厌恶</option>
+        <option value="3">回忆与童年</option>
+        <option value="4">梦想与未来</option>
+        <option value="5">想象与创造</option>
+        <option value="6">身体与变形</option>
+        <option value="7">感官与抽象</option>
+        <option value="8">日常物品与场景</option>
+        <option value="9">情感与总结</option>
+      </select>
+    </div>
+
     <div class="board-wrap">
       <canvas id="board" width="512" height="512"></canvas>
     </div>
@@ -1050,6 +1134,163 @@
         brush: '画笔：点按或滑动作画 · 快捷键 B',
         eraser: '橡皮擦：点按或滑动擦除为白色 · 快捷键 E',
         fill: '颜料桶：点一下区域即可填充当前颜色 · 快捷键 F',
+      }
+
+      /* ---------- 命题 ---------- */
+      const PROMPT_CATEGORIES = [
+        '日常与当下', '心情与感受', '喜好与厌恶', '回忆与童年', '梦想与未来',
+        '想象与创造', '身体与变形', '感官与抽象', '日常物品与场景', '情感与总结',
+      ]
+      const PIXEL_PROMPTS = [
+        '画一个你最喜欢的东西',
+        '画一个你今天见过的东西',
+        '画一个你今天吃的第一个东西',
+        '画一个你现在身边的东西',
+        '画一个你此刻最想做的事',
+        '画一个你今天听到的声音',
+        '画一个你今天闻到的味道',
+        '画一个你今天摸到的东西',
+        '画一个你今天遇到的人',
+        '画一个你今天看到的最有趣的东西',
+        '画一个让你开心的东西',
+        '画一个让你感到难过的画面',
+        '画一个让你害怕的东西',
+        '画一个让你放松的地方',
+        '画一个你此刻的心情',
+        '画一个你生气时的样子',
+        '画一个你开心时的样子',
+        '画一个你困倦时的样子',
+        '画一个你最近一次大笑的原因',
+        '画一个你最近一次发呆时想的画面',
+        '画一个你最喜欢的动物',
+        '画一个你最讨厌的食物',
+        '画一个你最喜欢的季节',
+        '画一个你讨厌的天气',
+        '画一个你喜欢的天气',
+        '画一个你最喜欢的颜色',
+        '画一个你讨厌的颜色',
+        '画一个你最喜欢的数字',
+        '画一个你最喜欢的形状',
+        '画一个你最常用的表情',
+        '画一个你童年最爱的玩具',
+        '画一个你小时候的照片',
+        '画一个你住过的老房子',
+        '画一个你最好的朋友',
+        '画一个你最难忘的旅行',
+        '画一个你最想保存的瞬间',
+        '画一个你最想重复的一天',
+        '画一个你最想跳过的一天',
+        '画一个你最近学会的东西',
+        '画一个你一直学不会的东西',
+        '画一个你想去的地方',
+        '画一个你想拥有的超能力',
+        '画一个你未来的家',
+        '画一个你理想的工作台',
+        '画一个你心中的英雄',
+        '画一个你最想收到的礼物',
+        '画一个你最想送出的礼物',
+        '画一个你明天想做的事',
+        '画一个你希望别人看到的东西',
+        '画一个你愿意永远记住的东西',
+        '画一个你想象的外星宠物',
+        '画一个你设计的新物种',
+        '画一个你发明的机器',
+        '画一个你创造的游戏角色',
+        '画一个你心中的秘密基地',
+        '画一个你最想去的星球',
+        '画一个你心中的宇宙',
+        '画一个你漂浮在空中的样子',
+        '画一个你缩小后的世界',
+        '画一个你放大后的世界',
+        '画一个你变老后的样子',
+        '画一个你变成动物的样子',
+        '画一个你变成植物的样子',
+        '画一个你变成机器人的样子',
+        '画一个你倒立看到的世界',
+        '画一个你闭上眼睛看到的东西',
+        '画一个你捂住耳朵听到的画面',
+        '画一个你吃饭时的样子',
+        '画一个你今天的穿搭',
+        '画一个你心中的安静角落',
+        '画一个你闻起来像雨的东西',
+        '画一个你尝起来像星星的东西',
+        '画一个你摸起来像云的东西',
+        '画一个你听起来像风的东西',
+        '画一个你心中最温暖的颜色',
+        '画一个你心中最冷的角落',
+        '画一个你最近梦到的东西',
+        '画一个你经常做的梦',
+        '画一个你害怕的怪物',
+        '画一个你不敢说出口的话',
+        '画一个你房间里最乱的地方',
+        '画一个你手机里最常见的图标',
+        '画一个你每天都会路过的店',
+        '画一个你今天看到的云',
+        '画一个你理想的早餐',
+        '画一个你今晚想吃的晚餐',
+        '画一个你喝过最好喝的饮料',
+        '画一个你最近循环听的歌',
+        '画一个你最喜欢的电影场景',
+        '画一个你最喜欢的游戏道具',
+        '画一个你想对某人说的事',
+        '画一个你最近一次感到骄傲的事',
+        '画一个你最近一次感到尴尬的事',
+        '画一个你最近一次哭的原因',
+        '画一个你心中的完美像素画',
+        '画一个你最喜欢的表情包',
+        '画一个你今天犯的错',
+        '画一个你今天的小幸运',
+        '画一个你昨天忘记的事',
+        '画一个你最喜欢的书封面',
+      ]
+      const PROMPT_KEY = 'paintPrompt'
+      const promptCard = document.getElementById('promptCard')
+      const promptRoll = document.getElementById('promptRoll')
+      const promptText = document.getElementById('promptText')
+      const promptMeta = document.getElementById('promptMeta')
+      const promptCat = document.getElementById('promptCat')
+      let promptIdx = -1
+
+      function promptCand() {
+        if (promptCat.value === 'all') return PIXEL_PROMPTS.map((_, i) => i)
+        const g = Number(promptCat.value)
+        return Array.from({ length: 10 }, (_, i) => g * 10 + i)
+      }
+
+      function applyPrompt(idx, syncCat) {
+        promptIdx = idx
+        promptText.textContent = PIXEL_PROMPTS[idx]
+        promptMeta.textContent = PROMPT_CATEGORIES[Math.floor(idx / 10)] + ' · 第 ' + (idx + 1) + ' / ' + PIXEL_PROMPTS.length + ' 题'
+        if (syncCat) promptCat.value = String(Math.floor(idx / 10))
+      }
+
+      function rollPrompt() {
+        const pool = promptCand().filter((i) => i !== promptIdx)
+        const cand = pool.length ? pool : promptCand()
+        applyPrompt(cand[Math.floor(Math.random() * cand.length)], false)
+        localStorage.setItem(PROMPT_KEY, String(promptIdx))
+      }
+
+      promptRoll.addEventListener('click', () => {
+        rollPrompt()
+        toast('给你出了一道新题')
+      })
+      promptCat.addEventListener('change', rollPrompt)
+
+      function initPrompt() {
+        const saved = parseInt(localStorage.getItem(PROMPT_KEY), 10)
+        let idx = dailyPromptIdx()
+        if (!isNaN(saved) && saved >= 0 && saved < PIXEL_PROMPTS.length) idx = saved
+        applyPrompt(idx, true)
+        localStorage.setItem(PROMPT_KEY, String(idx))
+      }
+
+      function dailyPromptIdx() {
+        const d = new Date()
+        const key = '' + d.getFullYear() + d.getMonth() + d.getDate()
+        let h = 0
+        for (const ch of key) h = (h * 31 + ch.charCodeAt(0)) >>> 0
+        return h % PIXEL_PROMPTS.length
       }
 
       const canvas = document.getElementById('board')
@@ -2036,6 +2277,7 @@
       applyColor()
       initName()
       refreshHint()
+      initPrompt()
       fetchRecords()
 
       /* ---------- 点赞 ---------- */
