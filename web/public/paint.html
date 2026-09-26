@@ -260,6 +260,8 @@ color: var(--text-muted);
         border-radius: 14px;
       }
 
+      .prompt-card[hidden] { display: none; }
+
       .prompt-roll {
         flex: 0 0 auto;
         width: 42px;
@@ -672,12 +674,6 @@ color: var(--text-muted);
         color: #fff;
       }
 
-      #cardBtn {
-        flex: 1.5;
-        background: linear-gradient(135deg, #ff7eb3, #8f7bff);
-        color: #fff;
-      }
-
       #animBtn {
         flex: 0 0 auto;
         padding: 0 14px;
@@ -890,6 +886,111 @@ color: var(--text-muted);
       #consentNo {
         background: var(--surface-2);
         color: var(--text-muted);
+      }
+
+      /* ---------- 创作模式选择 ---------- */
+      .mode-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 110;
+        background: rgba(20, 15, 10, 0.85);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+
+      .mode-overlay[hidden] { display: none; }
+
+      .mode-box {
+        width: 100%;
+        max-width: 380px;
+        max-height: 86vh;
+        overflow-y: auto;
+        background: var(--surface);
+        border-radius: 20px;
+        padding: 22px 18px;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+      }
+
+      .mode-box h2 {
+        margin: 0 0 6px;
+        font-size: 21px;
+        font-weight: 800;
+        text-align: center;
+      }
+
+      .mode-sub {
+        font-size: 13px;
+        color: var(--text-faint);
+        text-align: center;
+        margin-bottom: 16px;
+      }
+
+      .mode-opt {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+        text-align: left;
+        border: 1px solid var(--border-strong);
+        border-radius: 16px;
+        background: var(--surface);
+        padding: 14px;
+        margin-bottom: 12px;
+        cursor: pointer;
+        transition: border-color 0.15s, transform 0.12s;
+      }
+
+      .mode-opt:active { transform: scale(0.98); }
+
+      .mode-opt.anim { border-color: var(--accent); }
+
+      .mode-ico { flex: 0 0 auto; font-size: 26px; }
+
+      .mode-name {
+        flex: 0 0 auto;
+        font-size: 16px;
+        font-weight: 800;
+        color: var(--text);
+        min-width: 84px;
+      }
+
+      .mode-desc { flex: 1; font-size: 12px; color: var(--text-faint); line-height: 1.5; }
+
+      .mode-bar {
+        width: 100%;
+        max-width: 460px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+      }
+
+      .mode-bar[hidden] { display: none; }
+
+      .mode-chip {
+        flex: 1;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text-muted);
+        background: var(--surface-2);
+        border: 1px solid var(--border-strong);
+        border-radius: 999px;
+        padding: 8px 14px;
+        text-align: center;
+      }
+
+      #switchModeBtn {
+        flex: 0 0 auto;
+        border: 1px solid var(--border-strong);
+        background: var(--surface);
+        color: var(--text-muted);
+        border-radius: 999px;
+        padding: 8px 14px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
       }
 
       .preview-overlay {
@@ -1189,13 +1290,6 @@ color: var(--text-muted);
         cursor: pointer;
       }
 
-      #cardImg {
-        width: 100%;
-        height: auto;
-        border-radius: 14px;
-        display: block;
-      }
-
       .card-actions { margin-top: 14px; display: flex; justify-content: center; gap: 10px; }
 
       .card-btn {
@@ -1244,7 +1338,34 @@ color: var(--text-muted);
       })()
     </script>
 
-    <div class="prompt-card" id="promptCard">
+    <div class="mode-overlay" id="modeOverlay">
+      <div class="mode-box">
+        <h2>🎨 开始创作</h2>
+        <div class="mode-sub">先选择一种创作方式，再开始绘画</div>
+        <button class="mode-opt" data-mode="free" type="button">
+          <span class="mode-ico">🖌️</span>
+          <span class="mode-name">自由模式</span>
+          <span class="mode-desc">不受题目限制，想画什么就画什么</span>
+        </button>
+        <button class="mode-opt prompt" data-mode="prompt" type="button">
+          <span class="mode-ico">📝</span>
+          <span class="mode-name">题目模式</span>
+          <span class="mode-desc">按系统命题创作，可换题与分类，还会计入每日题数</span>
+        </button>
+        <button class="mode-opt anim" data-mode="anim" type="button">
+          <span class="mode-ico">🎞️</span>
+          <span class="mode-name">帧动画</span>
+          <span class="mode-desc">16×16 逐帧作画，导出循环 GIF</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="mode-bar" id="modeBar" hidden>
+      <span class="mode-chip" id="modeChip"></span>
+      <button id="switchModeBtn" type="button">切换模式</button>
+    </div>
+
+    <div class="prompt-card" id="promptCard" hidden>
       <button class="prompt-roll" id="promptRoll" type="button" title="换一题">🎲</button>
       <div class="prompt-body">
         <div class="prompt-text" id="promptText">正在出题…</div>
@@ -1328,14 +1449,13 @@ color: var(--text-muted);
     <a id="moreBtn" class="more-btn" href="gallery.html" hidden>去社区看更多作品 →</a>
 
     <div class="name-row">
-      <input id="titleInput" type="text" placeholder="作品名（给这幅画起个名字，可留空）" maxlength="20">
+      <input id="titleInput" type="text" placeholder="作品名" maxlength="20">
       <input id="nameInput" type="text" placeholder="作者名（画这幅画的人，可留空匿名）" maxlength="20">
     </div>
 
     <div class="actions">
       <button id="undoBtn" type="button" title="撤销（Z）" disabled>↩️</button>
       <button id="clearBtn" type="button" title="清空">🗑️</button>
-      <button id="cardBtn" type="button" title="生成朋友圈分享卡片">✨ 分享卡片</button>
       <button id="animBtn" type="button" title="16×16 逐帧动画">🎞️ <span class="anim-btn-text">帧动画</span></button>
       <button id="uploadBtn" type="button">上传</button>
     </div>
@@ -1369,20 +1489,6 @@ color: var(--text-muted);
     <button id="tipBtn" class="tip-btn" type="button">赞赏支持</button>
 
     <div id="toast"></div>
-
-    <div class="card-overlay" id="cardOverlay" hidden>
-      <div class="card-box">
-        <div class="card-head">
-          <span class="card-title">朋友圈小卡片</span>
-          <button class="card-close" id="cardClose" type="button">关闭</button>
-        </div>
-        <img id="cardImg" alt="分享卡片">
-        <div class="card-actions">
-          <a id="cardDownload" class="card-btn" href="#" download="guangyu-card.png">⬇️ 保存图片</a>
-        </div>
-        <div class="card-note">长按图片也能保存到相册；作品若已填写标题和作者名，卡片会自动带上～</div>
-      </div>
-    </div>
 
     <div class="card-overlay" id="animOverlay" hidden>
       <div class="card-box">
@@ -1606,6 +1712,44 @@ color: var(--text-muted);
         for (const ch of key) h = (h * 31 + ch.charCodeAt(0)) >>> 0
         return h % PIXEL_PROMPTS.length
       }
+
+      /* ---------- 创作模式选择 ---------- */
+      let createMode = null
+      const modeOverlay = document.getElementById('modeOverlay')
+      const modeBar = document.getElementById('modeBar')
+      const modeChip = document.getElementById('modeChip')
+      const switchModeBtn = document.getElementById('switchModeBtn')
+      const MODE_LABEL = { free: '自由模式', prompt: '题目模式', anim: '帧动画' }
+
+      function enterMode(mode) {
+        if (createMode === mode) {
+          modeOverlay.hidden = true
+          return
+        }
+        createMode = mode
+        modeOverlay.hidden = true
+        modeBar.hidden = false
+        modeChip.textContent = '当前：' + MODE_LABEL[mode]
+        const isPrompt = mode === 'prompt'
+        promptCard.hidden = !isPrompt
+        if (mode === 'anim') {
+          if (size !== 16) switchSize(16)
+          animOpenEditor()
+        } else {
+          if (animOpen) animCloseEditor()
+          if (isPrompt) initPrompt()
+        }
+      }
+
+      document.querySelectorAll('.mode-opt').forEach((b) => {
+        b.addEventListener('click', () => enterMode(b.dataset.mode))
+      })
+      switchModeBtn.addEventListener('click', () => {
+        modeOverlay.hidden = false
+      })
+      modeOverlay.addEventListener('click', (e) => {
+        if (e.target === modeOverlay && createMode) modeOverlay.hidden = true
+      })
 
       const canvas = document.getElementById('board')
       const ctx = canvas.getContext('2d')
@@ -2550,10 +2694,6 @@ color: var(--text-muted);
         if (e.key === 'Escape') closePreview()
       })
 
-      /* ---------- 朋友圈分享卡片 ---------- */
-      const cardOverlay = document.getElementById('cardOverlay')
-      const cardImg = document.getElementById('cardImg')
-
       function pixelsToURL(px, n) {
         const cv = document.createElement('canvas')
         cv.width = n
@@ -2569,162 +2709,6 @@ color: var(--text-muted);
         }
         return cv.toDataURL('image/png')
       }
-
-      function pixelBar(ctx, x0, y0, w, h, seg, colors, zig) {
-        const sw = w / seg
-        for (let i = 0; i < seg; i++) {
-          const off = zig && i % 3 === 1 ? Math.round(h * 0.35) : 0
-          ctx.fillStyle = colors[i % colors.length]
-          ctx.fillRect(x0 + i * sw, y0 + off, sw + 0.5, h - off + 0.5)
-        }
-      }
-
-      const PX_HEART = [
-        '..XX..XX..',
-        '.XXXXXXXX.',
-        'XXXXXXXXXX',
-        'XXXXXXXXXX',
-        'XXXXXXXXXX',
-        '.XXXXXXXX.',
-        '..XXXXXX..',
-        '...XXXX...',
-      ]
-
-      const PX_STAR = [
-        '....X....',
-        '...XXX...',
-        '..XXXXX..',
-        'XXXXXXXXX',
-        '.XX.XXX.X',
-        '..XXXXX..',
-        '...X.X...',
-        '...X.X...',
-        '..X...X..',
-      ]
-
-      function pixelIcon(ctx, cx, cy, s, color, grid) {
-        const cols = grid[0].length
-        const cell = s / cols
-        ctx.fillStyle = color
-        for (let y = 0; y < grid.length; y++) {
-          for (let x = 0; x < cols; x++) {
-            if (grid[y][x] === 'X') {
-              ctx.fillRect(cx + x * cell, cy + y * cell, Math.ceil(cell), Math.ceil(cell))
-            }
-          }
-        }
-      }
-
-      function fitText(ctx, text, maxW, base) {
-        let size = base
-        ctx.font = `900 ${size}px "PingFang SC", "Microsoft YaHei", sans-serif`
-        while (ctx.measureText(text).width > maxW && size > 24) {
-          size -= 2
-          ctx.font = `900 ${size}px "PingFang SC", "Microsoft YaHei", sans-serif`
-        }
-        return size
-      }
-
-      function boardPixelsFlat() {
-        const flat = []
-        for (const row of pixels) for (const px of row) flat.push([px[0], px[1], px[2]])
-        return flat
-      }
-
-      function buildMomentsCard(flatPx, n, title, author) {
-        const W = 1080, H = 1440
-        const cv = document.createElement('canvas')
-        cv.width = W
-        cv.height = H
-        const ctx = cv.getContext('2d')
-
-        const bg = '#f6efdf'
-        const ink = '#2a251e'
-        const muted = '#6b5f50'
-        const stripe = ['#e5484d', '#f4a259', '#f2d55c', '#5bb883', '#4b8fd4', '#9b7ce0']
-
-        ctx.fillStyle = bg
-        ctx.fillRect(0, 0, W, H)
-
-        ctx.fillStyle = ink
-        ctx.fillRect(36, 36, W - 72, H - 72)
-        ctx.fillStyle = bg
-        ctx.fillRect(54, 54, W - 108, H - 108)
-
-        pixelBar(ctx, 60, 128, W - 120, 30, 16, stripe, true)
-
-        ctx.textAlign = 'center'
-        ctx.fillStyle = ink
-        ctx.font = '900 62px "PingFang SC", "Microsoft YaHei", sans-serif'
-        ctx.fillText('光 域 画 板', W / 2, 260)
-        ctx.font = '500 27px "PingFang SC", "Microsoft YaHei", sans-serif'
-        ctx.fillStyle = muted
-        ctx.fillText('每 一 格 光 ，点 亮 一 个 梦', W / 2, 306)
-
-        const artMax = 740
-        const artX = (W - artMax) / 2
-        const artY = 350
-        ctx.fillStyle = ink
-        ctx.fillRect(artX - 6, artY - 6, artMax + 12, artMax + 12)
-        ctx.fillStyle = '#ffffff'
-        ctx.fillRect(artX, artY, artMax, artMax)
-
-        const cell = Math.floor(artMax / n)
-        const artW = cell * n
-        const off = Math.floor((artMax - artW) / 2)
-        ctx.imageSmoothingEnabled = false
-        for (let y = 0; y < n; y++) {
-          for (let x = 0; x < n; x++) {
-            const p = flatPx[y * n + x]
-            if (!p) continue
-            ctx.fillStyle = `rgb(${p[0]},${p[1]},${p[2]})`
-            ctx.fillRect(artX + off + x * cell, artY + off + y * cell, cell, cell)
-          }
-        }
-
-        const tTitle = title && title.trim() ? title.trim() : '未命名'
-        fitText(ctx, tTitle, 860, 66)
-        ctx.fillStyle = ink
-        ctx.fillText(tTitle, W / 2, 1210)
-
-        const tAuthor = author && author.trim() ? author.trim() : '匿名'
-        ctx.font = '500 40px "PingFang SC", "Microsoft YaHei", sans-serif'
-        ctx.fillStyle = muted
-        ctx.fillText('画师 ' + tAuthor + '  ·  ' + n + '×' + n, W / 2, 1300)
-
-        pixelBar(ctx, 60, 1340, W - 120, 26, 16, stripe, true)
-        pixelIcon(ctx, 76, 1344, 24, '#e5484d', PX_HEART)
-        pixelIcon(ctx, W - 76 - 24, 1344, 24, '#f4a259', PX_STAR)
-
-        const d = new Date()
-        ctx.font = '500 27px "PingFang SC", "Microsoft YaHei", sans-serif'
-        ctx.textAlign = 'left'
-        ctx.fillStyle = muted
-        ctx.fillText(d.getFullYear() + ' 年 ' + (d.getMonth() + 1) + ' 月 ' + d.getDate() + ' 日', 76, 1420)
-        ctx.textAlign = 'right'
-        ctx.fillText('光域画板 · 像素作品', W - 76, 1420)
-
-        return cv
-      }
-
-      document.getElementById('cardBtn').addEventListener('click', () => {
-        const dataURL = buildMomentsCard(
-          boardPixelsFlat(), size,
-          titleInput.value.trim(),
-          nameInput.value.trim()
-        ).toDataURL('image/png')
-        cardImg.src = dataURL
-        const dl = document.getElementById('cardDownload')
-        dl.href = dataURL
-        cardOverlay.hidden = false
-      })
-
-      document.getElementById('cardClose').addEventListener('click', () => {
-        cardOverlay.hidden = true
-      })
-      cardOverlay.addEventListener('click', (e) => {
-        if (e.target === cardOverlay) cardOverlay.hidden = true
-      })
 
       /* ---------- 帧动画 ---------- */
       const animBtn = document.getElementById('animBtn')
@@ -3026,7 +3010,6 @@ color: var(--text-muted);
       applyColor()
       initName()
       refreshHint()
-      initPrompt()
       fetchRecords()
 
       /* ---------- 点赞 ---------- */

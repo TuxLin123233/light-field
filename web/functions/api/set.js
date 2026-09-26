@@ -1,4 +1,4 @@
-import { appendEntry, readAllHistory, HISTORY_MAX } from './_history.js'
+import { appendEntry, recentHistory, HISTORY_MAX } from './_history.js'
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -83,7 +83,7 @@ export async function onRequestPost(context) {
     await env.LIGHTFIELD_KV.put(rateKey, String(nowRl), { expirationTtl: Math.ceil(UPLOAD_WINDOW_MS / 1000) })
   }
 
-  const { entries } = await readAllHistory(env.LIGHTFIELD_KV)
+  const { entries } = await recentHistory(env.LIGHTFIELD_KV, { limit: 300 })
   if (entries.some((e) => samePixels(entryPixels(e), pixels))) {
     return json({ error: '内容重复，不能重复发布' }, 409)
   }

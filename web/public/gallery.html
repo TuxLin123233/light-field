@@ -1129,6 +1129,8 @@
             const fs = workSize(w)
             cnv.className = 'f-art'
             cnv.alt = w.workName || w.name || '未命名'
+            cnv.loading = 'lazy'
+            cnv.decoding = 'async'
             cnv.src = pixelsToURL(w.pixels, fs)
 
             const nm = document.createElement('div')
@@ -1179,6 +1181,8 @@
           const rs = workSize(rec)
           c.className = 'art'
           c.alt = rec.workName || rec.name || '未命名'
+          c.loading = 'lazy'
+          c.decoding = 'async'
           c.src = pixelsToURL(rec.pixels, rs)
 
           const meta = document.createElement('div')

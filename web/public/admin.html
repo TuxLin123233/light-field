@@ -401,7 +401,7 @@
 
       async function refresh() {
         try {
-          const res = await fetch('/api/get')
+          const res = await fetch('/api/get?limit=30')
           if (!res.ok) {
             toast('获取数据失败')
             return

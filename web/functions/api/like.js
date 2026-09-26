@@ -1,4 +1,4 @@
-import { readAllHistory, incrementLikes } from './_history.js'
+import { recentHistory, incrementLikes } from './_history.js'
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -69,7 +69,8 @@ export async function onRequestGet(context) {
     return json({ works: [] })
   }
 
-  const { entries } = await readAllHistory(env.LIGHTFIELD_KV)
+  const scanCap = range === 'all' ? 1200 : 800
+  const { entries } = await recentHistory(env.LIGHTFIELD_KV, { limit: scanCap })
   const sorted = entries
     .filter((e) => Array.isArray(e.pixels) && (e.time || 0) >= minTime)
     .sort((a, b) => (b.likes || 0) - (a.likes || 0))

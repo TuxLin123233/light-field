@@ -98,7 +98,11 @@ export async function onRequestGet(context) {
   }
 
   const limitParam = Number(url.searchParams.get('limit'))
-  const limitParam2 = Number.isFinite(limitParam) && limitParam > 0 ? Math.floor(limitParam) : null
+  const DEFAULT_LIMIT = 30
+  const MAX_LIMIT = 200
+  const limitParam2 = Number.isFinite(limitParam) && limitParam > 0
+    ? Math.min(Math.floor(limitParam), MAX_LIMIT)
+    : DEFAULT_LIMIT
   const offsetParam = Number(url.searchParams.get('offset'))
   const offset =
     Number.isFinite(offsetParam) && offsetParam > 0 ? Math.floor(offsetParam) : 0
