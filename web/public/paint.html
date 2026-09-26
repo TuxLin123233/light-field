@@ -1484,7 +1484,7 @@
         ctx.imageSmoothingEnabled = false
         ctx.setTransform(zoom * dpr, 0, 0, zoom * dpr, -panX * zoom * dpr, -panY * zoom * dpr)
         ctx.clearRect(0, 0, 512, 512)
-        ctx.drawImage(fullCanvas, 0, 0)
+        ctx.drawImage(fullCanvas, 0, 0, 512, 512)
         drawGrid()
         renderMini()
       }
@@ -1513,7 +1513,7 @@
         miniCtx.clearRect(0, 0, miniCanvas.width, miniCanvas.height)
         miniCtx.imageSmoothingEnabled = false
         miniCtx.setTransform(k, 0, 0, k, 0, 0)
-        miniCtx.drawImage(fullCanvas, 0, 0)
+        miniCtx.drawImage(fullCanvas, 0, 0, 512, 512)
         if (size <= 16) return
         miniCtx.setTransform(1, 0, 0, 1, 0, 0)
         miniCtx.strokeStyle = 'rgba(255, 82, 82, 0.95)'
