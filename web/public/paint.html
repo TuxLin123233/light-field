@@ -228,6 +228,24 @@
         color: var(--text-faint);
       }
 
+      .mini-wrap {
+        position: fixed;
+        right: 14px;
+        bottom: 96px;
+        z-index: 40;
+        background: var(--surface);
+        border: 2px solid var(--border);
+        border-radius: 12px;
+        padding: 4px;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+      }
+
+      #miniCanvas {
+        display: block;
+        border-radius: 8px;
+        touch-action: none;
+      }
+
       .tools {
         width: 100%;
         max-width: 460px;
@@ -917,6 +935,10 @@
       <span class="zoom-tip">拖动平移 · 点击涂色</span>
     </div>
 
+    <div class="mini-wrap" id="miniWrap" hidden>
+      <canvas id="miniCanvas" title="小地图：点击跳转"></canvas>
+    </div>
+
     <div class="tools">
       <button id="toolBrush" class="tool active" type="button" data-tool="brush" title="画笔（B）">✏️</button>
       <button id="toolEraser" class="tool" type="button" data-tool="eraser" title="橡皮擦（E）">🧽</button>
@@ -1054,6 +1076,16 @@
       const zoomIn = document.getElementById('zoomIn')
       const zoomOut = document.getElementById('zoomOut')
       const zoomLevel = document.getElementById('zoomLevel')
+      const miniWrap = document.getElementById('miniWrap')
+      const miniCanvas = document.getElementById('miniCanvas')
+      const MINI = 120
+      miniCanvas.width = miniCanvas.height = MINI * dpr
+      miniCanvas.style.width = MINI + 'px'
+      miniCanvas.style.height = MINI + 'px'
+      const miniCtx = miniCanvas.getContext('2d')
+      const fullCanvas = document.createElement('canvas')
+      fullCanvas.width = fullCanvas.height = 512 * dpr
+      const fullCtx = fullCanvas.getContext('2d')
 
       /* ---------- 撤销 ---------- */
       const undoStack = []
@@ -1358,6 +1390,7 @@
         panY = 0
         clampPan()
         zoomRow.hidden = size === 16
+        miniWrap.hidden = size === 16
         updateZoomUI()
       }
 
@@ -1436,17 +1469,51 @@
       }
 
       function redraw() {
+        renderFull()
+        ctx.imageSmoothingEnabled = false
         ctx.setTransform(zoom * dpr, 0, 0, zoom * dpr, -panX * zoom * dpr, -panY * zoom * dpr)
         ctx.clearRect(0, 0, 512, 512)
+        ctx.drawImage(fullCanvas, 0, 0)
+        drawGrid()
+        renderMini()
+      }
+
+      function renderFull() {
+        fullCtx.setTransform(dpr, 0, 0, dpr, 0, 0)
+        fullCtx.clearRect(0, 0, 512, 512)
         for (let y = 0; y < size; y++) {
           for (let x = 0; x < size; x++) {
             const [r, g, b] = pixels[y][x]
-            ctx.fillStyle = `rgb(${r}, ${g}, ${b})`
-            ctx.fillRect(x * CELL, y * CELL, CELL, CELL)
+            fullCtx.fillStyle = `rgb(${r}, ${g}, ${b})`
+            fullCtx.fillRect(x * CELL, y * CELL, CELL, CELL)
           }
         }
-        drawGrid()
       }
+
+      function renderMini() {
+        const k = miniCanvas.width / 512
+        miniCtx.setTransform(1, 0, 0, 1, 0, 0)
+        miniCtx.clearRect(0, 0, miniCanvas.width, miniCanvas.height)
+        miniCtx.imageSmoothingEnabled = false
+        miniCtx.setTransform(k, 0, 0, k, 0, 0)
+        miniCtx.drawImage(fullCanvas, 0, 0)
+        if (size <= 16) return
+        miniCtx.setTransform(1, 0, 0, 1, 0, 0)
+        miniCtx.strokeStyle = 'rgba(255, 82, 82, 0.95)'
+        miniCtx.lineWidth = 2
+        miniCtx.strokeRect(panX * k, panY * k, (512 / zoom) * k, (512 / zoom) * k)
+      }
+
+      miniCanvas.addEventListener('pointerdown', (e) => {
+        if (size <= 16) return
+        const rect = miniCanvas.getBoundingClientRect()
+        const bx = ((e.clientX - rect.left) / rect.width) * 512
+        const by = ((e.clientY - rect.top) / rect.height) * 512
+        panX = bx - 256 / zoom
+        panY = by - 256 / zoom
+        clampPan()
+        redraw()
+      })
 
       function cellFromEvent(e) {
         const rect = canvas.getBoundingClientRect()
