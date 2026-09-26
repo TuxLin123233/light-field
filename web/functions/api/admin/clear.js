@@ -1,3 +1,5 @@
+import { clearAllHistory } from '../_history.js'
+
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
@@ -29,7 +31,7 @@ export async function onRequestPost(context) {
 
   try {
     await env.LIGHTFIELD_KV.delete('pixels')
-    await env.LIGHTFIELD_KV.delete('history')
+    await clearAllHistory(env.LIGHTFIELD_KV)
   } catch (err) {
     return json({ error: 'KV clear failed: ' + err.message }, 500)
   }

@@ -401,6 +401,43 @@
         cursor: pointer;
       }
 
+      .join-card {
+        margin-top: 16px;
+        padding: 14px 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+      }
+
+      .join-ico { font-size: 26px; line-height: 1; flex: 0 0 auto; }
+
+      .join-body { flex: 1; min-width: 0; }
+
+      .join-title { font-size: 14px; font-weight: 700; color: var(--text); }
+
+      .join-desc {
+        font-size: 11px;
+        color: var(--text-faint);
+        margin-top: 3px;
+        line-height: 1.5;
+      }
+
+      .join-btn {
+        flex: 0 0 auto;
+        text-decoration: none;
+        border: none;
+        border-radius: 999px;
+        background: var(--accent);
+        color: #fff;
+        font-size: 13px;
+        font-weight: 600;
+        padding: 9px 14px;
+        cursor: pointer;
+      }
+
       .disclaimer {
         margin-top: 28px;
         padding: 14px 16px;
@@ -692,6 +729,15 @@
       <div id="sentinel" class="status">加载中…</div>
       <div id="status" class="status" hidden></div>
 
+      <div class="join-card">
+        <div class="join-ico">🛡️</div>
+        <div class="join-body">
+          <div class="join-title">加入我们，维护社区稳定</div>
+          <div class="join-desc">光域社区持续壮大，欢迎成为维护者：审核内容、清理违规、共建良好氛围。加入需发送正式申请书信，经作者审核通过后方可参与。</div>
+        </div>
+        <a class="join-btn" href="/admin">查看详情 →</a>
+      </div>
+
       <div class="disclaimer">
         以下作品均来自全网上传。全部作品仅支持预览，不可载入作画，请尊重原作者，切勿抄袭或直接提交他人作品。
         本画板仅用于个人学习与技术交流，上传者须对自己发布的内容负全部法律责任。
@@ -813,39 +859,49 @@
       const cardOverlay = document.getElementById('cardOverlay')
       const cardImg = document.getElementById('cardImg')
 
-      function rr(ctx, x, y, w, h, r) {
-        ctx.beginPath()
-        ctx.moveTo(x + r, y)
-        ctx.arcTo(x + w, y, x + w, y + h, r)
-        ctx.arcTo(x + w, y + h, x, y + h, r)
-        ctx.arcTo(x, y + h, x, y, r)
-        ctx.arcTo(x, y, x + w, y, r)
-        ctx.closePath()
-      }
-
-      function blob(ctx, x, y, r, color) {
-        const g = ctx.createRadialGradient(x, y, 0, x, y, r)
-        g.addColorStop(0, color)
-        g.addColorStop(1, 'rgba(0,0,0,0)')
-        ctx.fillStyle = g
-        ctx.fillRect(x - r, y - r, r * 2, r * 2)
-      }
-
-      function drawSparkle(ctx, x, y, size, color, rot) {
-        ctx.save()
-        ctx.translate(x, y)
-        ctx.rotate(rot || 0)
-        ctx.fillStyle = color
-        ctx.beginPath()
-        for (let i = 0; i < 4; i++) {
-          ctx.rotate(Math.PI / 4)
-          ctx.moveTo(0, 0)
-          ctx.quadraticCurveTo(size * 0.22, size * 0.22, 0, size)
-          ctx.quadraticCurveTo(-size * 0.22, size * 0.22, 0, 0)
-          ctx.rotate(Math.PI / 4)
+      function pixelBar(ctx, x0, y0, w, h, seg, colors, zig) {
+        const sw = w / seg
+        for (let i = 0; i < seg; i++) {
+          const off = zig && i % 3 === 1 ? Math.round(h * 0.35) : 0
+          ctx.fillStyle = colors[i % colors.length]
+          ctx.fillRect(x0 + i * sw, y0 + off, sw + 0.5, h - off + 0.5)
         }
-        ctx.fill()
-        ctx.restore()
+      }
+
+      const PX_HEART = [
+        '..XX..XX..',
+        '.XXXXXXXX.',
+        'XXXXXXXXXX',
+        'XXXXXXXXXX',
+        'XXXXXXXXXX',
+        '.XXXXXXXX.',
+        '..XXXXXX..',
+        '...XXXX...',
+      ]
+
+      const PX_STAR = [
+        '....X....',
+        '...XXX...',
+        '..XXXXX..',
+        'XXXXXXXXX',
+        '.XX.XXX.X',
+        '..XXXXX..',
+        '...X.X...',
+        '...X.X...',
+        '..X...X..',
+      ]
+
+      function pixelIcon(ctx, cx, cy, s, color, grid) {
+        const cols = grid[0].length
+        const cell = s / cols
+        ctx.fillStyle = color
+        for (let y = 0; y < grid.length; y++) {
+          for (let x = 0; x < cols; x++) {
+            if (grid[y][x] === 'X') {
+              ctx.fillRect(cx + x * cell, cy + y * cell, Math.ceil(cell), Math.ceil(cell))
+            }
+          }
+        }
       }
 
       function fitText(ctx, text, maxW, base) {
@@ -865,70 +921,36 @@
         cv.height = H
         const ctx = cv.getContext('2d')
 
-        const g = ctx.createLinearGradient(0, 0, 0, H)
-        g.addColorStop(0, '#1c1737')
-        g.addColorStop(0.45, '#2b2160')
-        g.addColorStop(0.74, '#4c2a6e')
-        g.addColorStop(1, '#63274f')
-        ctx.fillStyle = g
+        const bg = '#f6efdf'
+        const ink = '#2a251e'
+        const muted = '#6b5f50'
+        const stripe = ['#e5484d', '#f4a259', '#f2d55c', '#5bb883', '#4b8fd4', '#9b7ce0']
+
+        ctx.fillStyle = bg
         ctx.fillRect(0, 0, W, H)
 
-        blob(ctx, 150, 260, 430, 'rgba(128,96,255,0.34)')
-        blob(ctx, 950, 700, 520, 'rgba(255,110,170,0.26)')
-        blob(ctx, 260, 1210, 470, 'rgba(255,196,110,0.20)')
+        ctx.fillStyle = ink
+        ctx.fillRect(36, 36, W - 72, H - 72)
+        ctx.fillStyle = bg
+        ctx.fillRect(54, 54, W - 108, H - 108)
 
-        let seed = 7
-        const rand = () => {
-          seed = (seed * 9301 + 49297) % 233280
-          return seed / 233280
-        }
-        for (let i = 0; i < 70; i++) {
-          const x = rand() * W, y = rand() * H
-          const r = 0.8 + rand() * 1.8
-          ctx.globalAlpha = 0.15 + rand() * 0.5
-          ctx.fillStyle = '#ffffff'
-          ctx.beginPath()
-          ctx.arc(x, y, r, 0, Math.PI * 2)
-          ctx.fill()
-        }
-        ctx.globalAlpha = 1
+        pixelBar(ctx, 60, 128, W - 120, 30, 16, stripe, true)
 
-        const frameGrad = ctx.createLinearGradient(0, 46, W, H - 46)
-        frameGrad.addColorStop(0, '#f4b95f')
-        frameGrad.addColorStop(0.5, '#ff7eb3')
-        frameGrad.addColorStop(1, '#8f7bff')
-        ctx.strokeStyle = frameGrad
-        ctx.lineWidth = 3
-        rr(ctx, 44, 44, W - 88, H - 88, 48)
-        ctx.stroke()
-
-        rr(ctx, 60, 60, W - 120, H - 120, 34)
-        ctx.strokeStyle = 'rgba(255,255,255,0.12)'
-        ctx.lineWidth = 1.5
-        ctx.stroke()
-
-        drawSparkle(ctx, 130, 130, 30, '#ffe3a1', 0)
-        drawSparkle(ctx, W - 130, 130, 30, '#ff9ec7', 0.6)
-        drawSparkle(ctx, 130, H - 130, 30, '#ff9ec7', -0.5)
-        drawSparkle(ctx, W - 130, H - 130, 30, '#ffe3a1', 0.9)
-
-        ctx.font = '600 30px "PingFang SC", "Microsoft YaHei", sans-serif'
         ctx.textAlign = 'center'
-        ctx.fillStyle = 'rgba(255,255,255,0.85)'
-        ctx.fillText('❖ 光 域 画 板 ❖', W / 2, 212)
-        ctx.font = '400 24px "PingFang SC", "Microsoft YaHei", sans-serif'
-        ctx.fillStyle = 'rgba(255,255,255,0.35)'
-        ctx.fillText('每 一 格 光 ，点 亮 一 个 梦', W / 2, 256)
+        ctx.fillStyle = ink
+        ctx.font = '900 62px "PingFang SC", "Microsoft YaHei", sans-serif'
+        ctx.fillText('光 域 画 板', W / 2, 260)
+        ctx.font = '500 27px "PingFang SC", "Microsoft YaHei", sans-serif'
+        ctx.fillStyle = muted
+        ctx.fillText('每 一 格 光 ，点 亮 一 个 梦', W / 2, 306)
 
-        const artMax = 760
+        const artMax = 740
         const artX = (W - artMax) / 2
-        const artY = 310
-        rr(ctx, artX - 8, artY - 8, artMax + 16, artMax + 16, 40)
-        ctx.fillStyle = 'rgba(255,255,255,0.10)'
-        ctx.fill()
-        rr(ctx, artX, artY, artMax, artMax, 30)
-        ctx.fillStyle = '#f6f2ea'
-        ctx.fill()
+        const artY = 350
+        ctx.fillStyle = ink
+        ctx.fillRect(artX - 6, artY - 6, artMax + 12, artMax + 12)
+        ctx.fillStyle = '#ffffff'
+        ctx.fillRect(artX, artY, artMax, artMax)
 
         const cell = Math.floor(artMax / n)
         const artW = cell * n
@@ -943,20 +965,27 @@
           }
         }
 
-        ctx.textAlign = 'center'
         const tTitle = title && title.trim() ? title.trim() : '未命名'
         fitText(ctx, tTitle, 860, 66)
-        ctx.fillStyle = '#ffffff'
-        ctx.fillText(tTitle, W / 2, 1220)
-        ctx.font = '500 40px "PingFang SC", "Microsoft YaHei", sans-serif'
-        ctx.fillStyle = '#ffd9a2'
+        ctx.fillStyle = ink
+        ctx.fillText(tTitle, W / 2, 1210)
+
         const tAuthor = author && author.trim() ? author.trim() : '匿名'
-        ctx.fillText('—— 画师 ' + tAuthor + '  ·  ' + n + '×' + n, W / 2, 1300)
-        ctx.font = '400 28px "PingFang SC", "Microsoft YaHei", sans-serif'
-        ctx.fillStyle = 'rgba(255,255,255,0.45)'
+        ctx.font = '500 40px "PingFang SC", "Microsoft YaHei", sans-serif'
+        ctx.fillStyle = muted
+        ctx.fillText('画师 ' + tAuthor + '  ·  ' + n + '×' + n, W / 2, 1300)
+
+        pixelBar(ctx, 60, 1340, W - 120, 26, 16, stripe, true)
+        pixelIcon(ctx, 76, 1344, 24, '#e5484d', PX_HEART)
+        pixelIcon(ctx, W - 76 - 24, 1344, 24, '#f4a259', PX_STAR)
+
         const d = new Date()
-        ctx.fillText(d.getFullYear() + ' 年 ' + (d.getMonth() + 1) + ' 月 ' + d.getDate() + ' 日  ·  ' + '光域画板',
-          W / 2, 1368)
+        ctx.font = '500 27px "PingFang SC", "Microsoft YaHei", sans-serif'
+        ctx.textAlign = 'left'
+        ctx.fillStyle = muted
+        ctx.fillText(d.getFullYear() + ' 年 ' + (d.getMonth() + 1) + ' 月 ' + d.getDate() + ' 日', 76, 1420)
+        ctx.textAlign = 'right'
+        ctx.fillText('光域画板 · 像素作品', W - 76, 1420)
 
         return cv
       }

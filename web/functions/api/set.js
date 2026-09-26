@@ -1,3 +1,5 @@
+import { appendEntry, readAllHistory, HISTORY_MAX } from './_history.js'
+
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
@@ -10,23 +12,7 @@ const json = (body, status = 200) =>
     headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
   })
 
-const HISTORY_MAX = 1000
 const UPLOAD_WINDOW_MS = 5 * 60 * 1000
-
-export async function onRequestOptions() {
-  return new Response(null, { status: 204, headers: CORS_HEADERS })
-}
-
-async function readHistory(kv) {
-  const raw = await kv.get('history')
-  if (!raw) return []
-  try {
-    const parsed = JSON.parse(raw)
-    return Array.isArray(parsed) ? parsed : []
-  } catch {
-    return []
-  }
-}
 
 function entryPixels(e) {
   return Array.isArray(e) ? e : e && e.pixels
@@ -40,6 +26,10 @@ function samePixels(a, b) {
     }
   }
   return true
+}
+
+export async function onRequestOptions() {
+  return new Response(null, { status: 204, headers: CORS_HEADERS })
 }
 
 export async function onRequestPost(context) {
@@ -93,8 +83,8 @@ export async function onRequestPost(context) {
     await env.LIGHTFIELD_KV.put(rateKey, String(nowRl), { expirationTtl: Math.ceil(UPLOAD_WINDOW_MS / 1000) })
   }
 
-  const history = await readHistory(env.LIGHTFIELD_KV)
-  if (history.some((e) => samePixels(entryPixels(e), pixels))) {
+  const { entries } = await readAllHistory(env.LIGHTFIELD_KV)
+  if (entries.some((e) => samePixels(entryPixels(e), pixels))) {
     return json({ error: '内容重复，不能重复发布' }, 409)
   }
 
@@ -103,9 +93,13 @@ export async function onRequestPost(context) {
   try {
     await env.LIGHTFIELD_KV.put('pixels', JSON.stringify(entry))
 
-    history.push(entry)
-    const nextHistory = history.slice(-HISTORY_MAX)
-    await env.LIGHTFIELD_KV.put('history', JSON.stringify(nextHistory))
+    const res = await appendEntry(env.LIGHTFIELD_KV, entry)
+    if (res.status === 'full') {
+      return json(
+        { error: `社区作品已达上限（${HISTORY_MAX} 件），请等待维护者清理后再发布` },
+        507
+      )
+    }
   } catch (err) {
     return json({ error: 'KV write failed: ' + err.message }, 500)
   }

@@ -1,3 +1,5 @@
+import { recentHistory, readAllHistory, findIndexByTime, historyCount } from './_history.js'
+
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
@@ -62,40 +64,29 @@ export async function onRequestGet(context) {
   }
   latest = latest ? normalizeEntry(latest) : null
 
-  const rawHistory = await env.LIGHTFIELD_KV.get('history')
-  let history = []
-  if (rawHistory) {
-    try {
-      history = JSON.parse(rawHistory)
-    } catch {
-      history = []
+  const mineParam = (url.searchParams.get('mine') || '').trim()
+  const mineAuthor = mineParam ? mineParam : null
+  const mineTimesParam = url.searchParams.get('minetimes') || ''
+  let mineTimes = null
+  if (mineTimesParam.trim()) {
+    const set = new Set()
+    for (const p of mineTimesParam.split(',')) {
+      const t = Number(p)
+      if (Number.isFinite(t) && t > 0) set.add(t)
     }
+    if (set.size) mineTimes = set
   }
-  if (!Array.isArray(history)) history = []
-  history = history
-    .map(normalizeEntry)
-    .filter((e) => Array.isArray(e.pixels))
-    .reverse()
 
   const single = url.searchParams.get('single') === '1'
-
   const locateParam = Number(url.searchParams.get('locate'))
   if (Number.isFinite(locateParam) && locateParam > 0) {
-    const idx = history.findIndex((e) => e.time === locateParam)
-    return json({ found: idx !== -1, index: idx, total: history.length })
+    const loc = await findIndexByTime(env.LIGHTFIELD_KV, locateParam)
+    return json({ found: loc.index !== -1, index: loc.index, total: loc.total })
   }
 
-  const total = history.length
-  const limitParam = Number(url.searchParams.get('limit'))
-  const limit =
-    Number.isFinite(limitParam) && limitParam > 0 ? Math.floor(limitParam) : null
-  const offsetParam = Number(url.searchParams.get('offset'))
-  const offset =
-    Number.isFinite(offsetParam) && offsetParam > 0 ? Math.floor(offsetParam) : 0
-  const slicedHistory = limit ? history.slice(offset, offset + limit) : history
-
   if (single) {
-    const pool = (history.length ? history : latest ? [latest] : []).filter(
+    const { entries } = await readAllHistory(env.LIGHTFIELD_KV)
+    const pool = (entries.length ? entries : latest ? [latest] : []).filter(
       (e) => (e.size || 16) === 16
     )
     const pick = pool.length ? pool[Math.floor(Math.random() * pool.length)] : null
@@ -106,12 +97,33 @@ export async function onRequestGet(context) {
     )
   }
 
+  const limitParam = Number(url.searchParams.get('limit'))
+  const limitParam2 = Number.isFinite(limitParam) && limitParam > 0 ? Math.floor(limitParam) : null
+  const offsetParam = Number(url.searchParams.get('offset'))
+  const offset =
+    Number.isFinite(offsetParam) && offsetParam > 0 ? Math.floor(offsetParam) : 0
+
+  let total = await historyCount(env.LIGHTFIELD_KV)
+  let history
+  if (mineAuthor || mineTimes) {
+    const mineAll = await recentHistory(env.LIGHTFIELD_KV, { mineAuthor, mineTimes })
+    total = mineAll.entries.length
+    const sliced = limitParam2
+      ? mineAll.entries.slice(offset, offset + limitParam2)
+      : mineAll.entries.slice(offset)
+    history = sliced.map(normalizeEntry).filter((e) => Array.isArray(e.pixels))
+  } else {
+    const { entries } = await recentHistory(env.LIGHTFIELD_KV, { offset, limit: limitParam2 })
+    history = entries.map(normalizeEntry).filter((e) => Array.isArray(e.pixels))
+  }
+
   const noNew = after !== null && latest && latest.time === after
 
   if (noNew) {
-    const pool = history.filter((e) => e.time !== latest.time)
+    const { entries: all } = await readAllHistory(env.LIGHTFIELD_KV)
+    const pool = all.filter((e) => e.time !== latest.time)
     const pick = pool.length ? pool[Math.floor(Math.random() * pool.length)] : latest
-    return json({ pixels: pick.pixels, name: pick.name, workName: pick.workName, author: pick.author, size: pick.size || 16, time: pick.time, likes: pick.likes || 0, history: slicedHistory, total, random: true })
+    return json({ pixels: pick.pixels, name: pick.name, workName: pick.workName, author: pick.author, size: pick.size || 16, time: pick.time, likes: pick.likes || 0, history, total, random: true })
   }
 
   return json({
@@ -122,7 +134,7 @@ export async function onRequestGet(context) {
     size: latest ? latest.size || 16 : null,
     time: latest ? latest.time : null,
     likes: latest ? latest.likes || 0 : 0,
-    history: slicedHistory,
+    history,
     total,
     random: false,
   })

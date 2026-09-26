@@ -1,3 +1,5 @@
+import { readAllHistory, incrementLikes } from './_history.js'
+
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
@@ -9,17 +11,6 @@ const json = (body, status = 200) =>
     status,
     headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
   })
-
-async function readHistory(kv) {
-  const raw = await kv.get('history')
-  if (!raw) return []
-  try {
-    const parsed = JSON.parse(raw)
-    return Array.isArray(parsed) ? parsed : []
-  } catch {
-    return []
-  }
-}
 
 export async function onRequestOptions() {
   return new Response(null, { status: 204, headers: CORS_HEADERS })
@@ -44,21 +35,12 @@ export async function onRequestPost(context) {
     return json({ error: 'LIGHTFIELD_KV is not configured' }, 500)
   }
 
-  const history = await readHistory(env.LIGHTFIELD_KV)
-  const idx = history.findIndex((e) => (e.time || 0) === time)
-  if (idx === -1) {
+  const res = await incrementLikes(env.LIGHTFIELD_KV, time)
+  if (!res.found) {
     return json({ error: '作品不存在' }, 404)
   }
 
-  history[idx].likes = (history[idx].likes || 0) + 1
-
-  try {
-    await env.LIGHTFIELD_KV.put('history', JSON.stringify(history))
-  } catch (err) {
-    return json({ error: 'KV write failed: ' + err.message }, 500)
-  }
-
-  return json({ ok: true, likes: history[idx].likes })
+  return json({ ok: true, likes: res.likes })
 }
 
 export async function onRequestGet(context) {
@@ -87,8 +69,8 @@ export async function onRequestGet(context) {
     return json({ works: [] })
   }
 
-  const history = await readHistory(env.LIGHTFIELD_KV)
-  const sorted = history
+  const { entries } = await readAllHistory(env.LIGHTFIELD_KV)
+  const sorted = entries
     .filter((e) => Array.isArray(e.pixels) && (e.time || 0) >= minTime)
     .sort((a, b) => (b.likes || 0) - (a.likes || 0))
     .slice(0, top)

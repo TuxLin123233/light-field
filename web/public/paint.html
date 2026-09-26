@@ -340,6 +340,7 @@ color: var(--text-muted);
         height: 46px;
         border-radius: 999px;
         background: var(--surface);
+        border: 1px solid var(--border-strong);
         color: var(--text-muted);
         font-size: 22px;
         line-height: 1;
@@ -360,7 +361,7 @@ color: var(--text-muted);
         margin-top: 14px;
         background: var(--surface);
         border-radius: 20px;
-        box-shadow: 0 6px 20px var(--shadow2);
+        border: 1px solid var(--border);
         padding: 16px;
       }
 
@@ -488,7 +489,7 @@ color: var(--text-muted);
         margin-top: 14px;
         background: var(--surface);
         border-radius: 20px;
-        box-shadow: 0 6px 20px var(--shadow2);
+        border: 1px solid var(--border);
         padding: 16px;
       }
 
@@ -525,7 +526,7 @@ color: var(--text-muted);
         height: 56px;
         image-rendering: pixelated;
         border-radius: 8px;
-        border: 2px solid rgba(0, 0, 0, 0.08);
+        border: 1px solid var(--border-strong);
         background: var(--art-bg);
       }
 
@@ -606,13 +607,12 @@ color: var(--text-muted);
         padding: 12px;
         border-radius: 14px;
         background: var(--surface);
-        border: 2px solid var(--border);
+        border: 1px solid var(--border-strong);
         color: var(--text-muted);
         font-size: 14px;
         font-weight: 600;
         text-align: center;
         text-decoration: none;
-        box-shadow: 0 4px 14px var(--shadow3);
       }
 
       .more-btn:hover { border-color: var(--border-strong); }
@@ -1231,14 +1231,13 @@ color: var(--text-muted);
     </style>
   </head>
   <body>
-    <div class="consent-overlay" id="consentOverlay">
+    <div class="consent-overlay" id="consentOverlay" hidden>
       <div class="consent-box" id="consentBox">
         <h2>重要提示</h2>
         <div class="text">
           本画板仅用于个人学习与技术交流。<b>严禁上传、绘制、发布任何违反中华人民共和国法律法规的内容</b>，包括但不限于<b>色情、暴力、恐怖、赌博、涉政敏感、侵犯他人隐私或知识产权</b>等内容。<br><br>
           上传者须对自己发布的内容负全部法律责任。本平台有权在不事先通知的情况下删除违规内容，并保留追究法律责任的权利。<br><br>
-          <a href="./terms.html">查看完整用户协议</a><br><br>
-          发现违规内容？请联系<b>微信：Tux123233</b> 或<b>邮箱：linsifan123233@petalmail.com</b> 举报。
+          <a href="./terms.html">查看完整用户协议</a>
         </div>
         <div class="consent-actions">
           <button id="consentNo" type="button">不同意</button>
@@ -1246,13 +1245,18 @@ color: var(--text-muted);
         </div>
       </div>
     </div>
-
-    <div class="page-head">
-      <div class="head-right">
-        <a class="theme-btn room-link" href="room" title="联机房间" style="text-decoration:none">联机</a>
-        <button id="themeBtn" class="theme-btn" type="button" title="切换主题">🌙</button>
-      </div>
-    </div>
+    <script>
+      ;(function () {
+        try {
+          var has =
+            document.cookie.indexOf('paint_consent=') !== -1 ||
+            document.cookie.split(';').some(function (c) {
+              return c.trim().indexOf('paint_consent=') === 0
+            })
+          if (!has) document.getElementById('consentOverlay').removeAttribute('hidden')
+        } catch (e) {}
+      })()
+    </script>
 
     <div class="prompt-card" id="promptCard">
       <button class="prompt-roll" id="promptRoll" type="button" title="换一题">🎲</button>
@@ -1331,11 +1335,11 @@ color: var(--text-muted);
     </div>
 
     <div class="records">
-      <div class="records-title">历史记录（最新 10 条）</div>
+      <div class="records-title">我的绘画历史（最新 10 条）</div>
       <div id="recordList" class="record-list"></div>
     </div>
 
-    <a id="moreBtn" class="more-btn" href="gallery.html" hidden>查看更多作品 →</a>
+    <a id="moreBtn" class="more-btn" href="gallery.html" hidden>去社区看更多作品 →</a>
 
     <div class="name-row">
       <input id="titleInput" type="text" placeholder="作品名（给这幅画起个名字，可留空）" maxlength="20">
@@ -1370,11 +1374,8 @@ color: var(--text-muted);
 
     <div class="hint" id="hint">画笔：点按或滑动作画 · 画布 16/32/64× · B 画笔 / E 橡皮 / F 填充 / C 颜色 / Z 撤销 · 输入 #RRGGBB 自定义颜色</div>
 
-    <div class="black-tip">提示：请尽量少用纯黑色（#000000）画面，黑色在灯板上显示为熄灭，作品会像有洞一样。嵌入式灯板仅显示 16×16 作品。</div>
-
     <div class="disclaimer">
       本画板仅用于个人学习与技术交流。请勿上传、绘制、发布任何违反中华人民共和国法律法规的内容，包括但不限于色情、暴力、恐怖、赌博、涉政敏感、侵犯他人隐私或知识产权的内容。上传者须对自己发布的内容负全部法律责任。本平台有权在不事先通知的情况下删除违规内容，并保留追究法律责任的权利。
-      <div class="disclaimer-report">发现违规内容？请联系微信 Tux123233 或邮箱 linsifan123233@petalmail.com 举报。</div>
     </div>
 
     <div class="copyright">© 2026 光域画板 · 版权所有 · 作者 Lin Sifan</div>
@@ -2354,6 +2355,9 @@ color: var(--text-muted);
         nameInput.addEventListener('input', () => {
           localStorage.setItem('paintName', nameInput.value.trim())
         })
+        nameInput.addEventListener('change', () => {
+          if (typeof fetchRecords === 'function') fetchRecords()
+        })
       }
 
       function resolveAuthor() {
@@ -2431,8 +2435,25 @@ color: var(--text-muted);
       }
 
       async function fetchRecords() {
+        const myName = nameInput ? nameInput.value.trim() : ''
+        if (myName) {
+          try {
+            const res = await fetch('/api/get?limit=10&mine=' + encodeURIComponent(myName))
+            if (!res.ok) return
+            const data = await res.json()
+            renderRecords(data.history || [], data.total || 0)
+          } catch (err) {
+            /* 忽略加载失败 */
+          }
+          return
+        }
+        const ids = [...mineSet]
+        if (!ids.length) {
+          renderRecords([], 0)
+          return
+        }
         try {
-          const res = await fetch('/api/get?limit=10')
+          const res = await fetch('/api/get?limit=200&minetimes=' + ids.join(','))
           if (!res.ok) return
           const data = await res.json()
           renderRecords(data.history || [], data.total || 0)
@@ -2447,7 +2468,10 @@ color: var(--text-muted);
         if (!records.length) {
           const empty = document.createElement('div')
           empty.className = 'record-empty'
-          empty.textContent = '还没有人上传过作品'
+          empty.textContent =
+            total > 0
+              ? '还没有找到你的作品：填好作者名后就会显示在这里'
+              : '还没有你的作品：快去画一幅并上传吧，也可以去社区看看大家的作品'
           recordList.appendChild(empty)
           return
         }
@@ -2560,39 +2584,49 @@ color: var(--text-muted);
         return cv.toDataURL('image/png')
       }
 
-      function rr(ctx, x, y, w, h, r) {
-        ctx.beginPath()
-        ctx.moveTo(x + r, y)
-        ctx.arcTo(x + w, y, x + w, y + h, r)
-        ctx.arcTo(x + w, y + h, x, y + h, r)
-        ctx.arcTo(x, y + h, x, y, r)
-        ctx.arcTo(x, y, x + w, y, r)
-        ctx.closePath()
-      }
-
-      function blob(ctx, x, y, r, color) {
-        const g = ctx.createRadialGradient(x, y, 0, x, y, r)
-        g.addColorStop(0, color)
-        g.addColorStop(1, 'rgba(0,0,0,0)')
-        ctx.fillStyle = g
-        ctx.fillRect(x - r, y - r, r * 2, r * 2)
-      }
-
-      function drawSparkle(ctx, x, y, size, color, rot) {
-        ctx.save()
-        ctx.translate(x, y)
-        ctx.rotate(rot || 0)
-        ctx.fillStyle = color
-        ctx.beginPath()
-        for (let i = 0; i < 4; i++) {
-          ctx.rotate(Math.PI / 4)
-          ctx.moveTo(0, 0)
-          ctx.quadraticCurveTo(size * 0.22, size * 0.22, 0, size)
-          ctx.quadraticCurveTo(-size * 0.22, size * 0.22, 0, 0)
-          ctx.rotate(Math.PI / 4)
+      function pixelBar(ctx, x0, y0, w, h, seg, colors, zig) {
+        const sw = w / seg
+        for (let i = 0; i < seg; i++) {
+          const off = zig && i % 3 === 1 ? Math.round(h * 0.35) : 0
+          ctx.fillStyle = colors[i % colors.length]
+          ctx.fillRect(x0 + i * sw, y0 + off, sw + 0.5, h - off + 0.5)
         }
-        ctx.fill()
-        ctx.restore()
+      }
+
+      const PX_HEART = [
+        '..XX..XX..',
+        '.XXXXXXXX.',
+        'XXXXXXXXXX',
+        'XXXXXXXXXX',
+        'XXXXXXXXXX',
+        '.XXXXXXXX.',
+        '..XXXXXX..',
+        '...XXXX...',
+      ]
+
+      const PX_STAR = [
+        '....X....',
+        '...XXX...',
+        '..XXXXX..',
+        'XXXXXXXXX',
+        '.XX.XXX.X',
+        '..XXXXX..',
+        '...X.X...',
+        '...X.X...',
+        '..X...X..',
+      ]
+
+      function pixelIcon(ctx, cx, cy, s, color, grid) {
+        const cols = grid[0].length
+        const cell = s / cols
+        ctx.fillStyle = color
+        for (let y = 0; y < grid.length; y++) {
+          for (let x = 0; x < cols; x++) {
+            if (grid[y][x] === 'X') {
+              ctx.fillRect(cx + x * cell, cy + y * cell, Math.ceil(cell), Math.ceil(cell))
+            }
+          }
+        }
       }
 
       function fitText(ctx, text, maxW, base) {
@@ -2618,70 +2652,36 @@ color: var(--text-muted);
         cv.height = H
         const ctx = cv.getContext('2d')
 
-        const g = ctx.createLinearGradient(0, 0, 0, H)
-        g.addColorStop(0, '#1c1737')
-        g.addColorStop(0.45, '#2b2160')
-        g.addColorStop(0.74, '#4c2a6e')
-        g.addColorStop(1, '#63274f')
-        ctx.fillStyle = g
+        const bg = '#f6efdf'
+        const ink = '#2a251e'
+        const muted = '#6b5f50'
+        const stripe = ['#e5484d', '#f4a259', '#f2d55c', '#5bb883', '#4b8fd4', '#9b7ce0']
+
+        ctx.fillStyle = bg
         ctx.fillRect(0, 0, W, H)
 
-        blob(ctx, 150, 260, 430, 'rgba(128,96,255,0.34)')
-        blob(ctx, 950, 700, 520, 'rgba(255,110,170,0.26)')
-        blob(ctx, 260, 1210, 470, 'rgba(255,196,110,0.20)')
+        ctx.fillStyle = ink
+        ctx.fillRect(36, 36, W - 72, H - 72)
+        ctx.fillStyle = bg
+        ctx.fillRect(54, 54, W - 108, H - 108)
 
-        let seed = 7
-        const rand = () => {
-          seed = (seed * 9301 + 49297) % 233280
-          return seed / 233280
-        }
-        for (let i = 0; i < 70; i++) {
-          const x = rand() * W, y = rand() * H
-          const r = 0.8 + rand() * 1.8
-          ctx.globalAlpha = 0.15 + rand() * 0.5
-          ctx.fillStyle = '#ffffff'
-          ctx.beginPath()
-          ctx.arc(x, y, r, 0, Math.PI * 2)
-          ctx.fill()
-        }
-        ctx.globalAlpha = 1
+        pixelBar(ctx, 60, 128, W - 120, 30, 16, stripe, true)
 
-        const frameGrad = ctx.createLinearGradient(0, 46, W, H - 46)
-        frameGrad.addColorStop(0, '#f4b95f')
-        frameGrad.addColorStop(0.5, '#ff7eb3')
-        frameGrad.addColorStop(1, '#8f7bff')
-        ctx.strokeStyle = frameGrad
-        ctx.lineWidth = 3
-        rr(ctx, 44, 44, W - 88, H - 88, 48)
-        ctx.stroke()
-
-        rr(ctx, 60, 60, W - 120, H - 120, 34)
-        ctx.strokeStyle = 'rgba(255,255,255,0.12)'
-        ctx.lineWidth = 1.5
-        ctx.stroke()
-
-        drawSparkle(ctx, 130, 130, 30, '#ffe3a1', 0)
-        drawSparkle(ctx, W - 130, 130, 30, '#ff9ec7', 0.6)
-        drawSparkle(ctx, 130, H - 130, 30, '#ff9ec7', -0.5)
-        drawSparkle(ctx, W - 130, H - 130, 30, '#ffe3a1', 0.9)
-
-        ctx.font = '600 30px "PingFang SC", "Microsoft YaHei", sans-serif'
         ctx.textAlign = 'center'
-        ctx.fillStyle = 'rgba(255,255,255,0.85)'
-        ctx.fillText('❖ 光 域 画 板 ❖', W / 2, 212)
-        ctx.font = '400 24px "PingFang SC", "Microsoft YaHei", sans-serif'
-        ctx.fillStyle = 'rgba(255,255,255,0.35)'
-        ctx.fillText('每 一 格 光 ，点 亮 一 个 梦', W / 2, 256)
+        ctx.fillStyle = ink
+        ctx.font = '900 62px "PingFang SC", "Microsoft YaHei", sans-serif'
+        ctx.fillText('光 域 画 板', W / 2, 260)
+        ctx.font = '500 27px "PingFang SC", "Microsoft YaHei", sans-serif'
+        ctx.fillStyle = muted
+        ctx.fillText('每 一 格 光 ，点 亮 一 个 梦', W / 2, 306)
 
-        const artMax = 760
+        const artMax = 740
         const artX = (W - artMax) / 2
-        const artY = 310
-        rr(ctx, artX - 8, artY - 8, artMax + 16, artMax + 16, 40)
-        ctx.fillStyle = 'rgba(255,255,255,0.10)'
-        ctx.fill()
-        rr(ctx, artX, artY, artMax, artMax, 30)
-        ctx.fillStyle = '#f6f2ea'
-        ctx.fill()
+        const artY = 350
+        ctx.fillStyle = ink
+        ctx.fillRect(artX - 6, artY - 6, artMax + 12, artMax + 12)
+        ctx.fillStyle = '#ffffff'
+        ctx.fillRect(artX, artY, artMax, artMax)
 
         const cell = Math.floor(artMax / n)
         const artW = cell * n
@@ -2696,20 +2696,27 @@ color: var(--text-muted);
           }
         }
 
-        ctx.textAlign = 'center'
         const tTitle = title && title.trim() ? title.trim() : '未命名'
         fitText(ctx, tTitle, 860, 66)
-        ctx.fillStyle = '#ffffff'
-        ctx.fillText(tTitle, W / 2, 1220)
-        ctx.font = '500 40px "PingFang SC", "Microsoft YaHei", sans-serif'
-        ctx.fillStyle = '#ffd9a2'
+        ctx.fillStyle = ink
+        ctx.fillText(tTitle, W / 2, 1210)
+
         const tAuthor = author && author.trim() ? author.trim() : '匿名'
-        ctx.fillText('—— 画师 ' + tAuthor + '  ·  ' + n + '×' + n, W / 2, 1300)
-        ctx.font = '400 28px "PingFang SC", "Microsoft YaHei", sans-serif'
-        ctx.fillStyle = 'rgba(255,255,255,0.45)'
+        ctx.font = '500 40px "PingFang SC", "Microsoft YaHei", sans-serif'
+        ctx.fillStyle = muted
+        ctx.fillText('画师 ' + tAuthor + '  ·  ' + n + '×' + n, W / 2, 1300)
+
+        pixelBar(ctx, 60, 1340, W - 120, 26, 16, stripe, true)
+        pixelIcon(ctx, 76, 1344, 24, '#e5484d', PX_HEART)
+        pixelIcon(ctx, W - 76 - 24, 1344, 24, '#f4a259', PX_STAR)
+
         const d = new Date()
-        ctx.fillText(d.getFullYear() + ' 年 ' + (d.getMonth() + 1) + ' 月 ' + d.getDate() + ' 日  ·  ' + '光域画板',
-          W / 2, 1368)
+        ctx.font = '500 27px "PingFang SC", "Microsoft YaHei", sans-serif'
+        ctx.textAlign = 'left'
+        ctx.fillStyle = muted
+        ctx.fillText(d.getFullYear() + ' 年 ' + (d.getMonth() + 1) + ' 月 ' + d.getDate() + ' 日', 76, 1420)
+        ctx.textAlign = 'right'
+        ctx.fillText('光域画板 · 像素作品', W - 76, 1420)
 
         return cv
       }
@@ -3086,26 +3093,6 @@ color: var(--text-muted);
           if (badge) badge.style.pointerEvents = ''
         }
       }
-
-      /* ---------- 主题切换 ---------- */
-      const themeBtn = document.getElementById('themeBtn')
-
-      function applyThemeIcon() {
-        themeBtn.textContent =
-          document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙'
-      }
-
-      themeBtn.addEventListener('click', () => {
-        const cur =
-          document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'
-        document.documentElement.setAttribute('data-theme', cur)
-        try {
-          localStorage.setItem('lw-theme', cur)
-        } catch (e) {}
-        applyThemeIcon()
-      })
-
-      applyThemeIcon()
 
       /* ---------- 键盘快捷键 ---------- */
       document.addEventListener('keydown', (e) => {

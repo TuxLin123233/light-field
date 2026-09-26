@@ -3,51 +3,110 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>管理后台 | 光域画板</title>
+    <title>维护社区稳定 · 光域画板</title>
     <style>
       * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
       body {
         margin: 0;
         min-height: 100vh;
-        background: linear-gradient(160deg, #fdf8f2 0%, #f2ece2 100%);
+        background: #faf5ef;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
         display: flex;
         flex-direction: column;
         align-items: center;
         padding: 20px 16px 48px;
+        color: #3b342c;
       }
 
-      h1 {
-        font-size: 22px;
-        font-weight: 700;
-        color: #3b342c;
-        margin: 8px 0 20px;
-        letter-spacing: 1px;
+      .page-head { width: 100%; max-width: 460px; }
+
+      .back {
+        display: inline-block;
+        text-decoration: none;
+        color: #6b5f50;
+        font-size: 14px;
+        margin-bottom: 12px;
       }
+
+      h1 { font-size: 22px; font-weight: 800; margin: 4px 0 4px; letter-spacing: 1px; }
+
+      .sub { font-size: 13px; color: #b0a697; margin-bottom: 20px; line-height: 1.6; }
 
       .card {
         width: 100%;
         max-width: 460px;
         background: #fff;
-        border-radius: 20px;
-        box-shadow: 0 8px 24px rgba(80, 60, 40, 0.12);
+        border: 1px solid #efe7da;
+        border-radius: 18px;
         padding: 20px;
         margin-bottom: 16px;
       }
 
       .card-title {
         font-size: 14px;
-        font-weight: 600;
-        color: #9a8c7a;
-        margin-bottom: 14px;
+        font-weight: 700;
+        color: #6b5f50;
+        margin-bottom: 12px;
       }
+
+      .card-text { font-size: 13px; color: #6b5f50; line-height: 1.8; text-align: justify; }
+
+      .card-text b { color: #3b342c; }
+
+      .roles { padding-left: 18px; margin: 0; }
+
+      .roles li { font-size: 13px; color: #6b5f50; line-height: 1.9; }
+
+      .steps { list-style: none; padding: 0; margin: 0; counter-reset: step; }
+
+      .steps li {
+        counter-increment: step;
+        position: relative;
+        padding: 2px 0 2px 34px;
+        font-size: 13px;
+        color: #6b5f50;
+        line-height: 1.8;
+        text-align: justify;
+      }
+
+      .steps li::before {
+        content: counter(step);
+        position: absolute;
+        left: 0;
+        top: 2px;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: #5b8def;
+        color: #fff;
+        font-size: 13px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .mail-go {
+        display: block;
+        margin-top: 14px;
+        text-align: center;
+        padding: 12px;
+        border-radius: 14px;
+        background: #5b8def;
+        color: #fff;
+        text-decoration: none;
+        font-size: 15px;
+        font-weight: 600;
+      }
+
+      .contact { font-size: 12px; color: #b0a697; margin-top: 10px; text-align: center; }
 
       .login input {
         width: 100%;
         height: 48px;
         border-radius: 14px;
-        border: 2px solid #e0d8d0;
+        border: 1px solid #e0d3c0;
         padding: 0 14px;
         font-size: 15px;
         background: #fbfaf8;
@@ -65,47 +124,31 @@
         border: none;
         background: #5b8def;
         color: #fff;
-        font-size: 16px;
+        font-size: 15px;
         font-weight: 600;
         cursor: pointer;
       }
 
-      .latest {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-      }
+      .login .enter:disabled { opacity: 0.6; }
+
+      .latest { display: flex; align-items: center; gap: 16px; }
 
       .latest canvas {
         width: 110px;
         height: 110px;
         image-rendering: pixelated;
         border-radius: 12px;
-        border: 2px solid rgba(0, 0, 0, 0.08);
+        border: 1px solid #e0d3c0;
         background: #fff;
       }
 
       .latest-info { flex: 1; min-width: 0; }
 
-      .latest-info .author {
-        font-size: 17px;
-        font-weight: 700;
-        color: #3b342c;
-      }
+      .latest-info .author { font-size: 17px; font-weight: 700; color: #3b342c; }
 
-      .latest-info .time {
-        font-size: 13px;
-        color: #b0a697;
-        margin-top: 4px;
-      }
+      .latest-info .time { font-size: 13px; color: #b0a697; margin-top: 4px; }
 
-      .entry {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 10px 0;
-        border-bottom: 1px solid #f0ece4;
-      }
+      .entry { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #f0ece4; }
 
       .entry:last-child { border-bottom: none; }
 
@@ -115,17 +158,11 @@
         flex: 0 0 48px;
         image-rendering: pixelated;
         border-radius: 8px;
-        border: 2px solid rgba(0, 0, 0, 0.08);
+        border: 1px solid #e0d3c0;
         background: #fff;
       }
 
-      .entry .info {
-        flex: 1;
-        min-width: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-      }
+      .entry .info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 
       .entry .author {
         font-size: 14px;
@@ -136,10 +173,7 @@
         text-overflow: ellipsis;
       }
 
-      .entry .time {
-        font-size: 11px;
-        color: #b0a697;
-      }
+      .entry .time { font-size: 11px; color: #b0a697; }
 
       .del {
         border: none;
@@ -152,11 +186,7 @@
         cursor: pointer;
       }
 
-      .empty {
-        font-size: 13px;
-        color: #b0a697;
-        padding: 6px 2px;
-      }
+      .empty { font-size: 13px; color: #b0a697; padding: 6px 2px; }
 
       .clear {
         width: 100%;
@@ -165,7 +195,7 @@
         border: none;
         background: #d34b3f;
         color: #fff;
-        font-size: 16px;
+        font-size: 15px;
         font-weight: 600;
         cursor: pointer;
       }
@@ -182,6 +212,8 @@
         font-weight: 600;
         cursor: pointer;
       }
+
+      .foot { font-size: 12px; color: #b0a697; text-align: center; margin-top: 6px; line-height: 1.7; }
 
       #toast {
         position: fixed;
@@ -208,33 +240,71 @@
     </style>
   </head>
   <body>
-    <h1>光域画板 · 管理后台</h1>
+    <div class="page-head">
+      <a class="back" href="/settings">← 返回设置</a>
+      <h1>🛡️ 维护社区稳定</h1>
+      <div class="sub">光域画板是大家共同的家，社区的和谐需要每一位热心用户共同守护。</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">为什么需要维护者</div>
+      <div class="card-text">
+        随着社区不断壮大，作品数量持续增长。为了让社区始终<b>清朗、安全、友善</b>，
+        光域画板面向全体用户招募维护者，与作者一起审核内容、清理违规、守护社区风气。
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">维护者的职责</div>
+      <ul class="roles">
+        <li>审核社区作品，及时删除色情、暴力、涉政敏感、赌博、侵权等违规内容</li>
+        <li>处理其他用户的举报，维护良好的创作与交流氛围</li>
+        <li>定期向作者反馈社区情况，共同优化体验</li>
+        <li>维护者须遵守法律法规与社区规范，滥用职权者将被立即撤销资格</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="card-title">如何加入维护者计划</div>
+      <ol class="steps">
+        <li>写一封<b>正式申请书信</b>：须符合书信格式（称谓、正文、落款、日期齐全）。<b>格式不正式、内容敷衍的一律不通过</b>。</li>
+        <li>信中必须写明两点：<b>① 你为什么要成为维护者</b>（加入的动机）；<b>② 成为维护者后你打算做什么</b>（具体的职责承诺）。</li>
+        <li>将书信发送至作者邮箱：<b>linsifan123233@petalmail.com</b>（也可微信联系 Tux123233）。</li>
+        <li>作者审核通过后，会回复<b>维护者口令</b>。凭口令即可进入下方的维护面板。</li>
+      </ol>
+      <a class="mail-go" id="mailBtn" href="mailto:linsifan123233@petalmail.com?subject=%E5%85%89%E5%9F%9F%E7%94%BB%E6%9D%BF%E7%BB%B4%E6%8A%A4%E8%80%85%E7%94%B3%E8%AF%B7%E4%B9%A6">✉️ 发送申请书信</a>
+      <div class="contact">微信：Tux123233 · 邮箱：linsifan123233@petalmail.com</div>
+    </div>
 
     <div class="card login" id="loginCard">
-      <div class="card-title">输入管理员密码</div>
-      <input id="passInput" type="password" placeholder="ADMIN_KEY">
-      <button class="enter" id="enterBtn" type="button">进入</button>
+      <div class="card-title">维护者口令</div>
+      <input id="passInput" type="password" placeholder="请输入维护者口令">
+      <button class="enter" id="enterBtn" type="button">进入维护面板</button>
     </div>
 
     <div id="panel" hidden>
       <div class="card">
-        <div class="card-title">最新作品</div>
+        <div class="card-title">最新社区作品</div>
         <div class="latest" id="latestWrap">
           <div class="empty">暂无数据</div>
         </div>
       </div>
 
       <div class="card">
-        <div class="card-title">历史记录（最多 10 条）</div>
+        <div class="card-title">违规作品清理（最新 10 条）</div>
         <div id="entryList"></div>
       </div>
 
       <div class="card">
-        <button class="clear" id="clearAllBtn" type="button">一键清空全部</button>
+        <div class="card-title">紧急处置</div>
+        <div class="card-text" style="margin-bottom:12px">若社区出现大面积违规内容，可一键清空全部作品。此操作不可恢复，请务必慎重。</div>
+        <button class="clear" id="clearAllBtn" type="button">一键清空全部作品</button>
       </div>
 
-      <button class="logout" id="logoutBtn" type="button">退出登录</button>
+      <button class="logout" id="logoutBtn" type="button">退出维护面板</button>
     </div>
+
+    <div class="foot">维护者需为自己的操作负责 · 所有操作仅用于维护社区安全与稳定<br>© 2026 光域画板 · 作者 Lin Sifan</div>
 
     <div id="toast"></div>
 
@@ -296,7 +366,7 @@
       async function login() {
         const key = passInput.value.trim()
         if (!key) {
-          toast('请输入密码')
+          toast('请输入维护者口令')
           return
         }
         enterBtn.disabled = true
@@ -306,10 +376,10 @@
             loginCard.hidden = true
             panel.hidden = false
             passInput.value = ''
-            toast('登录成功')
+            toast('口令验证通过')
             refresh()
           } else {
-            toast('密码错误')
+            toast('口令错误')
           }
         } catch (err) {
           toast('网络错误')

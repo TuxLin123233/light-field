@@ -1,3 +1,5 @@
+import { removeByTime } from '../_history.js'
+
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
@@ -14,17 +16,6 @@ function authorized(request, env) {
   const key = (request.headers.get('x-admin-key') || '').trim()
   const adminKey = env.ADMIN_KEY || ''
   return !!(adminKey && key === adminKey)
-}
-
-async function readHistory(kv) {
-  const raw = await kv.get('history')
-  if (!raw) return []
-  try {
-    const parsed = JSON.parse(raw)
-    return Array.isArray(parsed) ? parsed : []
-  } catch {
-    return []
-  }
 }
 
 export async function onRequestOptions() {
@@ -54,13 +45,12 @@ export async function onRequestPost(context) {
     return json({ error: '缺少 time 字段' }, 400)
   }
 
-  const history = await readHistory(env.LIGHTFIELD_KV)
-  const remain = history.filter((e) => !e || (e.time || 0) !== time)
-  if (remain.length === history.length) {
-    return json({ error: '条目不存在' }, 404)
-  }
-
   try {
+    const res = await removeByTime(env.LIGHTFIELD_KV, time)
+    if (!res.found) {
+      return json({ error: '条目不存在' }, 404)
+    }
+
     const rawLatest = await env.LIGHTFIELD_KV.get('pixels')
     if (rawLatest) {
       let latest = null
@@ -70,19 +60,16 @@ export async function onRequestPost(context) {
         latest = null
       }
       if (latest && (latest.time || 0) === time) {
-        const next = remain[remain.length - 1]
-        if (next) {
-          await env.LIGHTFIELD_KV.put('pixels', JSON.stringify(next))
+        if (res.last) {
+          await env.LIGHTFIELD_KV.put('pixels', JSON.stringify(res.last))
         } else {
           await env.LIGHTFIELD_KV.delete('pixels')
         }
       }
     }
 
-    await env.LIGHTFIELD_KV.put('history', JSON.stringify(remain))
+    return json({ ok: true })
   } catch (err) {
     return json({ error: 'KV delete failed: ' + err.message }, 500)
   }
-
-  return json({ ok: true, count: remain.length })
 }
