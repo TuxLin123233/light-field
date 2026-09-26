@@ -1,10 +1,8 @@
 # 光域画板 · Web 端（云端画板 + 灯板数据接口）
 
-光域项目的**云端（Web）部分**：挂在 **Cloudflare Pages** 上的 16×16 像素画板，负责创作、存档与展示；同时为灯板（ESP32-C3 嵌入式端，见上级目录）提供像素数据接口，让画板上的作品能实时投到 16×16 灯板。
+光域项目的**云端（Web）部分**：挂在 **Cloudflare Pages** 上的像素画板（16×16 / 32×32 / 64×64，默认 16×16），负责创作、存档与展示；同时为灯板（ESP32-C3 嵌入式端）提供像素数据接口，让画板上的作品能实时投到 16×16 灯板。
 
-本仓库只含 Web 端；嵌入式固件在仓库根目录（`..` / `light-realm`）。
-
-线上地址：<https://light-field.pages.dev>（旧域名 pixel-space-9bn.pages.dev 迁完后停用）
+线上地址：<https://light-field.pages.dev>
 
 ## 技术栈
 
@@ -24,7 +22,7 @@
 
 ## 特性
 
-- **16×16 在线画板**（撤销、橡皮擦、颜料桶、作品名 / 作者名分开上传）
+- **可切换画布尺寸**：16×16（默认）/ 32×32 / 64×64，草稿与「载入编辑」会自动跟随作品尺寸
 - **作品名 / 作者名分开填**：单人标「作品名 + 一位作者」；联机发布自动标「房间作品名 + 全部画家名」；历史作品作者显示「匿名」
 - **本地草稿自动保存**（刷新 / 返回不丢失）
 - **作品库**：画板展示最新 10 条，`/gallery` 卡片流滚动懒加载（每页 24 张）
@@ -47,7 +45,7 @@
 
 | 接口 | 说明 |
 | --- | --- |
-| `POST /api/set` | 上传作品。body：`{ "pixels": [[r,g,b]×256], "workName": "作品名(可空)", "author": "作者名(可空，多人顿号分隔)" }`；重复 409；历史超 1000 删最旧；每 IP 5 分钟限 1 次（429） |
+| `POST /api/set` | 上传作品。body：`{ "pixels": [[r,g,b]×size²], "size": 16|32|64, "workName": "作品名(可空)", "author": "作者名(可空，多人顿号分隔)" }`；默认 size 16；重复 409；历史超 1000 删最旧；每 IP 5 分钟限 1 次（429） |
 | `GET /api/get` | 最新作品 + 历史。`?after=` 无新作随机回退旧图；`?limit=&offset=` 分页；`?single=1` 随机一张（灯板）；`?locate=` 分享定位 |
 | `POST /api/like` | 点赞 `{ time }` |
 | `GET /api/like` | 按赞数 Top N。`range=today|week|all` + `tz=分钟`（东八区 480） |
@@ -57,7 +55,7 @@
 
 ## 灯板接入（嵌入式端）
 
-轮询即可，每次返回单张随机作品（不含历史，响应体小）：
+轮询即可，每次返回单张随机 **16×16** 作品（不含历史，响应体小；32/64 作品不会喂给灯板）：
 
 ```
 GET /api/get?single=1
@@ -78,5 +76,4 @@ npx wrangler pages dev public
 
 - **Functions → Bindings**：添加 KV 绑定 `LIGHTFIELD_KV` → `lightfield`
 - **环境变量**：`ADMIN_KEY`
-- 构建指令：无构建，直接部署 `public/`（保留 `functions/`）
-- Pages 项目当前连接的是旧的 PixelSpace 仓库；本仓库（light-field）正式接管后，在 Cloudflare 控制台把 Pages 项目**改连到 `TuxLin123233/light-field`，根目录 Root directory 填 `web`**（这样自动找到 `web/public` 与 `web/functions`），并重绑 `LIGHTFIELD_KV` + `ADMIN_KEY` 环境变量，部署成功后再移除旧副本
+- **构建**：Build command `true`、Root directory `web`、构建输出目录 `public`（自动发布 `web/public` 并编译 `web/functions` 为 Pages Functions）

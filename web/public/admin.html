@@ -269,15 +269,16 @@
         return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
       }
 
-      function drawThumb(canvas, pixels) {
-        canvas.width = 16 * dpr
-        canvas.height = 16 * dpr
+      function drawThumb(canvas, pixels, s) {
+        const n = s === 32 || s === 64 ? s : 16
+        canvas.width = n * dpr
+        canvas.height = n * dpr
         const c = canvas.getContext('2d')
         c.scale(dpr, dpr)
-        c.clearRect(0, 0, 16, 16)
-        for (let y = 0; y < 16; y++) {
-          for (let x = 0; x < 16; x++) {
-            const px = pixels && pixels[y * 16 + x]
+        c.clearRect(0, 0, n, n)
+        for (let y = 0; y < n; y++) {
+          for (let x = 0; x < n; x++) {
+            const px = pixels && pixels[y * n + x]
             if (!px) continue
             c.fillStyle = `rgb(${px[0]}, ${px[1]}, ${px[2]})`
             c.fillRect(x, y, 1, 1)
@@ -353,7 +354,7 @@
           return
         }
         const canvas = document.createElement('canvas')
-        drawThumb(canvas, data.pixels)
+        drawThumb(canvas, data.pixels, data.size)
 
         const info = document.createElement('div')
         info.className = 'latest-info'
@@ -382,7 +383,7 @@
           row.className = 'entry'
 
           const canvas = document.createElement('canvas')
-          drawThumb(canvas, rec.pixels)
+          drawThumb(canvas, rec.pixels, rec.size)
 
           const info = document.createElement('div')
           info.className = 'info'

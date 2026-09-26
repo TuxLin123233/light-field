@@ -336,6 +336,24 @@
         white-space: nowrap;
       }
 
+      .card-size {
+        flex: 0 0 auto;
+        margin-left: auto;
+        font-size: 10px;
+        color: var(--text-faint);
+        border: 1px solid var(--border-strong);
+        border-radius: 999px;
+        padding: 1px 7px;
+      }
+
+      .f-size {
+        font-size: 10px;
+        color: var(--text-faint);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 1px 6px;
+      }
+
       .like-btn {
         flex: 0 0 auto;
         display: inline-flex;
@@ -576,7 +594,10 @@
     </div>
 
     <script>
-      const SIZE = 16
+      function workSize(rec) {
+        const s = (rec && rec.size) || 0
+        return s === 32 || s === 64 ? s : 16
+      }
 
       const gallery = document.getElementById('gallery')
       const statusEl = document.getElementById('status')
@@ -617,12 +638,13 @@
         }
       }
 
-      function drawPixels(canvas, pixels) {
+      function drawPixels(canvas, pixels, n) {
+        n = n || 16
         const c = canvas.getContext('2d')
-        c.clearRect(0, 0, SIZE, SIZE)
-        for (let y = 0; y < SIZE; y++) {
-          for (let x = 0; x < SIZE; x++) {
-            const px = pixels[y * SIZE + x]
+        c.clearRect(0, 0, n, n)
+        for (let y = 0; y < n; y++) {
+          for (let x = 0; x < n; x++) {
+            const px = pixels[y * n + x]
             if (!px) continue
             c.fillStyle = `rgb(${px[0]}, ${px[1]}, ${px[2]})`
             c.fillRect(x, y, 1, 1)
@@ -751,10 +773,11 @@
             rank.textContent = i + 1
 
             const cnv = document.createElement('canvas')
-            cnv.width = SIZE
-            cnv.height = SIZE
+            const fs = workSize(w)
+            cnv.width = fs
+            cnv.height = fs
             cnv.className = 'f-art'
-            drawPixels(cnv, w.pixels)
+            drawPixels(cnv, w.pixels, fs)
 
             const nm = document.createElement('div')
             nm.className = 'f-name'
@@ -766,11 +789,15 @@
             au.className = 'f-author'
             au.textContent = w.author || '匿名'
 
+            const fz = document.createElement('span')
+            fz.className = 'f-size'
+            fz.textContent = fs + '×' + fs
+
             const lk = document.createElement('span')
             lk.className = 'f-like'
             lk.textContent = '♥ ' + (w.likes || 0)
 
-            metaRow.append(au, lk)
+            metaRow.append(au, fz, lk)
             card.append(rank, cnv, nm, metaRow)
             card.addEventListener('click', () => preview(w))
             featuredRow.appendChild(card)
@@ -797,10 +824,11 @@
           card.title = '点击预览'
 
           const c = document.createElement('canvas')
-          c.width = SIZE
-          c.height = SIZE
+          const rs = workSize(rec)
+          c.width = rs
+          c.height = rs
           c.className = 'art'
-          drawPixels(c, rec.pixels)
+          drawPixels(c, rec.pixels, rs)
 
           const meta = document.createElement('div')
           meta.className = 'card-meta'
@@ -814,11 +842,14 @@
           const au = document.createElement('span')
           au.className = 'card-author'
           au.textContent = rec.author || (rec.workName ? '匿名' : rec.name || '匿名')
+          const sizeBadge = document.createElement('span')
+          sizeBadge.className = 'card-size'
+          sizeBadge.textContent = rs + '×' + rs
           const tm = document.createElement('span')
           tm.className = 'card-time'
           tm.textContent = formatTime(rec.time)
 
-          sub.append(au, tm)
+          sub.append(au, sizeBadge, tm)
           card.append(c, meta, sub)
           card.addEventListener('click', () => preview(rec))
           card.addEventListener('keydown', (e) => {
@@ -921,11 +952,12 @@
 
       function preview(rec) {
         const c = document.getElementById('previewCanvas')
-        c.width = SIZE
-        c.height = SIZE
-        drawPixels(c, rec.pixels)
+        const rs = workSize(rec)
+        c.width = rs
+        c.height = rs
+        drawPixels(c, rec.pixels, rs)
         document.getElementById('previewTitle').textContent = rec.workName || rec.name || '未命名'
-        document.getElementById('previewAuthor').textContent = '作者：' + (rec.author || (rec.workName ? '匿名' : rec.name || '匿名'))
+        document.getElementById('previewAuthor').textContent = '作者：' + (rec.author || (rec.workName ? '匿名' : rec.name || '匿名')) + ' · ' + rs + '×' + rs
         document.getElementById('previewTime').textContent = formatTime(rec.time)
         document.getElementById('previewLikeCount').textContent = rec.likes || 0
         updateLikedState(document.getElementById('previewLike'), rec.time)

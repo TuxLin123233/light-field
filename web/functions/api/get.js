@@ -12,7 +12,7 @@ const json = (body, status = 200) =>
 
 function normalizeEntry(e) {
   if (Array.isArray(e)) {
-    return { name: '', workName: '', author: '', pixels: e, time: 0, likes: 0 }
+    return { name: '', workName: '', author: '', pixels: e, size: 16, time: 0, likes: 0 }
   }
   const legacy = !(e && (e.workName || e.author))
   const name = (e && e.name) || ''
@@ -21,6 +21,7 @@ function normalizeEntry(e) {
     workName: legacy ? name : (e.workName || ''),
     author: legacy ? '匿名' : (e.author || ''),
     pixels: e && e.pixels,
+    size: e && (e.size === 32 || e.size === 64) ? e.size : 16,
     time: (e && e.time) || 0,
     likes: (e && e.likes) || 0,
   }
@@ -94,11 +95,13 @@ export async function onRequestGet(context) {
   const slicedHistory = limit ? history.slice(offset, offset + limit) : history
 
   if (single) {
-    const pool = history.length ? history : latest ? [latest] : []
+    const pool = (history.length ? history : latest ? [latest] : []).filter(
+      (e) => (e.size || 16) === 16
+    )
     const pick = pool.length ? pool[Math.floor(Math.random() * pool.length)] : null
     return json(
       pick
-        ? { pixels: pick.pixels, name: pick.name, workName: pick.workName, author: pick.author, time: pick.time, likes: pick.likes || 0, random: true }
+        ? { pixels: pick.pixels, name: pick.name, workName: pick.workName, author: pick.author, size: pick.size || 16, time: pick.time, likes: pick.likes || 0, random: true }
         : { pixels: null, name: null, time: null, likes: 0, random: false }
     )
   }
@@ -108,7 +111,7 @@ export async function onRequestGet(context) {
   if (noNew) {
     const pool = history.filter((e) => e.time !== latest.time)
     const pick = pool.length ? pool[Math.floor(Math.random() * pool.length)] : latest
-    return json({ pixels: pick.pixels, name: pick.name, workName: pick.workName, author: pick.author, time: pick.time, likes: pick.likes || 0, history: slicedHistory, total, random: true })
+    return json({ pixels: pick.pixels, name: pick.name, workName: pick.workName, author: pick.author, size: pick.size || 16, time: pick.time, likes: pick.likes || 0, history: slicedHistory, total, random: true })
   }
 
   return json({
@@ -116,6 +119,7 @@ export async function onRequestGet(context) {
     name: latest ? latest.name : null,
     workName: latest ? latest.workName : null,
     author: latest ? latest.author : null,
+    size: latest ? latest.size || 16 : null,
     time: latest ? latest.time : null,
     likes: latest ? latest.likes || 0 : 0,
     history: slicedHistory,

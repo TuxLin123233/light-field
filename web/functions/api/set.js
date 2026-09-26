@@ -52,13 +52,17 @@ export async function onRequestPost(context) {
     return json({ error: 'Invalid JSON body' }, 400)
   }
 
+  const sizeParam = Number(body && body.size)
+  const size = sizeParam === 32 || sizeParam === 64 ? sizeParam : 16
+  const expected = size * size
+
   const pixels = Array.isArray(body) ? body : body && body.pixels
   const isValid =
     Array.isArray(pixels) &&
-    pixels.length === 256 &&
+    pixels.length === expected &&
     pixels.every((p) => Array.isArray(p) && p.length === 3)
   if (!isValid) {
-    return json({ error: 'pixels 必须是 256×3 的二维数组（每个元素是 [r,g,b]）' }, 400)
+    return json({ error: `pixels 必须是 ${expected}×3 的二维数组（每个元素是 [r,g,b]）` }, 400)
   }
 
   const bodyName = body && typeof body.name === 'string' ? body.name : ''
@@ -94,7 +98,7 @@ export async function onRequestPost(context) {
     return json({ error: '内容重复，不能重复发布' }, 409)
   }
 
-  const entry = { name, workName, author, pixels, time: Date.now(), likes: 0 }
+  const entry = { name, workName, author, size, pixels, time: Date.now(), likes: 0 }
 
   try {
     await env.LIGHTFIELD_KV.put('pixels', JSON.stringify(entry))
@@ -106,5 +110,5 @@ export async function onRequestPost(context) {
     return json({ error: 'KV write failed: ' + err.message }, 500)
   }
 
-  return json({ ok: true, count: pixels.length, name, workName, author, time: entry.time })
+  return json({ ok: true, count: pixels.length, name, workName, author, size, time: entry.time })
 }

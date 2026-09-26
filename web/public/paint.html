@@ -152,6 +152,42 @@
         background: var(--art-bg);
       }
 
+      .size-row {
+        width: 100%;
+        max-width: 460px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .size-label {
+        font-size: 13px;
+        color: var(--text-muted2);
+        font-weight: 600;
+        white-space: nowrap;
+      }
+
+      .size-btn {
+        flex: 1;
+        height: 38px;
+        border-radius: 999px;
+        background: var(--surface);
+        border: 2px solid var(--border);
+        color: var(--text-muted);
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.12s ease;
+        line-height: 1;
+      }
+
+      .size-btn.active {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+      }
+
       .tools {
         width: 100%;
         max-width: 460px;
@@ -826,6 +862,13 @@
       <canvas id="board" width="512" height="512"></canvas>
     </div>
 
+    <div class="size-row">
+      <span class="size-label">画布</span>
+      <button data-size="16" class="size-btn active" type="button">16×16</button>
+      <button data-size="32" class="size-btn" type="button">32×32</button>
+      <button data-size="64" class="size-btn" type="button">64×64</button>
+    </div>
+
     <div class="tools">
       <button id="toolBrush" class="tool active" type="button" data-tool="brush" title="画笔（B）">✏️</button>
       <button id="toolEraser" class="tool" type="button" data-tool="eraser" title="橡皮擦（E）">🧽</button>
@@ -876,9 +919,9 @@
       <button id="uploadBtn" type="button">上传</button>
     </div>
 
-    <div class="hint" id="hint">画笔：点按或滑动作画 · B 画笔 / E 橡皮 / F 填充 / C 颜色 / Z 撤销 · 输入 #RRGGBB 自定义颜色</div>
+    <div class="hint" id="hint">画笔：点按或滑动作画 · 画布 16/32/64× · B 画笔 / E 橡皮 / F 填充 / C 颜色 / Z 撤销 · 输入 #RRGGBB 自定义颜色</div>
 
-    <div class="black-tip">提示：请尽量少用纯黑色（#000000）画面，黑色在灯板上显示为熄灭，作品会像有洞一样。</div>
+    <div class="black-tip">提示：请尽量少用纯黑色（#000000）画面，黑色在灯板上显示为熄灭，作品会像有洞一样。嵌入式灯板仅显示 16×16 作品。</div>
 
     <div class="disclaimer">
       本画板仅用于个人学习与技术交流。请勿上传、绘制、发布任何违反中华人民共和国法律法规的内容，包括但不限于色情、暴力、恐怖、赌博、涉政敏感、侵犯他人隐私或知识产权的内容。上传者须对自己发布的内容负全部法律责任。本平台有权在不事先通知的情况下删除违规内容，并保留追究法律责任的权利。
@@ -918,7 +961,7 @@
     </div>
 
     <script>
-      const SIZE = 16
+      let size = 16
       const PRESET_COLORS = [
         ['#e53935', '红'],
         ['#fb8c00', '橙'],
@@ -942,10 +985,10 @@
       const dpr = window.devicePixelRatio || 1
       canvas.width = canvas.height = 512 * dpr
       ctx.scale(dpr, dpr)
-      const CELL = 512 / SIZE
+      let CELL = 512 / size
 
-      let pixels = Array.from({ length: SIZE }, () =>
-        Array.from({ length: SIZE }, () => [255, 255, 255])
+      let pixels = Array.from({ length: size }, () =>
+        Array.from({ length: size }, () => [255, 255, 255])
       )
       let currentColor = [229, 57, 53]
       let activeTool = 'brush'
@@ -1247,10 +1290,35 @@
         hint.textContent = TOOL_HINTS[tool]
       }
 
+      function switchSize(n) {
+        if (n === size) return
+        size = n
+        CELL = 512 / size
+        pixels = Array.from({ length: size }, () =>
+          Array.from({ length: size }, () => [255, 255, 255])
+        )
+        undoStack.length = 0
+        updateUndoBtn()
+        document.querySelectorAll('.size-btn').forEach((b) =>
+          b.classList.toggle('active', Number(b.dataset.size) === size)
+        )
+        redraw()
+      }
+
+      document.querySelectorAll('.size-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const n = Number(btn.dataset.size)
+          if (n === size) return
+          switchSize(n)
+          scheduleSave()
+          toast('画布已切换为 ' + n + '×' + n)
+        })
+      })
+
       function drawGrid() {
         ctx.strokeStyle = 'rgba(0, 0, 0, 0.10)'
         ctx.lineWidth = 1
-        for (let i = 1; i < SIZE; i++) {
+        for (let i = 1; i < size; i++) {
           const p = i * CELL + 0.5
           ctx.beginPath()
           ctx.moveTo(p, 0)
@@ -1265,8 +1333,8 @@
 
       function redraw() {
         ctx.clearRect(0, 0, 512, 512)
-        for (let y = 0; y < SIZE; y++) {
-          for (let x = 0; x < SIZE; x++) {
+        for (let y = 0; y < size; y++) {
+          for (let x = 0; x < size; x++) {
             const [r, g, b] = pixels[y][x]
             ctx.fillStyle = `rgb(${r}, ${g}, ${b})`
             ctx.fillRect(x * CELL, y * CELL, CELL, CELL)
@@ -1277,9 +1345,9 @@
 
       function cellFromEvent(e) {
         const rect = canvas.getBoundingClientRect()
-        const col = Math.floor(((e.clientX - rect.left) / rect.width) * SIZE)
-        const row = Math.floor(((e.clientY - rect.top) / rect.height) * SIZE)
-        return { row: Math.max(0, Math.min(SIZE - 1, row)), col: Math.max(0, Math.min(SIZE - 1, col)) }
+        const col = Math.floor(((e.clientX - rect.left) / rect.width) * size)
+        const row = Math.floor(((e.clientY - rect.top) / rect.height) * size)
+        return { row: Math.max(0, Math.min(size - 1, row)), col: Math.max(0, Math.min(size - 1, col)) }
       }
 
       function sameColor(a, b) {
@@ -1292,7 +1360,7 @@
         const stack = [[row, col]]
         while (stack.length) {
           const [r, c] = stack.pop()
-          if (r < 0 || r >= SIZE || c < 0 || c >= SIZE) continue
+          if (r < 0 || r >= size || c < 0 || c >= size) continue
           const px = pixels[r][c]
           if (!sameColor(px, target)) continue
           pixels[r][c] = currentColor.slice()
@@ -1334,8 +1402,8 @@
 
       document.getElementById('clearBtn').addEventListener('click', () => {
         pushUndo()
-        pixels = Array.from({ length: SIZE }, () =>
-          Array.from({ length: SIZE }, () => [255, 255, 255])
+        pixels = Array.from({ length: size }, () =>
+          Array.from({ length: size }, () => [255, 255, 255])
         )
         redraw()
         scheduleSave()
@@ -1344,7 +1412,7 @@
 
       /* ---------- 中途保存（localStorage） ---------- */
       const DRAFT_KEY = 'paintDraft'
-      const DRAFT_VERSION = 2
+      const DRAFT_VERSION = 3
       let saveTimer
 
       function saveDraft() {
@@ -1357,6 +1425,7 @@
           }
           localStorage.setItem(DRAFT_KEY, JSON.stringify({
             v: DRAFT_VERSION,
+            size,
             pixels: flat,
             time: Date.now()
           }))
@@ -1390,24 +1459,35 @@
           const data = JSON.parse(raw)
           if (!data || !Array.isArray(data.pixels)) return false
 
+          const ds = data.size === 32 || data.size === 64 ? data.size : 16
+          if (ds !== size) {
+            size = ds
+            CELL = 512 / size
+            undoStack.length = 0
+            updateUndoBtn()
+            document.querySelectorAll('.size-btn').forEach((b) =>
+              b.classList.toggle('active', Number(b.dataset.size) === size)
+            )
+          }
+
           const src = data.pixels
-          const out = Array.from({ length: SIZE }, () =>
-            Array.from({ length: SIZE }, () => [255, 255, 255])
+          const out = Array.from({ length: size }, () =>
+            Array.from({ length: size }, () => [255, 255, 255])
           )
 
           const isNested = Array.isArray(src[0]) && Array.isArray(src[0][0])
           const isFlat = Array.isArray(src[0]) && typeof src[0][0] === 'number'
 
           if (isNested) {
-            for (let y = 0; y < SIZE; y++) {
-              for (let x = 0; x < SIZE; x++) {
+            for (let y = 0; y < size; y++) {
+              for (let x = 0; x < size; x++) {
                 out[y][x] = normalizePixel(src[y] && src[y][x])
               }
             }
           } else if (isFlat) {
-            for (let y = 0; y < SIZE; y++) {
-              for (let x = 0; x < SIZE; x++) {
-                out[y][x] = normalizePixel(src[y * SIZE + x])
+            for (let y = 0; y < size; y++) {
+              for (let x = 0; x < size; x++) {
+                out[y][x] = normalizePixel(src[y * size + x])
               }
             }
           } else {
@@ -1492,16 +1572,25 @@
       }
 
       function loadOwn(rec) {
-        pushUndo()
+        const rs = rec.size === 32 || rec.size === 64 ? rec.size : 16
+        if (rs !== size) {
+          size = rs
+          CELL = 512 / size
+          document.querySelectorAll('.size-btn').forEach((b) =>
+            b.classList.toggle('active', Number(b.dataset.size) === size)
+          )
+        }
         pixels = []
-        for (let i = 0; i < 256; i += 16) {
+        for (let i = 0; i < rs * rs; i += rs) {
           const row = []
-          for (let j = 0; j < 16; j++) {
+          for (let j = 0; j < rs; j++) {
             const p = rec.pixels[i + j] || [255, 255, 255]
             row.push([p[0], p[1], p[2]])
           }
           pixels.push(row)
         }
+        undoStack.length = 0
+        updateUndoBtn()
         redraw()
         scheduleSave()
         toast('已载入你的作品，可继续编辑后重新上传')
@@ -1534,14 +1623,16 @@
           tile.className = 'tile'
           tile.title = '点击预览'
 
+          const rs = rec.size === 32 || rec.size === 64 ? rec.size : 16
+
           const c = document.createElement('canvas')
-          c.width = 16
-          c.height = 16
+          c.width = rs
+          c.height = rs
           c.className = 'thumb'
           const tc = c.getContext('2d')
-          for (let y = 0; y < 16; y++) {
-            for (let x = 0; x < 16; x++) {
-              const px = rec.pixels[y * 16 + x]
+          for (let y = 0; y < rs; y++) {
+            for (let x = 0; x < rs; x++) {
+              const px = rec.pixels[y * rs + x]
               if (!px) continue
               tc.fillStyle = `rgb(${px[0]}, ${px[1]}, ${px[2]})`
               tc.fillRect(x, y, 1, 1)
@@ -1589,21 +1680,22 @@
       }
 
       function previewRecord(rec) {
+        const rs = rec.size === 32 || rec.size === 64 ? rec.size : 16
         const c = document.getElementById('previewCanvas')
-        c.width = 16
-        c.height = 16
+        c.width = rs
+        c.height = rs
         const tc = c.getContext('2d')
-        tc.clearRect(0, 0, 16, 16)
-        for (let y = 0; y < 16; y++) {
-          for (let x = 0; x < 16; x++) {
-            const px = rec.pixels[y * 16 + x]
+        tc.clearRect(0, 0, rs, rs)
+        for (let y = 0; y < rs; y++) {
+          for (let x = 0; x < rs; x++) {
+            const px = rec.pixels[y * rs + x]
             if (!px) continue
             tc.fillStyle = `rgb(${px[0]}, ${px[1]}, ${px[2]})`
             tc.fillRect(x, y, 1, 1)
           }
         }
         document.getElementById('previewTitle').textContent = rec.workName || rec.name || '未命名'
-        document.getElementById('previewAuthor').textContent = '作者：' + (rec.author || rec.name || '匿名')
+        document.getElementById('previewAuthor').textContent = '作者：' + (rec.author || rec.name || '匿名') + ' · ' + rs + '×' + rs
         document.getElementById('previewTime').textContent = formatTime(rec.time)
         previewOverlay.hidden = false
       }
@@ -1642,7 +1734,7 @@
 
         const flat = []
         for (const row of pixels) for (const px of row) flat.push(normalizePixel(px))
-        const payload = { pixels: flat }
+        const payload = { pixels: flat, size }
         if (author) payload.author = author
         const workName = titleInput.value.trim()
         if (workName) payload.workName = workName

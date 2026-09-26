@@ -100,6 +100,7 @@ export async function onRequestGet(context) {
         name,
         workName: legacy ? name : e.workName || '',
         author: legacy ? '匿名' : e.author || '',
+        size: e.size === 32 || e.size === 64 ? e.size : 16,
         time: e.time || 0,
         likes: e.likes || 0,
       }
