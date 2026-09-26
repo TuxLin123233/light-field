@@ -11,9 +11,28 @@ const json = (body, status = 200) =>
   })
 
 const ROOM_TTL = 1800
-const MAX_MEMBERS = 3
+const MAX_MEMBERS = 6
 const DRAW_GAP_MS = 1500
 const ROOM_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
+const ROUND_MS = 90000
+
+const GUESS_WORDS = [
+  '苹果', '香蕉', '西瓜', '草莓', '葡萄', '橙子', '柠檬', '樱桃', '桃子', '菠萝',
+  '椰子', '梨', '柿子', '石榴', '芒果',
+  '猫', '狗', '兔子', '老鼠', '熊猫', '大象', '狮子', '老虎', '猴子', '蛇',
+  '蝴蝶', '蜜蜂', '蜗牛', '金鱼', '螃蟹', '章鱼', '乌龟', '企鹅', '小鸟', '小鸡',
+  '恐龙', '独角兽', '骆驼', '刺猬',
+  '太阳', '月亮', '星星', '云朵', '雨滴', '彩虹', '雪人', '火山', '高山', '大树',
+  '花朵', '蘑菇', '竹子', '荷花', '树叶',
+  '蛋糕', '冰淇淋', '汉堡', '比萨', '热狗', '面包', '糖果', '棒棒糖', '面条', '包子',
+  '饺子', '鸡蛋', '薯条', '爆米花', '奶茶', '咖啡', '樱桃蛋糕',
+  '雨伞', '帽子', '鞋子', '眼镜', '手机', '钥匙', '剪刀', '杯子', '筷子', '勺子',
+  '灯泡', '台灯', '闹钟', '吉他', '钢琴', '小提琴', '鼓', '铃铛', '机器人', '火箭',
+  '风筝', '气球', '礼物', '信封', '锤子', '扫帚', '水桶', '电视机', '冰箱', '沙发',
+  '铅笔', '书本', '书包', '相机', '耳机',
+  '汽车', '火车', '轮船', '飞机', '自行车', '摩托车', '滑板', '热气球', '直升机',
+  '警车', '消防车', '救护车', '公交车', '帆船', '潜水艇', '卡车',
+]
 
 function newCode() {
   let s = ''
@@ -52,7 +71,8 @@ function normalizePixels(pixels) {
   return out
 }
 
-function stripId(room) {
+function stripId(room, viewerId) {
+  const g = room.game
   return {
     code: room.code,
     created: room.created,
@@ -61,7 +81,108 @@ function stripId(room) {
     members: room.members,
     title: room.title || '',
     updatedAt: room.updatedAt,
+    maxMembers: MAX_MEMBERS,
+    game: g
+      ? {
+          active: g.active,
+          round: g.round,
+          painterId: g.painterId,
+          phase: g.phase,
+          scores: g.scores,
+          lastCorrect: g.lastCorrect,
+          lastWord: g.lastWord,
+          endAt: g.endAt,
+          myWord: viewerId && g.active && g.painterId === viewerId ? g.word : '',
+        }
+      : null,
   }
+}
+
+function blankPixels() {
+  return Array.from({ length: 256 }, () => [255, 255, 255])
+}
+
+function randomWord() {
+  return GUESS_WORDS[Math.floor(Math.random() * GUESS_WORDS.length)]
+}
+
+function normalizeGuess(s) {
+  return String(s || '')
+    .replace(/[\uFF01-\uFF5E]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0xfee0))
+    .toLowerCase()
+    .replace(/[\s，。,.!！?？、；;：:""''“”‘’()（）\-—_~@#￥%…·【】\[\]]/g, '')
+}
+
+function memberIndex(room, id) {
+  return room.members.findIndex((m) => m.id === id)
+}
+
+function memberName(room, id) {
+  const m = room.members.find((x) => x.id === id)
+  return m ? m.name || '匿名' : '？'
+}
+
+function nextRound(room) {
+  const g = room.game
+  const members = room.members
+  const last = g.painterIdx >= 0 ? g.painterIdx : members.length - 1
+  g.painterIdx = (last + 1) % members.length
+  g.round += 1
+  g.painterId = members[g.painterIdx].id
+  g.phase = 'drawing'
+  g.word = randomWord()
+  g.endAt = Date.now() + ROUND_MS
+  g.lastCorrect = null
+  g.lastWord = ''
+  room.version += 1
+  room.pixels = blankPixels()
+  room.updatedAt = Date.now()
+}
+
+function startGame(room) {
+  const scores = {}
+  for (const m of room.members) scores[m.id] = 0
+  room.game = {
+    active: true,
+    round: 0,
+    painterIdx: -1,
+    painterId: '',
+    phase: 'drawing',
+    word: '',
+    scores,
+    endAt: 0,
+    lastCorrect: null,
+    lastWord: '',
+  }
+  nextRound(room)
+}
+
+function maybeAdvance(room) {
+  const g = room.game
+  if (!g || !g.active) return false
+  const now = Date.now()
+  const members = room.members
+  if (members.length < 2) {
+    g.active = false
+    return true
+  }
+  if (!members.some((m) => m.id === g.painterId)) {
+    g.painterIdx = (g.painterIdx + 1) % members.length
+    nextRound(room)
+    return true
+  }
+  if (g.phase === 'drawing' && now >= g.endAt) {
+    g.phase = 'over'
+    g.lastCorrect = null
+    g.lastWord = g.word
+    room.updatedAt = now
+    return true
+  }
+  if (g.phase === 'over') {
+    nextRound(room)
+    return true
+  }
+  return false
 }
 
 export async function onRequestOptions() {
@@ -79,10 +200,11 @@ async function handleCreate(env, body) {
     code,
     created: Date.now(),
     version: 0,
-    pixels: Array.from({ length: 256 }, () => [255, 255, 255]),
+    pixels: blankPixels(),
     members: [],
     title: '',
     updatedAt: Date.now(),
+    game: null,
   }
   await writeRoom(env.LIGHTFIELD_KV, room)
   return json({ ok: true, code, maxMembers: MAX_MEMBERS })
@@ -102,16 +224,17 @@ async function handleJoin(env, body) {
     if (name) existing.name = name
     room.updatedAt = Date.now()
     await writeRoom(env.LIGHTFIELD_KV, room)
-    return json({ ok: true, id: existing.id, state: stripId(room) })
+    return json({ ok: true, id: existing.id, state: stripId(room, existingId) })
   }
 
-  if (room.members.length >= MAX_MEMBERS) return json({ error: '房间已满（最多 3 人）' }, 409)
+  if (room.members.length >= MAX_MEMBERS) return json({ error: '房间已满（最多 ' + MAX_MEMBERS + ' 人）' }, 409)
 
   const id = crypto.randomUUID()
   room.members.push({ id, name: name || '匿名' })
   room.updatedAt = Date.now()
+  if (room.game) room.game.scores[id] = 0
   await writeRoom(env.LIGHTFIELD_KV, room)
-  return json({ ok: true, id, state: stripId(room) })
+  return json({ ok: true, id, state: stripId(room, id) })
 }
 
 async function handleLeave(env, body) {
@@ -141,19 +264,29 @@ async function handleDraw(env, body) {
   if (!room) return json({ error: '房间不存在或已过期' }, 404)
   if (!room.members.some((m) => m.id === id)) return json({ error: '请先加入房间' }, 403)
 
+  if (room.game && room.game.active) {
+    if (room.game.painterId !== id) {
+      return json({ error: '当前不是你画画（轮到 ' + memberName(room, room.game.painterId) + ' 作画）', state: stripId(room, id) }, 403)
+    }
+    if (maybeAdvance(room)) await writeRoom(env.LIGHTFIELD_KV, room)
+    if (room.game.phase !== 'drawing' || room.game.painterId !== id) {
+      return json({ error: '本回合已结束，请等待下一回合', state: stripId(room, id) }, 409)
+    }
+  }
+
   const now = Date.now()
   if (Number.isFinite(baseVersion) && baseVersion !== room.version) {
-    return json({ error: '画布已更新，请重新同步', state: stripId(room) }, 409)
+    return json({ error: '画布已更新，请重新同步', state: stripId(room, id) }, 409)
   }
   if (now - room.updatedAt < DRAW_GAP_MS) {
-    return json({ error: '操作太快，请稍候', state: stripId(room) }, 429)
+    return json({ error: '操作太快，请稍候', state: stripId(room, id) }, 429)
   }
 
   room.version += 1
   room.pixels = pixels
   room.updatedAt = now
   await writeRoom(env.LIGHTFIELD_KV, room)
-  return json({ ok: true, state: stripId(room) })
+  return json({ ok: true, state: stripId(room, id) })
 }
 
 async function handleTitle(env, body) {
@@ -166,18 +299,112 @@ async function handleTitle(env, body) {
   if (!room) return json({ error: '房间不存在或已过期' }, 404)
   if (!room.members.some((m) => m.id === id)) return json({ error: '请先加入房间' }, 403)
 
+  if (maybeAdvance(room)) await writeRoom(env.LIGHTFIELD_KV, room)
+  if (room.game && room.game.active && room.game.painterId === id) {
+    return json({ error: '游戏中由画师统一命名' }, 403)
+  }
+
   room.title = title
   room.updatedAt = Date.now()
   await writeRoom(env.LIGHTFIELD_KV, room)
-  return json({ ok: true, state: stripId(room) })
+  return json({ ok: true, state: stripId(room, id) })
+}
+
+async function handleGameStart(env, body) {
+  const code = ((body && body.code) || '').toString().toUpperCase().trim()
+  if (!/^[A-Z0-9]{6}$/.test(code)) return json({ error: '房间码格式不正确' }, 400)
+  const id = (body && body.id) || ''
+
+  const room = await readRoom(env.LIGHTFIELD_KV, code)
+  if (!room) return json({ error: '房间不存在或已过期' }, 404)
+  if (!room.members.some((m) => m.id === id)) return json({ error: '请先加入房间' }, 403)
+  if (room.members.length < 2) return json({ error: '至少需要 2 人才能开始' }, 400)
+  if (room.game && room.game.active) return json({ error: '游戏已在进行中' }, 409)
+
+  startGame(room)
+  await writeRoom(env.LIGHTFIELD_KV, room)
+  return json({ ok: true, state: stripId(room, id) })
+}
+
+async function handleGuess(env, body) {
+  const code = ((body && body.code) || '').toString().toUpperCase().trim()
+  if (!/^[A-Z0-9]{6}$/.test(code)) return json({ error: '房间码格式不正确' }, 400)
+  const id = (body && body.id) || ''
+  const text = String((body && body.guess) || '').trim().slice(0, 30)
+
+  const room = await readRoom(env.LIGHTFIELD_KV, code)
+  if (!room) return json({ error: '房间不存在或已过期' }, 404)
+  if (!room.members.some((m) => m.id === id)) return json({ error: '请先加入房间' }, 403)
+  if (maybeAdvance(room)) await writeRoom(env.LIGHTFIELD_KV, room)
+  const g = room.game
+  if (!g || !g.active) return json({ error: '游戏未开始', state: stripId(room, id) }, 400)
+  if (memberIndex(room, id) === g.painterIdx) return json({ error: '画师不能猜自己的题' }, 403)
+  if (g.phase !== 'drawing') return json({ error: '本回合已结束，等下一回合', state: stripId(room, id) }, 409)
+
+  const guess = normalizeGuess(text)
+  if (!guess) return json({ error: '输入要猜的词' }, 400)
+
+  if (guess === normalizeGuess(g.word)) {
+    const scores = g.scores
+    scores[id] = (scores[id] || 0) + 10
+    scores[g.painterId] = (scores[g.painterId] || 0) + 5
+    g.phase = 'over'
+    g.lastCorrect = id
+    g.lastWord = g.word
+    room.updatedAt = Date.now()
+    await writeRoom(env.LIGHTFIELD_KV, room)
+    return json({ ok: true, correct: true, state: stripId(room, id) })
+  }
+
+  room.updatedAt = Date.now()
+  await writeRoom(env.LIGHTFIELD_KV, room)
+  return json({ ok: true, correct: false })
+}
+
+async function handleSkip(env, body) {
+  const code = ((body && body.code) || '').toString().toUpperCase().trim()
+  if (!/^[A-Z0-9]{6}$/.test(code)) return json({ error: '房间码格式不正确' }, 400)
+  const id = (body && body.id) || ''
+
+  const room = await readRoom(env.LIGHTFIELD_KV, code)
+  if (!room) return json({ error: '房间不存在或已过期' }, 404)
+  if (!room.members.some((m) => m.id === id)) return json({ error: '请先加入房间' }, 403)
+  const g = room.game
+  if (!g || !g.active) return json({ error: '游戏未开始', state: stripId(room, id) }, 400)
+  if (id !== g.painterId) return json({ error: '只有画师能跳过' }, 403)
+  if (g.phase !== 'drawing') return json({ error: '本回合已结束，等下一回合', state: stripId(room, id) }, 409)
+
+  g.phase = 'over'
+  g.lastCorrect = null
+  g.lastWord = g.word
+  room.updatedAt = Date.now()
+  await writeRoom(env.LIGHTFIELD_KV, room)
+  return json({ ok: true, state: stripId(room, id) })
+}
+
+async function handleGameEnd(env, body) {
+  const code = ((body && body.code) || '').toString().toUpperCase().trim()
+  if (!/^[A-Z0-9]{6}$/.test(code)) return json({ error: '房间码格式不正确' }, 400)
+  const id = (body && body.id) || ''
+
+  const room = await readRoom(env.LIGHTFIELD_KV, code)
+  if (!room) return json({ error: '房间不存在或已过期' }, 404)
+  if (!room.members.some((m) => m.id === id)) return json({ error: '请先加入房间' }, 403)
+
+  room.game = null
+  room.updatedAt = Date.now()
+  await writeRoom(env.LIGHTFIELD_KV, room)
+  return json({ ok: true })
 }
 
 async function handleGet(env, url) {
   const code = (url.searchParams.get('code') || '').toUpperCase().trim()
   if (!/^[A-Z0-9]{6}$/.test(code)) return json({ error: '房间码格式不正确' }, 400)
+  const id = (url.searchParams.get('id') || '')
   const room = await readRoom(env.LIGHTFIELD_KV, code)
   if (!room) return json({ error: '房间不存在或已过期' }, 404)
-  return json({ ok: true, state: stripId(room) })
+  if (maybeAdvance(room)) await writeRoom(env.LIGHTFIELD_KV, room)
+  return json({ ok: true, state: stripId(room, id) })
 }
 
 export async function onRequestGet(context) {
@@ -203,5 +430,9 @@ export async function onRequestPost(context) {
   if (action === 'leave') return handleLeave(env, body)
   if (action === 'draw') return handleDraw(env, body)
   if (action === 'title') return handleTitle(env, body)
-  return json({ error: '缺少 action（create/join/leave/draw/title）' }, 400)
+  if (action === 'gamestart') return handleGameStart(env, body)
+  if (action === 'guess') return handleGuess(env, body)
+  if (action === 'skip') return handleSkip(env, body)
+  if (action === 'endgame') return handleGameEnd(env, body)
+  return json({ error: '缺少 action（create/join/leave/draw/title/gamestart/guess/skip/endgame）' }, 400)
 }

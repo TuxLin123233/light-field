@@ -522,6 +522,148 @@
         text-align: center;
         margin-top: 8px;
       }
+
+      .game-bar { padding: 14px; }
+      .game-bar[hidden] { display: none; }
+
+      .game-cta-text {
+        font-size: 13px;
+        color: var(--text-muted2);
+        line-height: 1.6;
+        margin-bottom: 12px;
+      }
+
+      #startGameBtn {
+        width: 100%;
+        height: 50px;
+        border-radius: 999px;
+        border: none;
+        background: var(--accent);
+        color: #fff;
+        font-size: 16px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .game-top {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 10px;
+      }
+
+      .game-badge {
+        font-size: 13px;
+        font-weight: 800;
+        color: var(--accent);
+        background: var(--surface-3);
+        border-radius: 999px;
+        padding: 4px 12px;
+      }
+
+      .game-painter {
+        flex: 1;
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text);
+      }
+
+      .game-time {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--ok);
+        font-variant-numeric: tabular-nums;
+      }
+
+      .game-end {
+        border: none;
+        background: var(--surface-2);
+        color: var(--text-muted);
+        border-radius: 999px;
+        padding: 6px 14px;
+        font-size: 13px;
+        cursor: pointer;
+      }
+
+      .game-word-box {
+        text-align: center;
+        background: var(--surface-3);
+        border-radius: 14px;
+        padding: 14px;
+        margin-bottom: 10px;
+      }
+
+      .game-word-label {
+        font-size: 13px;
+        color: var(--text-muted2);
+        margin-bottom: 6px;
+      }
+
+      .game-word {
+        font-size: 30px;
+        font-weight: 800;
+        letter-spacing: 6px;
+        color: var(--accent);
+        margin-bottom: 10px;
+      }
+
+      .game-skip {
+        border: 2px solid var(--border);
+        background: var(--surface);
+        color: var(--text-muted);
+        border-radius: 999px;
+        padding: 8px 18px;
+        font-size: 13px;
+        cursor: pointer;
+      }
+
+      .game-guess-box {
+        margin-bottom: 10px;
+      }
+
+      .game-guess-label {
+        font-size: 13px;
+        color: var(--text-muted2);
+        margin-bottom: 8px;
+      }
+
+      .game-guess-row {
+        display: flex;
+        gap: 8px;
+      }
+
+      .game-guess-row .field { margin-top: 0; }
+
+      .game-status {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--ok);
+        text-align: center;
+        background: var(--ok-bg);
+        border-radius: 12px;
+        padding: 12px;
+        margin-bottom: 10px;
+      }
+
+      .scores {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .score-chip {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--text);
+        background: var(--surface-3);
+        border-radius: 999px;
+        padding: 5px 12px;
+      }
+
+      .score-chip.painter-chip { outline: 2px solid var(--accent); }
+
+      .housework { font-size: 11px; color: var(--text-faint); text-align: center; margin-top: 6px; }
     </style>
   </head>
   <body>
@@ -550,7 +692,7 @@
 
     <div class="panel landing" id="landing" hidden>
       <h2>创建或加入房间</h2>
-      <p>最多 3 人同时在一张 16×16 画板上协同作画</p>
+      <p>最多 6 人：可一起在 16×16 画板协同作画，或开一局「你画我猜」</p>
       <input class="field" id="nameInput" placeholder="你的昵称（可留空）" maxlength="20">
       <button class="primary" id="createBtn" type="button">创建房间</button>
       <div class="divider">或</div>
@@ -569,6 +711,36 @@
         <button class="icon-btn" id="copyBtn" type="button" title="复制邀请链接" style="height:46px;width:46px;min-width:46px">📋</button>
       </div>
       <div class="members" id="members"></div>
+
+      <div class="panel game-bar" id="gameBar" hidden>
+        <div id="gameStartRow" hidden>
+          <div class="game-cta-text">你画我猜：一人看题目作画，其他人猜词。猜对 +10、画师 +5，时间到换人，轮流做画师。</div>
+          <button id="startGameBtn" type="button">🎮 开始你画我猜</button>
+        </div>
+        <div id="gamePlay" hidden>
+          <div class="game-top">
+            <span class="game-badge">第 <span id="roundNum">1</span> 回合</span>
+            <span class="game-painter" id="painterName"></span>
+            <span class="game-time" id="gameTimer"></span>
+            <button id="endGameBtn" class="game-end" type="button" title="结束游戏">结束</button>
+          </div>
+          <div class="game-word-box" id="gameWordBox" hidden>
+            <div class="game-word-label">你是这轮画师，题目是：</div>
+            <div class="game-word" id="guessWord"></div>
+            <button id="skipBtn" class="game-skip" type="button">这题画不好，换词跳过</button>
+          </div>
+          <div class="game-guess-box" id="gameGuessBox" hidden>
+            <div class="game-guess-label">画的是啥？开动脑筋猜一猜</div>
+            <div class="game-guess-row">
+              <input id="guessInput" class="field" placeholder="输入你的猜测…" maxlength="20" autocomplete="off">
+              <button id="guessBtn" class="primary" type="button" style="width:auto;padding:0 20px;margin-top:0">猜！</button>
+            </div>
+          </div>
+          <div class="game-status" id="gameStatus" hidden></div>
+          <div class="scores" id="scoreList"></div>
+        </div>
+      </div>
+
       <input class="field title-field" id="titleInput" placeholder="作品名（联机共享，可一起改）" maxlength="20" autocomplete="off">
       <div class="share-link" id="shareLink"></div>
 
@@ -740,6 +912,10 @@
 
       canvas.addEventListener('pointerdown', (e) => {
         e.preventDefault()
+        if (gameForbidsDraw()) {
+          toast(room && room.game && room.game.active ? '还在等 ' + playerName(room.game.painterId) + ' 作画呢' : '')
+          return
+        }
         drawing = true
         moved = false
         if (activeTool === 'fill') {
@@ -777,7 +953,7 @@
           document.querySelectorAll('.tool').forEach((b) => b.classList.remove('active'))
           btn.classList.add('active')
           activeTool = btn.dataset.tool
-          hint.textContent = TOOL_HINTS[activeTool] || ''
+          refreshHint()
         })
       })
 
@@ -861,14 +1037,18 @@
 
       function renderRoom() {
         roomCodeEl.textContent = room.code
+        const maxM = room.maxMembers || 6
         roomMeta.innerHTML =
-          '在线 <span class="ok">' + room.members.length + '</span> / 3 · ' +
+          '在线 <span class="ok">' + room.members.length + '</span> / ' + maxM + ' · ' +
           '版本 v' + room.version + (room.title ? ' · 「' + room.title + '」' : '')
         membersEl.innerHTML = ''
+        const g = room.game
         room.members.forEach((m) => {
           const chip = document.createElement('span')
           chip.className = 'member-chip' + (m.id === memberId ? ' me' : '')
-          chip.textContent = (m.id === memberId ? '我 · ' : '') + (m.name || '匿名')
+          if (g && g.active && g.painterId === m.id) chip.className += ' painter-chip'
+          const scoreTxt = g && g.active && g.scores ? ' · ' + (g.scores[m.id] || 0) + ' 分' : ''
+          chip.textContent = (m.id === memberId ? '我 · ' : '') + (m.name || '匿名') + scoreTxt
           membersEl.appendChild(chip)
         })
         if (document.activeElement !== titleInput) {
@@ -876,6 +1056,184 @@
         }
         shareLink.textContent = '邀请链接：' + location.origin + '/room?code=' + room.code
         copyBtn.disabled = false
+        renderGame()
+      }
+
+      /* ---------- 你画我猜 ---------- */
+      const gameBar = document.getElementById('gameBar')
+      const gameStartRow = document.getElementById('gameStartRow')
+      const gamePlay = document.getElementById('gamePlay')
+      const roundNumEl = document.getElementById('roundNum')
+      const painterNameEl = document.getElementById('painterName')
+      const gameTimerEl = document.getElementById('gameTimer')
+      const endGameBtn = document.getElementById('endGameBtn')
+      const gameWordBox = document.getElementById('gameWordBox')
+      const guessWordEl = document.getElementById('guessWord')
+      const skipBtn = document.getElementById('skipBtn')
+      const gameGuessBox = document.getElementById('gameGuessBox')
+      const guessInput = document.getElementById('guessInput')
+      const guessBtn = document.getElementById('guessBtn')
+      const gameStatus = document.getElementById('gameStatus')
+      const scoreList = document.getElementById('scoreList')
+      const startGameBtn = document.getElementById('startGameBtn')
+
+      function myGameRole() {
+        if (!room || !room.game || !room.game.active) return 'none'
+        return room.game.painterId === memberId ? 'painter' : 'guesser'
+      }
+
+      function gameForbidsDraw() {
+        const g = room && room.game
+        if (!g || !g.active) return false
+        return g.painterId !== memberId || g.phase !== 'drawing'
+      }
+
+      function renderGame() {
+        const g = room && room.game
+        gameBar.hidden = !room
+        gameStartRow.hidden = !!(g && g.active)
+        gamePlay.hidden = !(g && g.active)
+        titleInput.hidden = !!(g && g.active)
+        if (!g || !g.active) {
+          refreshHint()
+          return
+        }
+        roundNumEl.textContent = String(g.round)
+        painterNameEl.textContent = '画师：' + playerName(g.painterId)
+        const painter = g.painterId === memberId
+        gameWordBox.hidden = !painter
+        gameGuessBox.hidden = painter || g.phase !== 'drawing'
+        guessWordEl.textContent = g.myWord || '？？'
+        gameStatus.hidden = g.phase !== 'over'
+        if (g.phase === 'over') {
+          const who = g.lastCorrect
+          const by = who ? playerName(who) + ' 猜对了' : '时间到，无人答出'
+          gameStatus.textContent = '答案是「' + (g.lastWord || g.myWord || '？？') + '」！' + by + '，马上开始下一回合…'
+        }
+        const scores = g.scores || {}
+        scoreList.innerHTML = ''
+        room.members.forEach((m) => {
+          const chip = document.createElement('span')
+          chip.className = 'score-chip'
+          if (m.id === g.painterId) chip.className += ' painter-chip'
+          chip.textContent = (m.id === memberId ? '我 · ' : '') + (m.name || '匿名') + ' ' + (scores[m.id] || 0) + ' 分'
+          scoreList.appendChild(chip)
+        })
+        updateTimer()
+        refreshHint()
+      }
+
+      function playerName(id) {
+        const m = room && room.members.find((x) => x.id === id)
+        return m ? m.name || '匿名' : '？'
+      }
+
+      function updateTimer() {
+        const g = room && room.game
+        if (!g || !g.active) {
+          gameTimerEl.textContent = ''
+          return
+        }
+        if (g.phase !== 'drawing') {
+          gameTimerEl.textContent = '衔接中…'
+          return
+        }
+        const sec = Math.max(0, Math.ceil((g.endAt - Date.now()) / 1000))
+        gameTimerEl.textContent = sec + 's'
+      }
+      setInterval(updateTimer, 500)
+
+      function postAction(body) {
+        return fetch('/api/room', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        }).then((r) => r.json().catch(() => ({})))
+          .then((data) => ({ data, res: null }))
+          .catch(() => ({ data: {} }))
+      }
+
+      async function applyGameState(data) {
+        if (data && data.state) {
+          room = data.state
+          renderRoom()
+          const s = data.state
+          if (s.version !== lastServerVersion) {
+            lastServerVersion = s.version
+            if (data.state.pixels) applyPixels(s.pixels)
+          }
+        }
+        return data
+      }
+
+      startGameBtn.addEventListener('click', async () => {
+        if (!room || room.members.length < 2) {
+          toast('至少需要 2 人才能开玩')
+          return
+        }
+        startGameBtn.disabled = true
+        const data = await postAction({ action: 'gamestart', code: room.code, id: memberId })
+        startGameBtn.disabled = false
+        if (!data.ok) {
+          toast('开始失败：' + (data.error || '未知错误'))
+          return
+        }
+        await applyGameState(data)
+        toast('游戏开始，各就各位！')
+      })
+
+      let guessing = false
+      async function submitGuess() {
+        const text = guessInput.value.trim()
+        if (!text || guessing) return
+        guessing = true
+        try {
+          const data = await postAction({ action: 'guess', code: room.code, id: memberId, guess: text })
+          if (data.correct) {
+            guessInput.value = ''
+            await applyGameState(data)
+            toast('答对啦！+10 分 🎉')
+          } else if (!data.ok) {
+            if (data.error) toast(data.error)
+            if (data.state) await applyGameState(data)
+          }
+        } finally {
+          guessing = false
+        }
+      }
+      guessBtn.addEventListener('click', submitGuess)
+      guessInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') submitGuess()
+      })
+
+      skipBtn.addEventListener('click', async () => {
+        const data = await postAction({ action: 'skip', code: room.code, id: memberId })
+        if (!data.ok && data.error) toast(data.error)
+        if (data.state) await applyGameState(data)
+      })
+
+      endGameBtn.addEventListener('click', async () => {
+        const data = await postAction({ action: 'endgame', code: room.code, id: memberId })
+        if (data.ok) {
+          room.game = null
+          renderRoom()
+          toast('游戏已结束')
+        } else if (data.error) {
+          toast(data.error)
+        }
+      })
+
+      function refreshHint() {
+        const g = room && room.game
+        if (g && g.active) {
+          if (myGameRole() === 'painter') {
+            hint.textContent = TOOL_HINTS[activeTool] + ' · 你是画师，画好你的题目让队友猜'
+          } else {
+            hint.textContent = '等 ' + playerName(g.painterId) + ' 作画中，看画猜词吧'
+          }
+        } else {
+          hint.textContent = TOOL_HINTS[activeTool] || ''
+        }
       }
 
       function showSync(text) {
@@ -942,7 +1300,7 @@
 
       async function refreshRoom() {
         try {
-          const res = await fetch('/api/room?code=' + encodeURIComponent(room.code))
+          const res = await fetch('/api/room?code=' + encodeURIComponent(room.code) + '&id=' + encodeURIComponent(memberId))
           if (!res.ok) {
             toast('房间已失效，请重新加入')
             enterLanding()
@@ -978,6 +1336,7 @@
         lastServerVersion = state.version
         applyPixels(state.pixels)
         renderRoom()
+        refreshHint()
         dirty = false
         landing.hidden = true
         roomPanel.hidden = false
@@ -994,6 +1353,8 @@
         landing.hidden = false
         roomPanel.hidden = true
         hint.hidden = false
+        gameBar.hidden = true
+        refreshHint()
       }
 
       async function createRoom() {
