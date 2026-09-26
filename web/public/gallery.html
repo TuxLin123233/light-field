@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="光域画板 · 全部作品">
+    <title>全部作品 · 光域画板</title>
+    <script>
+      ;(function () {
+        try {
+          var t = localStorage.getItem('lw-theme')
+          if (!t) t = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+          document.documentElement.setAttribute('data-theme', t)
+        } catch (e) {}
+      })()
+    </script>
+    <style>
+      :root {
+        --bg: #faf5ef;
+        --surface: #ffffff;
+        --surface-2: #efe9e0;
+        --text: #3b342c;
+        --text-muted: #6b5f50;
+        --text-faint: #b0a697;
+        --text-report: #8c7f6b;
+        --border: #efe7da;
+        --border-strong: #e0d3c0;
+        --ring: #ffffff;
+        --shadow: rgba(80, 60, 40, 0.08);
+        --shadow-hover: rgba(80, 60, 40, 0.14);
+        --accent: #5b8def;
+        --like: #e5574b;
+        --like-bg: #fff1ee;
+        --like-border: #eec9c2;
+        --art-bg: #ffffff;
+        --overlay: rgba(20, 15, 10, 0.8);
+      }
+      [data-theme="dark"] {
+        --bg: #181512;
+        --surface: #262220;
+        --surface-2: #332e29;
+        --text: #ece5da;
+        --text-muted: #b8ac9b;
+        --text-faint: #7d7266;
+        --text-report: #968a78;
+        --border: #3a342f;
+        --border-strong: #4a433c;
+        --ring: #262220;
+        --shadow: rgba(0, 0, 0, 0.4);
+        --shadow-hover: rgba(0, 0, 0, 0.55);
+        --accent: #6f9fff;
+        --like: #ff7a6d;
+        --like-bg: #3a221f;
+        --like-border: #5a332c;
+        --art-bg: #ffffff;
+      }
+
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+        padding: 24px 16px 40px;
+        transition: background 0.25s ease, color 0.25s ease;
+      }
+
+      .container {
+        width: 100%;
+        max-width: 760px;
+        margin: 0 auto;
+      }
+
+      .header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 20px;
+      }
+
+      .back {
+        flex: 0 0 auto;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-muted);
+        text-decoration: none;
+        background: var(--surface);
+        border: 2px solid var(--border);
+        border-radius: 999px;
+        padding: 8px 16px;
+        transition: border-color 0.2s;
+      }
+
+      .back:hover { border-color: var(--border-strong); }
+
+      .header-text { flex: 1; min-width: 0; }
+
+      .header-text h1 {
+        font-size: 20px;
+        font-weight: 800;
+        color: var(--text);
+      }
+
+      #count {
+        font-size: 13px;
+        color: var(--text-faint);
+        margin-top: 4px;
+      }
+
+      .theme-btn {
+        flex: 0 0 auto;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: 2px solid var(--border);
+        background: var(--surface);
+        color: var(--text-muted);
+        font-size: 18px;
+        cursor: pointer;
+        transition: border-color 0.2s, transform 0.12s;
+        line-height: 1;
+      }
+
+      .theme-btn:active { transform: scale(0.9); }
+
+      .featured {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 16px;
+        margin-bottom: 22px;
+        box-shadow: 0 4px 14px var(--shadow);
+      }
+
+      .featured[hidden] { display: none; }
+
+      .featured-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 15px;
+        font-weight: 800;
+        color: var(--text);
+        margin-bottom: 12px;
+      }
+
+      .featured-sub {
+        font-size: 11px;
+        font-weight: 500;
+        color: var(--text-faint);
+        margin-bottom: 12px;
+      }
+
+      .range-tabs {
+        display: flex;
+        gap: 4px;
+        background: var(--surface-2);
+        border-radius: 999px;
+        padding: 3px;
+      }
+
+      .range-tabs button {
+        border: none;
+        background: transparent;
+        color: var(--text-muted);
+        font-size: 12px;
+        font-weight: 700;
+        border-radius: 999px;
+        padding: 4px 12px;
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s;
+      }
+
+      .range-tabs button.active {
+        background: var(--surface);
+        color: var(--text);
+      }
+
+      .featured-row {
+        display: flex;
+        gap: 12px;
+        overflow-x: auto;
+        padding-bottom: 6px;
+        scrollbar-width: none;
+      }
+
+      .featured-row::-webkit-scrollbar { display: none; }
+
+      .f-card {
+        flex: 0 0 96px;
+        text-align: center;
+        cursor: pointer;
+        position: relative;
+      }
+
+      .f-rank {
+        position: absolute;
+        top: -6px;
+        left: -6px;
+        z-index: 2;
+        min-width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        font-size: 12px;
+        font-weight: 800;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 4px;
+      }
+
+      .f-rank.r1 { background: #f6c343; }
+      .f-rank.r2 { background: #aeb6c2; }
+      .f-rank.r3 { background: #d18b5f; }
+      .f-rank.rn { background: #8a7f6f; }
+
+      .f-art {
+        width: 96px;
+        height: 96px;
+        image-rendering: pixelated;
+        border-radius: 12px;
+        border: 2px solid var(--border);
+        background: var(--art-bg);
+        display: block;
+        box-shadow: 0 3px 10px var(--shadow);
+        transition: transform 0.12s ease;
+      }
+
+      .f-card:active .f-art { transform: scale(0.94); }
+
+      .f-name {
+        margin-top: 6px;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 96px;
+      }
+
+      .f-meta {
+        margin-top: 2px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .f-author {
+        font-size: 10px;
+        color: var(--text-faint);
+      }
+
+      .f-like {
+        font-size: 10px;
+        color: var(--like);
+      }
+
+      .gallery-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 14px;
+      }
+
+      .card {
+        background: var(--surface);
+        border: 1px solid transparent;
+        border-radius: 16px;
+        padding: 10px;
+        box-shadow: 0 4px 14px var(--shadow);
+        cursor: pointer;
+        text-align: left;
+        transition: transform 0.1s ease, box-shadow 0.2s ease;
+        color: inherit;
+        font: inherit;
+      }
+
+      .card:hover { box-shadow: 0 8px 22px var(--shadow-hover); }
+      .card:active { transform: scale(0.97); }
+      .card.hl {
+        box-shadow: 0 0 0 3px var(--accent), 0 8px 22px var(--shadow-hover);
+        animation: hlPulse 1.6s ease 2;
+      }
+
+      @keyframes hlPulse {
+        0%, 100% { box-shadow: 0 0 0 3px var(--accent), 0 8px 22px var(--shadow-hover); }
+        50% { box-shadow: 0 0 0 7px rgba(91, 141, 239, 0.45), 0 8px 22px var(--shadow-hover); }
+      }
+
+      .art {
+        width: 100%;
+        aspect-ratio: 1;
+        image-rendering: pixelated;
+        border-radius: 10px;
+        border: 2px solid var(--border);
+        background: var(--art-bg);
+        display: block;
+      }
+
+      .card-meta {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-top: 8px;
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+
+      .card-name {
+        font-weight: 600;
+        word-break: break-all;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .card-sub {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-top: 2px;
+        font-size: 11px;
+        color: var(--text-faint);
+      }
+
+      .card-author {
+        font-size: 11px;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .like-btn {
+        flex: 0 0 auto;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        border: 1px solid var(--like-border);
+        background: var(--like-bg);
+        color: var(--like);
+        border-radius: 999px;
+        padding: 3px 10px;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: transform 0.12s, background 0.15s;
+        line-height: 1.3;
+      }
+
+      .like-btn:active { transform: scale(0.9); }
+      .like-btn.liked { background: var(--like); color: #fff; border-color: var(--like); }
+
+      .card-time {
+        margin-top: 4px;
+        font-size: 10px;
+        color: var(--text-faint);
+      }
+
+      .status {
+        text-align: center;
+        color: var(--text-faint);
+        font-size: 14px;
+        padding: 40px 0;
+      }
+
+      #sentinel { cursor: pointer; }
+
+      .retry {
+        margin-top: 12px;
+        padding: 8px 20px;
+        border: 2px solid var(--border);
+        background: var(--surface);
+        color: var(--text-muted);
+        border-radius: 999px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .disclaimer {
+        margin-top: 28px;
+        padding: 14px 16px;
+        background: var(--surface);
+        border-radius: 14px;
+        box-shadow: 0 4px 14px var(--shadow);
+        font-size: 12px;
+        line-height: 1.7;
+        color: var(--text-faint);
+        text-align: justify;
+      }
+
+      .disclaimer-report {
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px solid var(--border);
+        color: var(--text-report);
+      }
+
+      .copyright {
+        margin-top: 16px;
+        text-align: center;
+        font-size: 12px;
+        color: var(--text-faint);
+      }
+
+      .preview-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 90;
+        background: var(--overlay);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        color: var(--text);
+      }
+
+      .preview-overlay[hidden] { display: none; }
+
+      .preview-box {
+        width: 100%;
+        max-width: 380px;
+        background: var(--surface);
+        border-radius: 18px;
+        padding: 20px;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+        text-align: center;
+      }
+
+      .preview-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 14px;
+      }
+
+      .preview-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text);
+      }
+
+      .preview-close {
+        border: none;
+        background: var(--surface-2);
+        color: var(--text-muted);
+        border-radius: 999px;
+        padding: 8px 16px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      #previewCanvas {
+        width: 240px;
+        height: 240px;
+        image-rendering: pixelated;
+        border-radius: 12px;
+        border: 2px solid var(--border);
+        background: var(--art-bg);
+        margin: 0 auto;
+        display: block;
+      }
+
+      .preview-info {
+        margin-top: 12px;
+        font-size: 14px;
+        color: var(--text);
+        font-weight: 600;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .preview-time {
+        font-size: 12px;
+        color: var(--text-faint);
+        font-weight: 400;
+      }
+
+      .preview-like {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 12px;
+      }
+
+      .share-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        border: 1px solid var(--border-strong);
+        background: var(--surface-2);
+        color: var(--text-muted);
+        border-radius: 999px;
+        padding: 3px 14px;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: transform 0.12s;
+        line-height: 1.5;
+      }
+
+      .share-btn:active { transform: scale(0.93); }
+      .share-btn.copied { background: var(--ok-bg, #e8f5e9); color: var(--ok, #43a047); border-color: var(--ok, #43a047); }
+
+      .preview-note {
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid var(--border);
+        font-size: 12px;
+        color: var(--text-faint);
+        line-height: 1.6;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <a class="back" href="/paint">← 返回画板</a>
+        <div class="header-text">
+          <h1>全部作品</h1>
+          <div id="count">加载中…</div>
+        </div>
+        <button class="theme-btn" id="themeBtn" type="button" title="切换主题">🌙</button>
+      </div>
+
+      <section class="featured" id="featured" hidden>
+        <div class="featured-head">
+          <span>🏆 佳作展示</span>
+          <div class="range-tabs" id="rangeTabs">
+            <button type="button" data-range="all" class="active">总榜</button>
+            <button type="button" data-range="today">今日</button>
+            <button type="button" data-range="week">本周</button>
+          </div>
+        </div>
+        <div class="featured-sub" id="featuredSub">按赞数排名 Top 5</div>
+        <div class="featured-row" id="featuredRow"></div>
+      </section>
+
+      <div id="gallery" class="gallery-grid"></div>
+      <div id="sentinel" class="status">加载中…</div>
+      <div id="status" class="status" hidden></div>
+
+      <div class="disclaimer">
+        以下作品均来自全网上传。全部作品仅支持预览，不可载入作画，请尊重原作者，切勿抄袭或直接提交他人作品。
+        本画板仅用于个人学习与技术交流，上传者须对自己发布的内容负全部法律责任。
+        <div class="disclaimer-report">发现违规内容？请联系微信 Tux123233 或邮箱 linsifan123233@petalmail.com 举报。</div>
+      </div>
+      <div class="copyright">© 2026 光域画板 · 版权所有 · 作者 Lin Sifan</div>
+    </div>
+
+    <div class="preview-overlay" id="previewOverlay" hidden>
+      <div class="preview-box">
+        <div class="preview-head">
+          <span class="preview-title" id="previewTitle">作品预览</span>
+          <button class="preview-close" id="previewClose" type="button">关闭</button>
+        </div>
+        <canvas id="previewCanvas"></canvas>
+        <div class="preview-info">
+          <span id="previewAuthor"></span>
+          <span id="previewTime" class="preview-time"></span>
+        </div>
+        <div class="preview-like">
+          <button class="like-btn" id="previewLike" type="button">♥ <span id="previewLikeCount">0</span></button>
+          <button class="share-btn" id="previewShare" type="button">🔗 复制链接</button>
+        </div>
+        <div class="preview-note">仅支持预览，不可载入作画。请勿抄袭或直接提交他人的作品。</div>
+      </div>
+    </div>
+
+    <script>
+      const SIZE = 16
+
+      const gallery = document.getElementById('gallery')
+      const statusEl = document.getElementById('status')
+      const countEl = document.getElementById('count')
+      const likedMap = loadLiked()
+
+      function loadLiked() {
+        try {
+          const arr = JSON.parse(localStorage.getItem('lw-liked') || '[]')
+          return new Set(Array.isArray(arr) ? arr : [])
+        } catch (e) {
+          return new Set()
+        }
+      }
+
+      function saveLiked() {
+        try {
+          localStorage.setItem('lw-liked', JSON.stringify([...likedMap]))
+        } catch (e) {}
+      }
+
+      function formatTime(ts) {
+        if (!ts) return ''
+        const d = new Date(ts)
+        return `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+      }
+
+      function showStatus(text, withRetry) {
+        statusEl.hidden = false
+        statusEl.textContent = text
+        if (withRetry) {
+          const btn = document.createElement('button')
+          btn.type = 'button'
+          btn.className = 'retry'
+          btn.textContent = '重试'
+          btn.addEventListener('click', loadMore)
+          statusEl.append(document.createElement('br'), btn)
+        }
+      }
+
+      function drawPixels(canvas, pixels) {
+        const c = canvas.getContext('2d')
+        c.clearRect(0, 0, SIZE, SIZE)
+        for (let y = 0; y < SIZE; y++) {
+          for (let x = 0; x < SIZE; x++) {
+            const px = pixels[y * SIZE + x]
+            if (!px) continue
+            c.fillStyle = `rgb(${px[0]}, ${px[1]}, ${px[2]})`
+            c.fillRect(x, y, 1, 1)
+          }
+        }
+      }
+
+      function makeLikeButton(rec, opts) {
+        const btn = document.createElement('button')
+        btn.type = 'button'
+        btn.className = 'like-btn'
+        if (opts && opts.large) btn.style.cssText = 'font-size:14px;padding:6px 16px;'
+        btn.innerHTML = ''
+        btn.appendChild(document.createTextNode('♥ '))
+        const count = document.createElement('span')
+        count.textContent = rec.likes || 0
+        btn.appendChild(count)
+        updateLikedState(btn, rec.time)
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation()
+          like(rec, btn)
+        })
+        return btn
+      }
+
+      function updateLikedState(btn, time) {
+        btn.classList.toggle('liked', likedMap.has(String(time)))
+      }
+
+      async function like(rec, btn) {
+        const key = String(rec.time)
+        if (likedMap.has(key)) {
+          toast('你已经赞过这幅作品啦')
+          return
+        }
+        btn.disabled = true
+        try {
+          const res = await fetch('/api/like', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ time: rec.time }),
+          })
+          const data = await res.json().catch(() => ({}))
+          if (res.ok) {
+            likedMap.add(key)
+            saveLiked()
+            rec.likes = data.likes
+            btn.querySelector('span').textContent = rec.likes
+            updateLikedState(btn, rec.time)
+            const pv = document.getElementById('previewLikeCount')
+            if (pv) pv.textContent = rec.likes
+            toast('点赞成功 ♥')
+          } else {
+            toast('点赞失败：' + (data.error || res.status))
+          }
+        } catch (err) {
+          toast('点赞失败：网络错误')
+        } finally {
+          btn.disabled = false
+        }
+      }
+
+      let toastTimer
+      function toast(msg) {
+        let el = document.getElementById('toast')
+        if (!el) {
+          el = document.createElement('div')
+          el.id = 'toast'
+          el.style.cssText =
+            'position:fixed;left:50%;bottom:32px;transform:translate(-50%,16px);background:rgba(30,26,22,0.92);color:#fff;padding:12px 22px;border-radius:999px;font-size:15px;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:120;max-width:86vw;text-align:center;'
+          document.body.appendChild(el)
+        }
+        el.textContent = msg
+        requestAnimationFrame(() => {
+          el.style.opacity = '1'
+          el.style.transform = 'translate(-50%,0)'
+        })
+        clearTimeout(toastTimer)
+        toastTimer = setTimeout(() => {
+          el.style.opacity = '0'
+          el.style.transform = 'translate(-50%,16px)'
+        }, 2000)
+      }
+
+      /* ---------- 佳作展示 ---------- */
+      const featured = document.getElementById('featured')
+      const featuredRow = document.getElementById('featuredRow')
+      const featuredSub = document.getElementById('featuredSub')
+      const rangeTabs = document.getElementById('rangeTabs')
+      let featuredRange = 'all'
+
+      rangeTabs.querySelectorAll('button').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          rangeTabs.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b === btn))
+          featuredRange = btn.dataset.range
+          loadFeatured()
+        })
+      })
+
+      async function loadFeatured() {
+        try {
+          const tz = -(new Date().getTimezoneOffset())
+          const res = await fetch(`/api/like?top=5&range=${featuredRange}&tz=${tz}`)
+          if (!res.ok) return
+          const data = await res.json()
+          const works = data.works || []
+          featuredSub.textContent =
+            featuredRange === 'today'
+              ? '按今日点赞数排名 Top 5'
+              : featuredRange === 'week'
+                ? '按本周点赞数排名 Top 5'
+                : '按总点赞数排名 Top 5'
+          if (!works.length) {
+            featured.hidden = true
+            featuredRow.innerHTML = ''
+            return
+          }
+          featured.hidden = false
+          featuredRow.innerHTML = ''
+          works.forEach((w, i) => {
+            const card = document.createElement('div')
+            card.className = 'f-card'
+
+            const rank = document.createElement('div')
+            rank.className = 'f-rank ' + (i === 0 ? 'r1' : i === 1 ? 'r2' : i === 2 ? 'r3' : 'rn')
+            rank.textContent = i + 1
+
+            const cnv = document.createElement('canvas')
+            cnv.width = SIZE
+            cnv.height = SIZE
+            cnv.className = 'f-art'
+            drawPixels(cnv, w.pixels)
+
+            const nm = document.createElement('div')
+            nm.className = 'f-name'
+            nm.textContent = w.workName || w.name || '未命名'
+
+            const metaRow = document.createElement('div')
+            metaRow.className = 'f-meta'
+            const au = document.createElement('span')
+            au.className = 'f-author'
+            au.textContent = w.author || '匿名'
+
+            const lk = document.createElement('span')
+            lk.className = 'f-like'
+            lk.textContent = '♥ ' + (w.likes || 0)
+
+            metaRow.append(au, lk)
+            card.append(rank, cnv, nm, metaRow)
+            card.addEventListener('click', () => preview(w))
+            featuredRow.appendChild(card)
+          })
+        } catch (e) {}
+      }
+
+      loadFeatured()
+
+      /* ---------- 列表 ---------- */
+      const sentinel = document.getElementById('sentinel')
+      const PAGE = 24
+      const cardsByTime = new Map()
+      let offset = 0
+      let done = false
+      let loading = false
+
+      function appendCards(records) {
+        records.forEach((rec) => {
+          const card = document.createElement('div')
+          card.className = 'card'
+          card.setAttribute('role', 'button')
+          card.tabIndex = 0
+          card.title = '点击预览'
+
+          const c = document.createElement('canvas')
+          c.width = SIZE
+          c.height = SIZE
+          c.className = 'art'
+          drawPixels(c, rec.pixels)
+
+          const meta = document.createElement('div')
+          meta.className = 'card-meta'
+          const nm = document.createElement('span')
+          nm.className = 'card-name'
+          nm.textContent = rec.workName || rec.name || '未命名'
+          meta.append(nm, makeLikeButton(rec))
+
+          const sub = document.createElement('div')
+          sub.className = 'card-sub'
+          const au = document.createElement('span')
+          au.className = 'card-author'
+          au.textContent = rec.author || (rec.workName ? '匿名' : rec.name || '匿名')
+          const tm = document.createElement('span')
+          tm.className = 'card-time'
+          tm.textContent = formatTime(rec.time)
+
+          sub.append(au, tm)
+          card.append(c, meta, sub)
+          card.addEventListener('click', () => preview(rec))
+          card.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              preview(rec)
+            }
+          })
+          cardsByTime.set(String(rec.time), card)
+          gallery.appendChild(card)
+        })
+      }
+
+      async function loadMore() {
+        if (loading || done) return
+        loading = true
+        sentinel.textContent = '加载中…'
+        try {
+          const res = await fetch(`/api/get?limit=${PAGE}&offset=${offset}`)
+          if (!res.ok) throw new Error('HTTP ' + res.status)
+          const data = await res.json()
+          const list = data.history || []
+
+          if (offset === 0 && !list.length) {
+            countEl.textContent = '共 0 件作品'
+            sentinel.hidden = true
+            showStatus('还没有作品，快去画板上传第一幅吧')
+            return
+          }
+
+          appendCards(list)
+          offset += list.length
+          countEl.textContent = `共 ${data.total != null ? data.total : offset} 件作品`
+
+          if (!list.length || (data.total != null && offset >= data.total)) {
+            done = true
+            sentinel.textContent = '已经到底啦'
+          } else {
+            sentinel.textContent = ''
+          }
+        } catch (err) {
+          sentinel.textContent = '加载失败，点此重试'
+        } finally {
+          loading = false
+        }
+      }
+
+      sentinel.addEventListener('click', () => {
+        if (sentinel.textContent.startsWith('加载失败')) loadMore()
+      })
+
+      const io = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting) loadMore()
+        },
+        { rootMargin: '150px' }
+      )
+      io.observe(sentinel)
+
+      loadMore()
+
+      /* ---------- 分享定位（/gallery?t=时间戳） ---------- */
+      const shareTarget = new URLSearchParams(location.search).get('t')
+
+      async function ensureLoadedTo(upTo) {
+        let guard = 0
+        while (!done && offset <= upTo && guard++ < 300) {
+          if (loading) {
+            await new Promise((r) => setTimeout(r, 120))
+          } else {
+            await loadMore()
+          }
+        }
+      }
+
+      if (shareTarget) {
+        ;(async () => {
+          try {
+            const res = await fetch('/api/get?locate=' + encodeURIComponent(shareTarget))
+            const data = await res.json()
+            if (data.found && data.index != null) {
+              await ensureLoadedTo(data.index)
+              const card = cardsByTime.get(String(shareTarget))
+              if (card) {
+                card.classList.add('hl')
+                card.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                setTimeout(() => card.classList.remove('hl'), 4200)
+                countEl.textContent = '定位到第 ' + (data.index + 1) + ' 件作品'
+              }
+            } else {
+              toast('未找到该作品或已被删除')
+            }
+          } catch (e) {}
+        })()
+      }
+
+      /* ---------- 预览弹窗 ---------- */
+      const previewOverlay = document.getElementById('previewOverlay')
+      let currentPreview = null
+
+      function preview(rec) {
+        const c = document.getElementById('previewCanvas')
+        c.width = SIZE
+        c.height = SIZE
+        drawPixels(c, rec.pixels)
+        document.getElementById('previewTitle').textContent = rec.workName || rec.name || '未命名'
+        document.getElementById('previewAuthor').textContent = '作者：' + (rec.author || (rec.workName ? '匿名' : rec.name || '匿名'))
+        document.getElementById('previewTime').textContent = formatTime(rec.time)
+        document.getElementById('previewLikeCount').textContent = rec.likes || 0
+        updateLikedState(document.getElementById('previewLike'), rec.time)
+        currentPreview = rec
+        previewOverlay.hidden = false
+      }
+
+      function closePreview() {
+        previewOverlay.hidden = true
+        currentPreview = null
+      }
+
+      document.getElementById('previewClose').addEventListener('click', closePreview)
+      previewOverlay.addEventListener('click', (e) => {
+        if (e.target === previewOverlay) closePreview()
+      })
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closePreview()
+      })
+
+      document.getElementById('previewLike').addEventListener('click', () => {
+        if (!currentPreview) return
+        const btn = document.getElementById('previewLike')
+        like(currentPreview, btn)
+      })
+
+      document.getElementById('previewShare').addEventListener('click', () => {
+        if (!currentPreview) return
+        const url = location.origin + '/gallery?t=' + currentPreview.time
+        const btn = document.getElementById('previewShare')
+        const done = () => {
+          btn.textContent = '✓ 已复制'
+          btn.classList.add('copied')
+          setTimeout(() => {
+            btn.textContent = '🔗 复制链接'
+            btn.classList.remove('copied')
+          }, 1800)
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(url).then(done).catch(() => {
+            prompt('复制链接', url)
+            done()
+          })
+        } else {
+          prompt('复制链接', url)
+          done()
+        }
+      })
+
+      /* ---------- 主题切换 ---------- */
+      const themeBtn = document.getElementById('themeBtn')
+
+      function applyThemeIcon() {
+        themeBtn.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙'
+      }
+
+      themeBtn.addEventListener('click', () => {
+        const cur = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'
+        document.documentElement.setAttribute('data-theme', cur)
+        try {
+          localStorage.setItem('lw-theme', cur)
+        } catch (e) {}
+        applyThemeIcon()
+      })
+
+      applyThemeIcon()
+    </script>
+  </body>
+</html>

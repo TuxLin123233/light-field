@@ -1,0 +1,1814 @@
+<!DOCTYPE html>
+<html lang="zh-hans">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>光域画板</title>
+    <script>
+      ;(function () {
+        try {
+          var t = localStorage.getItem('lw-theme')
+          if (!t) t = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+          document.documentElement.setAttribute('data-theme', t)
+        } catch (e) {}
+      })()
+    </script>
+    <style>
+      :root {
+        --bg: linear-gradient(160deg, #fdf8f2 0%, #f2ece2 100%);
+        --surface: #fff;
+        --surface-2: #efe9e0;
+        --surface-3: #f0ece4;
+        --art-bg: #fff;
+        --text: #3b342c;
+        --text-muted: #6b5f50;
+        --text-muted2: #9a8c7a;
+        --text-faint: #b0a697;
+        --text-report: #8c7f6b;
+        --border: #efe7da;
+        --border-strong: #e0d3c0;
+        --border-input: #e0d8d0;
+        --ring: #fff;
+        --shadow1: rgba(80, 60, 40, 0.15);
+        --shadow2: rgba(80, 60, 40, 0.10);
+        --shadow3: rgba(80, 60, 40, 0.06);
+        --accent: #5b8def;
+        --toast-bg: #3b342c;
+        --tip-text: #d1944d;
+        --tip-btn-border: #f0e2cf;
+        --blacktip-bg: #fff8ef;
+        --blacktip-border: #f0e2cf;
+        --blacktip-text: #b97f3a;
+        --like: #e5574b;
+        --like-bg: #fff1ee;
+        --like-border: #eec9c2;
+      }
+      [data-theme="dark"] {
+        --bg: linear-gradient(160deg, #191613 0%, #120f0d 100%);
+        --surface: #262220;
+        --surface-2: #332e29;
+        --surface-3: #2d2823;
+        --art-bg: #fff;
+        --text: #ece5da;
+        --text-muted: #b8ac9b;
+        --text-muted2: #a89a88;
+        --text-faint: #7d7266;
+        --text-report: #968a78;
+        --border: #3a342f;
+        --border-strong: #4a433c;
+        --border-input: #453d36;
+        --ring: #262220;
+        --shadow1: rgba(0, 0, 0, 0.45);
+        --shadow2: rgba(0, 0, 0, 0.35);
+        --shadow3: rgba(0, 0, 0, 0.3);
+        --accent: #6f9fff;
+        --toast-bg: #3a342f;
+        --tip-text: #e0b26a;
+        --tip-btn-border: #4a3a22;
+        --blacktip-bg: #2a2318;
+        --blacktip-border: #4a3a22;
+        --blacktip-text: #e0b26a;
+        --like: #ff7a6d;
+        --like-bg: #3a221f;
+        --like-border: #5a332c;
+      }
+
+      * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: var(--bg);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 16px 16px 40px;
+      }
+
+      h1 {
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--text);
+        margin: 8px 0 16px;
+        letter-spacing: 1px;
+      }
+
+      .page-head {
+        width: 100%;
+        max-width: 460px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .page-head h1 {
+        margin-bottom: 0;
+        line-height: 40px;
+      }
+
+      .head-right {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .theme-btn {
+        flex: 0 0 auto;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: 2px solid var(--border);
+        background: var(--surface);
+        color: var(--text-muted);
+        font-size: 18px;
+        cursor: pointer;
+        transition: border-color 0.2s, transform 0.12s;
+        line-height: 1;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        text-decoration: none;
+      }
+
+      .theme-btn:active { transform: scale(0.9); }
+
+      .board-wrap {
+        width: 100%;
+        max-width: 460px;
+        background: var(--surface);
+        border-radius: 20px;
+        box-shadow: 0 10px 30px var(--shadow1);
+        padding: 12px;
+      }
+
+      #board {
+        display: block;
+        width: 100%;
+        aspect-ratio: 1;
+        touch-action: none;
+        cursor: crosshair;
+        background: var(--art-bg);
+      }
+
+      .tools {
+        width: 100%;
+        max-width: 460px;
+        display: flex;
+        gap: 8px;
+        margin-top: 18px;
+      }
+
+      .tool {
+        flex: 1;
+        height: 46px;
+        border-radius: 999px;
+        background: var(--surface);
+        color: var(--text-muted);
+        font-size: 22px;
+        line-height: 1;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.15s ease, color 0.15s ease, transform 0.12s ease;
+      }
+
+      .tool.active {
+        background: var(--accent);
+        color: #fff;
+      }
+
+      .pick-wrap {
+        width: 100%;
+        max-width: 460px;
+        margin-top: 14px;
+        background: var(--surface);
+        border-radius: 20px;
+        box-shadow: 0 6px 20px var(--shadow2);
+        padding: 16px;
+      }
+
+      .pick-wrap[hidden] { display: none; }
+
+      .preset-row {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 16px;
+      }
+
+      .custom-toggle {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 12px;
+      }
+
+      #customBtn {
+        height: 40px;
+        padding: 0 26px;
+        border-radius: 999px;
+        background: var(--surface-3);
+        color: var(--text-muted);
+        font-size: 14px;
+        font-weight: 600;
+        transition: background 0.15s ease, color 0.15s ease, transform 0.12s ease;
+      }
+
+      #customBtn.active {
+        background: var(--accent);
+        color: #fff;
+      }
+
+      .swatch {
+        flex: 0 0 auto;
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        border: 2px solid rgba(0, 0, 0, 0.08);
+        cursor: pointer;
+        transition: transform 0.12s ease, box-shadow 0.12s ease;
+        padding: 0;
+      }
+
+      .swatch:active { transform: scale(0.9); }
+
+      .swatch.selected {
+        box-shadow: 0 0 0 3px var(--ring), 0 0 0 6px var(--accent);
+        transform: scale(1.08);
+      }
+
+      .pick-main {
+        display: grid;
+        grid-template-columns: 1fr 28px;
+        gap: 12px;
+        align-items: stretch;
+      }
+
+      .sv-box {
+        position: relative;
+        aspect-ratio: 1;
+        border-radius: 8px;
+        overflow: hidden;
+        touch-action: none;
+      }
+
+      .hue-box {
+        position: relative;
+        border-radius: 8px;
+        overflow: hidden;
+        touch-action: none;
+        cursor: pointer;
+      }
+
+      #svCanvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: crosshair; }
+      #svMarker { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
+      #hueCanvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+      #hueMarker { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
+
+      .cur {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 12px;
+        font-size: 15px;
+        color: var(--text);
+        font-weight: 600;
+      }
+
+      .cur-label { font-size: 13px; color: var(--text-muted); font-weight: 500; white-space: nowrap; }
+
+      .cur-swatch {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        border: 2px solid rgba(0, 0, 0, 0.1);
+        background: #e53935;
+      }
+
+      .hex-input {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        height: 32px;
+        width: 92px;
+        border-radius: 8px;
+        border: 2px solid var(--border-input);
+        background: var(--surface);
+        outline: none;
+        color: var(--text);
+        padding: 0 8px;
+        text-transform: uppercase;
+      }
+
+      .hex-input:focus { border-color: var(--accent); }
+
+      #curHex { letter-spacing: 0.5px; }
+
+      .records {
+        width: 100%;
+        max-width: 460px;
+        margin-top: 14px;
+        background: var(--surface);
+        border-radius: 20px;
+        box-shadow: 0 6px 20px var(--shadow2);
+        padding: 16px;
+      }
+
+      .records-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-muted2);
+        margin-bottom: 10px;
+      }
+
+      .record-list {
+        display: flex;
+        gap: 12px;
+        overflow-x: auto;
+        padding-bottom: 4px;
+        scrollbar-width: none;
+      }
+
+      .record-list::-webkit-scrollbar { display: none; }
+
+      .tile {
+        flex: 0 0 auto;
+        width: 64px;
+        padding: 0;
+        background: none;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .thumb {
+        width: 56px;
+        height: 56px;
+        image-rendering: pixelated;
+        border-radius: 8px;
+        border: 2px solid rgba(0, 0, 0, 0.08);
+        background: var(--art-bg);
+      }
+
+      .tile-meta {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        font-size: 12px;
+        color: var(--text-muted);
+        line-height: 1.3;
+        max-width: 64px;
+        word-break: break-all;
+        text-align: center;
+      }
+
+      .tile-meta-row {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        flex-wrap: wrap;
+        max-width: 100%;
+      }
+
+      .tile-time {
+        font-size: 10px;
+        color: var(--text-faint);
+      }
+
+      .tile-like {
+        font-size: 10px;
+        color: var(--like);
+        background: var(--like-bg);
+        border: 1px solid var(--like-border);
+        border-radius: 999px;
+        padding: 1px 8px;
+        margin-top: 4px;
+        line-height: 1.5;
+        cursor: pointer;
+        user-select: none;
+      }
+
+      .tile-like.liked {
+        background: var(--like);
+        color: #fff;
+        border-color: var(--like);
+      }
+
+      .tile-load {
+        font-size: 10px;
+        color: var(--accent);
+        background: var(--surface-2);
+        border: 1px solid var(--border-strong);
+        border-radius: 999px;
+        padding: 1px 8px;
+        margin-top: 4px;
+        line-height: 1.5;
+        cursor: pointer;
+        user-select: none;
+      }
+
+      .tile-load:hover {
+        background: var(--accent);
+        color: #fff;
+      }
+
+      .record-empty {
+        font-size: 13px;
+        color: var(--text-faint);
+        padding: 8px 2px;
+      }
+
+      .more-btn {
+        display: block;
+        width: 100%;
+        max-width: 460px;
+        margin-top: 12px;
+        padding: 12px;
+        border-radius: 14px;
+        background: var(--surface);
+        border: 2px solid var(--border);
+        color: var(--text-muted);
+        font-size: 14px;
+        font-weight: 600;
+        text-align: center;
+        text-decoration: none;
+        box-shadow: 0 4px 14px var(--shadow3);
+      }
+
+      .more-btn:hover { border-color: var(--border-strong); }
+      .more-btn[hidden] { display: none; }
+
+      .name-row {
+        width: 100%;
+        max-width: 460px;
+        margin-top: 14px;
+        display: flex;
+        gap: 8px;
+      }
+
+      .name-row input {
+        flex: 1;
+        min-width: 0;
+        height: 46px;
+        border-radius: 14px;
+        border: 2px solid var(--border-input);
+        padding: 0 14px;
+        font-size: 15px;
+        background: var(--surface);
+        outline: none;
+        color: var(--text);
+      }
+
+      .name-row input:focus { border-color: var(--accent); }
+
+      .actions {
+        width: 100%;
+        max-width: 460px;
+        display: flex;
+        gap: 12px;
+        margin-top: 18px;
+      }
+
+      .actions button {
+        flex: 1;
+        height: 52px;
+        border-radius: 16px;
+        font-size: 17px;
+        font-weight: 600;
+        transition: transform 0.12s ease, opacity 0.15s ease;
+      }
+
+      #undoBtn, #clearBtn {
+        background: var(--surface-2);
+        color: var(--text-muted);
+      }
+
+      #uploadBtn {
+        background: var(--accent);
+        color: #fff;
+      }
+
+      #toast {
+        position: fixed;
+        left: 50%;
+        bottom: 32px;
+        transform: translate(-50%, 16px);
+        background: var(--toast-bg);
+        color: #fff;
+        padding: 12px 22px;
+        border-radius: 999px;
+        font-size: 15px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.25s ease, transform 0.25s ease;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+        max-width: 86vw;
+        text-align: center;
+        z-index: 10;
+      }
+
+      #toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+      .hint {
+        margin-top: 12px;
+        font-size: 13px;
+        color: var(--text-muted2);
+        text-align: center;
+        min-height: 18px;
+      }
+
+      .black-tip {
+        width: 100%;
+        max-width: 460px;
+        margin-top: 14px;
+        padding: 10px 14px;
+        background: var(--blacktip-bg);
+        border: 1px solid var(--blacktip-border);
+        border-radius: 12px;
+        font-size: 12px;
+        line-height: 1.6;
+        color: var(--blacktip-text);
+        text-align: center;
+      }
+
+      .disclaimer {
+        width: 100%;
+        max-width: 460px;
+        margin-top: 20px;
+        padding: 14px 16px;
+        background: var(--surface);
+        border-radius: 14px;
+        box-shadow: 0 4px 14px var(--shadow2);
+        font-size: 12px;
+        line-height: 1.7;
+        color: var(--text-faint);
+        text-align: justify;
+      }
+
+      .disclaimer-report {
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px solid var(--border);
+        color: var(--text-report);
+      }
+
+      .copyright {
+        width: 100%;
+        max-width: 460px;
+        margin-top: 12px;
+        text-align: center;
+        font-size: 12px;
+        color: var(--text-faint);
+      }
+
+      .tip-btn {
+        width: 100%;
+        max-width: 460px;
+        margin-top: 10px;
+        height: 42px;
+        border-radius: 999px;
+        background: var(--surface);
+        color: var(--tip-text);
+        font-size: 14px;
+        font-weight: 600;
+        border: 2px solid var(--tip-btn-border);
+      }
+
+      .tip-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 90;
+        background: rgba(20, 15, 10, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+
+      .tip-overlay[hidden] { display: none; }
+
+      .tip-box {
+        width: 100%;
+        max-width: 330px;
+        background: var(--surface);
+        border-radius: 18px;
+        padding: 20px;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+        text-align: center;
+      }
+
+      .tip-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 14px;
+      }
+
+      .tip-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text);
+      }
+
+      .tip-close {
+        border: none;
+        background: var(--surface-2);
+        color: var(--text-muted);
+        border-radius: 999px;
+        padding: 8px 16px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .tip-qr {
+        width: 210px;
+        height: 210px;
+        object-fit: cover;
+        border-radius: 12px;
+        border: 2px solid rgba(0, 0, 0, 0.08);
+        background: var(--art-bg);
+      }
+
+      .tip-note {
+        margin-top: 12px;
+        font-size: 13px;
+        color: var(--text-muted2);
+        line-height: 1.6;
+      }
+
+      .consent-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        background: rgba(20, 15, 10, 0.85);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+
+      .consent-overlay[hidden] { display: none; }
+
+      .consent-box {
+        width: 100%;
+        max-width: 420px;
+        max-height: 86vh;
+        overflow-y: auto;
+        background: var(--surface);
+        border-radius: 18px;
+        padding: 24px 22px;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+      }
+
+      .consent-box h2 {
+        margin: 0 0 14px;
+        font-size: 19px;
+        font-weight: 800;
+        text-align: center;
+        color: #b33a2e;
+        letter-spacing: 1px;
+      }
+
+      .consent-box .text {
+        font-size: 14px;
+        line-height: 1.9;
+        color: var(--text);
+        text-align: justify;
+      }
+
+      .consent-box .text a {
+        color: var(--accent);
+      }
+
+      .consent-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 22px;
+      }
+
+      .consent-actions button {
+        flex: 1;
+        height: 48px;
+        border-radius: 14px;
+        border: none;
+        font-size: 15px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      #consentYes {
+        background: var(--accent);
+        color: #fff;
+      }
+
+      #consentNo {
+        background: var(--surface-2);
+        color: var(--text-muted);
+      }
+
+      .preview-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 90;
+        background: rgba(20, 15, 10, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+
+      .preview-overlay[hidden] { display: none; }
+
+      .preview-box {
+        width: 100%;
+        max-width: 380px;
+        background: var(--surface);
+        border-radius: 18px;
+        padding: 20px;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+        text-align: center;
+      }
+
+      .preview-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 14px;
+      }
+
+      .preview-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text);
+      }
+
+      .preview-close {
+        border: none;
+        background: var(--surface-2);
+        color: var(--text-muted);
+        border-radius: 999px;
+        padding: 8px 16px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      #previewCanvas {
+        width: 220px;
+        height: 220px;
+        image-rendering: pixelated;
+        border-radius: 12px;
+        border: 2px solid rgba(0, 0, 0, 0.08);
+        background: var(--art-bg);
+      }
+
+      .preview-info {
+        margin-top: 12px;
+        font-size: 14px;
+        color: var(--text);
+        font-weight: 600;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .preview-time {
+        font-size: 12px;
+        color: var(--text-faint);
+        font-weight: 400;
+      }
+
+      .preview-note {
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid var(--border);
+        font-size: 12px;
+        color: var(--text-faint);
+        line-height: 1.6;
+      }
+
+      button:active { transform: scale(0.96); }
+      button:disabled { opacity: 0.55; cursor: not-allowed; }
+    </style>
+  </head>
+  <body>
+    <div class="consent-overlay" id="consentOverlay">
+      <div class="consent-box" id="consentBox">
+        <h2>重要提示</h2>
+        <div class="text">
+          本画板仅用于个人学习与技术交流。<b>严禁上传、绘制、发布任何违反中华人民共和国法律法规的内容</b>，包括但不限于<b>色情、暴力、恐怖、赌博、涉政敏感、侵犯他人隐私或知识产权</b>等内容。<br><br>
+          上传者须对自己发布的内容负全部法律责任。本平台有权在不事先通知的情况下删除违规内容，并保留追究法律责任的权利。<br><br>
+          <a href="./terms.html">查看完整用户协议</a><br><br>
+          发现违规内容？请联系<b>微信：Tux123233</b> 或<b>邮箱：linsifan123233@petalmail.com</b> 举报。
+        </div>
+        <div class="consent-actions">
+          <button id="consentNo" type="button">不同意</button>
+          <button id="consentYes" type="button">同意并进入</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-head">
+      <h1>光域画板</h1>
+      <div class="head-right">
+        <a class="theme-btn room-link" href="room" title="联机房间" style="text-decoration:none">👥</a>
+        <button id="themeBtn" class="theme-btn" type="button" title="切换主题">🌙</button>
+      </div>
+    </div>
+
+    <div class="board-wrap">
+      <canvas id="board" width="512" height="512"></canvas>
+    </div>
+
+    <div class="tools">
+      <button id="toolBrush" class="tool active" type="button" data-tool="brush" title="画笔（B）">✏️</button>
+      <button id="toolEraser" class="tool" type="button" data-tool="eraser" title="橡皮擦（E）">🧽</button>
+      <button id="toolFill" class="tool" type="button" data-tool="fill" title="颜料桶（F）">🪣</button>
+      <button id="toolColor" class="tool" type="button" title="颜色（C）">🎨</button>
+    </div>
+
+    <div class="pick-wrap" id="pickWrap" hidden>
+      <div class="preset-row" id="presetRow"></div>
+      <div class="cur">
+        <span class="cur-swatch" id="curSwatch"></span>
+        <span class="cur-label">当前色值</span>
+        <input id="curHex" class="hex-input" value="#e53935" maxlength="7" autocomplete="off"
+          aria-label="输入颜色代码" title="输入 #RRGGBB 使用自定义颜色">
+      </div>
+      <div class="custom-toggle">
+        <button id="customBtn" type="button">自定义</button>
+      </div>
+      <div id="hsvBody" hidden>
+        <div class="pick-main">
+          <div class="sv-box" id="svBox">
+            <canvas id="svCanvas"></canvas>
+            <canvas id="svMarker"></canvas>
+          </div>
+          <div class="hue-box" id="hueBox">
+            <canvas id="hueCanvas"></canvas>
+            <canvas id="hueMarker"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="records">
+      <div class="records-title">历史记录（最新 10 条）</div>
+      <div id="recordList" class="record-list"></div>
+    </div>
+
+    <a id="moreBtn" class="more-btn" href="gallery.html" hidden>查看更多作品 →</a>
+
+    <div class="name-row">
+      <input id="titleInput" type="text" placeholder="作品名（给这幅画起个名字，可留空）" maxlength="20">
+      <input id="nameInput" type="text" placeholder="作者名（画这幅画的人，可留空匿名）" maxlength="20">
+    </div>
+
+    <div class="actions">
+      <button id="undoBtn" type="button" title="撤销（Z）" disabled>↩️</button>
+      <button id="clearBtn" type="button" title="清空">🗑️</button>
+      <button id="uploadBtn" type="button">上传</button>
+    </div>
+
+    <div class="hint" id="hint">画笔：点按或滑动作画 · B 画笔 / E 橡皮 / F 填充 / C 颜色 / Z 撤销 · 输入 #RRGGBB 自定义颜色</div>
+
+    <div class="black-tip">提示：请尽量少用纯黑色（#000000）画面，黑色在灯板上显示为熄灭，作品会像有洞一样。</div>
+
+    <div class="disclaimer">
+      本画板仅用于个人学习与技术交流。请勿上传、绘制、发布任何违反中华人民共和国法律法规的内容，包括但不限于色情、暴力、恐怖、赌博、涉政敏感、侵犯他人隐私或知识产权的内容。上传者须对自己发布的内容负全部法律责任。本平台有权在不事先通知的情况下删除违规内容，并保留追究法律责任的权利。
+      <div class="disclaimer-report">发现违规内容？请联系微信 Tux123233 或邮箱 linsifan123233@petalmail.com 举报。</div>
+    </div>
+
+    <div class="copyright">© 2026 光域画板 · 版权所有 · 作者 Lin Sifan</div>
+
+    <button id="tipBtn" class="tip-btn" type="button">赞赏支持</button>
+
+    <div id="toast"></div>
+
+    <div class="tip-overlay" id="tipOverlay" hidden>
+      <div class="tip-box">
+        <div class="tip-head">
+          <span class="tip-title">赞赏支持</span>
+          <button class="tip-close" id="tipClose" type="button">关闭</button>
+        </div>
+        <img class="tip-qr" src="/images/赞赏码.jpg" alt="赞赏码">
+        <div class="tip-note">喜欢光域画板？扫码赞赏，感谢你的支持！</div>
+      </div>
+    </div>
+
+    <div class="preview-overlay" id="previewOverlay" hidden>
+      <div class="preview-box">
+        <div class="preview-head">
+          <span class="preview-title" id="previewTitle">作品预览</span>
+          <button class="preview-close" id="previewClose" type="button">关闭</button>
+        </div>
+        <canvas id="previewCanvas"></canvas>
+        <div class="preview-info">
+          <span id="previewAuthor"></span>
+          <span id="previewTime" class="preview-time"></span>
+        </div>
+        <div class="preview-note">仅支持预览，不可载入作画。请勿抄袭或直接提交他人的作品。</div>
+      </div>
+    </div>
+
+    <script>
+      const SIZE = 16
+      const PRESET_COLORS = [
+        ['#e53935', '红'],
+        ['#fb8c00', '橙'],
+        ['#fdd835', '黄'],
+        ['#43a047', '绿'],
+        ['#00acc1', '青'],
+        ['#1e88e5', '蓝'],
+        ['#8e24aa', '紫'],
+        ['#ffffff', '白'],
+        ['#212121', '黑'],
+      ]
+      const TOOL_HINTS = {
+        brush: '画笔：点按或滑动作画 · 快捷键 B',
+        eraser: '橡皮擦：点按或滑动擦除为白色 · 快捷键 E',
+        fill: '颜料桶：点一下区域即可填充当前颜色 · 快捷键 F',
+      }
+
+      const canvas = document.getElementById('board')
+      const ctx = canvas.getContext('2d')
+
+      const dpr = window.devicePixelRatio || 1
+      canvas.width = canvas.height = 512 * dpr
+      ctx.scale(dpr, dpr)
+      const CELL = 512 / SIZE
+
+      let pixels = Array.from({ length: SIZE }, () =>
+        Array.from({ length: SIZE }, () => [255, 255, 255])
+      )
+      let currentColor = [229, 57, 53]
+      let activeTool = 'brush'
+
+      const hint = document.getElementById('hint')
+      const curSwatch = document.getElementById('curSwatch')
+      const curHex = document.getElementById('curHex')
+      const undoBtn = document.getElementById('undoBtn')
+
+      /* ---------- 撤销 ---------- */
+      const undoStack = []
+      const MAX_UNDO = 30
+
+      const snapshot = () => pixels.map((r) => r.map((px) => [px[0], px[1], px[2]]))
+      const updateUndoBtn = () => (undoBtn.disabled = undoStack.length === 0)
+
+      function pushUndo() {
+        undoStack.push(snapshot())
+        if (undoStack.length > MAX_UNDO) undoStack.shift()
+        updateUndoBtn()
+      }
+
+      function undo() {
+        if (!undoStack.length) return
+        pixels = undoStack.pop()
+        redraw()
+        updateUndoBtn()
+        toast('已撤销')
+      }
+
+      undoBtn.addEventListener('click', () => {
+        undo()
+        scheduleSave()
+      })
+
+      /* ---------- 颜色 ---------- */
+      const pickWrap = document.getElementById('pickWrap')
+      const toolColorBtn = document.getElementById('toolColor')
+      const hsvBody = document.getElementById('hsvBody')
+      const customBtn = document.getElementById('customBtn')
+      const presetRow = document.getElementById('presetRow')
+      const svBox = document.getElementById('svBox')
+      const svCanvas = document.getElementById('svCanvas')
+      const svMarker = document.getElementById('svMarker')
+      const hueBox = document.getElementById('hueBox')
+      const hueCanvas = document.getElementById('hueCanvas')
+      const hueMarker = document.getElementById('hueMarker')
+      const ctxSv = svCanvas.getContext('2d')
+      const ctxSvM = svMarker.getContext('2d')
+      const ctxHue = hueCanvas.getContext('2d')
+      const ctxHueM = hueMarker.getContext('2d')
+
+      let H = 0, S = 0.77, V = 0.9
+      let SW = 0, SH = 0, HW = 0, HH = 0
+      let pickOpen = false
+      let hsvOpen = false
+
+      toolColorBtn.addEventListener('click', () => {
+        pickOpen = !pickOpen
+        pickWrap.hidden = !pickOpen
+        toolColorBtn.classList.toggle('active', pickOpen)
+        if (pickOpen && hsvOpen) resizePicker()
+      })
+
+      customBtn.addEventListener('click', () => {
+        hsvOpen = !hsvOpen
+        hsvBody.hidden = !hsvOpen
+        customBtn.classList.toggle('active', hsvOpen)
+        if (hsvOpen) resizePicker()
+      })
+
+      function hexToRgb(hex) {
+        const h = hex.replace('#', '')
+        return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]
+      }
+
+      function parseHex(v) {
+        const m = String(v).trim().replace(/^#/, '')
+        if (!/^[0-9a-fA-F]{6}$/.test(m)) return null
+        return [parseInt(m.slice(0, 2), 16), parseInt(m.slice(2, 4), 16), parseInt(m.slice(4, 6), 16)]
+      }
+
+      function rgbToHsv([r, g, b]) {
+        r /= 255; g /= 255; b /= 255
+        const max = Math.max(r, g, b)
+        const min = Math.min(r, g, b)
+        const d = max - min
+        let h = 0
+        if (d !== 0) {
+          if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) % 6
+          else if (max === g) h = (b - r) / d + 2
+          else h = (r - g) / d + 4
+          h /= 6
+        }
+        const s = max === 0 ? 0 : d / max
+        return [h, s, max]
+      }
+
+      function hsvToRgb(h, s, v) {
+        const i = Math.floor(h * 6)
+        const f = h * 6 - i
+        const p = v * (1 - s)
+        const q = v * (1 - f * s)
+        const t = v * (1 - (1 - f) * s)
+        const rr = Math.round([v, q, p, p, t, v][i % 6] * 255)
+        const gg = Math.round([t, v, v, q, p, p][i % 6] * 255)
+        const bb = Math.round([p, p, t, v, v, q][i % 6] * 255)
+        return [rr, gg, bb]
+      }
+
+      function sameRgb(a, b) {
+        return a[0] === b[0] && a[1] === b[1] && a[2] === b[2]
+      }
+
+      const presets = PRESET_COLORS.map(([hex]) => hexToRgb(hex))
+      const swatches = PRESET_COLORS.map(([hex], i) => {
+        const sw = document.createElement('button')
+        sw.type = 'button'
+        sw.className = 'swatch'
+        sw.style.background = hex
+        sw.title = PRESET_COLORS[i][1]
+        sw.addEventListener('click', () => setFromPreset(i))
+        presetRow.appendChild(sw)
+        return sw
+      })
+
+      function setFromPreset(i) {
+        setFromRgb(presets[i])
+      }
+
+      function setFromRgb(rgb) {
+        currentColor = rgb.slice()
+        const [h, s, v] = rgbToHsv(rgb)
+        H = h
+        S = s
+        V = v
+        if (pickOpen && hsvOpen) {
+          renderSV()
+          drawSVMarker()
+          drawHueMarker()
+        }
+        updateDisplay(currentColor)
+      }
+
+      curHex.addEventListener('input', () => {
+        const rgb = parseHex(curHex.value)
+        if (rgb) setFromRgb(rgb)
+      })
+
+      curHex.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          const rgb = parseHex(curHex.value)
+          if (rgb) setFromRgb(rgb)
+        }
+      })
+
+      function updateDisplay(rgb) {
+        curSwatch.style.background = `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`
+        curHex.value = '#' + rgb.map((c) => c.toString(16).padStart(2, '0')).join('')
+        swatches.forEach((sw, i) => sw.classList.toggle('selected', sameRgb(rgb, presets[i])))
+      }
+
+      function applyColor() {
+        currentColor = hsvToRgb(H, S, V)
+        updateDisplay(currentColor)
+      }
+
+      function resizePicker() {
+        if (!pickOpen || !hsvOpen) return
+        const sRect = svBox.getBoundingClientRect()
+        SW = Math.max(20, Math.round(sRect.width * dpr))
+        SH = SW
+        svCanvas.width = svCanvas.height = SW
+        svMarker.width = svMarker.height = SW
+
+        const hRect = hueBox.getBoundingClientRect()
+        HW = Math.max(10, Math.round(hRect.width * dpr))
+        HH = Math.max(20, Math.round(hRect.height * dpr))
+        hueCanvas.width = HW
+        hueCanvas.height = HH
+        hueMarker.width = HW
+        hueMarker.height = HH
+
+        renderSV()
+        renderHue()
+        drawSVMarker()
+        drawHueMarker()
+      }
+
+      function renderSV() {
+        if (!SW) return
+        const img = ctxSv.createImageData(SW, SH)
+        const d = img.data
+        for (let y = 0; y < SH; y++) {
+          const v = 1 - y / (SH - 1)
+          for (let x = 0; x < SW; x++) {
+            const s = x / (SW - 1)
+            const [r, g, b] = hsvToRgb(H, s, v)
+            const i = (y * SW + x) * 4
+            d[i] = r; d[i + 1] = g; d[i + 2] = b; d[i + 3] = 255
+          }
+        }
+        ctxSv.putImageData(img, 0, 0)
+      }
+
+      function renderHue() {
+        if (!HW) return
+        for (let y = 0; y < HH; y++) {
+          const hue = y / (HH - 1)
+          const [r, g, b] = hsvToRgb(hue, 1, 1)
+          ctxHue.fillStyle = `rgb(${r}, ${g}, ${b})`
+          ctxHue.fillRect(0, y, HW, 1)
+        }
+      }
+
+      function drawSVMarker() {
+        if (!SW) return
+        ctxSvM.clearRect(0, 0, SW, SH)
+        const x = S * SW
+        const y = (1 - V) * SH
+        ctxSvM.beginPath()
+        ctxSvM.arc(x, y, 8 * dpr, 0, 2 * Math.PI)
+        ctxSvM.fillStyle = '#fff'
+        ctxSvM.fill()
+        ctxSvM.lineWidth = 2 * dpr
+        ctxSvM.strokeStyle = 'rgba(0, 0, 0, 0.7)'
+        ctxSvM.stroke()
+      }
+
+      function drawHueMarker() {
+        if (!HW) return
+        ctxHueM.clearRect(0, 0, HW, HH)
+        const y = H * HH
+        ctxHueM.fillStyle = '#fff'
+        ctxHueM.fillRect(0, y - 3 * dpr, HW, 6 * dpr)
+        ctxHueM.strokeStyle = 'rgba(0, 0, 0, 0.7)'
+        ctxHueM.lineWidth = 1.5 * dpr
+        ctxHueM.beginPath()
+        ctxHueM.moveTo(0, y)
+        ctxHueM.lineTo(HW, y)
+        ctxHueM.stroke()
+      }
+
+      let svDrag = false
+      let hueDrag = false
+
+      function setSV(e) {
+        const rect = svCanvas.getBoundingClientRect()
+        S = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
+        V = Math.max(0, Math.min(1, 1 - (e.clientY - rect.top) / rect.height))
+        drawSVMarker()
+        applyColor()
+      }
+
+      svCanvas.addEventListener('pointerdown', (e) => {
+        e.preventDefault()
+        svDrag = true
+        svCanvas.setPointerCapture(e.pointerId)
+        setSV(e)
+      })
+      svCanvas.addEventListener('pointermove', (e) => {
+        if (svDrag) setSV(e)
+      })
+      svCanvas.addEventListener('pointerup', () => (svDrag = false))
+      svCanvas.addEventListener('pointercancel', () => (svDrag = false))
+
+      function setHue(e) {
+        const rect = hueCanvas.getBoundingClientRect()
+        H = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height))
+        renderSV()
+        drawHueMarker()
+        applyColor()
+      }
+
+      hueCanvas.addEventListener('pointerdown', (e) => {
+        e.preventDefault()
+        hueDrag = true
+        hueCanvas.setPointerCapture(e.pointerId)
+        setHue(e)
+      })
+      hueCanvas.addEventListener('pointermove', (e) => {
+        if (hueDrag) setHue(e)
+      })
+      hueCanvas.addEventListener('pointerup', () => (hueDrag = false))
+      hueCanvas.addEventListener('pointercancel', () => (hueDrag = false))
+
+      window.addEventListener('resize', resizePicker)
+
+      /* ---------- 画板 ---------- */
+      document.querySelectorAll('.tool[data-tool]').forEach((btn) => {
+        btn.addEventListener('click', () => setTool(btn.dataset.tool))
+      })
+
+      function setTool(tool) {
+        activeTool = tool
+        document.querySelectorAll('.tool[data-tool]').forEach((b) =>
+          b.classList.toggle('active', b.dataset.tool === tool)
+        )
+        hint.textContent = TOOL_HINTS[tool]
+      }
+
+      function drawGrid() {
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.10)'
+        ctx.lineWidth = 1
+        for (let i = 1; i < SIZE; i++) {
+          const p = i * CELL + 0.5
+          ctx.beginPath()
+          ctx.moveTo(p, 0)
+          ctx.lineTo(p, 512)
+          ctx.stroke()
+          ctx.beginPath()
+          ctx.moveTo(0, p)
+          ctx.lineTo(512, p)
+          ctx.stroke()
+        }
+      }
+
+      function redraw() {
+        ctx.clearRect(0, 0, 512, 512)
+        for (let y = 0; y < SIZE; y++) {
+          for (let x = 0; x < SIZE; x++) {
+            const [r, g, b] = pixels[y][x]
+            ctx.fillStyle = `rgb(${r}, ${g}, ${b})`
+            ctx.fillRect(x * CELL, y * CELL, CELL, CELL)
+          }
+        }
+        drawGrid()
+      }
+
+      function cellFromEvent(e) {
+        const rect = canvas.getBoundingClientRect()
+        const col = Math.floor(((e.clientX - rect.left) / rect.width) * SIZE)
+        const row = Math.floor(((e.clientY - rect.top) / rect.height) * SIZE)
+        return { row: Math.max(0, Math.min(SIZE - 1, row)), col: Math.max(0, Math.min(SIZE - 1, col)) }
+      }
+
+      function sameColor(a, b) {
+        return a[0] === b[0] && a[1] === b[1] && a[2] === b[2]
+      }
+
+      function floodFill(row, col) {
+        const target = pixels[row][col]
+        if (sameColor(target, currentColor)) return
+        const stack = [[row, col]]
+        while (stack.length) {
+          const [r, c] = stack.pop()
+          if (r < 0 || r >= SIZE || c < 0 || c >= SIZE) continue
+          const px = pixels[r][c]
+          if (!sameColor(px, target)) continue
+          pixels[r][c] = currentColor.slice()
+          stack.push([r + 1, c], [r - 1, c], [r, c + 1], [r, c - 1])
+        }
+      }
+
+      function paint(e) {
+        const { row, col } = cellFromEvent(e)
+        if (activeTool === 'fill') {
+          floodFill(row, col)
+          return
+        }
+        const color = activeTool === 'eraser' ? [255, 255, 255] : currentColor
+        pixels[row][col] = color.slice()
+      }
+
+      let painting = false
+      canvas.addEventListener('pointerdown', (e) => {
+        e.preventDefault()
+        painting = true
+        pushUndo()
+        canvas.setPointerCapture(e.pointerId)
+        paint(e)
+        redraw()
+      })
+      canvas.addEventListener('pointermove', (e) => {
+        if (painting && activeTool !== 'fill') {
+          paint(e)
+          redraw()
+        }
+      })
+      const stop = () => {
+        if (painting) scheduleSave()
+        painting = false
+      }
+      canvas.addEventListener('pointerup', stop)
+      canvas.addEventListener('pointercancel', stop)
+
+      document.getElementById('clearBtn').addEventListener('click', () => {
+        pushUndo()
+        pixels = Array.from({ length: SIZE }, () =>
+          Array.from({ length: SIZE }, () => [255, 255, 255])
+        )
+        redraw()
+        scheduleSave()
+        toast('已清空')
+      })
+
+      /* ---------- 中途保存（localStorage） ---------- */
+      const DRAFT_KEY = 'paintDraft'
+      const DRAFT_VERSION = 2
+      let saveTimer
+
+      function saveDraft() {
+        try {
+          const flat = []
+          for (const row of pixels) {
+            for (const px of row) {
+              flat.push([px[0], px[1], px[2]])
+            }
+          }
+          localStorage.setItem(DRAFT_KEY, JSON.stringify({
+            v: DRAFT_VERSION,
+            pixels: flat,
+            time: Date.now()
+          }))
+        } catch (err) {
+          /* 存储失败可忽略 */
+        }
+      }
+
+      function normalizePixel(px) {
+        if (!Array.isArray(px) || px.length < 3) return [255, 255, 255]
+        const r = Number(px[0])
+        const g = Number(px[1])
+        const b = Number(px[2])
+        if (![r, g, b].every(Number.isFinite)) return [255, 255, 255]
+        return [
+          Math.max(0, Math.min(255, Math.round(r))),
+          Math.max(0, Math.min(255, Math.round(g))),
+          Math.max(0, Math.min(255, Math.round(b))),
+        ]
+      }
+
+      function scheduleSave() {
+        clearTimeout(saveTimer)
+        saveTimer = setTimeout(saveDraft, 400)
+      }
+
+      function loadDraft() {
+        try {
+          const raw = localStorage.getItem(DRAFT_KEY)
+          if (!raw) return false
+          const data = JSON.parse(raw)
+          if (!data || !Array.isArray(data.pixels)) return false
+
+          const src = data.pixels
+          const out = Array.from({ length: SIZE }, () =>
+            Array.from({ length: SIZE }, () => [255, 255, 255])
+          )
+
+          const isNested = Array.isArray(src[0]) && Array.isArray(src[0][0])
+          const isFlat = Array.isArray(src[0]) && typeof src[0][0] === 'number'
+
+          if (isNested) {
+            for (let y = 0; y < SIZE; y++) {
+              for (let x = 0; x < SIZE; x++) {
+                out[y][x] = normalizePixel(src[y] && src[y][x])
+              }
+            }
+          } else if (isFlat) {
+            for (let y = 0; y < SIZE; y++) {
+              for (let x = 0; x < SIZE; x++) {
+                out[y][x] = normalizePixel(src[y * SIZE + x])
+              }
+            }
+          } else {
+            return false
+          }
+
+          pixels = out
+          redraw()
+          return true
+        } catch (err) {
+          return false
+        }
+      }
+
+      window.addEventListener('beforeunload', saveDraft)
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) saveDraft()
+      })
+
+      /* ---------- 作品名与作者名 ---------- */
+      const titleInput = document.getElementById('titleInput')
+      const nameInput = document.getElementById('nameInput')
+
+      function readCookie(name) {
+        const match = document.cookie.match(new RegExp('(?:^|; )' + encodeURIComponent(name) + '=([^;]*)'))
+        return match ? decodeURIComponent(match[1]) : ''
+      }
+
+      function initName() {
+        const saved = localStorage.getItem('paintName')
+        const cookieUser = readCookie('username')
+        nameInput.value = saved || cookieUser || ''
+        nameInput.addEventListener('input', () => {
+          localStorage.setItem('paintName', nameInput.value.trim())
+        })
+      }
+
+      function resolveAuthor() {
+        let name = nameInput.value.trim()
+        if (!name) {
+          const typed = window.prompt('未填写作者名：输入你的名字后确定；直接确定或取消将匿名上传。')
+          if (typed !== null) {
+            name = typed.trim()
+            if (name) {
+              nameInput.value = name
+              localStorage.setItem('paintName', name)
+            }
+          }
+        }
+        return name
+      }
+
+      function formatTime(ts) {
+        if (!ts) return ''
+        const d = new Date(ts)
+        return `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+      }
+
+      const recordList = document.getElementById('recordList')
+      const moreBtn = document.getElementById('moreBtn')
+
+      const mineSet = loadMine()
+
+      function loadMine() {
+        try {
+          return new Set(JSON.parse(localStorage.getItem('lw-mine') || '[]'))
+        } catch (e) {
+          return new Set()
+        }
+      }
+
+      function addMine(time) {
+        const arr = [...mineSet]
+        if (arr.includes(String(time))) return
+        arr.push(String(time))
+        if (arr.length > 200) arr.splice(0, arr.length - 200)
+        mineSet.clear()
+        arr.forEach((t) => mineSet.add(t))
+        try {
+          localStorage.setItem('lw-mine', JSON.stringify(arr))
+        } catch (e) {}
+      }
+
+      function loadOwn(rec) {
+        pushUndo()
+        pixels = []
+        for (let i = 0; i < 256; i += 16) {
+          const row = []
+          for (let j = 0; j < 16; j++) {
+            const p = rec.pixels[i + j] || [255, 255, 255]
+            row.push([p[0], p[1], p[2]])
+          }
+          pixels.push(row)
+        }
+        redraw()
+        scheduleSave()
+        toast('已载入你的作品，可继续编辑后重新上传')
+      }
+
+      async function fetchRecords() {
+        try {
+          const res = await fetch('/api/get?limit=10')
+          if (!res.ok) return
+          const data = await res.json()
+          renderRecords(data.history || [], data.total || 0)
+        } catch (err) {
+          /* 忽略加载失败 */
+        }
+      }
+
+      function renderRecords(records, total) {
+        recordList.innerHTML = ''
+        moreBtn.hidden = !(total > records.length)
+        if (!records.length) {
+          const empty = document.createElement('div')
+          empty.className = 'record-empty'
+          empty.textContent = '还没有人上传过作品'
+          recordList.appendChild(empty)
+          return
+        }
+        records.forEach((rec) => {
+          const tile = document.createElement('button')
+          tile.type = 'button'
+          tile.className = 'tile'
+          tile.title = '点击预览'
+
+          const c = document.createElement('canvas')
+          c.width = 16
+          c.height = 16
+          c.className = 'thumb'
+          const tc = c.getContext('2d')
+          for (let y = 0; y < 16; y++) {
+            for (let x = 0; x < 16; x++) {
+              const px = rec.pixels[y * 16 + x]
+              if (!px) continue
+              tc.fillStyle = `rgb(${px[0]}, ${px[1]}, ${px[2]})`
+              tc.fillRect(x, y, 1, 1)
+            }
+          }
+
+          const meta = document.createElement('div')
+          meta.className = 'tile-meta'
+          const nm = document.createElement('span')
+          nm.textContent = rec.workName || rec.name || '未命名'
+          const metaRow = document.createElement('span')
+          metaRow.className = 'tile-meta-row'
+          const au = document.createElement('span')
+          au.textContent = rec.author || rec.name || '匿名'
+          const tm = document.createElement('span')
+          tm.className = 'tile-time'
+          tm.textContent = formatTime(rec.time)
+
+          const likeBadge = document.createElement('span')
+          likeBadge.className = 'tile-like' + (likedSet.has(String(rec.time)) ? ' liked' : '')
+          likeBadge.textContent = '♥ ' + (rec.likes || 0)
+          likeBadge.addEventListener('click', (e) => {
+            e.stopPropagation()
+            likeWork(rec, likeBadge)
+          })
+
+          metaRow.append(au, tm, likeBadge)
+          meta.append(nm, metaRow)
+
+          if (mineSet.has(String(rec.time))) {
+            const loadBtn = document.createElement('span')
+            loadBtn.className = 'tile-load'
+            loadBtn.textContent = '载入编辑'
+            loadBtn.addEventListener('click', (e) => {
+              e.stopPropagation()
+              loadOwn(rec)
+            })
+            meta.appendChild(loadBtn)
+          }
+
+          tile.append(c, meta)
+          tile.addEventListener('click', () => previewRecord(rec))
+          recordList.appendChild(tile)
+        })
+      }
+
+      function previewRecord(rec) {
+        const c = document.getElementById('previewCanvas')
+        c.width = 16
+        c.height = 16
+        const tc = c.getContext('2d')
+        tc.clearRect(0, 0, 16, 16)
+        for (let y = 0; y < 16; y++) {
+          for (let x = 0; x < 16; x++) {
+            const px = rec.pixels[y * 16 + x]
+            if (!px) continue
+            tc.fillStyle = `rgb(${px[0]}, ${px[1]}, ${px[2]})`
+            tc.fillRect(x, y, 1, 1)
+          }
+        }
+        document.getElementById('previewTitle').textContent = rec.workName || rec.name || '未命名'
+        document.getElementById('previewAuthor').textContent = '作者：' + (rec.author || rec.name || '匿名')
+        document.getElementById('previewTime').textContent = formatTime(rec.time)
+        previewOverlay.hidden = false
+      }
+
+      const previewOverlay = document.getElementById('previewOverlay')
+      const previewClose = document.getElementById('previewClose')
+
+      function closePreview() {
+        previewOverlay.hidden = true
+      }
+
+      previewClose.addEventListener('click', closePreview)
+      previewOverlay.addEventListener('click', (e) => {
+        if (e.target === previewOverlay) closePreview()
+      })
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closePreview()
+      })
+
+      /* ---------- 赞赏 ---------- */
+      const tipOverlay = document.getElementById('tipOverlay')
+
+      document.getElementById('tipBtn').addEventListener('click', () => {
+        tipOverlay.hidden = false
+      })
+      document.getElementById('tipClose').addEventListener('click', () => {
+        tipOverlay.hidden = true
+      })
+      tipOverlay.addEventListener('click', (e) => {
+        if (e.target === tipOverlay) tipOverlay.hidden = true
+      })
+
+      const uploadBtn = document.getElementById('uploadBtn')
+      uploadBtn.addEventListener('click', async () => {
+        const author = resolveAuthor()
+
+        const flat = []
+        for (const row of pixels) for (const px of row) flat.push(normalizePixel(px))
+        const payload = { pixels: flat }
+        if (author) payload.author = author
+        const workName = titleInput.value.trim()
+        if (workName) payload.workName = workName
+
+        uploadBtn.disabled = true
+        try {
+          const res = await fetch('/api/set', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          })
+          const data = await res.json().catch(() => ({}))
+          if (res.ok) {
+            if (data.time) addMine(data.time)
+            toast('发布「' + (data.workName || '未命名') + '」成功')
+            fetchRecords()
+          } else {
+            toast('上传失败：' + (data.error || res.status))
+          }
+        } catch (err) {
+          toast('上传失败：网络错误')
+        } finally {
+          uploadBtn.disabled = false
+        }
+      })
+
+      let toastTimer
+      function toast(msg) {
+        const el = document.getElementById('toast')
+        el.textContent = msg
+        el.classList.add('show')
+        clearTimeout(toastTimer)
+        toastTimer = setTimeout(() => el.classList.remove('show'), 2200)
+      }
+
+      redraw()
+      applyColor()
+      initName()
+      fetchRecords()
+
+      /* ---------- 点赞 ---------- */
+      const likedSet = loadLikedSet()
+
+      function loadLikedSet() {
+        try {
+          const arr = JSON.parse(localStorage.getItem('lw-liked') || '[]')
+          return new Set(Array.isArray(arr) ? arr : [])
+        } catch (e) {
+          return new Set()
+        }
+      }
+
+      function saveLikedSet() {
+        try {
+          localStorage.setItem('lw-liked', JSON.stringify([...likedSet]))
+        } catch (e) {}
+      }
+
+      async function likeWork(rec, badge) {
+        const key = String(rec.time)
+        if (likedSet.has(key)) {
+          toast('你已经赞过这幅作品啦')
+          return
+        }
+        if (badge) badge.style.pointerEvents = 'none'
+        try {
+          const res = await fetch('/api/like', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ time: rec.time }),
+          })
+          const data = await res.json().catch(() => ({}))
+          if (res.ok) {
+            likedSet.add(key)
+            saveLikedSet()
+            rec.likes = data.likes
+            if (badge) {
+              badge.textContent = '♥ ' + rec.likes
+              badge.classList.add('liked')
+            }
+            toast('点赞成功 ♥')
+          } else {
+            toast('点赞失败：' + (data.error || res.status))
+          }
+        } catch (err) {
+          toast('点赞失败：网络错误')
+        } finally {
+          if (badge) badge.style.pointerEvents = ''
+        }
+      }
+
+      /* ---------- 主题切换 ---------- */
+      const themeBtn = document.getElementById('themeBtn')
+
+      function applyThemeIcon() {
+        themeBtn.textContent =
+          document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙'
+      }
+
+      themeBtn.addEventListener('click', () => {
+        const cur =
+          document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'
+        document.documentElement.setAttribute('data-theme', cur)
+        try {
+          localStorage.setItem('lw-theme', cur)
+        } catch (e) {}
+        applyThemeIcon()
+      })
+
+      applyThemeIcon()
+
+      /* ---------- 键盘快捷键 ---------- */
+      document.addEventListener('keydown', (e) => {
+        if (e.metaKey || e.ctrlKey || e.altKey) return
+        const tag = (e.target && e.target.tagName) || ''
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+        if (!consentOverlay.hidden || !previewOverlay.hidden || !tipOverlay.hidden) return
+        const k = e.key.toLowerCase()
+        if (k === 'b') setTool('brush')
+        else if (k === 'e') setTool('eraser')
+        else if (k === 'f') setTool('fill')
+        else if (k === 'c') {
+          e.preventDefault()
+          toolColorBtn.click()
+        } else if (k === 'z') {
+          e.preventDefault()
+          undoBtn.click()
+        }
+      })
+
+      /* ---------- 合规同意弹窗 ---------- */
+      const consentOverlay = document.getElementById('consentOverlay')
+      const consentYes = document.getElementById('consentYes')
+      const consentNo = document.getElementById('consentNo')
+
+      function hasConsent() {
+        return document.cookie
+          .split(';')
+          .some((c) => c.trim().startsWith('paint_consent='))
+      }
+
+      function grantConsent() {
+        document.cookie = 'paint_consent=1; max-age=' + 60 * 60 * 24 * 30 + '; path=/'
+      }
+
+      if (!hasConsent()) {
+        document.body.style.overflow = 'hidden'
+      } else {
+        consentOverlay.hidden = true
+      }
+
+      consentYes.addEventListener('click', () => {
+        grantConsent()
+        consentOverlay.hidden = true
+        document.body.style.overflow = ''
+      })
+
+      consentNo.addEventListener('click', () => {
+        consentBox.innerHTML = `
+          <h2>无法进入</h2>
+          <div class="text">你已拒绝同意用户协议，根据规定无法使用本画板。若改变主意，可刷新页面重新选择。</div>`
+      })
+
+      if (loadDraft()) {
+        toast('欢迎回来！你的数据已保存')
+      }
+    </script>
+  </body>
+</html>

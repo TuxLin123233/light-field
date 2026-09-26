@@ -1,0 +1,20 @@
+# Cloudflare Pages Functions 本地开发配置（wrangler pages dev）
+# 线上部署的 KV 绑定需要在 Cloudflare Pages 控制台配置，见下方注释。
+
+name = "pixel-space"
+compatibility_date = "2026-09-25"
+
+# 本地开发时把下面的 id 换成你 lightfield namespace 的 ID：
+#   1) 运行  wrangler kv namespace list  查看 ID
+#   2) 把 <你的 namespace ID> 替换为真实 ID，然后本地的 LIGHTFIELD_KV 就能用了
+[[kv_namespaces]]
+binding = "LIGHTFIELD_KV"
+id = "<你的 namespace ID>"
+
+# —— 线上部署（控制台配 KV 绑定）——
+# Cloudflare Pages 控制台 → 你的项目 pixel-space → Settings → Functions → Bindings → Add binding
+#   Type:  KV namespace
+#   Variable name:  LIGHTFIELD_KV
+#   KV namespace:   lightfield
+# 保存后 Cloudflare 会自动重新部署，线上函数的 context.env.LIGHTFIELD_KV 即生效。
+# 注意：不要用这里 wrangler.toml 里的 id 去覆盖线上绑定，控制台绑定会优先生效。
