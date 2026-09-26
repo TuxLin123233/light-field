@@ -4,7 +4,7 @@
 
 本仓库只含 Web 端；嵌入式固件在仓库根目录（`..` / `light-realm`）。
 
-线上地址：<https://pixel-space-9bn.pages.dev>
+线上地址：<https://light-field.pages.dev>（旧域名 pixel-space-9bn.pages.dev 迁完后停用）
 
 ## 技术栈
 
