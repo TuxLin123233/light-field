@@ -1559,9 +1559,8 @@
         }
       }
 
-      function paint(e) {
+      function paintCell(row, col) {
         fullDirty = true
-        const { row, col } = cellFromEvent(e)
         if (activeTool === 'fill') {
           floodFill(row, col)
           return
@@ -1570,13 +1569,19 @@
         pixels[row][col] = color.slice()
       }
 
+      function paint(e) {
+        const { row, col } = cellFromEvent(e)
+        paintCell(row, col)
+      }
+
       let painting = false
       let panning = false
       let startX = 0
       let startY = 0
       let startPanX = 0
       let startPanY = 0
-      const PAN_DIST = 5
+      let downCell = null
+      const PAN_DIST = 12
 
       canvas.addEventListener('pointerdown', (e) => {
         e.preventDefault()
@@ -1584,6 +1589,7 @@
         if (size > 16) {
           painting = true
           panning = false
+          downCell = cellFromEvent(e)
           startX = e.clientX
           startY = e.clientY
           startPanX = panX
@@ -1619,22 +1625,34 @@
         }
       })
 
-      canvas.addEventListener('pointerup', (e) => {
-        if (painting && size > 16 && !panning) {
+      function finishTap() {
+        if (downCell) {
           pushUndo()
-          paint(e)
+          paintCell(downCell.row, downCell.col)
+          downCell = null
           redraw()
           scheduleSave()
+        }
+      }
+
+      canvas.addEventListener('pointerup', () => {
+        if (painting && size > 16 && !panning) {
+          finishTap()
         } else if (painting && size <= 16) {
           scheduleSave()
         }
         painting = false
         panning = false
+        downCell = null
       })
 
       canvas.addEventListener('pointercancel', () => {
+        if (painting && size > 16 && !panning) {
+          finishTap()
+        }
         painting = false
         panning = false
+        downCell = null
       })
 
       document.getElementById('clearBtn').addEventListener('click', () => {
