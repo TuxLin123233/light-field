@@ -306,6 +306,159 @@
         color: #3f9c68;
       }
 
+      .calendar {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 16px;
+        margin-bottom: 18px;
+      }
+
+      .cal-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+
+      .cal-title {
+        font-size: 15px;
+        font-weight: 800;
+        color: var(--text);
+      }
+
+      .cal-nav {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .cal-nav button {
+        width: 30px;
+        height: 30px;
+        border: none;
+        border-radius: 999px;
+        background: var(--surface-2);
+        color: var(--text);
+        font-size: 18px;
+        line-height: 1;
+        cursor: pointer;
+      }
+
+      .cal-nav button:active { transform: scale(0.9); }
+
+      .cal-label {
+        min-width: 92px;
+        text-align: center;
+        font-size: 14px;
+        font-weight: 800;
+        color: var(--text);
+      }
+
+      .cal-week {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        margin-bottom: 6px;
+      }
+
+      .cal-week span {
+        text-align: center;
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--text-faint);
+        padding: 4px 0;
+      }
+
+      .cal-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 6px;
+      }
+
+      .cal-cell {
+        position: relative;
+        min-height: 86px;
+        background: var(--surface-2);
+        border: 1px solid transparent;
+        border-radius: 12px;
+        padding: 6px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .cal-cell.blank { background: transparent; }
+
+      .cal-cell.today {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 1px var(--accent);
+      }
+
+      .cal-top {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 2px;
+      }
+
+      .cal-daynum {
+        font-size: 14px;
+        font-weight: 900;
+        color: var(--text);
+      }
+
+      .cal-lunar {
+        font-size: 10px;
+        color: var(--text-muted);
+        white-space: nowrap;
+      }
+
+      .cal-fest {
+        margin-top: 2px;
+        font-size: 10px;
+        font-weight: 700;
+        color: #e5484d;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .cal-fest.jieqi { color: #5bb883; }
+
+      .cal-works {
+        margin-top: auto;
+        display: flex;
+        gap: 4px;
+        align-items: flex-end;
+        padding-top: 4px;
+      }
+
+      .cal-thumb {
+        width: 40px;
+        height: 40px;
+        border-radius: 7px;
+        object-fit: cover;
+        image-rendering: pixelated;
+        background: #fff;
+        cursor: pointer;
+        display: block;
+      }
+
+      .cal-empty-tip {
+        margin-top: auto;
+        font-size: 10px;
+        color: var(--text-faint);
+        padding-top: 4px;
+      }
+
+      .cal-note {
+        margin-top: 10px;
+        font-size: 11px;
+        color: var(--text-faint);
+        line-height: 1.5;
+      }
+
       .featured-head {
         display: flex;
         align-items: center;
@@ -972,6 +1125,22 @@
         <div class="featured-row" id="featuredRow"></div>
       </section>
 
+      <section class="calendar" id="calendarSection" hidden>
+        <div class="cal-head">
+          <span class="cal-title">📅 好作品日历</span>
+          <div class="cal-nav">
+            <button id="calPrev" type="button" aria-label="上个月">‹</button>
+            <span id="calLabel" class="cal-label"></span>
+            <button id="calNext" type="button" aria-label="下个月">›</button>
+          </div>
+        </div>
+        <div class="cal-week">
+          <span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span>
+        </div>
+        <div class="cal-grid" id="calGrid"></div>
+        <div class="cal-note">每日展示当天点赞最高的作品（按东八区发布时间）· 农历与节气同步 · 点击作品可预览</div>
+      </section>
+
       <div id="gallery" class="gallery-grid"></div>
       <div id="sentinel" class="status">加载中…</div>
       <div id="status" class="status" hidden></div>
@@ -1037,6 +1206,7 @@
     </nav>
 
     <script src="/qrcode.js"></script>
+    <script src="/lunar.js"></script>
     <script>
       function workSize(rec) {
         const s = (rec && rec.size) || 0
@@ -1512,6 +1682,145 @@
           featuredRange = btn.dataset.range
 loadFeatured()
       loadContest()
+
+      /* ---------- 好作品日历（含农历） ---------- */
+      const calendarSection = document.getElementById('calendarSection')
+      const calGrid = document.getElementById('calGrid')
+      const calLabel = document.getElementById('calLabel')
+      const calWorks = new Map()
+
+      const nowCal = new Date()
+      let calY = nowCal.getFullYear()
+      let calM = nowCal.getMonth() + 1
+      let dailyDays = {}
+
+      function pad2(n) { return String(n).padStart(2, '0') }
+
+      function calDateStr(y, m, d) {
+        return y + '-' + pad2(m) + '-' + pad2(d)
+      }
+
+      async function loadCal(silent) {
+        try {
+          const res = await fetch(`/api/daily?year=${calY}&month=${calM}&top=3`)
+          if (!res.ok) throw new Error('HTTP ' + res.status)
+          const data = await res.json()
+          dailyDays = data.days || {}
+          renderCal()
+          calendarSection.hidden = false
+        } catch (e) {
+          if (!silent) calendarSection.hidden = true
+        }
+      }
+
+      function renderCal() {
+        calLabel.textContent = calY + '年' + calM + '月'
+        calGrid.innerHTML = ''
+        const firstDow = (new Date(calY, calM - 1, 1).getDay() + 6) % 7
+        const daysInMonth = new Date(calY, calM, 0).getDate()
+        const todayStr = calDateStr(nowCal.getFullYear(), nowCal.getMonth() + 1, nowCal.getDate())
+
+        for (let i = 0; i < firstDow; i++) {
+          const blank = document.createElement('div')
+          blank.className = 'cal-cell blank'
+          calGrid.appendChild(blank)
+        }
+
+        for (let d = 1; d <= daysInMonth; d++) {
+          const dateKey = calDateStr(calY, calM, d)
+          const cell = document.createElement('div')
+          cell.className = 'cal-cell'
+          if (dateKey === todayStr) cell.classList.add('today')
+
+          const top = document.createElement('div')
+          top.className = 'cal-top'
+          const num = document.createElement('span')
+          num.className = 'cal-daynum'
+          num.textContent = d
+          top.appendChild(num)
+
+          let lunarLine = ''
+          let fest = ''
+          let isJieqi = false
+          if (window.Lunar) {
+            try {
+              const L = window.Lunar.Lunar.fromDate(new Date(calY, calM - 1, d))
+              lunarLine = L.getMonthInChinese() + '月' + L.getDayInChinese()
+              const fests = L.getFestivals() || []
+              if (fests.length) {
+                fest = fests[0]
+              } else {
+                const jq = L.getJieQi() || ''
+                if (jq) {
+                  fest = jq
+                  isJieqi = true
+                }
+              }
+            } catch (e) {}
+          }
+          const lunar = document.createElement('span')
+          lunar.className = 'cal-lunar'
+          lunar.textContent = lunarLine
+          top.appendChild(lunar)
+          cell.appendChild(top)
+
+          if (fest) {
+            const fe = document.createElement('span')
+            fe.className = 'cal-fest' + (isJieqi ? ' jieqi' : '')
+            fe.textContent = fest
+            cell.appendChild(fe)
+          }
+
+          cell.title = calY + '年' + calM + '月' + d + '日 · 农历' + (lunarLine || '') + (fest ? ' · ' + fest : '')
+
+          const works = dailyDays[dateKey] || []
+          if (works.length) {
+            const wrap = document.createElement('div')
+            wrap.className = 'cal-works'
+            works.forEach((w) => {
+              const img = document.createElement('img')
+              img.className = 'cal-thumb'
+              img.alt = w.workName || w.name || '未命名'
+              img.loading = 'lazy'
+              img.decoding = 'async'
+              img.src = pixelsToURL(w.pixels, workSize(w))
+              img.addEventListener('click', (e) => {
+                e.stopPropagation()
+                preview(w)
+              })
+              calWorks.set(String(w.time), w)
+              wrap.appendChild(img)
+            })
+            cell.appendChild(wrap)
+          } else {
+            const tip = document.createElement('div')
+            tip.className = 'cal-empty-tip'
+            tip.textContent = '·'
+            cell.appendChild(tip)
+          }
+
+          calGrid.appendChild(cell)
+        }
+      }
+
+      document.getElementById('calPrev').addEventListener('click', () => {
+        calM -= 1
+        if (calM === 0) {
+          calM = 12
+          calY -= 1
+        }
+        loadCal(true)
+      })
+      document.getElementById('calNext').addEventListener('click', () => {
+        calM += 1
+        if (calM === 13) {
+          calM = 1
+          calY += 1
+        }
+        loadCal(true)
+      })
+
+      loadCal()
         })
       })
 
