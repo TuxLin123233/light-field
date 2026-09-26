@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>光域画板</title>
+    <title>像素小镇</title>
     <script>
       ;(function () {
         try {
@@ -686,7 +686,7 @@ color: var(--text-muted);
       #toast {
         position: fixed;
         left: 50%;
-        bottom: 32px;
+        bottom: 96px;
         transform: translate(-50%, 16px);
         background: var(--toast-bg);
         color: #fff;
@@ -699,7 +699,7 @@ color: var(--text-muted);
         box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
         max-width: 86vw;
         text-align: center;
-        z-index: 10;
+        z-index: 120;
       }
 
       #toast.show { opacity: 1; transform: translate(-50%, 0); }
@@ -1163,6 +1163,38 @@ color: var(--text-muted);
         color: #fff;
       }
 
+      .anim-speed-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin: 10px 0 0;
+        flex-wrap: wrap;
+      }
+
+      .anim-speed-label {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text-muted);
+        margin-right: 2px;
+      }
+
+      .anim-speed-btn {
+        border: 1px solid var(--border-strong);
+        background: var(--surface);
+        color: var(--text-muted);
+        border-radius: 999px;
+        padding: 5px 12px;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .anim-speed-btn.active {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+      }
+
       .anim-close {
         border: none;
         background: var(--surface-2);
@@ -1469,13 +1501,20 @@ color: var(--text-muted);
         </div>
         <button class="anim-close" id="animClose" type="button">完成</button>
       </div>
+      <div class="anim-speed-row">
+        <span class="anim-speed-label">速度</span>
+        <button class="anim-speed-btn" data-delay="5" type="button">快 ×2</button>
+        <button class="anim-speed-btn active" data-delay="10" type="button">标准</button>
+        <button class="anim-speed-btn" data-delay="15" type="button">慢</button>
+        <button class="anim-speed-btn" data-delay="20" type="button">更慢</button>
+      </div>
       <div class="anim-frames" id="animFrameStrip"></div>
       <div class="anim-actions">
         <button id="animCopy" type="button">复制上一帧</button>
         <button id="animClear" type="button">清空本帧</button>
         <button id="animExport" type="button">导出 GIF</button>
       </div>
-      <div class="anim-note">点选下面的帧号切换画布逐帧作画；导出为 512×512 GIF，每帧约 0.1 秒循环播放。</div>
+      <div class="anim-note">点选下面的帧号切换画布逐帧作画；可调整播放速度，导出为 512×512 循环 GIF。</div>
     </div>
 
     <div class="hint" id="hint">画笔：点按或滑动作画 · 画布 16/32/64× · B 画笔 / E 橡皮 / F 填充 / C 颜色 / Z 撤销 · 输入 #RRGGBB 自定义颜色</div>
@@ -1484,7 +1523,7 @@ color: var(--text-muted);
       本画板仅用于个人学习与技术交流。请勿上传、绘制、发布任何违反中华人民共和国法律法规的内容，包括但不限于色情、暴力、恐怖、赌博、涉政敏感、侵犯他人隐私或知识产权的内容。上传者须对自己发布的内容负全部法律责任。本平台有权在不事先通知的情况下删除违规内容，并保留追究法律责任的权利。
     </div>
 
-    <div class="copyright">© 2026 光域画板 · 版权所有 · 作者 Lin Sifan</div>
+    <div class="copyright">© 2026 像素小镇 · 版权所有 · 作者 Lin Sifan</div>
 
     <button id="tipBtn" class="tip-btn" type="button">赞赏支持</button>
 
@@ -1518,7 +1557,7 @@ color: var(--text-muted);
           <button class="tip-close" id="tipClose" type="button">关闭</button>
         </div>
         <img class="tip-qr" src="/images/赞赏码.jpg" alt="赞赏码">
-        <div class="tip-note">喜欢光域画板？扫码赞赏，感谢你的支持！</div>
+        <div class="tip-note">喜欢像素小镇？长按识别二维码 → 扫码赞赏，感谢你的支持！</div>
       </div>
     </div>
 
@@ -2715,10 +2754,12 @@ color: var(--text-muted);
       const animEditor = document.getElementById('animEditor')
       const animFrameStrip = document.getElementById('animFrameStrip')
       const animCountBtns = document.querySelectorAll('.anim-count-btn')
+      const animSpeedBtns = document.querySelectorAll('.anim-speed-btn')
       const animOverlay = document.getElementById('animOverlay')
       let animOpen = false
       let animActive = 0
       let animCount = 4
+      let animDelay = 10
       let animLastActive = 0
       let animFrames = null
 
@@ -2835,6 +2876,14 @@ color: var(--text-muted);
         })
       })
 
+      animSpeedBtns.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          animDelay = Number(btn.dataset.delay)
+          animSpeedBtns.forEach((b) => b.classList.toggle('active', b === btn))
+          toast('播放速度已调整')
+        })
+      })
+
       document.getElementById('animCopy').addEventListener('click', () => {
         if (!animOpen || !animFrames) return
         animFlush()
@@ -2939,7 +2988,7 @@ color: var(--text-muted);
               for (let dy = 0; dy < 32; dy++) up.fill(v, colBase + dy * 512, colBase + dy * 512 + 32)
             }
           }
-          writer.addFrame(0, 0, 512, 512, up, { delay: 10 })
+          writer.addFrame(0, 0, 512, 512, up, { delay: animDelay })
         }
         const end = writer.end()
         const bytes = buf.subarray(0, end)

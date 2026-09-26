@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="光域画板 · 全部作品">
-    <title>全部作品 · 光域画板</title>
+    <meta name="description" content="像素小镇 · 全部作品">
+    <title>全部作品 · 像素小镇</title>
     <script>
       ;(function () {
         try {
@@ -733,7 +733,7 @@
         <div class="join-ico">🛡️</div>
         <div class="join-body">
           <div class="join-title">加入我们，维护社区稳定</div>
-          <div class="join-desc">光域社区持续壮大，欢迎成为维护者：审核内容、清理违规、共建良好氛围。加入需发送正式申请书信，经作者审核通过后方可参与。</div>
+          <div class="join-desc">像素小镇社区持续壮大，欢迎成为维护者：审核内容、清理违规、共建良好氛围。加入需发送正式申请书信，经作者审核通过后方可参与。</div>
         </div>
         <a class="join-btn" href="/admin">查看详情 →</a>
       </div>
@@ -743,7 +743,7 @@
         本画板仅用于个人学习与技术交流，上传者须对自己发布的内容负全部法律责任。
         <div class="disclaimer-report">发现违规内容？请联系微信 Tux123233 或邮箱 linsifan123233@petalmail.com 举报。</div>
       </div>
-      <div class="copyright">© 2026 光域画板 · 版权所有 · 作者 Lin Sifan</div>
+      <div class="copyright">© 2026 像素小镇 · 版权所有 · 作者 Lin Sifan</div>
     </div>
 
     <div class="preview-overlay" id="previewOverlay" hidden>
@@ -760,7 +760,6 @@
         <div class="preview-like">
           <button class="like-btn" id="previewLike" type="button">♥ <span id="previewLikeCount">0</span></button>
           <button class="share-btn" id="previewShare" type="button">🔗 复制链接</button>
-          <button class="share-btn" id="previewCopyText" type="button">📋 复制文案</button>
           <button class="share-btn" id="previewCard" type="button">🃏 生成朋友圈卡片</button>
         </div>
         <div class="preview-note">仅支持预览，不可载入作画。请勿抄袭或直接提交他人的作品。长按图片可保存到相册。</div>
@@ -985,7 +984,7 @@
         ctx.fillStyle = muted
         ctx.fillText(d.getFullYear() + ' 年 ' + (d.getMonth() + 1) + ' 月 ' + d.getDate() + ' 日', 76, 1420)
         ctx.textAlign = 'right'
-        ctx.fillText('光域画板 · 像素作品', W - 76, 1420)
+        ctx.fillText('像素小镇 · 像素作品', W - 76, 1420)
 
         return cv
       }
@@ -1067,7 +1066,7 @@
           el = document.createElement('div')
           el.id = 'toast'
           el.style.cssText =
-            'position:fixed;left:50%;bottom:32px;transform:translate(-50%,16px);background:rgba(30,26,22,0.92);color:#fff;padding:12px 22px;border-radius:999px;font-size:15px;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:120;max-width:86vw;text-align:center;'
+            'position:fixed;left:50%;bottom:96px;transform:translate(-50%,16px);background:rgba(30,26,22,0.92);color:#fff;padding:12px 22px;border-radius:999px;font-size:15px;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:120;max-width:86vw;text-align:center;'
           document.body.appendChild(el)
         }
         el.textContent = msg
@@ -1337,26 +1336,6 @@
         like(currentPreview, btn)
       })
 
-      function copyText(text, btn, label) {
-        const done = () => {
-          btn.classList.add('copied')
-          btn.textContent = btn.dataset.ok || '✓ 已复制'
-          setTimeout(() => {
-            btn.textContent = label
-            btn.classList.remove('copied')
-          }, 1600)
-        }
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(text).then(done).catch(() => {
-            prompt('复制', text)
-            done()
-          })
-        } else {
-          prompt('复制', text)
-          done()
-        }
-      }
-
       document.getElementById('previewCard').addEventListener('click', () => {
         if (!currentPreview) return
         openCard(
@@ -1365,17 +1344,6 @@
           currentPreview.workName || currentPreview.name || '未命名',
           currentPreview.author || '匿名'
         )
-      })
-
-      const previewCopyTextBtn = document.getElementById('previewCopyText')
-      previewCopyTextBtn.addEventListener('click', () => {
-        if (!currentPreview) return
-        const rec = currentPreview
-        const text =
-          '《' + (rec.workName || rec.name || '未命名') + '》· 画师 ' +
-          (rec.author || (rec.workName ? '匿名' : rec.name || '匿名')) +
-          ' · 来自「光域画板」 ' + location.origin + '/gallery?t=' + rec.time
-        copyText(text, previewCopyTextBtn, previewCopyTextBtn.textContent)
       })
 
       document.getElementById('previewShare').addEventListener('click', () => {
