@@ -73,7 +73,7 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-        padding: 16px 16px 40px;
+        padding: 16px 16px 112px;
         transition: background 0.25s ease, color 0.25s ease;
         color: var(--text);
       }
@@ -689,6 +689,46 @@
       .score-chip.painter-chip { outline: 2px solid var(--accent); }
 
       .housework { font-size: 11px; color: var(--text-faint); text-align: center; margin-top: 6px; }
+
+      /* ---------- 底部导航 ---------- */
+      .bottom-nav {
+        position: fixed;
+        left: 50%;
+        bottom: 16px;
+        transform: translateX(-50%);
+        z-index: 80;
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        width: min(420px, calc(100% - 36px));
+        padding: 8px 12px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        box-shadow: 0 14px 40px rgba(0, 0, 0, 0.22);
+      }
+
+      .bottom-nav a {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 3px;
+        padding: 7px 0 6px;
+        border-radius: 14px;
+        text-decoration: none;
+        color: var(--text-faint);
+        font-size: 10px;
+        font-weight: 700;
+        transition: color 0.2s, background 0.2s;
+      }
+
+      .bottom-nav a .nav-icon { font-size: 18px; line-height: 1; }
+
+      .bottom-nav a.active {
+        color: var(--accent);
+        background: var(--surface-2);
+      }
     </style>
   </head>
   <body>
@@ -1602,5 +1642,12 @@
         toastTimer = setTimeout(() => el.classList.remove('show'), 2200)
       }
     </script>
+
+    <nav class="bottom-nav">
+      <a href="/paint"><span class="nav-icon">🎨</span>画板</a>
+      <a href="/room" class="active"><span class="nav-icon">👥</span>联机</a>
+      <a href="/gallery"><span class="nav-icon">🌆</span>社区</a>
+      <a href="/settings"><span class="nav-icon">⚙️</span>设置</a>
+    </nav>
   </body>
 </html>

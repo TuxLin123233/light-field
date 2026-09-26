@@ -62,7 +62,7 @@
         background: var(--bg);
         color: var(--text);
         min-height: 100vh;
-        padding: 24px 16px 40px;
+        padding: 24px 16px 116px;
         transition: background 0.25s ease, color 0.25s ease;
       }
 
@@ -475,7 +475,7 @@
         cursor: pointer;
       }
 
-      #previewCanvas {
+      #previewImg {
         width: 240px;
         height: 240px;
         image-rendering: pixelated;
@@ -484,6 +484,7 @@
         background: var(--art-bg);
         margin: 0 auto;
         display: block;
+        object-fit: cover;
       }
 
       .preview-info {
@@ -536,6 +537,131 @@
         color: var(--text-faint);
         line-height: 1.6;
       }
+
+      #previewImg {
+        width: 240px;
+        height: 240px;
+        image-rendering: pixelated;
+        border-radius: 12px;
+        border: 2px solid var(--border);
+        background: var(--art-bg);
+        margin: 0 auto;
+        display: block;
+        object-fit: cover;
+      }
+
+      /* ---------- 底部导航 ---------- */
+      .bottom-nav {
+        position: fixed;
+        left: 50%;
+        bottom: 16px;
+        transform: translateX(-50%);
+        z-index: 80;
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        width: min(420px, calc(100% - 36px));
+        padding: 8px 12px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        box-shadow: 0 14px 40px var(--shadow-hover);
+      }
+
+      .bottom-nav a {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 3px;
+        padding: 7px 0 6px;
+        border-radius: 14px;
+        text-decoration: none;
+        color: var(--text-faint);
+        font-size: 10px;
+        font-weight: 700;
+        transition: color 0.2s, background 0.2s;
+      }
+
+      .bottom-nav a .nav-icon { font-size: 18px; line-height: 1; }
+
+      .bottom-nav a.active {
+        color: var(--accent);
+        background: var(--surface-2);
+      }
+
+      /* ---------- 朋友圈卡片弹层 ---------- */
+      .card-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 95;
+        background: var(--overlay);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        color: var(--text);
+      }
+
+      .card-overlay[hidden] { display: none; }
+
+      .card-box {
+        width: 100%;
+        max-width: 440px;
+        max-height: 92vh;
+        overflow-y: auto;
+        background: var(--surface);
+        border-radius: 20px;
+        padding: 18px;
+        box-shadow: 0 16px 50px rgba(0, 0, 0, 0.45);
+        text-align: center;
+      }
+
+      .card-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 14px;
+      }
+
+      .card-title { font-size: 16px; font-weight: 800; }
+
+      .card-close {
+        border: none;
+        background: var(--surface-2);
+        color: var(--text-muted);
+        border-radius: 999px;
+        padding: 8px 16px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      #cardImg {
+        width: 100%;
+        height: auto;
+        border-radius: 14px;
+        display: block;
+      }
+
+      .card-actions { margin-top: 14px; display: flex; justify-content: center; gap: 10px; }
+
+      .card-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: var(--accent);
+        color: #fff;
+        border: none;
+        border-radius: 999px;
+        padding: 10px 24px;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        text-decoration: none;
+      }
+
+      .card-note { margin-top: 12px; font-size: 12px; color: var(--text-faint); }
     </style>
   </head>
   <body>
@@ -580,7 +706,7 @@
           <span class="preview-title" id="previewTitle">作品预览</span>
           <button class="preview-close" id="previewClose" type="button">关闭</button>
         </div>
-        <canvas id="previewCanvas"></canvas>
+        <img id="previewImg" alt="作品预览">
         <div class="preview-info">
           <span id="previewAuthor"></span>
           <span id="previewTime" class="preview-time"></span>
@@ -588,10 +714,33 @@
         <div class="preview-like">
           <button class="like-btn" id="previewLike" type="button">♥ <span id="previewLikeCount">0</span></button>
           <button class="share-btn" id="previewShare" type="button">🔗 复制链接</button>
+          <button class="share-btn" id="previewCopyText" type="button">📋 复制文案</button>
+          <button class="share-btn" id="previewCard" type="button">🃏 生成朋友圈卡片</button>
         </div>
-        <div class="preview-note">仅支持预览，不可载入作画。请勿抄袭或直接提交他人的作品。</div>
+        <div class="preview-note">仅支持预览，不可载入作画。请勿抄袭或直接提交他人的作品。长按图片可保存到相册。</div>
       </div>
     </div>
+
+    <div class="card-overlay" id="cardOverlay" hidden>
+      <div class="card-box">
+        <div class="card-head">
+          <span class="card-title">朋友圈小卡片</span>
+          <button class="card-close" id="cardClose" type="button">关闭</button>
+        </div>
+        <img id="cardImg" alt="分享卡片">
+        <div class="card-actions">
+          <a id="cardDownload" class="card-btn" href="#" download="guangyu-card.png">⬇️ 保存图片</a>
+        </div>
+        <div class="card-note">长按图片也能保存到相册，发到朋友圈秀一秀吧～</div>
+      </div>
+    </div>
+
+    <nav class="bottom-nav">
+      <a href="/paint"><span class="nav-icon">🎨</span>画板</a>
+      <a href="/room"><span class="nav-icon">👥</span>联机</a>
+      <a href="/gallery" class="active"><span class="nav-icon">🌆</span>社区</a>
+      <a href="/settings"><span class="nav-icon">⚙️</span>设置</a>
+    </nav>
 
     <script>
       function workSize(rec) {
@@ -651,6 +800,181 @@
           }
         }
       }
+
+      function pixelsToURL(pixels, n) {
+        const c = document.createElement('canvas')
+        c.width = n
+        c.height = n
+        drawPixels(c, pixels, n)
+        return c.toDataURL('image/png')
+      }
+
+      /* ---------- 朋友圈分享卡片 ---------- */
+      const cardOverlay = document.getElementById('cardOverlay')
+      const cardImg = document.getElementById('cardImg')
+
+      function rr(ctx, x, y, w, h, r) {
+        ctx.beginPath()
+        ctx.moveTo(x + r, y)
+        ctx.arcTo(x + w, y, x + w, y + h, r)
+        ctx.arcTo(x + w, y + h, x, y + h, r)
+        ctx.arcTo(x, y + h, x, y, r)
+        ctx.arcTo(x, y, x + w, y, r)
+        ctx.closePath()
+      }
+
+      function blob(ctx, x, y, r, color) {
+        const g = ctx.createRadialGradient(x, y, 0, x, y, r)
+        g.addColorStop(0, color)
+        g.addColorStop(1, 'rgba(0,0,0,0)')
+        ctx.fillStyle = g
+        ctx.fillRect(x - r, y - r, r * 2, r * 2)
+      }
+
+      function drawSparkle(ctx, x, y, size, color, rot) {
+        ctx.save()
+        ctx.translate(x, y)
+        ctx.rotate(rot || 0)
+        ctx.fillStyle = color
+        ctx.beginPath()
+        for (let i = 0; i < 4; i++) {
+          ctx.rotate(Math.PI / 4)
+          ctx.moveTo(0, 0)
+          ctx.quadraticCurveTo(size * 0.22, size * 0.22, 0, size)
+          ctx.quadraticCurveTo(-size * 0.22, size * 0.22, 0, 0)
+          ctx.rotate(Math.PI / 4)
+        }
+        ctx.fill()
+        ctx.restore()
+      }
+
+      function fitText(ctx, text, maxW, base) {
+        let size = base
+        ctx.font = `900 ${size}px "PingFang SC", "Microsoft YaHei", sans-serif`
+        while (ctx.measureText(text).width > maxW && size > 24) {
+          size -= 2
+          ctx.font = `900 ${size}px "PingFang SC", "Microsoft YaHei", sans-serif`
+        }
+        return size
+      }
+
+      function buildMomentsCard(pixels, n, title, author) {
+        const W = 1080, H = 1440
+        const cv = document.createElement('canvas')
+        cv.width = W
+        cv.height = H
+        const ctx = cv.getContext('2d')
+
+        const g = ctx.createLinearGradient(0, 0, 0, H)
+        g.addColorStop(0, '#1c1737')
+        g.addColorStop(0.45, '#2b2160')
+        g.addColorStop(0.74, '#4c2a6e')
+        g.addColorStop(1, '#63274f')
+        ctx.fillStyle = g
+        ctx.fillRect(0, 0, W, H)
+
+        blob(ctx, 150, 260, 430, 'rgba(128,96,255,0.34)')
+        blob(ctx, 950, 700, 520, 'rgba(255,110,170,0.26)')
+        blob(ctx, 260, 1210, 470, 'rgba(255,196,110,0.20)')
+
+        let seed = 7
+        const rand = () => {
+          seed = (seed * 9301 + 49297) % 233280
+          return seed / 233280
+        }
+        for (let i = 0; i < 70; i++) {
+          const x = rand() * W, y = rand() * H
+          const r = 0.8 + rand() * 1.8
+          ctx.globalAlpha = 0.15 + rand() * 0.5
+          ctx.fillStyle = '#ffffff'
+          ctx.beginPath()
+          ctx.arc(x, y, r, 0, Math.PI * 2)
+          ctx.fill()
+        }
+        ctx.globalAlpha = 1
+
+        const frameGrad = ctx.createLinearGradient(0, 46, W, H - 46)
+        frameGrad.addColorStop(0, '#f4b95f')
+        frameGrad.addColorStop(0.5, '#ff7eb3')
+        frameGrad.addColorStop(1, '#8f7bff')
+        ctx.strokeStyle = frameGrad
+        ctx.lineWidth = 3
+        rr(ctx, 44, 44, W - 88, H - 88, 48)
+        ctx.stroke()
+
+        rr(ctx, 60, 60, W - 120, H - 120, 34)
+        ctx.strokeStyle = 'rgba(255,255,255,0.12)'
+        ctx.lineWidth = 1.5
+        ctx.stroke()
+
+        drawSparkle(ctx, 130, 130, 30, '#ffe3a1', 0)
+        drawSparkle(ctx, W - 130, 130, 30, '#ff9ec7', 0.6)
+        drawSparkle(ctx, 130, H - 130, 30, '#ff9ec7', -0.5)
+        drawSparkle(ctx, W - 130, H - 130, 30, '#ffe3a1', 0.9)
+
+        ctx.font = '600 30px "PingFang SC", "Microsoft YaHei", sans-serif'
+        ctx.textAlign = 'center'
+        ctx.fillStyle = 'rgba(255,255,255,0.85)'
+        ctx.fillText('❖ 光 域 画 板 ❖', W / 2, 212)
+        ctx.font = '400 24px "PingFang SC", "Microsoft YaHei", sans-serif'
+        ctx.fillStyle = 'rgba(255,255,255,0.35)'
+        ctx.fillText('每 一 格 光 ，点 亮 一 个 梦', W / 2, 256)
+
+        const artMax = 760
+        const artX = (W - artMax) / 2
+        const artY = 310
+        rr(ctx, artX - 8, artY - 8, artMax + 16, artMax + 16, 40)
+        ctx.fillStyle = 'rgba(255,255,255,0.10)'
+        ctx.fill()
+        rr(ctx, artX, artY, artMax, artMax, 30)
+        ctx.fillStyle = '#f6f2ea'
+        ctx.fill()
+
+        const cell = Math.floor(artMax / n)
+        const artW = cell * n
+        const off = Math.floor((artMax - artW) / 2)
+        ctx.imageSmoothingEnabled = false
+        for (let y = 0; y < n; y++) {
+          for (let x = 0; x < n; x++) {
+            const p = pixels[y * n + x]
+            if (!p) continue
+            ctx.fillStyle = `rgb(${p[0]},${p[1]},${p[2]})`
+            ctx.fillRect(artX + off + x * cell, artY + off + y * cell, cell, cell)
+          }
+        }
+
+        ctx.textAlign = 'center'
+        const tTitle = title && title.trim() ? title.trim() : '未命名'
+        fitText(ctx, tTitle, 860, 66)
+        ctx.fillStyle = '#ffffff'
+        ctx.fillText(tTitle, W / 2, 1220)
+        ctx.font = '500 40px "PingFang SC", "Microsoft YaHei", sans-serif'
+        ctx.fillStyle = '#ffd9a2'
+        const tAuthor = author && author.trim() ? author.trim() : '匿名'
+        ctx.fillText('—— 画师 ' + tAuthor + '  ·  ' + n + '×' + n, W / 2, 1300)
+        ctx.font = '400 28px "PingFang SC", "Microsoft YaHei", sans-serif'
+        ctx.fillStyle = 'rgba(255,255,255,0.45)'
+        const d = new Date()
+        ctx.fillText(d.getFullYear() + ' 年 ' + (d.getMonth() + 1) + ' 月 ' + d.getDate() + ' 日  ·  ' + '光域画板',
+          W / 2, 1368)
+
+        return cv
+      }
+
+      function openCard(pixels, n, title, author) {
+        const dataURL = buildMomentsCard(pixels, n, title, author).toDataURL('image/png')
+        cardImg.src = dataURL
+        const dl = document.getElementById('cardDownload')
+        dl.href = dataURL
+        cardOverlay.hidden = false
+      }
+
+      document.getElementById('cardClose').addEventListener('click', () => {
+        cardOverlay.hidden = true
+      })
+      cardOverlay.addEventListener('click', (e) => {
+        if (e.target === cardOverlay) cardOverlay.hidden = true
+      })
 
       function makeLikeButton(rec, opts) {
         const btn = document.createElement('button')
@@ -772,12 +1096,11 @@
             rank.className = 'f-rank ' + (i === 0 ? 'r1' : i === 1 ? 'r2' : i === 2 ? 'r3' : 'rn')
             rank.textContent = i + 1
 
-            const cnv = document.createElement('canvas')
+            const cnv = document.createElement('img')
             const fs = workSize(w)
-            cnv.width = fs
-            cnv.height = fs
             cnv.className = 'f-art'
-            drawPixels(cnv, w.pixels, fs)
+            cnv.alt = w.workName || w.name || '未命名'
+            cnv.src = pixelsToURL(w.pixels, fs)
 
             const nm = document.createElement('div')
             nm.className = 'f-name'
@@ -823,12 +1146,11 @@
           card.tabIndex = 0
           card.title = '点击预览'
 
-          const c = document.createElement('canvas')
+          const c = document.createElement('img')
           const rs = workSize(rec)
-          c.width = rs
-          c.height = rs
           c.className = 'art'
-          drawPixels(c, rec.pixels, rs)
+          c.alt = rec.workName || rec.name || '未命名'
+          c.src = pixelsToURL(rec.pixels, rs)
 
           const meta = document.createElement('div')
           meta.className = 'card-meta'
@@ -951,11 +1273,9 @@
       let currentPreview = null
 
       function preview(rec) {
-        const c = document.getElementById('previewCanvas')
+        const img = document.getElementById('previewImg')
         const rs = workSize(rec)
-        c.width = rs
-        c.height = rs
-        drawPixels(c, rec.pixels, rs)
+        img.src = pixelsToURL(rec.pixels, rs)
         document.getElementById('previewTitle').textContent = rec.workName || rec.name || '未命名'
         document.getElementById('previewAuthor').textContent = '作者：' + (rec.author || (rec.workName ? '匿名' : rec.name || '匿名')) + ' · ' + rs + '×' + rs
         document.getElementById('previewTime').textContent = formatTime(rec.time)
@@ -982,6 +1302,47 @@
         if (!currentPreview) return
         const btn = document.getElementById('previewLike')
         like(currentPreview, btn)
+      })
+
+      function copyText(text, btn, label) {
+        const done = () => {
+          btn.classList.add('copied')
+          btn.textContent = btn.dataset.ok || '✓ 已复制'
+          setTimeout(() => {
+            btn.textContent = label
+            btn.classList.remove('copied')
+          }, 1600)
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(done).catch(() => {
+            prompt('复制', text)
+            done()
+          })
+        } else {
+          prompt('复制', text)
+          done()
+        }
+      }
+
+      document.getElementById('previewCard').addEventListener('click', () => {
+        if (!currentPreview) return
+        openCard(
+          currentPreview.pixels,
+          workSize(currentPreview),
+          currentPreview.workName || currentPreview.name || '未命名',
+          currentPreview.author || '匿名'
+        )
+      })
+
+      const previewCopyTextBtn = document.getElementById('previewCopyText')
+      previewCopyTextBtn.addEventListener('click', () => {
+        if (!currentPreview) return
+        const rec = currentPreview
+        const text =
+          '《' + (rec.workName || rec.name || '未命名') + '》· 画师 ' +
+          (rec.author || (rec.workName ? '匿名' : rec.name || '匿名')) +
+          ' · 来自「光域画板」 ' + location.origin + '/gallery?t=' + rec.time
+        copyText(text, previewCopyTextBtn, previewCopyTextBtn.textContent)
       })
 
       document.getElementById('previewShare').addEventListener('click', () => {
