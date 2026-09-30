@@ -250,6 +250,27 @@ export default {
       <section class="group">
         <div class="ver red">
           <div class="ver-body">
+            <div class="ver-title"><span class="ver-tag">v1.3.0</span> 开局菜单 · 手型平移 · 常见问题 <span class="ver-date">2026-10</span></div>
+            <ul class="ver-list">
+              <li><span class="li-tag tag-update">更新</span>画板改为「开局菜单」：进入不再直接落笔，尺寸、模式、参加活动、图片工具一次选完再开始</li>
+              <li><span class="li-tag tag-update">更新</span>新增手型平移工具（快捷键 H）：任何尺寸都能拖动画布，与画笔完全独立，不会误落笔</li>
+              <li><span class="li-tag tag-update">更新</span>设置新增「画板布局」母/子分组：可分别隐藏尺寸栏、工具栏、历史、参赛卡、操作按钮、提示与版权</li>
+              <li><span class="li-tag tag-update">更新</span>新增常见问题页：说明为什么不做 128×128（单件 203.5KB 超上限、存满需 994MB 撞存储上限）</li>
+              <li><span class="li-tag tag-update">更新</span>色板由 9 色扩到 32 色，图片转像素画可选择只用这 32 色</li>
+              <li><span class="li-tag tag-update">更新</span>进阶功能默认全部关闭：题目模式、帧动画、每日挑战、本周主题、图片转像素画等按需开启</li>
+              <li><span class="li-tag tag-update">更新</span>认领码：可自行删除自己上传的作品，设置页可查看备份</li>
+              <li><span class="li-tag tag-update">更新</span>图片一键像素化、作品标签、社区搜索、标签云、作者主页、每日挑战</li>
+              <li><span class="li-tag tag-fix">修复</span>联机延迟：落笔同步由 1.5～3.2 秒降至十几毫秒</li>
+              <li><span class="li-tag tag-fix">修复</span>联机人数长时间不同步、一方开始游戏另一方收不到</li>
+              <li><span class="li-tag tag-fix">修复</span>删除作品后误报「网络错误」（实际已删除成功）</li>
+              <li><span class="li-tag tag-fix">修复</span>手机端页面被放大、画板内容超出屏幕无法左右滑动</li>
+              <li><span class="li-tag tag-fix">修复</span>底部导航切页时飞出屏幕（果冻动画覆盖了居中定位）</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="ver red">
+          <div class="ver-body">
             <div class="ver-title"><span class="ver-tag">v1.2.0</span> 单页应用 · 国庆 <span class="ver-date">2026-10-01</span></div>
             <ul class="ver-list">
               <li><span class="li-tag tag-announce">公告</span>国庆快乐！祝大家假期愉快、笔下生花，画出满意的作品 🎨</li>

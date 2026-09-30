@@ -7,6 +7,7 @@ import settings from './views/settings.js'
 import changelog from './views/changelog.js'
 import admin from './views/admin.js'
 import terms from './views/terms.js'
+import faq from './views/faq.js'
 
 const { createApp } = window.Vue
 const { createRouter, createWebHistory } = window.VueRouter
@@ -82,6 +83,7 @@ const routes = [
   { path: '/changelog', component: withAutoCleanup(changelog) },
   { path: '/admin', component: withAutoCleanup(admin) },
   { path: '/terms', component: withAutoCleanup(terms) },
+  { path: '/faq', component: withAutoCleanup(faq) },
   { path: '/:pathMatch(.*)*', redirect: '/paint' },
 ]
 

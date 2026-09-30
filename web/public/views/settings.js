@@ -103,6 +103,29 @@ export default {
         margin-bottom: 12px;
       }
 
+      .lay-row, .lay-child-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 9px 0;
+        cursor: pointer;
+      }
+      .lay-row {
+        border-bottom: 1px dashed var(--border);
+        padding-bottom: 12px;
+        margin-bottom: 4px;
+      }
+      .lay-row input, .lay-child-row input {
+        margin-top: 2px;
+        width: 18px; height: 18px;
+        accent-color: var(--accent);
+        flex: 0 0 auto;
+      }
+      .lay-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+      .lay-body b { font-size: 14px; font-weight: 700; color: var(--text); }
+      .lay-body i { font-style: normal; font-size: 11px; color: var(--text-faint); }
+      .lay-child { display: flex; flex-direction: column; }
+
       .group-hint {
         font-size: 12px;
         color: var(--text-faint);
@@ -334,6 +357,18 @@ export default {
       </div>
 
       <section class="group">
+        <div class="group-title">画板布局</div>
+        <div class="group-hint">调整画板上显示哪些区域，让画布更大、界面更清爽。</div>
+
+        <label class="lay-row">
+          <input type="checkbox" id="layAllOn">
+          <span class="lay-body"><b>全部显示</b><i>一键恢复默认</i></span>
+        </label>
+
+        <div class="lay-child" id="layBox"></div>
+      </section>
+
+      <section class="group">
         <div class="group-title">进阶功能</div>
         <div class="group-hint">这些功能默认都是关闭的，用不到就保持关闭，画板会更简单。只影响你这台设备。</div>
         <div id="featBox"></div>
@@ -419,6 +454,14 @@ export default {
           </span>
           <span class="entry-arrow">›</span>
         </router-link>
+        <router-link class="entry" to="/faq">
+          <span class="entry-ico">❓</span>
+          <span class="entry-body">
+            <span class="entry-label">常见问题</span>
+            <div class="entry-desc">为什么没有 128×128？以及其他说明</div>
+          </div>
+          <span class="entry-arrow">›</span>
+        </router-link>
         <router-link class="entry" to="/admin">
           <span class="entry-ico">🛡️</span>
           <span class="entry-body">
@@ -490,6 +533,71 @@ export default {
         glassSwitch.classList.add('jelly')
       })
       applyGlass()
+
+      /* ---------- 画板布局（母/子） ---------- */
+      const LAYOUTS = [
+        { key: 'size', label: '画布尺寸栏', desc: '切换 16/32/64 的按钮' },
+        { key: 'tools', label: '工具栏', desc: '画笔、橡皮、颜料桶等' },
+        { key: 'history', label: '我的绘画历史', desc: '画板下方的历史作品区' },
+        { key: 'join', label: '参赛卡片', desc: '每日挑战 / 本周主题的勾选卡' },
+        { key: 'name', label: '作品名与作者名', desc: '上传前的两个输入框' },
+        { key: 'actions', label: '操作按钮', desc: '撤销、清空、导出、上传' },
+        { key: 'hint', label: '操作提示', desc: '画布下方那行说明文字' },
+        { key: 'disclaimer', label: '使用须知与版权', desc: '底部说明与赞赏支持' },
+      ]
+      const layKey = (k) => 'lw-lay-' + k
+      function isLayOn(k) {
+        try {
+          return localStorage.getItem(layKey(k)) !== '0'
+        } catch (e) {
+          return true
+        }
+      }
+      function setLay(k, on) {
+        try {
+          localStorage.setItem(layKey(k), on ? '1' : '0')
+        } catch (e) {}
+      }
+      function renderLayoutSwitches() {
+        const box = document.getElementById('layBox')
+        if (!box) return
+        box.innerHTML = ''
+        LAYOUTS.forEach((L) => {
+          const row = document.createElement('label')
+          row.className = 'lay-child-row'
+          const cb = document.createElement('input')
+          cb.type = 'checkbox'
+          cb.checked = isLayOn(L.key)
+          const body = document.createElement('span')
+          body.className = 'lay-body'
+          const b = document.createElement('b')
+          b.textContent = L.label
+          const i = document.createElement('i')
+          i.textContent = L.desc
+          body.append(b, i)
+          cb.addEventListener('change', () => {
+            setLay(L.key, cb.checked)
+            toast((cb.checked ? '已显示「' : '已隐藏「') + L.label + '」')
+          })
+          row.append(cb, body)
+          box.appendChild(row)
+        })
+        syncLayAll()
+      }
+      function syncLayAll() {
+        const all = document.getElementById('layAllOn')
+        if (!all) return
+        all.checked = LAYOUTS.every((L) => isLayOn(L.key))
+      }
+      const layAllOn = document.getElementById('layAllOn')
+      if (layAllOn) {
+        layAllOn.addEventListener('change', () => {
+          LAYOUTS.forEach((L) => setLay(L.key, layAllOn.checked))
+          renderLayoutSwitches()
+          toast(layAllOn.checked ? '已显示画板全部区域' : '已隐藏画板全部区域')
+        })
+      }
+      renderLayoutSwitches()
 
       /* ---------- 轻提示 ---------- */
       let featToastTimer = null

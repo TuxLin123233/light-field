@@ -331,6 +331,9 @@ color: var(--text-muted);
         margin-top: 18px;
       }
 
+      #board.grabbing { cursor: grabbing; }
+      #toolPan { cursor: grab; }
+
       #board.drop-hint { outline: 3px dashed var(--accent); outline-offset: -3px; }
       #imgBtn.active { background: var(--accent); color: #fff; }
 
@@ -1864,6 +1867,7 @@ color: var(--text-muted);
       <button id="toolEraser" class="tool" type="button" data-tool="eraser" title="橡皮擦（E）">🧽</button>
       <button id="toolFill" class="tool" type="button" data-tool="fill" title="颜料桶（F）">🪣</button>
       <button id="toolPick" class="tool" type="button" data-tool="picker" title="取色器（I）：点一下画布吸取该格颜色">💧</button>
+      <button id="toolPan" class="tool" type="button" data-tool="pan" title="移动画布（H）：只拖动不落笔，任何尺寸都能用">✋</button>
       <button id="toolColor" class="tool" type="button" title="颜色（C）"><span class="tool-swatch" id="toolSwatch"></span></button>
     </div>
 
@@ -2077,6 +2081,7 @@ color: var(--text-muted);
         eraser: '橡皮擦：点按或滑动擦除为白色 · 快捷键 E',
         fill: '颜料桶：点一下区域即可填充当前颜色 · 快捷键 F',
         picker: '取色器：点一下画布吸取那一格的颜色 · 快捷键 I',
+        pan: '移动画布：按住拖动查看其它区域，不会落笔 · 快捷键 H',
       }
 
       /* ---------- 命题 ---------- */
@@ -2246,6 +2251,7 @@ color: var(--text-muted);
 
       // 按开关隐藏模式按钮与相关 UI
       function applyFeatureVisibility() {
+        applyLayout()
         const promptBtn = document.querySelector('[data-mode="prompt"]')
         const animBtn = document.querySelector('[data-mode="anim"]')
         if (promptBtn) promptBtn.hidden = !feat.prompt
@@ -2655,6 +2661,39 @@ color: var(--text-muted);
         } catch (e) {}
         await loadOwned()
         await fetchRecords()
+      }
+
+      /* ---------- 画板布局开关 ---------- */
+      function isLayOn(k) {
+        try {
+          return localStorage.getItem('lw-lay-' + k) !== '0'
+        } catch (e) {
+          return true
+        }
+      }
+      function applyLayout() {
+        const map = {
+          size: '.size-row',
+          tools: '.tools',
+          history: '.records',
+          join: '#joinCard',
+          name: '.name-row',
+          actions: '.actions',
+          hint: '#hint',
+          disclaimer: '.disclaimer',
+        }
+        for (const k in map) {
+          const el = document.querySelector(map[k])
+          if (el) el.hidden = !isLayOn(k)
+        }
+        // 标签行有自己的开关，这里只在开启时叠加显示
+        const tagRowEl = document.querySelector('.tag-row')
+        if (tagRowEl) tagRowEl.hidden = !(feat.tags && isLayOn('name'))
+        // 草稿行/最近色属于进阶功能，受两套开关共同控制
+        const draftRow = document.getElementById('draftRow')
+        if (draftRow) draftRow.hidden = !(feat.drafts && isLayOn('history'))
+        const recentRow = document.getElementById('recentRow')
+        if (recentRow) recentRow.hidden = !(isLayOn('tools') && recentColors.length > 0)
       }
 
       /* ---------- 开局菜单状态（须在 consent 块调用前完成初始化） ---------- */
@@ -3323,7 +3362,8 @@ color: var(--text-muted);
       canvas.addEventListener('pointerdown', (e) => {
         e.preventDefault()
         canvas.setPointerCapture(e.pointerId)
-        if (size > 16) {
+        const canPan = activeTool === 'pan' || size > 16
+        if (canPan) {
           painting = true
           panning = false
           downCell = cellFromEvent(e)
@@ -3342,11 +3382,12 @@ color: var(--text-muted);
 
       canvas.addEventListener('pointermove', (e) => {
         if (!painting) return
-        if (size > 16) {
+        if (activeTool === 'pan' || size > 16) {
           const dx = e.clientX - startX
           const dy = e.clientY - startY
-          if (!panning && Math.hypot(dx, dy) >= PAN_DIST) {
+          if (!panning && (activeTool === 'pan' || Math.hypot(dx, dy) >= PAN_DIST)) {
             panning = true
+            canvas.classList.add('grabbing')
           }
           if (panning) {
             const rect = canvas.getBoundingClientRect()
@@ -4288,7 +4329,10 @@ color: var(--text-muted);
         if (k === 'b') setTool('brush')
         else if (k === 'e') setTool('eraser')
         else if (k === 'f') setTool('fill')
-        else if (k === 'm') {
+        else if (k === 'h') {
+          e.preventDefault()
+          setTool('pan')
+        } else if (k === 'm') {
           e.preventDefault()
           if (mirrorBtn) mirrorBtn.click()
         } else if (k === 'i') {
@@ -4417,6 +4461,7 @@ color: var(--text-muted);
       document.getElementById('startGo').addEventListener('click', () => {
         applyStartChoices()
         enterMode(startMode)
+        applyLayout()
         modeOverlay.hidden = true
       })
 
