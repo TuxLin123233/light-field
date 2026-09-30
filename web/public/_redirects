@@ -1,0 +1,3 @@
+# SPA 回退：/paint /gallery 等无扩展名深链直接重写到 SPA 外壳，状态码 200
+# （Pages 的 200 重写优先级低于静态文件与 /functions 下的 API，/api/* 不受影响）
+/*    /index.html   200

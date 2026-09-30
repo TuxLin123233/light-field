@@ -1,0 +1,10 @@
+# 页面与脚本不缓存：这个站经常改动，7 天缓存会让改动迟迟看不到
+/*
+  Cache-Control: public, max-age=0, must-revalidate
+
+# 静态图片可以放心长缓存
+/images/*
+  Cache-Control: public, max-age=604800
+
+/favicon.ico
+  Cache-Control: public, max-age=604800
