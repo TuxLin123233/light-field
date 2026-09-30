@@ -1,6 +1,6 @@
 // 用认领码管理「我自己的作品」：列出 / 删除。
 // 认领码是持有者凭证，KV 里只存哈希；owner 字段绝不对外暴露。
-import { readAllHistory, removeByTime } from '../_history.js'
+import { readAllHistory, removeByTime } from './_history.js'
 import { claimHash, bumpWorks } from './claim.js'
 
 const CORS_HEADERS = {
