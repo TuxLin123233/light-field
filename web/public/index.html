@@ -99,6 +99,19 @@
            社区/日志/设置原本是块级布局，强行统一会导致宽度算错） */
       #siteRoot { display: contents; }
 
+      /* 关键：#app 是 Vue 挂载点，也是 body 的 flex 子项。
+         align-items:center 会让它按内容宽度收缩（本项目最宽元素是 460px），
+         于是页面内所有 width:100% 都相对 460px 解析，在窄屏上整体超宽。
+         把它钉死为可视宽度，各视图的 width:100% 才会正确。 */
+      #app {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
       /* 兜底：极老浏览器不支持 display:contents 时，用 block+100% 保持同样宽度 */
       @supports not (display: contents) {
         #siteRoot { display: block; width: 100%; }
