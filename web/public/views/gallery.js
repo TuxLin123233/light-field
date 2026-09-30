@@ -178,6 +178,31 @@ export default {
       }
       .chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 
+      .daily {
+        background: var(--surface);
+        border: 1px solid rgba(219, 138, 74, 0.45);
+        border-radius: 18px;
+        padding: 16px;
+        margin-bottom: 16px;
+      }
+      .daily-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+      .daily-title { font-size: 15px; font-weight: 800; color: var(--text); }
+      .daily-day { font-size: 11px; color: var(--text-faint); font-family: ui-monospace, Menlo, monospace; }
+      .daily-theme { font-size: 14px; font-weight: 700; color: var(--text); }
+      .daily-theme b { color: #d9823e; }
+      .daily-prompt { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+      .daily-cta-row { display: flex; align-items: center; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+      .daily-cta {
+        display: inline-flex; align-items: center;
+        background: #d9823e; color: #fff;
+        border-radius: 999px; padding: 7px 16px;
+        font-size: 13px; font-weight: 700; text-decoration: none;
+      }
+      .daily-cta:active { transform: scale(0.95); }
+      .daily-tip { font-size: 12px; color: var(--text-faint); }
+      .daily-top { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; margin-top: 12px; }
+      .daily-top img { width: 100%; aspect-ratio: 1; image-rendering: pixelated; border-radius: 10px; background: var(--art-bg); border: 1px solid var(--border); display: block; }
+
       .author-page {
         background: var(--surface);
         border: 1px solid var(--border);
@@ -1084,6 +1109,20 @@ export default {
         <div class="tag-cloud" id="tagCloud" hidden></div>
       </section>
 
+      <section class="daily" id="dailyPanel" hidden>
+        <div class="daily-head">
+          <span class="daily-title">⚡ 每日挑战</span>
+          <span class="daily-day" id="dailyDay"></span>
+        </div>
+        <div class="daily-theme">今日题目《<b id="dailyTheme"></b>》</div>
+        <div class="daily-prompt" id="dailyPrompt"></div>
+        <div class="daily-cta-row">
+          <a class="daily-cta" id="dailyCta" href="/paint">🎨 去创作</a>
+          <span class="daily-tip" id="dailyTip"></span>
+        </div>
+        <div class="daily-top" id="dailyTop"></div>
+      </section>
+
       <section class="author-page" id="authorPage" hidden>
         <div class="author-head">
           <button class="author-back" id="authorBack" type="button">← 返回全部</button>
@@ -1654,6 +1693,7 @@ export default {
         })
       })
 
+      loadDaily()
       loadTagCloud()
       loadFeatured()
       loadContest()
@@ -1840,6 +1880,48 @@ export default {
           cardsByTime.set(String(rec.time), card)
           gallery.appendChild(card)
         })
+      }
+
+      /* ---------- 每日挑战 ---------- */
+      const dailyPanel = document.getElementById('dailyPanel')
+      const dailyDay = document.getElementById('dailyDay')
+      const dailyTheme = document.getElementById('dailyTheme')
+      const dailyPrompt = document.getElementById('dailyPrompt')
+      const dailyTip = document.getElementById('dailyTip')
+      const dailyTop = document.getElementById('dailyTop')
+      const dailyCta = document.getElementById('dailyCta')
+
+      async function loadDaily() {
+        try {
+          const res = await fetch('/api/challenge?top=12')
+          if (!res.ok) return
+          const d = await res.json()
+          dailyTheme.textContent = (d.theme && d.theme.zh) || ''
+          dailyPrompt.textContent = (d.theme && d.theme.prompt) || ''
+          dailyDay.textContent = d.day || ''
+          dailyTip.textContent = d.total ? '已有 ' + d.total + ' 件作品参加了今天' : '今天还没有人参加，来当第一个'
+          dailyCta.setAttribute('href', '/paint?daily=1')
+          dailyTop.innerHTML = ''
+          ;(d.works || []).forEach((w) => {
+            const box = document.createElement('div')
+            box.style.position = 'relative'
+            const img = document.createElement('img')
+            img.src = pixelsToURL(w.pixels, workSize(w))
+            img.alt = w.workName || '未命名'
+            img.loading = 'lazy'
+            img.addEventListener('click', () => preview(w))
+            const lk = document.createElement('span')
+            lk.className = 'card-like'
+            lk.textContent = '♥ ' + (w.likes || 0)
+            lk.addEventListener('click', (e) => {
+              e.stopPropagation()
+              like(w, lk)
+            })
+            box.append(img, lk)
+            dailyTop.appendChild(box)
+          })
+          dailyPanel.hidden = false
+        } catch (e) {}
       }
 
       /* ---------- 搜索 / 标签 / 作者 ---------- */

@@ -1666,6 +1666,13 @@ color: var(--text-muted);
 
     <router-link id="moreBtn" class="more-btn" to="/gallery" hidden>去社区看更多作品 →</router-link>
 
+    <div class="daily-row" id="dailyRow" hidden>
+      <label class="contest-check" for="dailyCheck">
+        <input type="checkbox" id="dailyCheck">
+        <span id="dailyLabel"></span>
+      </label>
+    </div>
+
     <div class="contest-row" id="contestRow" hidden>
       <label class="contest-check" for="contestCheck">
         <input type="checkbox" id="contestCheck">
@@ -3171,6 +3178,47 @@ color: var(--text-muted);
       const titleInput = document.getElementById('titleInput')
       const nameInput = document.getElementById('nameInput')
 
+      /* ---------- 每日挑战 ---------- */
+      async function joinDaily(time) {
+        if (!time) return
+        try {
+          const res = await fetch('/api/challenge', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'join', time }),
+          })
+          const d = await res.json().catch(() => ({}))
+          if (res.ok) {
+            toast('已参加今天的每日挑战 🏅')
+          } else if (res.status === 409) {
+            toast('这件作品已经参加过挑战了')
+          }
+        } catch (e) {}
+      }
+
+      const dailyRow = document.getElementById('dailyRow')
+      const dailyCheck = document.getElementById('dailyCheck')
+      const dailyLabel = document.getElementById('dailyLabel')
+      let dailyId = ''
+      let wantDaily = false
+
+      ;(async () => {
+        try {
+          const res = await fetch('/api/challenge')
+          if (!res.ok) return
+          const d = await res.json()
+          if (!d || !d.theme) return
+          dailyId = d.day
+          dailyLabel.textContent =
+            '⚡ 参加每日挑战《' + d.theme.zh + '》' + (d.theme.prompt ? ' · ' + d.theme.prompt : '')
+          dailyRow.hidden = false
+          if (new URLSearchParams(location.search).get('daily') === '1') {
+            dailyCheck.checked = true
+            wantDaily = true
+          }
+        } catch (e) {}
+      })()
+
       /* ---------- 每周主题比赛 ---------- */
       const contestRow = document.getElementById('contestRow')
       const contestCheck = document.getElementById('contestCheck')
@@ -3777,7 +3825,8 @@ color: var(--text-muted);
         const tg = readTags()
         if (tg.length) payload.tags = tg
 
-        await doPublish(payload, uploadBtn)
+        const done = await doPublish(payload, uploadBtn)
+        if (done && wantDaily && dailyId) joinDaily(done.time)
       })
 
       const animPublishBtn = document.getElementById('animPublish')
@@ -3799,7 +3848,8 @@ color: var(--text-muted);
         const claim2 = await ensureClaim(author)
         if (claim2) payload.claim = claim2
         if (fromImage) payload.fromImage = true
-        await doPublish(payload, animPublishBtn)
+        const done2 = await doPublish(payload, animPublishBtn)
+        if (done2 && wantDaily && dailyId) joinDaily(done2.time)
       })
 
       let toastTimer

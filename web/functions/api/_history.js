@@ -205,6 +205,17 @@ export async function incrementContestVotes(kv, time) {
 }
 
 // 删除某条作品；返回删除后的最新一条（用于修正 pixels）
+// 给单条记录打/撤一个字段（用于每日挑战报名等）
+export async function markByTime(kv, time, key, value) {
+  const res = await findAndUpdate(kv, time, (prev) => {
+    const next = { ...prev }
+    if (value === null) delete next[key]
+    else next[key] = value
+    return next
+  })
+  return res
+}
+
 export async function removeByTime(kv, time) {
   const res = await findAndUpdate(kv, time, null)
   return { found: res.found, last: res.last }
