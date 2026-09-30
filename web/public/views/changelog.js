@@ -253,7 +253,7 @@ export default {
           <div class="ver-body">
             <div class="ver-title"><span class="ver-tag">v1.3.1</span> 举报审核 · 新手教程 · 5 套主题 · 音效 · 装到桌面 <span class="ver-date">2026-10</span></div>
             <ul class="ver-list">
-              <li><span class="li-tag tag-new">新功能</span>作品预览新增「🎨 用色」：下拉列出这幅画用到的全部颜色（按用量排序、自动略去白色底色），点任意色块即可复制它的色号</li>
+              <li><span class="li-tag tag-new">新功能</span>作品预览新增「🎨 用色」：下拉列出这幅画用到的全部颜色（按用量排序、自动略去白色底色），点任意色块即可复制它的色号；照片转像素画的作品颜色过多，不显示该入口</li>
               <li><span class="li-tag tag-new">新功能</span>内容安全：作品预览里可举报违规内容，需长按 1.5 秒才会弹出（避免误触），维护者后台可查看、核实或直接删除作品</li>
               <li><span class="li-tag tag-new">新功能</span>新手教程：设置页最顶部新增「第一次来？两分钟看完这个网站能做什么」，六张卡片讲清一个人画、多人画、社区、像素相机、主题比赛与平移，看过后自动收起</li>
               <li><span class="li-tag tag-new">新功能</span>PWA 离线使用：可把网站安装到手机/桌面，断网也能打开画板继续画，附安装提示条</li>

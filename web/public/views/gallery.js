@@ -2633,6 +2633,7 @@ export default {
           const willOpen = palBox.hidden
           if (willOpen) {
             if (!currentPreview) return
+            if (currentPreview.fromImage === true) return
             renderPalette(currentPreview)
             palBox.hidden = false
             palBtn.setAttribute('aria-expanded', 'true')
@@ -2675,6 +2676,12 @@ export default {
         updateLikedState(document.getElementById('previewLike'), rec.time)
         currentPreview = rec
         closePalette()
+        /* 照片转来的作品颜色非常多，色板没意义，直接隐藏入口 */
+        if (palBtn) {
+          const hidePal = rec.fromImage === true
+          palBtn.hidden = hidePal
+          if (hidePal && palBox) palBox.hidden = true
+        }
         syncPreviewVoteBtn()
         previewOverlay.hidden = false
       }
