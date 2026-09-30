@@ -16,6 +16,9 @@
     </script>
     <script src="/omggif.js"></script>
     <style>
+      /* hidden 属性兜底：避免类选择器里的 display 覆盖 UA 的 [hidden]{display:none} */
+      [hidden] { display: none !important; }
+
       :root {
         --bg: linear-gradient(160deg, #fdf8f2 0%, #f2ece2 100%);
         --surface: #fff;

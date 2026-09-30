@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>维护社区稳定 · 像素小镇</title>
     <style>
+      /* hidden 属性兜底：避免类选择器里的 display 覆盖 UA 的 [hidden]{display:none} */
+      [hidden] { display: none !important; }
+
       * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
       body {
