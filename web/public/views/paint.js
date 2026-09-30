@@ -331,6 +331,11 @@ color: var(--text-muted);
         margin-top: 18px;
       }
 
+      #mirrorBtn.active {
+        background: var(--accent);
+        color: #fff;
+      }
+
       .tool-swatch {
         width: 22px;
         height: 22px;
@@ -718,6 +723,92 @@ color: var(--text-muted);
         color: var(--text-muted2);
         text-align: center;
         min-height: 18px;
+      }
+
+
+      /* ---------- 最近取色 / 草稿槽 ---------- */
+      .recent-row, .draft-row {
+        width: 100%;
+        max-width: 460px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 12px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 10px 12px;
+        overflow-x: auto;
+        scrollbar-width: none;
+      }
+      .recent-row::-webkit-scrollbar, .draft-row::-webkit-scrollbar { display: none; }
+
+      .recent-label {
+        flex: 0 0 auto;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--text-muted2);
+      }
+
+      .recent-swatches, .draft-slots {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .recent-swatch {
+        flex: 0 0 auto;
+        width: 24px;
+        height: 24px;
+        border-radius: 8px;
+        border: 1px solid var(--border-strong);
+        cursor: pointer;
+        padding: 0;
+      }
+      .recent-swatch:active { transform: scale(0.9); }
+
+      .draft-slot {
+        position: relative;
+        flex: 0 0 auto;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 8px 4px 4px;
+        border: 1px dashed var(--border-strong);
+        border-radius: 12px;
+        min-width: 84px;
+        min-height: 40px;
+        cursor: default;
+      }
+      .draft-slot.filled { border-style: solid; cursor: pointer; }
+      .draft-no { font-size: 11px; color: var(--text-muted2); }
+      .draft-thumb {
+        width: 32px; height: 32px;
+        image-rendering: pixelated;
+        border-radius: 6px;
+        background: var(--art-bg);
+      }
+      .draft-add {
+        border: none;
+        background: var(--surface-2);
+        color: var(--text-muted);
+        border-radius: 8px;
+        font-size: 11px;
+        font-weight: 700;
+        padding: 6px 8px;
+        cursor: pointer;
+      }
+      .draft-del {
+        position: absolute;
+        top: -6px; right: -6px;
+        width: 18px; height: 18px;
+        border-radius: 50%;
+        border: none;
+        background: var(--like);
+        color: #fff;
+        font-size: 12px;
+        line-height: 1;
+        cursor: pointer;
       }
 
       .disclaimer {
@@ -1556,7 +1647,19 @@ color: var(--text-muted);
     <div class="actions">
       <button id="undoBtn" type="button" title="撤销（Z）" disabled>↩️</button>
       <button id="clearBtn" type="button" title="清空">🗑️</button>
+      <button id="mirrorBtn" type="button" title="左右镜像绘制（M）" aria-pressed="false">🦋</button>
+      <button id="savePngBtn" type="button" title="导出 PNG">⬇️</button>
       <button id="uploadBtn" type="button">上传</button>
+    </div>
+
+    <div class="recent-row" id="recentRow" hidden>
+      <span class="recent-label">最近取色</span>
+      <div class="recent-swatches" id="recentSwatches"></div>
+    </div>
+
+    <div class="draft-row" id="draftRow" hidden>
+      <span class="recent-label">草稿</span>
+      <div class="draft-slots" id="draftSlots"></div>
     </div>
 
     <div class="anim-editor" id="animEditor" hidden>
@@ -2047,6 +2150,225 @@ color: var(--text-muted);
         }
       })
 
+      /* ---------- 多张草稿槽 ---------- */
+      const SLOTS = 3
+      const SLOT_KEY = 'paintSlots'
+      const draftRow = document.getElementById('draftRow')
+      const draftSlots = document.getElementById('draftSlots')
+      let slotBusy = false
+
+      function readSlots() {
+        try {
+          const raw = JSON.parse(localStorage.getItem(SLOT_KEY) || '[]')
+          return Array.isArray(raw) ? raw : []
+        } catch (e) {
+          return []
+        }
+      }
+      function writeSlots(arr) {
+        try {
+          localStorage.setItem(SLOT_KEY, JSON.stringify(arr))
+        } catch (e) {}
+      }
+      function currentFlat() {
+        const flat = []
+        for (const row of pixels) for (const px of row) flat.push([px[0], px[1], px[2]])
+        return flat
+      }
+      function restoreSlot(entry) {
+        size = entry.size === 32 || entry.size === 64 || entry.size === 128 ? entry.size : 16
+        CELL = 512 / size
+        undoStack.length = 0
+        updateUndoBtn()
+        document.querySelectorAll('.size-btn').forEach((b) =>
+          b.classList.toggle('active', Number(b.dataset.size) === size)
+        )
+        const out = Array.from({ length: size }, () => Array.from({ length: size }, () => [255, 255, 255]))
+        for (let i = 0; i < size * size; i++) {
+          const src = entry.pixels[i]
+          if (!src) continue
+          out[Math.floor(i / size)][i % size] = [src[0], src[1], src[2]]
+        }
+        pixels.length = 0
+        for (const row of out) pixels.push(row)
+        resetCamera()
+        refreshHint()
+        fullDirty = true
+        redraw()
+        scheduleSave()
+      }
+      function renderSlots() {
+        if (!draftSlots) return
+        const slots = readSlots()
+        let used = 0
+        draftSlots.innerHTML = ''
+        for (let i = 0; i < SLOTS; i++) {
+          const has = !!slots[i]
+          if (has) used++
+          const wrap = document.createElement('div')
+          wrap.className = 'draft-slot' + (has ? ' filled' : '')
+          const label = document.createElement('span')
+          label.className = 'draft-no'
+          label.textContent = '槽 ' + (i + 1)
+          wrap.appendChild(label)
+          if (has) {
+            const th = document.createElement('img')
+            th.className = 'draft-thumb'
+            th.alt = '草稿 ' + (i + 1)
+            th.src = (function () {
+              const cv = document.createElement('canvas')
+              cv.width = slots[i].size
+              cv.height = slots[i].size
+              const c = cv.getContext('2d')
+              for (let y = 0; y < slots[i].size; y++)
+                for (let x = 0; x < slots[i].size; x++) {
+                  const p = slots[i].pixels[y * slots[i].size + x]
+                  c.fillStyle = 'rgb(' + p[0] + ',' + p[1] + ',' + p[2] + ')'
+                  c.fillRect(x, y, 1, 1)
+                }
+              return cv.toDataURL('image/png')
+            })()
+            wrap.appendChild(th)
+            const del = document.createElement('button')
+            del.type = 'button'
+            del.className = 'draft-del'
+            del.textContent = '×'
+            del.title = '清空这个槽'
+            del.addEventListener('click', (e) => {
+              e.stopPropagation()
+              const arr = readSlots()
+              arr[i] = null
+              writeSlots(arr)
+              renderSlots()
+            })
+            wrap.appendChild(del)
+            wrap.addEventListener('click', () => {
+              if (slotBusy) return
+              slotBusy = true
+              try {
+                restoreSlot(slots[i])
+                toast('已载入草稿 ' + (i + 1))
+              } finally {
+                slotBusy = false
+              }
+            })
+          } else {
+            const add = document.createElement('button')
+            add.type = 'button'
+            add.className = 'draft-add'
+            add.textContent = '存当前'
+            add.addEventListener('click', (e) => {
+              e.stopPropagation()
+              const arr = readSlots()
+              arr[i] = { size, pixels: currentFlat(), time: Date.now() }
+              writeSlots(arr)
+              renderSlots()
+              toast('已存入草稿槽 ' + (i + 1))
+            })
+            wrap.appendChild(add)
+          }
+          draftSlots.appendChild(wrap)
+        }
+        if (draftRow) draftRow.hidden = false
+      }
+
+      /* ---------- 导出 PNG ---------- */
+      const savePngBtn = document.getElementById('savePngBtn')
+      function exportPng(scale) {
+        const n = size
+        const k = scale || 8
+        const cv = document.createElement('canvas')
+        cv.width = n * k
+        cv.height = n * k
+        const ctx = cv.getContext('2d')
+        for (let y = 0; y < n; y++) {
+          for (let x = 0; x < n; x++) {
+            const p = pixels[y][x]
+            ctx.fillStyle = 'rgb(' + p[0] + ',' + p[1] + ',' + p[2] + ')'
+            ctx.fillRect(x * k, y * k, k, k)
+          }
+        }
+        return cv.toDataURL('image/png')
+      }
+      if (savePngBtn) {
+        savePngBtn.addEventListener('click', () => {
+          try {
+            const url = exportPng(Math.max(4, Math.round(512 / size)))
+            const a = document.createElement('a')
+            a.href = url
+            a.download = '像素小镇-' + size + 'x' + size + '.png'
+            document.body.appendChild(a)
+            a.click()
+            a.remove()
+            toast('已导出 PNG（' + size + '×' + size + '）')
+          } catch (err) {
+            toast('导出失败：' + err.message)
+          }
+        })
+      }
+
+      /* ---------- 镜像绘制 ---------- */
+      let mirrorOn = false
+      const mirrorBtn = document.getElementById('mirrorBtn')
+      // 填充后把左半边整体镜像到右半边，保持对称
+      function enforceSymmetry() {
+        const half = Math.floor(size / 2)
+        for (let y = 0; y < size; y++) {
+          for (let x = 0; x < half; x++) {
+            pixels[y][size - 1 - x] = pixels[y][x].slice()
+          }
+        }
+        fullDirty = true
+      }
+      if (mirrorBtn) {
+        mirrorBtn.addEventListener('click', () => {
+          mirrorOn = !mirrorOn
+          mirrorBtn.classList.toggle('active', mirrorOn)
+          mirrorBtn.setAttribute('aria-pressed', mirrorOn ? 'true' : 'false')
+          refreshHint()
+          toast(mirrorOn ? '已开启左右镜像绘制' : '已关闭镜像绘制')
+        })
+      }
+
+      /* ---------- 最近使用颜色 ---------- */
+      const RECENT_KEY = 'paintRecentColors'
+      const recentRow = document.getElementById('recentRow')
+      const recentSwatches = document.getElementById('recentSwatches')
+      let recentColors = []
+      try {
+        const raw = JSON.parse(localStorage.getItem(RECENT_KEY) || '[]')
+        if (Array.isArray(raw)) recentColors = raw.filter((c) => Array.isArray(c) && c.length === 3).slice(0, 12)
+      } catch (e) {}
+
+      function renderRecent() {
+        if (!recentRow || !recentSwatches) return
+        recentRow.hidden = recentColors.length === 0
+        recentSwatches.innerHTML = ''
+        recentColors.forEach((c) => {
+          const b = document.createElement('button')
+          b.type = 'button'
+          b.className = 'recent-swatch'
+          b.title = 'rgb(' + c.join(',') + ')'
+          b.style.background = 'rgb(' + c.join(',') + ')'
+          b.addEventListener('click', () => {
+            currentColor = [c[0], c[1], c[2]]
+            updateDisplay(currentColor)
+          })
+          recentSwatches.appendChild(b)
+        })
+      }
+
+      function pushRecentColor(rgb) {
+        const key = rgb.join(',')
+        recentColors = recentColors.filter((c) => c.join(',') !== key)
+        recentColors.unshift([rgb[0], rgb[1], rgb[2]])
+        if (recentColors.length > 12) recentColors.length = 12
+        try {
+          localStorage.setItem(RECENT_KEY, JSON.stringify(recentColors))
+        } catch (e) {}
+        renderRecent()
+      }
+
       function syncToolSwatch() {
         const el = document.getElementById('toolSwatch')
         if (el) el.style.background = `rgb(${currentColor[0]}, ${currentColor[1]}, ${currentColor[2]})`
@@ -2054,6 +2376,7 @@ color: var(--text-muted);
 
       function updateDisplay(rgb) {
         syncToolSwatch()
+        pushRecentColor(rgb)
         curSwatch.style.background = `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`
         curHex.value = '#' + rgb.map((c) => c.toString(16).padStart(2, '0')).join('')
         swatches.forEach((sw, i) => sw.classList.toggle('selected', sameRgb(rgb, presets[i])))
@@ -2199,7 +2522,8 @@ color: var(--text-muted);
       }
 
       function refreshHint() {
-        const base = TOOL_HINTS[activeTool] || TOOL_HINTS.brush
+        let base = TOOL_HINTS[activeTool] || TOOL_HINTS.brush
+        if (mirrorOn) base += ' · 🦋 镜像中'
         hint.textContent = size > 16 ? base + ' · 拖动画布移动，点一下格子涂色，＋/－ 缩放' : base + ' · 拖动涂色'
       }
 
@@ -2391,10 +2715,15 @@ color: var(--text-muted);
         }
         if (activeTool === 'fill') {
           floodFill(row, col)
+          if (mirrorOn) enforceSymmetry()
           return
         }
         const color = activeTool === 'eraser' ? [255, 255, 255] : currentColor
         pixels[row][col] = color.slice()
+        if (mirrorOn && col >= 0 && col < size) {
+          const mc = size - 1 - col
+          pixels[row][mc] = color.slice()
+        }
       }
 
       function paint(e) {
@@ -3262,7 +3591,10 @@ color: var(--text-muted);
         if (k === 'b') setTool('brush')
         else if (k === 'e') setTool('eraser')
         else if (k === 'f') setTool('fill')
-        else if (k === 'i') {
+        else if (k === 'm') {
+          e.preventDefault()
+          if (mirrorBtn) mirrorBtn.click()
+        } else if (k === 'i') {
           e.preventDefault()
           setTool('picker')
         } else if (k === 'c') {
@@ -3310,6 +3642,8 @@ color: var(--text-muted);
       })
 
       function startCreation() {
+        renderRecent()
+        renderSlots()
         const savedMode = localStorage.getItem('lw-mode')
         if (loadDraft()) {
           toast('欢迎回来！你的数据已保存')
