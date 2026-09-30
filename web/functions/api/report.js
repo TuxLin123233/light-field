@@ -14,10 +14,16 @@ const RATE_PREFIX = 'reportrate:'
 const RATE_WINDOW_MS = 10 * 60 * 1000 // 10 分钟内同一设备最多 5 条
 const RATE_MAX = 5
 
+// 举报列表必须每次都拿到最新：任何缓存都会导致后台看到过期的待处理列表
 const json = (body, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
-    headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+    headers: {
+      ...CORS_HEADERS,
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-store, no-cache, must-revalidate',
+      Pragma: 'no-cache',
+    },
   })
 
 function authorized(request, env) {

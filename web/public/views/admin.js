@@ -467,8 +467,10 @@ export default {
       })
 
       async function refresh() {
+        // 举报与作品列表互不影响：任何一边失败另一边照样能看
+        loadReports()
         try {
-          const res = await fetch('/api/get?limit=30')
+          const res = await fetch('/api/get?limit=30&t=' + Date.now(), { cache: 'no-store' })
           if (!res.ok) {
             toast('获取数据失败')
             return
@@ -476,7 +478,6 @@ export default {
           const data = await res.json()
           renderLatest(data)
           renderList(data.history || [])
-          loadReports()
         } catch (err) {
           toast('网络错误')
         }
@@ -489,9 +490,37 @@ export default {
         return d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()) + ' ' + p2(d.getHours()) + ':' + p2(d.getMinutes())
       }
 
-      function renderReports(list) {
+      /* 本机已处理的举报 id：即使服务端短暂返回旧数据，也不再显示 */
+      const DONE_KEY = 'lw-admin-done-reports'
+      function getDone() {
+        try {
+          const a = JSON.parse(localStorage.getItem(DONE_KEY) || '[]')
+          return Array.isArray(a) ? a : []
+        } catch (e) {
+          return []
+        }
+      }
+      function markDone(id) {
+        const a = getDone()
+        if (!a.includes(id)) a.push(id)
+        try {
+          localStorage.setItem(DONE_KEY, JSON.stringify(a.slice(-500)))
+        } catch (e) {}
+      }
+      function pruneDone(list) {
+        const alive = new Set(list.map((r) => r.id))
+        const a = getDone().filter((id) => alive.has(id))
+        try {
+          localStorage.setItem(DONE_KEY, JSON.stringify(a))
+        } catch (e) {}
+      }
+
+      function renderReports(rawList) {
+        const done = new Set(getDone())
+        const list = Array.isArray(rawList) ? rawList.filter((r) => !done.has(r.id)) : []
+        pruneDone(rawList || [])
         reportList.innerHTML = ''
-        if (reportCount) reportCount.textContent = list.length ? '共 ' + list.length + ' 条' : ''
+        updateReportCount(list.length)
         if (!list.length) {
           const empty = document.createElement('div')
           empty.className = 'empty'
@@ -561,6 +590,11 @@ export default {
                   toast((await res.json().catch(() => ({}))).error || '操作失败')
                   return
                 }
+                markDone(r.id)
+                // 立刻从列表里移除，不等网络回来，避免"处理完还在"的错觉
+                const row = item.closest('.rp-item') || item
+                if (row && row.parentNode) row.parentNode.removeChild(row)
+                updateReportCount()
                 toast(action === 'remove' ? '已删除作品' : '已标记处理')
                 refresh()
                 loadReports()
@@ -575,11 +609,27 @@ export default {
           })
       }
 
+      function updateReportCount(n) {
+        if (!reportCount) return
+        const left = typeof n === 'number' ? n : reportList.querySelectorAll('.rp-item').length
+        reportCount.textContent = left ? '共 ' + left + ' 条' : ''
+        if (!left) {
+          reportList.innerHTML = ''
+          const empty = document.createElement('div')
+          empty.className = 'empty'
+          empty.textContent = '暂无举报'
+          reportList.appendChild(empty)
+        }
+      }
+
       async function loadReports() {
         const key = getKey()
         if (!key || !reportList) return
         try {
-          const res = await fetch('/api/report', { headers: { 'x-admin-key': key } })
+          const res = await fetch('/api/report?t=' + Date.now(), {
+            headers: { 'x-admin-key': key, 'Cache-Control': 'no-cache' },
+            cache: 'no-store',
+          })
           if (!res.ok) return
           const data = await res.json().catch(() => ({}))
           renderReports(data.reports || [])
