@@ -1394,8 +1394,8 @@ export default {
       let joinedAt = 0
       function desiredPollDelay() {
         if (!room) return 1500
-        if (room.game && room.game.active) return 800
-        if (room.members.length > 1) return 1000
+        if (room.game && room.game.active) return 600
+        if (room.members.length > 1) return 800
         // 刚建/刚进房的一段时间内快轮询，等队友进来时立刻显示
         if (joinedAt && Date.now() - joinedAt < 20000) return 500
         return 2000
