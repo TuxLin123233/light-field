@@ -12,7 +12,7 @@ const json = (body, status = 200) =>
 
 const ROOM_TTL = 1800
 const MAX_MEMBERS = 6
-const DRAW_GAP_MS = 1500
+const DRAW_GAP_MS = 250
 const ROOM_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
 const ROUND_MS = 90000
 

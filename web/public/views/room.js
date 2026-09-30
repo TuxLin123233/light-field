@@ -1238,6 +1238,7 @@ export default {
           return
         }
         await applyGameState(data)
+        await refreshRoom()
         toast('游戏开始，各就各位！')
       })
 
@@ -1256,6 +1257,7 @@ export default {
             if (data.error) toast(data.error)
             if (data.state) await applyGameState(data)
           }
+          await refreshRoom()
         } finally {
           guessing = false
         }
@@ -1269,6 +1271,7 @@ export default {
         const data = await postAction({ action: 'skip', code: room.code, id: memberId })
         if (!data.ok && data.error) toast(data.error)
         if (data.state) await applyGameState(data)
+        await refreshRoom()
       })
 
       endGameBtn.addEventListener('click', async () => {
@@ -1277,6 +1280,7 @@ export default {
           room.game = null
           renderRoom()
           toast('游戏已结束')
+          await refreshRoom()
         } else if (data.error) {
           toast(data.error)
         }
@@ -1305,7 +1309,7 @@ export default {
         committing = true
         showSync('同步中…')
         try {
-          for (let attempt = 0; attempt < 3; attempt++) {
+          for (let attempt = 0; attempt < 6; attempt++) {
             const res = await fetch('/api/room', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -1334,7 +1338,7 @@ export default {
             }
             if (res.status === 429) {
               showSync('操作太快，稍候重试…')
-              await new Promise((r) => setTimeout(r, 1600))
+              await new Promise((r) => setTimeout(r, 320))
               continue
             }
             toast('同步失败：' + (data.error || res.status))
@@ -1349,7 +1353,7 @@ export default {
 
       function scheduleCommit() {
         clearTimeout(commitTimer)
-        commitTimer = setTimeout(commitDraw, 600)
+        commitTimer = setTimeout(commitDraw, 150)
       }
 
       function flushCommit() {
@@ -1358,6 +1362,8 @@ export default {
       }
 
       async function refreshRoom() {
+        if (refreshing) return
+        refreshing = true
         try {
           const res = await fetch('/api/room?code=' + encodeURIComponent(room.code) + '&id=' + encodeURIComponent(memberId))
           if (!res.ok) {
@@ -1377,15 +1383,35 @@ export default {
           }
         } catch (e) {
           showSync('网络异常，重试中…')
+        } finally {
+          refreshing = false
         }
       }
 
+      /* 轮询频率：房间越活跃越快，避免"2 个人在玩只显示 1 个"这种长时间不一致 */
+      let pollDelay = 1500
+      let refreshing = false
+      function desiredPollDelay() {
+        if (!room) return 1500
+        if (room.game && room.game.active) return 800
+        if (room.members.length > 1) return 1000
+        return 2000
+      }
+      function pollTick() {
+        if (!room) return
+        refreshRoom()
+        const d = desiredPollDelay()
+        if (d !== pollDelay) {
+          pollDelay = d
+          clearInterval(pollTimer)
+          pollTimer = setInterval(pollTick, d)
+        }
+      }
       function startPolling() {
         clearInterval(pollTimer)
-        pollTimer = setInterval(() => {
-          if (!room || committing) return
-          refreshRoom()
-        }, 1500)
+        pollDelay = desiredPollDelay()
+        pollTimer = setInterval(pollTick, pollDelay)
+        pollTick()
       }
 
       /* ---------- 加入/创建 ---------- */

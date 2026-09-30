@@ -331,9 +331,22 @@ color: var(--text-muted);
         margin-top: 18px;
       }
 
+      .tool-swatch {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: var(--accent);
+        box-shadow: inset 0 0 0 2px var(--surface), 0 0 0 1px var(--border-strong);
+        display: block;
+      }
+
+      #toolColor { padding: 0; }
+      #toolColor .tool-swatch { width: 26px; height: 26px; }
+
       .tool {
         flex: 1;
-        height: 46px;
+        min-width: 0;
+        height: 44px;
         border-radius: 999px;
         border: none;
         background: var(--surface-2);
@@ -525,7 +538,7 @@ color: var(--text-muted);
         height: 56px;
         image-rendering: pixelated;
         border-radius: 8px;
-        border: 1px solid var(--border-strong);
+        box-shadow: 0 2px 8px var(--shadow3);
         background: var(--art-bg);
       }
 
@@ -710,16 +723,28 @@ color: var(--text-muted);
       .disclaimer {
         width: 100%;
         max-width: 460px;
-        margin-top: 20px;
-        padding: 14px 16px;
         background: var(--surface);
+        border: 1px solid var(--border);
         border-radius: 14px;
-        box-shadow: 0 4px 14px var(--shadow2);
+        padding: 0 14px;
         font-size: 12px;
+        color: var(--text-muted);
         line-height: 1.7;
-        color: var(--text-faint);
-        text-align: justify;
       }
+
+      .disclaimer summary {
+        cursor: pointer;
+        padding: 11px 0;
+        font-weight: 600;
+        color: var(--text-muted2);
+        list-style: none;
+        text-align: center;
+      }
+
+      .disclaimer summary::-webkit-details-marker { display: none; }
+      .disclaimer summary::after { content: ' ▾'; }
+      .disclaimer[open] summary::after { content: ' ▴'; }
+      .disclaimer p { margin: 0 0 12px; }
 
       .disclaimer-report {
         margin-top: 10px;
@@ -1480,7 +1505,8 @@ color: var(--text-muted);
       <button id="toolBrush" class="tool active" type="button" data-tool="brush" title="画笔（B）">✏️</button>
       <button id="toolEraser" class="tool" type="button" data-tool="eraser" title="橡皮擦（E）">🧽</button>
       <button id="toolFill" class="tool" type="button" data-tool="fill" title="颜料桶（F）">🪣</button>
-      <button id="toolColor" class="tool" type="button" title="颜色（C）">🎨</button>
+      <button id="toolPick" class="tool" type="button" data-tool="picker" title="取色器（I）：点一下画布吸取该格颜色">💧</button>
+      <button id="toolColor" class="tool" type="button" title="颜色（C）"><span class="tool-swatch" id="toolSwatch"></span></button>
     </div>
 
     <div class="pick-wrap" id="pickWrap" hidden>
@@ -1561,9 +1587,10 @@ color: var(--text-muted);
 
     <div class="hint" id="hint">画笔：点按或滑动作画 · 画布 16/32/64× · B 画笔 / E 橡皮 / F 填充 / C 颜色 / Z 撤销 · 输入 #RRGGBB 自定义颜色</div>
 
-    <div class="disclaimer">
-      本画板仅用于个人学习与技术交流。请勿上传、绘制、发布任何违反中华人民共和国法律法规的内容，包括但不限于色情、暴力、恐怖、赌博、涉政敏感、侵犯他人隐私或知识产权的内容。上传者须对自己发布的内容负全部法律责任。本平台有权在不事先通知的情况下删除违规内容，并保留追究法律责任的权利。
-    </div>
+    <details class="disclaimer">
+      <summary>使用须知与免责声明</summary>
+      <p>本画板仅用于个人学习与技术交流。请勿上传、绘制、发布任何违反中华人民共和国法律法规的内容，包括但不限于色情、暴力、恐怖、赌博、涉政敏感、侵犯他人隐私或知识产权的内容。上传者须对自己发布的内容负全部法律责任。本平台有权在不事先通知的情况下删除违规内容，并保留追究法律责任的权利。</p>
+    </details>
 
     <div class="copyright">© 2026 像素小镇 · 版权所有 · 作者 Lin Sifan</div>
 
@@ -1635,6 +1662,7 @@ color: var(--text-muted);
         brush: '画笔：点按或滑动作画 · 快捷键 B',
         eraser: '橡皮擦：点按或滑动擦除为白色 · 快捷键 E',
         fill: '颜料桶：点一下区域即可填充当前颜色 · 快捷键 F',
+        picker: '取色器：点一下画布吸取那一格的颜色 · 快捷键 I',
       }
 
       /* ---------- 命题 ---------- */
@@ -2019,7 +2047,13 @@ color: var(--text-muted);
         }
       })
 
+      function syncToolSwatch() {
+        const el = document.getElementById('toolSwatch')
+        if (el) el.style.background = `rgb(${currentColor[0]}, ${currentColor[1]}, ${currentColor[2]})`
+      }
+
       function updateDisplay(rgb) {
+        syncToolSwatch()
         curSwatch.style.background = `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`
         curHex.value = '#' + rgb.map((c) => c.toString(16).padStart(2, '0')).join('')
         swatches.forEach((sw, i) => sw.classList.toggle('selected', sameRgb(rgb, presets[i])))
@@ -2345,6 +2379,16 @@ color: var(--text-muted);
 
       function paintCell(row, col) {
         fullDirty = true
+        if (activeTool === 'picker') {
+          const c = pixels[row][col]
+          if (c) {
+            currentColor = [c[0], c[1], c[2]]
+            updateDisplay(currentColor)
+            syncToolSwatch()
+            toast('已吸取颜色 rgb(' + c.join(',') + ')')
+          }
+          return
+        }
         if (activeTool === 'fill') {
           floodFill(row, col)
           return
@@ -3218,7 +3262,10 @@ color: var(--text-muted);
         if (k === 'b') setTool('brush')
         else if (k === 'e') setTool('eraser')
         else if (k === 'f') setTool('fill')
-        else if (k === 'c') {
+        else if (k === 'i') {
+          e.preventDefault()
+          setTool('picker')
+        } else if (k === 'c') {
           e.preventDefault()
           toolColorBtn.click()
         } else if (k === 'z') {
