@@ -1260,6 +1260,64 @@ color: var(--text-muted);
         color: var(--accent);
         background: var(--surface-2);
       }
+      .imgmode-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 130;
+        background: rgba(20, 15, 10, 0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+
+      .imgmode-box {
+        width: 100%;
+        max-width: 360px;
+        background: var(--surface);
+        border-radius: 20px;
+        padding: 20px 18px 16px;
+        box-shadow: 0 16px 44px rgba(0, 0, 0, 0.3);
+      }
+
+      .imgmode-title {
+        font-size: 15px;
+        font-weight: 800;
+        color: var(--text);
+        text-align: center;
+        margin-bottom: 14px;
+        line-height: 1.5;
+      }
+
+      .imgmode-opt {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        width: 100%;
+        text-align: left;
+        border: 1px solid var(--border);
+        background: var(--surface-2);
+        border-radius: 14px;
+        padding: 12px 14px;
+        margin-bottom: 8px;
+        cursor: pointer;
+      }
+
+      .imgmode-name { font-size: 14px; font-weight: 700; color: var(--text); }
+      .imgmode-desc { font-size: 12px; color: var(--text-muted); }
+
+      .imgmode-cancel {
+        width: 100%;
+        border: none;
+        background: transparent;
+        color: var(--text-faint);
+        font-size: 13px;
+        font-weight: 700;
+        padding: 10px;
+        margin-top: 4px;
+        cursor: pointer;
+      }
+
       .join-card {
         width: 100%;
         max-width: 460px;
@@ -1728,6 +1786,21 @@ color: var(--text-muted);
       <button id="imgBtn" type="button" title="把照片变成像素画">🖼️</button>
       <button id="mirrorBtn" type="button" title="左右镜像绘制（M）" aria-pressed="false">🦋</button>
       <input id="imgInput" type="file" accept="image/*" hidden>
+
+    <div class="imgmode-overlay" id="imgModeOverlay" hidden>
+      <div class="imgmode-box">
+        <div class="imgmode-title">照片转成像素画后，颜色想怎么处理？</div>
+        <button class="imgmode-opt" type="button" data-imgmode="palette">
+          <span class="imgmode-name">只用画板的 32 种颜色</span>
+          <span class="imgmode-desc">颜色更统一，看起来像老游戏画面</span>
+        </button>
+        <button class="imgmode-opt" type="button" data-imgmode="plain">
+          <span class="imgmode-name">保留照片原来的颜色</span>
+          <span class="imgmode-desc">颜色更丰富，画面更细腻</span>
+        </button>
+        <button class="imgmode-cancel" id="imgModeCancel" type="button">取消</button>
+      </div>
+    </div>
       <button id="savePngBtn" type="button" title="导出 PNG">⬇️</button>
       <button id="uploadBtn" type="button">上传</button>
     </div>
@@ -2241,6 +2314,8 @@ color: var(--text-muted);
       /* ---------- 从照片生成像素画 ---------- */
       const imgBtn = document.getElementById('imgBtn')
       const imgInput = document.getElementById('imgInput')
+      const imgModeOverlay = document.getElementById('imgModeOverlay')
+      const imgModeCancel = document.getElementById('imgModeCancel')
       let fromImage = false
 
       // 均匀量化：把每个通道吸附到 levels 档
@@ -2326,15 +2401,20 @@ color: var(--text-muted);
 
       if (imgBtn && imgInput) {
         imgBtn.addEventListener('click', () => {
-          const mode = window.confirm(
-            '照片转成像素画后，颜色想怎么处理？\n\n' +
-              '【确定】只用画板的 32 种颜色\n' +
-              '　　颜色更统一，看起来像老游戏画面\n\n' +
-              '【取消】保留照片原来的颜色\n' +
-              '　　颜色更丰富，画面更细腻'
-          )
-          pendingImgMode = mode ? 'palette' : 'plain'
-          imgInput.click()
+          imgModeOverlay.hidden = false
+        })
+        imgModeOverlay.querySelectorAll('[data-imgmode]').forEach((b) => {
+          b.addEventListener('click', () => {
+            pendingImgMode = b.dataset.imgmode
+            imgModeOverlay.hidden = true
+            imgInput.click()
+          })
+        })
+        imgModeCancel.addEventListener('click', () => {
+          imgModeOverlay.hidden = true
+        })
+        imgModeOverlay.addEventListener('click', (e) => {
+          if (e.target === imgModeOverlay) imgModeOverlay.hidden = true
         })
         imgInput.addEventListener('change', () => {
           const f = imgInput.files && imgInput.files[0]
