@@ -388,10 +388,9 @@ color: var(--text-muted);
       .pick-wrap[hidden] { display: none; }
 
       .preset-row {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 10px;
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+        gap: 7px;
         margin-bottom: 16px;
       }
 
@@ -418,9 +417,9 @@ color: var(--text-muted);
       }
 
       .swatch {
-        flex: 0 0 auto;
-        width: 38px;
-        height: 38px;
+        width: 100%;
+        aspect-ratio: 1;
+        min-height: 26px;
         border-radius: 50%;
         border: 2px solid rgba(0, 0, 0, 0.08);
         cursor: pointer;
@@ -1692,7 +1691,7 @@ color: var(--text-muted);
     <div class="actions">
       <button id="undoBtn" type="button" title="撤销（Z）" disabled>↩️</button>
       <button id="clearBtn" type="button" title="清空">🗑️</button>
-      <button id="imgBtn" type="button" title="从照片生成像素画">🖼️</button>
+      <button id="imgBtn" type="button" title="把照片变成像素画">🖼️</button>
       <button id="mirrorBtn" type="button" title="左右镜像绘制（M）" aria-pressed="false">🦋</button>
       <input id="imgInput" type="file" accept="image/*" hidden>
       <button id="savePngBtn" type="button" title="导出 PNG">⬇️</button>
@@ -1797,16 +1796,24 @@ color: var(--text-muted);
         } catch (e) {}
       })()
       let size = 16
+      // 32 色像素画色板：暖色 8 / 绿青 6 / 蓝紫 6 / 棕与肤色 4 / 灰阶 8
       const PRESET_COLORS = [
-        ['#e53935', '红'],
-        ['#fb8c00', '橙'],
-        ['#fdd835', '黄'],
-        ['#43a047', '绿'],
-        ['#00acc1', '青'],
-        ['#1e88e5', '蓝'],
-        ['#8e24aa', '紫'],
-        ['#ffffff', '白'],
-        ['#212121', '黑'],
+        ['#e53935', '红'], ['#b71c1c', '深红'],
+        ['#ff7043', '橘红'], ['#fb8c00', '橙'],
+        ['#f4511e', '深橙'], ['#ffb74d', '浅橙'],
+        ['#fdd835', '黄'], ['#f9a825', '深黄'],
+        ['#43a047', '绿'], ['#2e7d32', '深绿'],
+        ['#66bb6a', '浅绿'], ['#00acc1', '青'],
+        ['#00838f', '深青'], ['#4db6ac', '浅青'],
+        ['#1e88e5', '蓝'], ['#1565c0', '深蓝'],
+        ['#64b5f6', '浅蓝'], ['#8e24aa', '紫'],
+        ['#7b1fa2', '深紫'], ['#ba68c8', '浅紫'],
+        ['#8d6e63', '棕'], ['#a1887f', '浅棕'],
+        ['#ffccbc', '肤色'], ['#ffab91', '深肤'],
+        ['#ffffff', '白'], ['#e0e0e0', '极浅灰'],
+        ['#bdbdbd', '浅灰'], ['#9e9e9e', '中灰'],
+        ['#757575', '深灰'], ['#616161', '更深灰'],
+        ['#424242', '炭灰'], ['#212121', '黑'],
       ]
       const TOOL_HINTS = {
         brush: '画笔：点按或滑动作画 · 快捷键 B',
@@ -2268,7 +2275,7 @@ color: var(--text-muted);
             refreshHint()
             toast(
               '已生成 ' + n + '×' + n + ' 像素画，可继续手改' +
-                (usePalette ? '（已贴合色板）' : levels ? '（已降色）' : '')
+                (usePalette ? '（已统一成 32 色）' : levels ? '（颜色已简化）' : '')
             )
           } catch (err) {
             toast('图片处理失败：' + err.message)
@@ -2285,7 +2292,13 @@ color: var(--text-muted);
 
       if (imgBtn && imgInput) {
         imgBtn.addEventListener('click', () => {
-          const mode = window.confirm('要贴合你的色板吗？\n\n确定 = 贴合色板（颜色更统一）\n取消 = 保留原图色彩')
+          const mode = window.confirm(
+            '照片转成像素画后，颜色想怎么处理？\n\n' +
+              '【确定】只用画板的 32 种颜色\n' +
+              '　　颜色更统一，看起来像老游戏画面\n\n' +
+              '【取消】保留照片原来的颜色\n' +
+              '　　颜色更丰富，画面更细腻'
+          )
           pendingImgMode = mode ? 'palette' : 'plain'
           imgInput.click()
         })
