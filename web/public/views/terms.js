@@ -10,18 +10,18 @@ export default {
       body {
         margin: 0;
         min-height: 100vh;
-        background: linear-gradient(160deg, #fdf8f2 0%, #f2ece2 100%);
+        background: linear-gradient(160deg, var(--bg));
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
         display: flex;
         justify-content: center;
         padding: 32px 16px 48px;
-        color: #3b342c;
+        color: var(--text);
       }
 
       .page {
         width: 100%;
         max-width: 460px;
-        background: #fff;
+        background: var(--surface);
         border-radius: 20px;
         box-shadow: 0 8px 24px rgba(80, 60, 40, 0.12);
         padding: 24px 22px;
@@ -52,7 +52,7 @@ export default {
       .notice {
         margin-top: 20px;
         font-size: 13px;
-        color: #9a8c7a;
+        color: var(--text-muted);
         text-align: center;
         line-height: 1.7;
       }
@@ -62,8 +62,8 @@ export default {
         margin: 22px auto 0;
         text-align: center;
         text-decoration: none;
-        color: #fff;
-        background: #5b8def;
+        color: var(--surface);
+        background: var(--accent);
         border-radius: 999px;
         padding: 12px 28px;
         font-size: 15px;
@@ -74,7 +74,7 @@ export default {
         margin-top: 18px;
         text-align: center;
         font-size: 12px;
-        color: #c3b8a8;
+        color: var(--text-faint);
       }`,
   template: `<div class="page">
       <h1>用户协议</h1>

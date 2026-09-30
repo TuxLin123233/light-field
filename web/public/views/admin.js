@@ -10,13 +10,13 @@ export default {
       body {
         margin: 0;
         min-height: 100vh;
-        background: #faf5ef;
+        background: var(--bg);
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
         display: flex;
         flex-direction: column;
         align-items: center;
         padding: 20px 16px 48px;
-        color: #3b342c;
+        color: var(--text);
       }
 
       .page-head { width: 100%; max-width: 460px; }
@@ -24,20 +24,20 @@ export default {
       .back {
         display: inline-block;
         text-decoration: none;
-        color: #6b5f50;
+        color: var(--text-muted);
         font-size: 14px;
         margin-bottom: 12px;
       }
 
       h1 { font-size: 22px; font-weight: 800; margin: 4px 0 4px; letter-spacing: 1px; }
 
-      .sub { font-size: 13px; color: #b0a697; margin-bottom: 20px; line-height: 1.6; }
+      .sub { font-size: 13px; color: var(--text-faint); margin-bottom: 20px; line-height: 1.6; }
 
       .card {
         width: 100%;
         max-width: 460px;
-        background: #fff;
-        border: 1px solid #efe7da;
+        background: var(--surface);
+        border: 1px solid var(--border);
         border-radius: 18px;
         padding: 20px;
         margin-bottom: 16px;
@@ -46,17 +46,17 @@ export default {
       .card-title {
         font-size: 14px;
         font-weight: 700;
-        color: #6b5f50;
+        color: var(--text-muted);
         margin-bottom: 12px;
       }
 
-      .card-text { font-size: 13px; color: #6b5f50; line-height: 1.8; text-align: justify; }
+      .card-text { font-size: 13px; color: var(--text-muted); line-height: 1.8; text-align: justify; }
 
-      .card-text b { color: #3b342c; }
+      .card-text b { color: var(--text); }
 
       .roles { padding-left: 18px; margin: 0; }
 
-      .roles li { font-size: 13px; color: #6b5f50; line-height: 1.9; }
+      .roles li { font-size: 13px; color: var(--text-muted); line-height: 1.9; }
 
       .steps { list-style: none; padding: 0; margin: 0; counter-reset: step; }
 
@@ -65,7 +65,7 @@ export default {
         position: relative;
         padding: 2px 0 2px 34px;
         font-size: 13px;
-        color: #6b5f50;
+        color: var(--text-muted);
         line-height: 1.8;
         text-align: justify;
       }
@@ -78,8 +78,8 @@ export default {
         width: 24px;
         height: 24px;
         border-radius: 50%;
-        background: #5b8def;
-        color: #fff;
+        background: var(--accent);
+        color: var(--surface);
         font-size: 13px;
         font-weight: 700;
         display: flex;
@@ -93,28 +93,28 @@ export default {
         text-align: center;
         padding: 12px;
         border-radius: 14px;
-        background: #5b8def;
-        color: #fff;
+        background: var(--accent);
+        color: var(--surface);
         text-decoration: none;
         font-size: 15px;
         font-weight: 600;
       }
 
-      .contact { font-size: 12px; color: #b0a697; margin-top: 10px; text-align: center; }
+      .contact { font-size: 12px; color: var(--text-faint); margin-top: 10px; text-align: center; }
 
       .login input {
         width: 100%;
         height: 48px;
         border-radius: 14px;
-        border: 1px solid #e0d3c0;
+        border: 1px solid var(--border-strong);
         padding: 0 14px;
         font-size: 15px;
-        background: #fbfaf8;
+        background: var(--surface-2);
         outline: none;
-        color: #3b342c;
+        color: var(--text);
       }
 
-      .login input:focus { border-color: #5b8def; }
+      .login input:focus { border-color: var(--accent); }
 
       .login .enter {
         width: 100%;
@@ -122,8 +122,8 @@ export default {
         margin-top: 12px;
         border-radius: 14px;
         border: none;
-        background: #5b8def;
-        color: #fff;
+        background: var(--accent);
+        color: var(--surface);
         font-size: 15px;
         font-weight: 600;
         cursor: pointer;
@@ -138,17 +138,17 @@ export default {
         height: 110px;
         image-rendering: pixelated;
         border-radius: 12px;
-        border: 1px solid #e0d3c0;
-        background: #fff;
+        border: 1px solid var(--border-strong);
+        background: var(--surface);
       }
 
       .latest-info { flex: 1; min-width: 0; }
 
-      .latest-info .author { font-size: 17px; font-weight: 700; color: #3b342c; }
+      .latest-info .author { font-size: 17px; font-weight: 700; color: var(--text); }
 
-      .latest-info .time { font-size: 13px; color: #b0a697; margin-top: 4px; }
+      .latest-info .time { font-size: 13px; color: var(--text-faint); margin-top: 4px; }
 
-      .entry { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #f0ece4; }
+      .entry { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--surface-3); }
 
       .entry:last-child { border-bottom: none; }
 
@@ -158,8 +158,8 @@ export default {
         flex: 0 0 48px;
         image-rendering: pixelated;
         border-radius: 8px;
-        border: 1px solid #e0d3c0;
-        background: #fff;
+        border: 1px solid var(--border-strong);
+        background: var(--surface);
       }
 
       .entry .info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
@@ -167,13 +167,13 @@ export default {
       .entry .author {
         font-size: 14px;
         font-weight: 600;
-        color: #3b342c;
+        color: var(--text);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
       }
 
-      .entry .time { font-size: 11px; color: #b0a697; }
+      .entry .time { font-size: 11px; color: var(--text-faint); }
 
       .del {
         border: none;
@@ -186,7 +186,7 @@ export default {
         cursor: pointer;
       }
 
-      .empty { font-size: 13px; color: #b0a697; padding: 6px 2px; }
+      .empty { font-size: 13px; color: var(--text-faint); padding: 6px 2px; }
 
       .clear {
         width: 100%;
@@ -194,7 +194,7 @@ export default {
         border-radius: 16px;
         border: none;
         background: #d34b3f;
-        color: #fff;
+        color: var(--surface);
         font-size: 15px;
         font-weight: 600;
         cursor: pointer;
@@ -206,22 +206,22 @@ export default {
         height: 44px;
         border-radius: 14px;
         border: none;
-        background: #efe9e0;
-        color: #6b5f50;
+        background: var(--surface-2);
+        color: var(--text-muted);
         font-size: 14px;
         font-weight: 600;
         cursor: pointer;
       }
 
-      .foot { font-size: 12px; color: #b0a697; text-align: center; margin-top: 6px; line-height: 1.7; }
+      .foot { font-size: 12px; color: var(--text-faint); text-align: center; margin-top: 6px; line-height: 1.7; }
 
       #toast {
         position: fixed;
         left: 50%;
         bottom: 96px;
         transform: translate(-50%, 16px);
-        background: #3b342c;
-        color: #fff;
+        background: var(--text);
+        color: var(--surface);
         padding: 12px 22px;
         border-radius: 999px;
         font-size: 15px;
@@ -236,7 +236,12 @@ export default {
 
       #toast.show { opacity: 1; transform: translate(-50%, 0); }
 
-      button:active { transform: scale(0.97); }`,
+      button:active { transform: scale(0.97); }
+
+      /* 深色模式补充：危险色在暗背景上需提亮，否则红底红字糊成一片 */
+      [data-theme="dark"] .del { background: #3a1f1d; color: #ff8577; }
+      [data-theme="dark"] .clear { background: #b03a2e; color: #fff; }
+`,
   template: `<div class="page-head">
       <router-link class="back" to="/settings">← 返回设置</router-link>
       <h1>🛡️ 维护社区稳定</h1>

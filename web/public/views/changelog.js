@@ -250,7 +250,22 @@ export default {
       <section class="group">
         <div class="ver red">
           <div class="ver-body">
-            <div class="ver-title"><span class="ver-tag">v1.1.0</span> 主题比赛 · 玻璃导航 · 作品日历 <span class="ver-date">2026-09</span></div>
+            <div class="ver-title"><span class="ver-tag">v1.2.0</span> 单页应用 · 国庆 <span class="ver-date">2026-10-01</span></div>
+            <ul class="ver-list">
+              <li><span class="li-tag tag-announce">公告</span>国庆快乐！祝大家假期愉快、笔下生花，画出满意的作品 🎨</li>
+              <li><span class="li-tag tag-update">更新</span>前端升级 Vue 3 + Vue Router 单页应用：底部导航常驻，页面切换不再整页刷新，丝滑无加载感</li>
+              <li><span class="li-tag tag-update">更新</span>维护社区稳定、使用条款两个页面现已支持深色模式，跟随全局主题切换</li>
+              <li><span class="li-tag tag-update">更新</span>卡片按作品类型描边：主题比赛蓝、帧动画紫、多人联机青绿，并新增「多人」徽章</li>
+              <li><span class="li-tag tag-fix">修复</span>切页时导航会飞出屏幕、果冻动画覆盖水平居中导致错位</li>
+              <li><span class="li-tag tag-fix">修复</span>社区、更新日志、设置等页面宽度错乱（布局统一交给各页自身控制）</li>
+              <li><span class="li-tag tag-fix">修复</span>画板与联机在手机上被整体放大，现已锁定缩放且不再左右滑动</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="ver red">
+          <div class="ver-body">
+            <div class="ver-title"><span class="ver-tag">v1.1.0</span> 主题比赛 · 玻璃导航 <span class="ver-date">2026-09</span></div>
             <ul class="ver-list">
               <li><span class="li-tag tag-announce">公告</span>“像素小镇”是一个 VibeCoding（氛围编程）项目：由对话与灵感驱动，在一次次碰撞与迭代中自然生长，每一行代码都记录着创造的过程</li>
               <li><span class="li-tag tag-update">更新</span>每周主题比赛：每周一个主题自动轮换，作品可报名参赛，社区投票选出本周最佳，排行榜实时更新</li>

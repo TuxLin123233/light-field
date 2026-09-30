@@ -165,6 +165,7 @@ color: var(--text-muted);
         width: 100%;
         max-width: 460px;
         display: flex;
+        flex-wrap: wrap;
         align-items: center;
         gap: 8px;
         margin-top: 12px;
@@ -201,6 +202,7 @@ color: var(--text-muted);
         width: 100%;
         max-width: 460px;
         display: flex;
+        flex-wrap: wrap;
         align-items: center;
         gap: 8px;
         margin-top: 8px;
@@ -324,6 +326,7 @@ color: var(--text-muted);
         width: 100%;
         max-width: 460px;
         display: flex;
+        flex-wrap: wrap;
         gap: 8px;
         margin-top: 18px;
       }
@@ -1153,6 +1156,7 @@ color: var(--text-muted);
 
       .anim-head {
         display: flex;
+        flex-wrap: wrap;
         align-items: center;
         justify-content: space-between;
         gap: 10px;
