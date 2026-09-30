@@ -1521,7 +1521,7 @@
         publishBtn.disabled = true
         try {
           await commitDraw()
-          const payload = { pixels: flatPixels() }
+          const payload = { pixels: flatPixels(), room: true }
           const title = (room.title || '').trim()
           const members = room.members.map((m) => (m.name || '').trim()).filter(Boolean)
           let author = members.join('、')

@@ -146,6 +146,7 @@ export async function onRequestPost(context) {
   if (animObj) entry.type = 'anim'
   if (animObj) entry.anim = animObj
   if (rawContest) entry.contest = rawContest
+  if (body && body.room === true) entry.room = true
   const entryJson = JSON.stringify(entry)
   if (entryJson.length > 90000) {
     return json({ error: '动画帧数据过大，请减少帧数或简化画面后再试' }, 413)

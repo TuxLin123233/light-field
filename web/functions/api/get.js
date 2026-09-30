@@ -30,6 +30,7 @@ function normalizeEntry(e) {
     anim: e && e.anim ? { frames: e.anim.frames, delay: e.anim.delay || 10 } : undefined,
     contest: e && e.contest,
     contestVotes: (e && e.contestVotes) || 0,
+    room: e && e.room ? true : undefined,
   }
 }
 

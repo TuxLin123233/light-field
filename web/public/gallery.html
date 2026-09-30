@@ -306,159 +306,6 @@
         color: #3f9c68;
       }
 
-      .calendar {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 18px;
-        padding: 16px;
-        margin-bottom: 18px;
-      }
-
-      .cal-head {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 8px;
-        margin-bottom: 12px;
-      }
-
-      .cal-title {
-        font-size: 15px;
-        font-weight: 800;
-        color: var(--text);
-      }
-
-      .cal-nav {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-      }
-
-      .cal-nav button {
-        width: 30px;
-        height: 30px;
-        border: none;
-        border-radius: 999px;
-        background: var(--surface-2);
-        color: var(--text);
-        font-size: 18px;
-        line-height: 1;
-        cursor: pointer;
-      }
-
-      .cal-nav button:active { transform: scale(0.9); }
-
-      .cal-label {
-        min-width: 92px;
-        text-align: center;
-        font-size: 14px;
-        font-weight: 800;
-        color: var(--text);
-      }
-
-      .cal-week {
-        display: grid;
-        grid-template-columns: repeat(7, 1fr);
-        margin-bottom: 6px;
-      }
-
-      .cal-week span {
-        text-align: center;
-        font-size: 11px;
-        font-weight: 700;
-        color: var(--text-faint);
-        padding: 4px 0;
-      }
-
-      .cal-grid {
-        display: grid;
-        grid-template-columns: repeat(7, 1fr);
-        gap: 6px;
-      }
-
-      .cal-cell {
-        position: relative;
-        min-height: 86px;
-        background: var(--surface-2);
-        border: 1px solid transparent;
-        border-radius: 12px;
-        padding: 6px;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-      }
-
-      .cal-cell.blank { background: transparent; }
-
-      .cal-cell.today {
-        border-color: var(--accent);
-        box-shadow: 0 0 0 1px var(--accent);
-      }
-
-      .cal-top {
-        display: flex;
-        align-items: baseline;
-        justify-content: space-between;
-        gap: 2px;
-      }
-
-      .cal-daynum {
-        font-size: 14px;
-        font-weight: 900;
-        color: var(--text);
-      }
-
-      .cal-lunar {
-        font-size: 10px;
-        color: var(--text-muted);
-        white-space: nowrap;
-      }
-
-      .cal-fest {
-        margin-top: 2px;
-        font-size: 10px;
-        font-weight: 700;
-        color: #e5484d;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .cal-fest.jieqi { color: #5bb883; }
-
-      .cal-works {
-        margin-top: auto;
-        display: flex;
-        gap: 4px;
-        align-items: flex-end;
-        padding-top: 4px;
-      }
-
-      .cal-thumb {
-        width: 40px;
-        height: 40px;
-        border-radius: 7px;
-        object-fit: cover;
-        image-rendering: pixelated;
-        background: #fff;
-        cursor: pointer;
-        display: block;
-      }
-
-      .cal-empty-tip {
-        margin-top: auto;
-        font-size: 10px;
-        color: var(--text-faint);
-        padding-top: 4px;
-      }
-
-      .cal-note {
-        margin-top: 10px;
-        font-size: 11px;
-        color: var(--text-faint);
-        line-height: 1.5;
-      }
-
       .featured-head {
         display: flex;
         align-items: center;
@@ -603,6 +450,15 @@
 
       .card:hover { box-shadow: 0 8px 22px var(--shadow-hover); }
       .card:active { transform: scale(0.97); }
+
+      /* 不同作品类型用不同描边颜色区分：参赛=蓝 · 动画=紫 · 多人=青 */
+      .card.t-contest { border-color: rgba(91, 141, 239, 0.55); }
+      .card.t-anim { border-color: rgba(146, 122, 255, 0.55); }
+      .card.t-room { border-color: rgba(56, 196, 160, 0.55); }
+      [data-theme="dark"] .card.t-contest { border-color: rgba(118, 163, 255, 0.6); }
+      [data-theme="dark"] .card.t-anim { border-color: rgba(166, 145, 255, 0.6); }
+      [data-theme="dark"] .card.t-room { border-color: rgba(72, 214, 178, 0.6); }
+
       .card.hl {
         box-shadow: 0 0 0 3px var(--accent), 0 8px 22px var(--shadow-hover);
         animation: hlPulse 1.6s ease 2;
@@ -619,6 +475,17 @@
         font-weight: 800;
         color: #fff;
         background: linear-gradient(135deg, #7ce0c0, #5b8def);
+        border-radius: 999px;
+        padding: 2px 8px;
+        white-space: nowrap;
+      }
+
+      .room-badge {
+        flex: 0 0 auto;
+        font-size: 10px;
+        font-weight: 800;
+        color: #fff;
+        background: linear-gradient(135deg, #7ce0c0, #2fae8c);
         border-radius: 999px;
         padding: 2px 8px;
         white-space: nowrap;
@@ -892,9 +759,50 @@
       .preview-like {
         display: flex;
         justify-content: center;
+        align-items: center;
+        flex-wrap: wrap;
         gap: 10px;
-        margin-top: 12px;
+        margin-top: 16px;
+        padding-top: 14px;
+        border-top: 1px solid var(--border);
       }
+
+      /* 详情页底部操作条：细身胶囊 · 透明底 · 1px 描边 */
+      .preview-like .like-btn,
+      .preview-like .vote-btn,
+      .preview-like .share-btn {
+        flex: 0 0 auto;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        height: 24px;
+        padding: 0 10px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        line-height: 1;
+        background: transparent;
+        cursor: pointer;
+        transition: transform 0.12s, background 0.15s, border-color 0.15s, color 0.15s;
+      }
+
+      .preview-like .like-btn { border: 1px solid var(--like-border); color: var(--like); }
+      .preview-like .like-btn:hover { background: var(--like-bg); }
+      .preview-like .like-btn:active { transform: scale(0.94); }
+      .preview-like .like-btn.liked { background: var(--like); border-color: var(--like); color: #fff; }
+
+      .preview-like .vote-btn { border: 1px solid rgba(91, 141, 239, 0.45); color: var(--accent); }
+      .preview-like .vote-btn:hover { background: rgba(91, 141, 239, 0.1); }
+      .preview-like .vote-btn:active { transform: scale(0.94); }
+      .preview-like .vote-btn.voted {
+        border-color: rgba(91, 184, 131, 0.55);
+        color: #3f9c68;
+        background: rgba(91, 184, 131, 0.12);
+      }
+
+      .preview-like .share-btn { border: 1px solid transparent; color: var(--text-faint); }
+      .preview-like .share-btn:hover { background: var(--surface-2); color: var(--text-muted); }
+      .preview-like .share-btn:active { transform: scale(0.94); }
 
       .share-btn {
         display: inline-flex;
@@ -1125,22 +1033,6 @@
         <div class="featured-row" id="featuredRow"></div>
       </section>
 
-      <section class="calendar" id="calendarSection">
-        <div class="cal-head">
-          <span class="cal-title">📅 好作品日历</span>
-          <div class="cal-nav">
-            <button id="calPrev" type="button" aria-label="上个月">‹</button>
-            <span id="calLabel" class="cal-label"></span>
-            <button id="calNext" type="button" aria-label="下个月">›</button>
-          </div>
-        </div>
-        <div class="cal-week">
-          <span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span>
-        </div>
-        <div class="cal-grid" id="calGrid"></div>
-        <div class="cal-note">每日展示当天点赞最高的作品（按东八区发布时间）· 农历与节气同步 · 点击作品可预览</div>
-      </section>
-
       <div id="gallery" class="gallery-grid"></div>
       <div id="sentinel" class="status">加载中…</div>
       <div id="status" class="status" hidden></div>
@@ -1206,7 +1098,6 @@
     </nav>
 
     <script src="/qrcode.js"></script>
-    <script src="/lunar.js"></script>
     <script>
       function workSize(rec) {
         const s = (rec && rec.size) || 0
@@ -1680,153 +1571,13 @@
         btn.addEventListener('click', () => {
           rangeTabs.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b === btn))
           featuredRange = btn.dataset.range
-loadFeatured()
-      loadContest()
-
-      /* ---------- 好作品日历（含农历） ---------- */
-      const calGrid = document.getElementById('calGrid')
-      const calLabel = document.getElementById('calLabel')
-      const calNote = document.querySelector('.calendar .cal-note')
-      const calWorks = new Map()
-
-      const nowCal = new Date()
-      let calY = nowCal.getFullYear()
-      let calM = nowCal.getMonth() + 1
-      let dailyDays = {}
-
-      function pad2(n) { return String(n).padStart(2, '0') }
-
-      function calDateStr(y, m, d) {
-        return y + '-' + pad2(m) + '-' + pad2(d)
-      }
-
-      renderCal()
-
-      async function loadCal() {
-        try {
-          const res = await fetch(`/api/daily?year=${calY}&month=${calM}&top=3`)
-          if (!res.ok) throw new Error('HTTP ' + res.status)
-          const data = await res.json()
-          dailyDays = data.days || {}
-          calNote.textContent = '每日展示当天点赞最高的作品（按东八区发布时间）· 农历与节气同步 · 点击作品可预览'
-          renderCal()
-        } catch (e) {
-          calNote.textContent = '每日优秀作品加载失败，可稍后刷新重试；农历日期仍正常显示。'
-        }
-      }
-
-      function renderCal() {
-        calLabel.textContent = calY + '年' + calM + '月'
-        calGrid.innerHTML = ''
-        const firstDow = (new Date(calY, calM - 1, 1).getDay() + 6) % 7
-        const daysInMonth = new Date(calY, calM, 0).getDate()
-        const todayStr = calDateStr(nowCal.getFullYear(), nowCal.getMonth() + 1, nowCal.getDate())
-
-        for (let i = 0; i < firstDow; i++) {
-          const blank = document.createElement('div')
-          blank.className = 'cal-cell blank'
-          calGrid.appendChild(blank)
-        }
-
-        for (let d = 1; d <= daysInMonth; d++) {
-          const dateKey = calDateStr(calY, calM, d)
-          const cell = document.createElement('div')
-          cell.className = 'cal-cell'
-          if (dateKey === todayStr) cell.classList.add('today')
-
-          const top = document.createElement('div')
-          top.className = 'cal-top'
-          const num = document.createElement('span')
-          num.className = 'cal-daynum'
-          num.textContent = d
-          top.appendChild(num)
-
-          let lunarLine = ''
-          let fest = ''
-          let isJieqi = false
-          if (window.Lunar) {
-            try {
-              const L = window.Lunar.Lunar.fromDate(new Date(calY, calM - 1, d))
-              lunarLine = L.getMonthInChinese() + '月' + L.getDayInChinese()
-              const fests = L.getFestivals() || []
-              if (fests.length) {
-                fest = fests[0]
-              } else {
-                const jq = L.getJieQi() || ''
-                if (jq) {
-                  fest = jq
-                  isJieqi = true
-                }
-              }
-            } catch (e) {}
-          }
-          const lunar = document.createElement('span')
-          lunar.className = 'cal-lunar'
-          lunar.textContent = lunarLine
-          top.appendChild(lunar)
-          cell.appendChild(top)
-
-          if (fest) {
-            const fe = document.createElement('span')
-            fe.className = 'cal-fest' + (isJieqi ? ' jieqi' : '')
-            fe.textContent = fest
-            cell.appendChild(fe)
-          }
-
-          cell.title = calY + '年' + calM + '月' + d + '日 · 农历' + (lunarLine || '') + (fest ? ' · ' + fest : '')
-
-          const works = dailyDays[dateKey] || []
-          if (works.length) {
-            const wrap = document.createElement('div')
-            wrap.className = 'cal-works'
-            works.forEach((w) => {
-              const img = document.createElement('img')
-              img.className = 'cal-thumb'
-              img.alt = w.workName || w.name || '未命名'
-              img.loading = 'lazy'
-              img.decoding = 'async'
-              img.src = pixelsToURL(w.pixels, workSize(w))
-              img.addEventListener('click', (e) => {
-                e.stopPropagation()
-                preview(w)
-              })
-              calWorks.set(String(w.time), w)
-              wrap.appendChild(img)
-            })
-            cell.appendChild(wrap)
-          } else {
-            const tip = document.createElement('div')
-            tip.className = 'cal-empty-tip'
-            tip.textContent = '·'
-            cell.appendChild(tip)
-          }
-
-          calGrid.appendChild(cell)
-        }
-      }
-
-      document.getElementById('calPrev').addEventListener('click', () => {
-        calM -= 1
-        if (calM === 0) {
-          calM = 12
-          calY -= 1
-        }
-        renderCal()
-        loadCal()
-      })
-      document.getElementById('calNext').addEventListener('click', () => {
-        calM += 1
-        if (calM === 13) {
-          calM = 1
-          calY += 1
-        }
-        renderCal()
-        loadCal()
-      })
-
-      loadCal()
+          loadFeatured()
         })
       })
+
+      loadFeatured()
+      loadContest()
+
 
       async function loadFeatured() {
         try {
@@ -1900,10 +1651,20 @@ loadFeatured()
       let done = false
       let loading = false
 
+      /* 作品类型：多人 > 参赛 > 动画 > 普通 */
+      function workTypeOf(rec) {
+        if (rec.room === true || (rec.author && rec.author.indexOf('、') >= 0)) return 'room'
+        if (rec.contest) return 'contest'
+        if (rec.type === 'anim') return 'anim'
+        return ''
+      }
+
       function appendCards(records) {
         records.forEach((rec) => {
           const card = document.createElement('div')
           card.className = 'card'
+          const wt = workTypeOf(rec)
+          if (wt) card.classList.add('t-' + wt)
           card.setAttribute('role', 'button')
           card.tabIndex = 0
           card.title = '点击预览'
@@ -1922,10 +1683,15 @@ loadFeatured()
           nm.className = 'card-name'
           nm.textContent = rec.workName || rec.name || '未命名'
           meta.append(nm)
-          if (rec.type === 'anim') {
+          if (wt === 'anim') {
             const b = document.createElement('span')
             b.className = 'anim-badge'
             b.textContent = '🎞️ 动画'
+            meta.append(b)
+          } else if (wt === 'room') {
+            const b = document.createElement('span')
+            b.className = 'room-badge'
+            b.textContent = '👥 多人'
             meta.append(b)
           }
           meta.append(makeLikeButton(rec))
