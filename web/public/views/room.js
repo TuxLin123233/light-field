@@ -1659,6 +1659,7 @@ export default {
 
       function agoText(ts) {
         const s = Math.max(0, Math.round((Date.now() - ts) / 1000))
+        if (s < 5) return '刚刚活跃'
         if (s < 60) return s + ' 秒前活跃'
         if (s < 3600) return Math.round(s / 60) + ' 分钟前活跃'
         return Math.round(s / 3600) + ' 小时前活跃'
@@ -1674,7 +1675,7 @@ export default {
           if (!rooms.length) {
             const e = document.createElement('div')
             e.className = 'online-empty'
-            e.textContent = '现在还没有人开房，来当第一个吧'
+            e.textContent = '暂时没有正在进行的房间，建一个叫上朋友吧'
             onlineList.appendChild(e)
             return
           }
@@ -1800,15 +1801,40 @@ export default {
         }
       })
 
-      /* ---------- 离开房间 ---------- */
-      window.addEventListener('beforeunload', () => {
-        if (room && memberId) {
-          navigator.sendBeacon('/api/room', new Blob(
-            [JSON.stringify({ action: 'leave', code: room.code, id: memberId })],
-            { type: 'application/json' }
-          ))
+      /* ---------- 离开房间 ----------
+       * 必须在「切页」和「关页面」两种情况下都把成员记录删掉，
+       * 否则下次再进房会多出一条同名成员，人数一直涨。 */
+      let leftAlready = false
+      function sendLeave() {
+        if (!room || !memberId) return
+        const body = JSON.stringify({ action: 'leave', code: room.code, id: memberId })
+        try {
+          // keepalive 让请求在页面关闭时也能发完，比 sendBeacon 稳
+          fetch('/api/room', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body,
+            keepalive: true,
+          }).catch(() => {})
+        } catch (e) {
+          try {
+            navigator.sendBeacon('/api/room', new Blob([body], { type: 'application/json' }))
+          } catch (e2) {}
         }
-      })
+      }
+
+      // 真正离开时才发，且只发一次
+      function leaveRoom() {
+        if (leftAlready) return
+        leftAlready = true
+        sendLeave()
+        try {
+          localStorage.removeItem('lw-roomid:' + (room ? room.code : ''))
+        } catch (e) {}
+      }
+
+      window.addEventListener('pagehide', leaveRoom)
+      window.addEventListener('beforeunload', leaveRoom)
 
       /* ---------- 主题 ---------- */
       const themeBtn = document.getElementById('themeBtn')
@@ -1847,5 +1873,10 @@ export default {
         clearTimeout(toastTimer)
         toastTimer = setTimeout(() => el.classList.remove('show'), 2200)
       }
-  },
+    },
+
+    /* 切到别的页面时也要退出房间，否则成员记录会一直留在房间里 */
+    beforeUnmount() {
+      leaveRoom()
+    },
 }

@@ -33,6 +33,10 @@ const json = (body, status = 200) =>
 
 const roomKey = (code) => 'room:' + code
 
+// 列表里的「在线」判定：超过这些时间没动过就不展示，避免堆满废弃房间
+const IDLE_HIDE_MS = 3 * 60 * 1000 // 满 3 分钟没动静 → 隐藏
+const SOLO_HIDE_MS = 60 * 1000 // 只有 1 人且 1 分钟没动 → 隐藏
+
 /* ============================ Durable Object 路径 ============================ */
 
 function doAvailable(env) {
@@ -183,14 +187,20 @@ async function listRooms(env) {
         continue
       }
       if (!room || !room.code) continue
-      // 长时间没动静的视为已解散
-      if (room.updatedAt && now - room.updatedAt > ROOM_TTL * 1000) continue
       if (!room.members || !room.members.length) continue
+
+      // 闲置房间不展示：房间里最后有人操作才算出「在线」
+      const idleMs = now - (room.updatedAt || 0)
+      if (idleMs > IDLE_HIDE_MS) continue
+      // 只有一个人的房间多半是等人等了没来，等太久就不再占用列表
+      if (room.members.length < 2 && idleMs > SOLO_HIDE_MS) continue
+
       out.push(roomSummary(room))
     }
     if (out.length >= 60 || res.list_complete) break
     cursor = res.cursor
   }
+  // 有人多的优先，其次最近活跃的优先
   out.sort((a, b) => b.members - a.members || b.updatedAt - a.updatedAt)
   return { ok: true, rooms: out.slice(0, 40) }
 }

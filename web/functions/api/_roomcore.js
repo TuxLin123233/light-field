@@ -225,6 +225,18 @@ export function apply(state, body) {
       if (state.members.length >= MAX_MEMBERS) {
         return { status: 409, payload: { error: '房间已满（最多 ' + MAX_MEMBERS + ' 人）' } }
       }
+      // 同一个人重新进来时（换了设备/清过缓存会生成新 id），
+      // 若房间里已有同名成员，视为重连：删掉旧的沿用新 id，
+      // 避免列表里出现好几个同名的人
+      const sameName = state.members.filter(
+        (m) => (m.name || '匿名') === (name || '匿名')
+      )
+      if (sameName.length && !existing) {
+        sameName.forEach((m) => {
+          if (state.game) delete state.game.scores[m.id]
+        })
+        state.members = state.members.filter((m) => sameName.indexOf(m) === -1)
+      }
       const newId = body && body.newId ? String(body.newId) : crypto.randomUUID()
       state.members.push({ id: newId, name: name || '匿名' })
       state.updatedAt = Date.now()
