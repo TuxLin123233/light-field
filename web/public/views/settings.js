@@ -814,6 +814,12 @@ export default {
         layAllOn.addEventListener('change', () => {
           LAYOUTS.forEach((L) => setLay(L.key, layAllOn.checked))
           renderLayoutSwitches()
+          toast(layAllOn.checked ? '已显示画板全部区域' : '已隐藏画板全部区域')
+        })
+      }
+      renderLayoutSwitches()
+
+      /* 画板布局折叠：LAYOUTS 已定义，可安全绑定 */
       setupFold(
         'layFold',
         'layFoldBody',
@@ -821,17 +827,6 @@ export default {
         LAYOUTS.map((L) => L.key),
         isLayOn
       )
-      setupFold(
-        'featFold',
-        'featFoldBody',
-        'featCount',
-        FEATURES.map((F) => F.key),
-        isFeatOn
-      )
-          toast(layAllOn.checked ? '已显示画板全部区域' : '已隐藏画板全部区域')
-        })
-      }
-      renderLayoutSwitches()
 
       /* ---------- 轻提示 ---------- */
       let featToastTimer = null
@@ -895,6 +890,15 @@ export default {
           featBox.appendChild(row)
         })
       }
+      /* 进阶功能折叠：必须等 FEATURES 定义与列表渲染完成后再绑定 */
+      setupFold(
+        'featFold',
+        'featFoldBody',
+        'featCount',
+        FEATURES.map((F) => F.key),
+        isFeatOn
+      )
+
       document.getElementById('featAllOff').addEventListener('click', () => {
         FEATURES.forEach((f) => setFeat(f.key, false))
         syncFeatSwitches()
