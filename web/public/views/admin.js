@@ -1,0 +1,543 @@
+// 由 admin.html 自动转换为 Vue 3 视图（无构建）
+export default {
+  name: 'admin',
+  css: `      /* hidden 属性兜底：避免类选择器里的 display 覆盖 UA 的 [hidden]{display:none} */
+      [hidden] { display: none !important; }
+
+      * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: #faf5ef;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 20px 16px 48px;
+        color: #3b342c;
+      }
+
+      .page-head { width: 100%; max-width: 460px; }
+
+      .back {
+        display: inline-block;
+        text-decoration: none;
+        color: #6b5f50;
+        font-size: 14px;
+        margin-bottom: 12px;
+      }
+
+      h1 { font-size: 22px; font-weight: 800; margin: 4px 0 4px; letter-spacing: 1px; }
+
+      .sub { font-size: 13px; color: #b0a697; margin-bottom: 20px; line-height: 1.6; }
+
+      .card {
+        width: 100%;
+        max-width: 460px;
+        background: #fff;
+        border: 1px solid #efe7da;
+        border-radius: 18px;
+        padding: 20px;
+        margin-bottom: 16px;
+      }
+
+      .card-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: #6b5f50;
+        margin-bottom: 12px;
+      }
+
+      .card-text { font-size: 13px; color: #6b5f50; line-height: 1.8; text-align: justify; }
+
+      .card-text b { color: #3b342c; }
+
+      .roles { padding-left: 18px; margin: 0; }
+
+      .roles li { font-size: 13px; color: #6b5f50; line-height: 1.9; }
+
+      .steps { list-style: none; padding: 0; margin: 0; counter-reset: step; }
+
+      .steps li {
+        counter-increment: step;
+        position: relative;
+        padding: 2px 0 2px 34px;
+        font-size: 13px;
+        color: #6b5f50;
+        line-height: 1.8;
+        text-align: justify;
+      }
+
+      .steps li::before {
+        content: counter(step);
+        position: absolute;
+        left: 0;
+        top: 2px;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: #5b8def;
+        color: #fff;
+        font-size: 13px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .mail-go {
+        display: block;
+        margin-top: 14px;
+        text-align: center;
+        padding: 12px;
+        border-radius: 14px;
+        background: #5b8def;
+        color: #fff;
+        text-decoration: none;
+        font-size: 15px;
+        font-weight: 600;
+      }
+
+      .contact { font-size: 12px; color: #b0a697; margin-top: 10px; text-align: center; }
+
+      .login input {
+        width: 100%;
+        height: 48px;
+        border-radius: 14px;
+        border: 1px solid #e0d3c0;
+        padding: 0 14px;
+        font-size: 15px;
+        background: #fbfaf8;
+        outline: none;
+        color: #3b342c;
+      }
+
+      .login input:focus { border-color: #5b8def; }
+
+      .login .enter {
+        width: 100%;
+        height: 48px;
+        margin-top: 12px;
+        border-radius: 14px;
+        border: none;
+        background: #5b8def;
+        color: #fff;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .login .enter:disabled { opacity: 0.6; }
+
+      .latest { display: flex; align-items: center; gap: 16px; }
+
+      .latest canvas {
+        width: 110px;
+        height: 110px;
+        image-rendering: pixelated;
+        border-radius: 12px;
+        border: 1px solid #e0d3c0;
+        background: #fff;
+      }
+
+      .latest-info { flex: 1; min-width: 0; }
+
+      .latest-info .author { font-size: 17px; font-weight: 700; color: #3b342c; }
+
+      .latest-info .time { font-size: 13px; color: #b0a697; margin-top: 4px; }
+
+      .entry { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #f0ece4; }
+
+      .entry:last-child { border-bottom: none; }
+
+      .entry canvas {
+        width: 48px;
+        height: 48px;
+        flex: 0 0 48px;
+        image-rendering: pixelated;
+        border-radius: 8px;
+        border: 1px solid #e0d3c0;
+        background: #fff;
+      }
+
+      .entry .info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+
+      .entry .author {
+        font-size: 14px;
+        font-weight: 600;
+        color: #3b342c;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .entry .time { font-size: 11px; color: #b0a697; }
+
+      .del {
+        border: none;
+        border-radius: 999px;
+        background: #fdeceb;
+        color: #d34b3f;
+        font-size: 13px;
+        font-weight: 600;
+        padding: 8px 16px;
+        cursor: pointer;
+      }
+
+      .empty { font-size: 13px; color: #b0a697; padding: 6px 2px; }
+
+      .clear {
+        width: 100%;
+        height: 50px;
+        border-radius: 16px;
+        border: none;
+        background: #d34b3f;
+        color: #fff;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .logout {
+        margin-top: 12px;
+        width: 100%;
+        height: 44px;
+        border-radius: 14px;
+        border: none;
+        background: #efe9e0;
+        color: #6b5f50;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .foot { font-size: 12px; color: #b0a697; text-align: center; margin-top: 6px; line-height: 1.7; }
+
+      #toast {
+        position: fixed;
+        left: 50%;
+        bottom: 96px;
+        transform: translate(-50%, 16px);
+        background: #3b342c;
+        color: #fff;
+        padding: 12px 22px;
+        border-radius: 999px;
+        font-size: 15px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.25s ease, transform 0.25s ease;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+        max-width: 86vw;
+        text-align: center;
+        z-index: 120;
+      }
+
+      #toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+      button:active { transform: scale(0.97); }`,
+  template: `<div class="page-head">
+      <router-link class="back" to="/settings">← 返回设置</router-link>
+      <h1>🛡️ 维护社区稳定</h1>
+      <div class="sub">像素小镇是大家共同的家，社区的和谐需要每一位热心用户共同守护。</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">为什么需要维护者</div>
+      <div class="card-text">
+        随着社区不断壮大，作品数量持续增长。为了让社区始终<b>清朗、安全、友善</b>，
+        像素小镇面向全体用户招募维护者，与作者一起审核内容、清理违规、守护社区风气。
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">维护者的职责</div>
+      <ul class="roles">
+        <li>审核社区作品，及时删除色情、暴力、涉政敏感、赌博、侵权等违规内容</li>
+        <li>处理其他用户的举报，维护良好的创作与交流氛围</li>
+        <li>定期向作者反馈社区情况，共同优化体验</li>
+        <li>维护者须遵守法律法规与社区规范，滥用职权者将被立即撤销资格</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="card-title">如何加入维护者计划</div>
+      <ol class="steps">
+        <li>写一封<b>正式申请书信</b>：须符合书信格式（称谓、正文、落款、日期齐全）。<b>格式不正式、内容敷衍的一律不通过</b>。</li>
+        <li>信中必须写明两点：<b>① 你为什么要成为维护者</b>（加入的动机）；<b>② 成为维护者后你打算做什么</b>（具体的职责承诺）。</li>
+        <li>将书信发送至作者邮箱：<b>linsifan123233@petalmail.com</b>（也可微信联系 Tux123233）。</li>
+        <li>作者审核通过后，会回复<b>维护者口令</b>。凭口令即可进入下方的维护面板。</li>
+      </ol>
+      <a class="mail-go" id="mailBtn" href="mailto:linsifan123233@petalmail.com?subject=%E5%85%89%E5%9F%9F%E7%94%BB%E6%9D%BF%E7%BB%B4%E6%8A%A4%E8%80%85%E7%94%B3%E8%AF%B7%E4%B9%A6">✉️ 发送申请书信</a>
+      <div class="contact">微信：Tux123233 · 邮箱：linsifan123233@petalmail.com</div>
+    </div>
+
+    <div class="card login" id="loginCard">
+      <div class="card-title">维护者口令</div>
+      <input id="passInput" type="password" placeholder="请输入维护者口令">
+      <button class="enter" id="enterBtn" type="button">进入维护面板</button>
+    </div>
+
+    <div id="panel" hidden>
+      <div class="card">
+        <div class="card-title">最新社区作品</div>
+        <div class="latest" id="latestWrap">
+          <div class="empty">暂无数据</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">违规作品清理（最新 10 条）</div>
+        <div id="entryList"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">紧急处置</div>
+        <div class="card-text" style="margin-bottom:12px">若社区出现大面积违规内容，可一键清空全部作品。此操作不可恢复，请务必慎重。</div>
+        <button class="clear" id="clearAllBtn" type="button">一键清空全部作品</button>
+      </div>
+
+      <button class="logout" id="logoutBtn" type="button">退出维护面板</button>
+    </div>
+
+    <div class="foot">维护者需为自己的操作负责 · 所有操作仅用于维护社区安全与稳定<br>© 2026 像素小镇 · 作者 Lin Sifan</div>`,
+  mounted() {
+      const passInput = document.getElementById('passInput')
+      const enterBtn = document.getElementById('enterBtn')
+      const loginCard = document.getElementById('loginCard')
+      const panel = document.getElementById('panel')
+      const latestWrap = document.getElementById('latestWrap')
+      const entryList = document.getElementById('entryList')
+      const clearAllBtn = document.getElementById('clearAllBtn')
+      const logoutBtn = document.getElementById('logoutBtn')
+
+      const KEY = 'adminKey'
+      const dpr = window.devicePixelRatio || 1
+
+      function getKey() {
+        return sessionStorage.getItem(KEY) || ''
+      }
+
+      function setKey(k) {
+        sessionStorage.setItem(KEY, k)
+      }
+
+      function clearKey() {
+        sessionStorage.removeItem(KEY)
+      }
+
+      function formatTime(ts) {
+        if (!ts) return ''
+        const d = new Date(ts)
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+      }
+
+      function drawThumb(canvas, pixels, s) {
+        const n = s === 32 || s === 64 ? s : 16
+        canvas.width = n * dpr
+        canvas.height = n * dpr
+        const c = canvas.getContext('2d')
+        c.scale(dpr, dpr)
+        c.clearRect(0, 0, n, n)
+        for (let y = 0; y < n; y++) {
+          for (let x = 0; x < n; x++) {
+            const px = pixels && pixels[y * n + x]
+            if (!px) continue
+            c.fillStyle = `rgb(${px[0]}, ${px[1]}, ${px[2]})`
+            c.fillRect(x, y, 1, 1)
+          }
+        }
+      }
+
+      async function verify(key) {
+        const res = await fetch('/api/admin/verify', {
+          headers: { 'x-admin-key': key },
+        })
+        return res.ok
+      }
+
+      async function login() {
+        const key = passInput.value.trim()
+        if (!key) {
+          toast('请输入维护者口令')
+          return
+        }
+        enterBtn.disabled = true
+        try {
+          if (await verify(key)) {
+            setKey(key)
+            loginCard.hidden = true
+            panel.hidden = false
+            passInput.value = ''
+            toast('口令验证通过')
+            refresh()
+          } else {
+            toast('口令错误')
+          }
+        } catch (err) {
+          toast('网络错误')
+        } finally {
+          enterBtn.disabled = false
+        }
+      }
+
+      enterBtn.addEventListener('click', login)
+      passInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') login()
+      })
+
+      logoutBtn.addEventListener('click', () => {
+        clearKey()
+        panel.hidden = true
+        loginCard.hidden = false
+      })
+
+      async function refresh() {
+        try {
+          const res = await fetch('/api/get?limit=30')
+          if (!res.ok) {
+            toast('获取数据失败')
+            return
+          }
+          const data = await res.json()
+          renderLatest(data)
+          renderList(data.history || [])
+        } catch (err) {
+          toast('网络错误')
+        }
+      }
+
+      function renderLatest(data) {
+        latestWrap.innerHTML = ''
+        if (!data.pixels) {
+          const empty = document.createElement('div')
+          empty.className = 'empty'
+          empty.textContent = '暂无数据'
+          latestWrap.appendChild(empty)
+          return
+        }
+        const canvas = document.createElement('canvas')
+        drawThumb(canvas, data.pixels, data.size)
+
+        const info = document.createElement('div')
+        info.className = 'latest-info'
+        const author = document.createElement('div')
+        author.className = 'author'
+        author.textContent = data.name || '匿名'
+        const time = document.createElement('div')
+        time.className = 'time'
+        time.textContent = formatTime(data.time)
+        info.append(author, time)
+
+        latestWrap.append(canvas, info)
+      }
+
+      function renderList(records) {
+        entryList.innerHTML = ''
+        if (!records.length) {
+          const empty = document.createElement('div')
+          empty.className = 'empty'
+          empty.textContent = '暂无历史记录'
+          entryList.appendChild(empty)
+          return
+        }
+        records.forEach((rec) => {
+          const row = document.createElement('div')
+          row.className = 'entry'
+
+          const canvas = document.createElement('canvas')
+          drawThumb(canvas, rec.pixels, rec.size)
+
+          const info = document.createElement('div')
+          info.className = 'info'
+          const author = document.createElement('span')
+          author.className = 'author'
+          author.textContent = rec.name || '匿名'
+          const time = document.createElement('span')
+          time.className = 'time'
+          time.textContent = formatTime(rec.time)
+          info.append(author, time)
+
+          const del = document.createElement('button')
+          del.type = 'button'
+          del.className = 'del'
+          del.textContent = '删除'
+          del.addEventListener('click', () => removeEntry(rec))
+
+          row.append(canvas, info, del)
+          entryList.appendChild(row)
+        })
+      }
+
+      async function removeEntry(rec) {
+        const label = rec.name || '匿名'
+        if (!window.confirm(`确定删除「${label}」的作品吗？`)) return
+
+        const key = getKey()
+        if (!key) {
+          toast('请先登录')
+          return
+        }
+        try {
+          const res = await fetch('/api/admin/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-admin-key': key },
+            body: JSON.stringify({ time: rec.time }),
+          })
+          if (!res.ok) {
+            toast((await res.json().catch(() => ({}))).error || '删除失败')
+            return
+          }
+          toast('已删除')
+          refresh()
+        } catch (err) {
+          toast('网络错误')
+        }
+      }
+
+      clearAllBtn.addEventListener('click', async () => {
+        if (!window.confirm('确定清空全部数据吗？此操作不可恢复！')) return
+
+        const key = getKey()
+        if (!key) {
+          toast('请先登录')
+          return
+        }
+        try {
+          const res = await fetch('/api/admin/clear', {
+            method: 'POST',
+            headers: { 'x-admin-key': key },
+          })
+          if (!res.ok) {
+            toast((await res.json().catch(() => ({}))).error || '清空失败')
+            return
+          }
+          toast('已清空全部')
+          refresh()
+        } catch (err) {
+          toast('网络错误')
+        }
+      })
+
+      let toastTimer
+      function toast(msg) {
+        const el = document.getElementById('toast')
+        el.textContent = msg
+        el.classList.add('show')
+        clearTimeout(toastTimer)
+        toastTimer = setTimeout(() => el.classList.remove('show'), 2200)
+      }
+
+      if (getKey()) {
+        verify(getKey()).then((ok) => {
+          if (ok) {
+            loginCard.hidden = true
+            panel.hidden = false
+            refresh()
+          } else {
+            clearKey()
+          }
+        })
+      }
+  },
+}
