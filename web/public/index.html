@@ -99,6 +99,11 @@
            社区/日志/设置原本是块级布局，强行统一会导致宽度算错） */
       #siteRoot { display: contents; }
 
+      /* 兜底：极老浏览器不支持 display:contents 时，用 block+100% 保持同样宽度 */
+      @supports not (display: contents) {
+        #siteRoot { display: block; width: 100%; }
+      }
+
       /* ---------- 底部导航（全局壳，四个页面共用） ---------- */
       .bottom-nav {
         position: fixed;
