@@ -1,5 +1,6 @@
 import { appendEntry, recentHistory, HISTORY_MAX } from './_history.js'
 import { contestInfo } from './_contest.js'
+import { resolveClaim, touchUser } from './claim.js'
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -147,6 +148,16 @@ export async function onRequestPost(context) {
   if (animObj) entry.anim = animObj
   if (rawContest) entry.contest = rawContest
   if (body && body.room === true) entry.room = true
+
+  // 认领码：格式合法才认，不合法当没传，不影响上传
+  let claimHashValue = null
+  if (body && typeof body.claim === 'string' && body.claim.trim()) {
+    const found = await resolveClaim(env.LIGHTFIELD_KV, body.claim)
+    if (found) {
+      claimHashValue = found.hash
+      entry.owner = found.hash
+    }
+  }
   const entryJson = JSON.stringify(entry)
   if (entryJson.length > 90000) {
     return json({ error: '动画帧数据过大，请减少帧数或简化画面后再试' }, 413)

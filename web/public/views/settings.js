@@ -276,6 +276,32 @@ export default {
         100% { transform: scale(1) rotate(0); }
       }
       .switch.jelly { animation: switchWobble 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+      .claim-box {
+        font-family: ui-monospace, Menlo, Consolas, monospace;
+        font-size: 12px;
+        color: var(--text);
+        background: var(--surface-2);
+        border-radius: 8px;
+        padding: 6px 10px;
+        max-width: 190px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .claim-btn {
+        flex: 0 0 auto;
+        border: 1px solid var(--border-strong);
+        background: var(--surface-2);
+        color: var(--text-muted);
+        border-radius: 999px;
+        padding: 7px 16px;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      .claim-btn:disabled { opacity: 0.45; cursor: default; }
 `,
   template: `<div class="container">
       <div class="header">
@@ -312,6 +338,24 @@ export default {
             <div class="row-desc">每次进入先打开社区；若有未完成的绘画内容，则自动进入画板继续创作</div>
           </div>
           <input class="switch" id="entranceSwitch" type="checkbox" role="switch">
+        </div>
+      </section>
+
+      <section class="group">
+        <div class="group-title">认领码</div>
+        <div class="row">
+          <div>
+            <div class="row-label">我的认领码</div>
+            <div class="row-desc">用于删除自己上传的作品；只保存在这台设备，请自行备份</div>
+          </div>
+          <span class="claim-box" id="claimBox">未生成</span>
+        </div>
+        <div class="row">
+          <div>
+            <div class="row-label">复制认领码</div>
+            <div class="row-desc">换设备或清缓存前务必保存，丢失后无法再删除旧作品</div>
+          </div>
+          <button class="claim-btn" id="claimCopyBtn" type="button">复制</button>
         </div>
       </section>
 
@@ -415,6 +459,37 @@ export default {
         glassSwitch.classList.add('jelly')
       })
       applyGlass()
+
+      /* ---------- 认领码 ---------- */
+      const claimBox = document.getElementById('claimBox')
+      const claimCopyBtn = document.getElementById('claimCopyBtn')
+      const CLAIM_KEY = 'paintClaim'
+      function readClaim() {
+        try {
+          return localStorage.getItem(CLAIM_KEY) || ''
+        } catch (e) {
+          return ''
+        }
+      }
+      function paintClaimUI() {
+        const c = readClaim()
+        claimBox.textContent = c || '未生成'
+        claimCopyBtn.disabled = !c
+      }
+      claimCopyBtn.addEventListener('click', async () => {
+        const c = readClaim()
+        if (!c) return
+        try {
+          await navigator.clipboard.writeText(c)
+          claimCopyBtn.textContent = '已复制'
+          setTimeout(() => {
+            claimCopyBtn.textContent = '复制'
+          }, 1500)
+        } catch (e) {
+          claimBox.textContent = c
+        }
+      })
+      paintClaimUI()
 
       function setTheme(dark) {
         document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light')

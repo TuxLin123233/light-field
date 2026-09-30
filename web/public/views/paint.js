@@ -559,6 +559,14 @@ color: var(--text-muted);
         text-align: center;
       }
 
+      .tile-del {
+        color: var(--like);
+        font-weight: 700;
+        cursor: pointer;
+        padding: 0 2px;
+      }
+      .tile-del:active { opacity: 0.6; }
+
       .tile-meta-row {
         display: flex;
         align-items: center;
@@ -2150,6 +2158,77 @@ color: var(--text-muted);
         }
       })
 
+      /* ---------- 删除自己的作品 ---------- */
+      async function deleteOwnWork(rec) {
+        const code = getClaim()
+        if (!code) {
+          toast('还没有认领码，先上传一次作品就会自动生成')
+          return
+        }
+        const name = rec.workName || '未命名'
+        if (!window.confirm('确定删除「' + name + '」吗？删除后无法恢复。')) return
+        try {
+          const res = await fetch('/api/mine', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'delete', code, time: rec.time }),
+          })
+          const data = await res.json().catch(() => ({}))
+          if (!res.ok) {
+            toast('删除失败：' + (data.error || res.status))
+            return
+          }
+          toast('已删除「' + name + '」')
+          try {
+            const ids = JSON.parse(localStorage.getItem('paintMyTimes') || '[]')
+            localStorage.setItem(
+              'paintMyTimes',
+              JSON.stringify(ids.filter((t) => String(t) !== String(rec.time)))
+            )
+          } catch (e) {}
+          loadRecords()
+        } catch (e) {
+          toast('删除失败：网络错误')
+        }
+      }
+
+      /* ---------- 认领码 ---------- */
+      const CLAIM_KEY = 'paintClaim'
+      function getClaim() {
+        try {
+          return localStorage.getItem(CLAIM_KEY) || ''
+        } catch (e) {
+          return ''
+        }
+      }
+      function setClaim(code) {
+        try {
+          localStorage.setItem(CLAIM_KEY, code)
+        } catch (e) {}
+      }
+      let claimReady = null
+      // 首次上传前确保有一串认领码
+      function ensureClaim(authorName) {
+        const existing = getClaim()
+        if (existing) return Promise.resolve(existing)
+        if (claimReady) return claimReady
+        claimReady = fetch('/api/claim', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'issue', name: authorName || '' }),
+        })
+          .then((r) => r.json())
+          .then((d) => {
+            if (d && d.code) {
+              setClaim(d.code)
+              return d.code
+            }
+            return existing
+          })
+          .catch(() => existing)
+        return claimReady
+      }
+
       /* ---------- 多张草稿槽 ---------- */
       const SLOTS = 3
       const SLOT_KEY = 'paintSlots'
@@ -3007,6 +3086,27 @@ color: var(--text-muted);
       const moreBtn = document.getElementById('moreBtn')
 
       const mineSet = loadMine()
+      // 认领码真正持有的作品时间戳（只有这些才显示删除按钮）
+      let ownedSet = new Set()
+      async function loadOwned() {
+        const code = getClaim()
+        if (!code) {
+          ownedSet = new Set()
+          return
+        }
+        try {
+          const res = await fetch('/api/mine', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'list', code }),
+          })
+          if (!res.ok) return
+          const data = await res.json()
+          ownedSet = new Set((data.works || []).map((w) => String(w.time)))
+        } catch (e) {
+          /* 忽略 */
+        }
+      }
 
       function loadMine() {
         try {
@@ -3057,6 +3157,7 @@ color: var(--text-muted);
       }
 
       async function fetchRecords() {
+        await loadOwned()
         const myName = nameInput ? nameInput.value.trim() : ''
         if (myName) {
           try {
@@ -3142,6 +3243,19 @@ color: var(--text-muted);
               loadOwn(rec)
             })
             meta.appendChild(loadBtn)
+
+            // 只有认领码真正持有的作品才给删除入口
+            if (ownedSet.has(String(rec.time))) {
+              const delBtn = document.createElement('span')
+              delBtn.className = 'tile-del'
+              delBtn.textContent = '删除'
+              delBtn.title = '用认领码删除这件作品'
+              delBtn.addEventListener('click', (e) => {
+                e.stopPropagation()
+                deleteOwnWork(rec)
+              })
+              meta.appendChild(delBtn)
+            }
           }
 
           tile.append(c, meta)
@@ -3492,6 +3606,8 @@ color: var(--text-muted);
         const workName = (contestCheck.checked && contestTheme) ? '《' + contestTheme + '》' : titleInput.value.trim()
         if (workName) payload.workName = workName
         if (contestCheck.checked && contestWeek) payload.contest = contestWeek
+        const claim = await ensureClaim(author)
+        if (claim) payload.claim = claim
 
         await doPublish(payload, uploadBtn)
       })
@@ -3512,6 +3628,8 @@ color: var(--text-muted);
         const workName = (contestCheck.checked && contestTheme) ? '《' + contestTheme + '》' : titleInput.value.trim()
         if (workName) payload.workName = workName
         if (contestCheck.checked && contestWeek) payload.contest = contestWeek
+        const claim2 = await ensureClaim(author)
+        if (claim2) payload.claim = claim2
         await doPublish(payload, animPublishBtn)
       })
 
