@@ -1,0 +1,50 @@
+{
+  "name": "像素小镇 · 和朋友一起在线画像素画",
+  "short_name": "像素小镇",
+  "description": "多人在线像素画板：一个人画、一起画、发到社区，还能装到桌面离线使用。",
+  "start_url": "/paint",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fdf8f2",
+  "theme_color": "#fdf8f2",
+  "lang": "zh-CN",
+  "categories": ["graphics", "entertainment", "social"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "开始画画",
+      "short_name": "画画",
+      "url": "/paint"
+    },
+    {
+      "name": "开一个房间",
+      "short_name": "联机",
+      "url": "/room"
+    },
+    {
+      "name": "社区广场",
+      "short_name": "社区",
+      "url": "/gallery"
+    }
+  ]
+}

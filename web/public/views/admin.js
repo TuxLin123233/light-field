@@ -43,6 +43,57 @@ export default {
         margin-bottom: 16px;
       }
 
+      .rp-count {
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--text-faint);
+        margin-left: 6px;
+      }
+      .rp-item {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 11px 12px;
+        margin-bottom: 10px;
+      }
+      .rp-top {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        font-size: 13px;
+      }
+      .rp-tag {
+        padding: 2px 9px;
+        border-radius: 999px;
+        background: var(--surface-2);
+        border: 1px solid var(--border-strong);
+        font-size: 12px;
+        color: var(--like);
+      }
+      .rp-title { color: var(--text); font-weight: 500; }
+      .rp-meta { font-size: 12px; color: var(--text-muted2); margin-top: 5px; }
+      .rp-note {
+        margin-top: 7px;
+        font-size: 12px;
+        color: var(--text-muted);
+        background: var(--surface-2);
+        border-radius: 8px;
+        padding: 7px 9px;
+        word-break: break-all;
+      }
+      .rp-actions { display: flex; gap: 8px; margin-top: 10px; }
+      .rp-btn {
+        flex: 1;
+        padding: 8px 10px;
+        font-size: 13px;
+        border-radius: 10px;
+        border: 1px solid var(--border-input);
+        background: var(--surface-2);
+        color: var(--text);
+        cursor: pointer;
+      }
+      .rp-btn.danger { border-color: var(--like); color: var(--like); background: var(--like-bg); }
+
       .card-title {
         font-size: 14px;
         font-weight: 700;
@@ -293,6 +344,11 @@ export default {
       </div>
 
       <div class="card">
+        <div class="card-title">用户举报（待处理）<span class="rp-count" id="reportCount"></span></div>
+        <div id="reportList"><div class="empty">暂无举报</div></div>
+      </div>
+
+      <div class="card">
         <div class="card-title">违规作品清理（最新 10 条）</div>
         <div id="entryList"></div>
       </div>
@@ -314,6 +370,8 @@ export default {
       const panel = document.getElementById('panel')
       const latestWrap = document.getElementById('latestWrap')
       const entryList = document.getElementById('entryList')
+      const reportList = document.getElementById('reportList')
+      const reportCount = document.getElementById('reportCount')
       const clearAllBtn = document.getElementById('clearAllBtn')
       const logoutBtn = document.getElementById('logoutBtn')
 
@@ -408,9 +466,114 @@ export default {
           const data = await res.json()
           renderLatest(data)
           renderList(data.history || [])
+          loadReports()
         } catch (err) {
           toast('网络错误')
         }
+      }
+
+      /* ---------- 举报 ---------- */
+      function fmtTime(ts) {
+        const d = new Date(ts)
+        const p2 = (x) => String(x).padStart(2, '0')
+        return d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()) + ' ' + p2(d.getHours()) + ':' + p2(d.getMinutes())
+      }
+
+      function renderReports(list) {
+        reportList.innerHTML = ''
+        if (reportCount) reportCount.textContent = list.length ? '共 ' + list.length + ' 条' : ''
+        if (!list.length) {
+          const empty = document.createElement('div')
+          empty.className = 'empty'
+          empty.textContent = '暂无举报'
+          reportList.appendChild(empty)
+          return
+        }
+        list
+          .slice()
+          .sort((a, b) => (b.at || 0) - (a.at || 0))
+          .forEach((r) => {
+            const item = document.createElement('div')
+            item.className = 'rp-item'
+
+            const top = document.createElement('div')
+            top.className = 'rp-top'
+            const tag = document.createElement('span')
+            tag.className = 'rp-tag'
+            tag.textContent = r.reason || '其他'
+            const title = document.createElement('span')
+            title.className = 'rp-title'
+            title.textContent = r.title || '未命名作品'
+            top.append(tag, title)
+
+            const meta = document.createElement('div')
+            meta.className = 'rp-meta'
+            meta.textContent =
+              '作者 ' + (r.author || '匿名') + ' · 提交于 ' + fmtTime(r.at || 0) + ' · 作品时间戳 ' + r.time
+
+            item.append(top, meta)
+
+            if (r.note) {
+              const note = document.createElement('div')
+              note.className = 'rp-note'
+              note.textContent = '补充：' + r.note
+              item.appendChild(note)
+            }
+
+            const actions = document.createElement('div')
+            actions.className = 'rp-actions'
+            const del = document.createElement('button')
+            del.className = 'rp-btn danger'
+            del.type = 'button'
+            del.textContent = '违规，删除作品'
+            const done = document.createElement('button')
+            done.className = 'rp-btn'
+            done.type = 'button'
+            done.textContent = '已核实无误'
+            actions.append(del, done)
+            item.appendChild(actions)
+
+            const handle = async (action) => {
+              const msg = action === 'remove' ? '确定删除该作品并标记举报已处理吗？' : '确定标记该举报为已处理吗？'
+              if (!window.confirm(msg)) return
+              const key = getKey()
+              if (!key) {
+                toast('请先登录')
+                return
+              }
+              try {
+                const res = await fetch('/api/report', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json', 'x-admin-key': key },
+                  body: JSON.stringify({ id: r.id, action }),
+                })
+                if (!res.ok) {
+                  toast((await res.json().catch(() => ({}))).error || '操作失败')
+                  return
+                }
+                toast(action === 'remove' ? '已删除作品' : '已标记处理')
+                refresh()
+                loadReports()
+              } catch (err) {
+                toast('网络错误')
+              }
+            }
+            del.addEventListener('click', () => handle('remove'))
+            done.addEventListener('click', () => handle('done'))
+
+            reportList.appendChild(item)
+          })
+      }
+
+      async function loadReports() {
+        const key = getKey()
+        if (!key || !reportList) return
+        try {
+          const res = await fetch('/api/report', { headers: { 'x-admin-key': key } })
+          if (!res.ok) return
+          const data = await res.json().catch(() => ({}))
+          renderReports(data.reports || [])
+        } catch (err) {}
       }
 
       function renderLatest(data) {

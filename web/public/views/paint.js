@@ -304,11 +304,14 @@ color: var(--text-muted);
         cursor: pointer;
       }
 
+      /* 小地图悬浮在画布右上角，默认不吃指针事件，避免遮住那一块无法作画；
+         只有按住它时才临时接管事件，用于点击跳转 */
       .mini-wrap {
         position: fixed;
         top: 74px;
         right: 12px;
         z-index: 40;
+        pointer-events: none;
         background: var(--surface);
         border: 2px solid var(--border);
         border-radius: 12px;
@@ -320,6 +323,42 @@ color: var(--text-muted);
         display: block;
         border-radius: 8px;
         touch-action: none;
+      }
+
+      /* 小地图上的「收起」按钮是唯一可点的部分，其余全部穿透 */
+      .mini-hide {
+        position: absolute;
+        top: -9px;
+        left: -9px;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        border: 2px solid var(--border);
+        background: var(--surface);
+        color: var(--text-muted);
+        font-size: 13px;
+        line-height: 1;
+        cursor: pointer;
+        pointer-events: auto;
+        z-index: 2;
+        padding: 0;
+      }
+      .mini-show {
+        position: fixed;
+        top: 74px;
+        right: 12px;
+        z-index: 40;
+        pointer-events: auto;
+        width: 30px;
+        height: 30px;
+        border-radius: 10px;
+        border: 2px solid var(--border);
+        background: var(--surface);
+        color: var(--text-muted);
+        font-size: 15px;
+        cursor: pointer;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+        padding: 0;
       }
 
       .tools {
@@ -884,6 +923,60 @@ color: var(--text-muted);
         text-align: center;
         font-size: 12px;
         color: var(--text-faint);
+      }
+
+      /* ---------- 作者的话 ---------- */
+      .author-note {
+        width: 100%;
+        max-width: 460px;
+        margin-top: 10px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        overflow: hidden;
+      }
+      .author-note summary {
+        list-style: none;
+        cursor: pointer;
+        padding: 12px 14px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text);
+        display: flex;
+        align-items: center;
+        gap: 7px;
+      }
+      .author-note summary::-webkit-details-marker { display: none; }
+      .author-note summary .an-caret {
+        margin-left: auto;
+        color: var(--text-faint);
+        transition: transform 0.2s;
+      }
+      .author-note[open] summary .an-caret { transform: rotate(180deg); }
+      .an-body {
+        padding: 0 14px 14px;
+        font-size: 13px;
+        line-height: 1.85;
+        color: var(--text-muted);
+      }
+      .an-body p { margin: 0 0 10px; }
+      .an-body p:last-child { margin-bottom: 0; }
+      .an-quote {
+        margin: 0 0 10px;
+        padding: 9px 12px;
+        background: var(--surface-2);
+        border-left: 3px solid var(--accent);
+        border-radius: 0 10px 10px 0;
+        color: var(--text);
+      }
+      .an-foot {
+        margin-top: 10px;
+        font-size: 12px;
+        color: var(--text-faint);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
       }
 
       .tip-btn {
@@ -1803,7 +1896,7 @@ color: var(--text-muted);
           <div class="start-label">辅助工具</div>
           <label class="start-toggle">
             <input type="checkbox" id="startImage">
-            <span class="start-body"><b>图片转像素画</b><i>把照片变成像素画再手改</i></span>
+            <span class="start-body"><b>📷 像素相机</b><i>把照片变成像素画再手改</i></span>
           </label>
         </div>
 
@@ -1859,15 +1952,18 @@ color: var(--text-muted);
     </div>
 
     <div class="mini-wrap" id="miniWrap" hidden>
-      <canvas id="miniCanvas" title="小地图：点击跳转"></canvas>
+      <button class="mini-hide" id="miniHide" type="button" title="收起小地图" aria-label="收起小地图">×</button>
+      <canvas id="miniCanvas" title="小地图：预览当前取景位置"></canvas>
     </div>
+    <button class="mini-show" id="miniShow" type="button" title="显示小地图" aria-label="显示小地图" hidden>🗺</button>
 
     <div class="tools">
       <button id="toolBrush" class="tool active" type="button" data-tool="brush" title="画笔（B）">✏️</button>
       <button id="toolEraser" class="tool" type="button" data-tool="eraser" title="橡皮擦（E）">🧽</button>
       <button id="toolFill" class="tool" type="button" data-tool="fill" title="颜料桶（F）">🪣</button>
-      <button id="toolPick" class="tool" type="button" data-tool="picker" title="取色器（I）：点一下画布吸取该格颜色">💧</button>
+      <button id="toolPick" class="tool" type="button" data-tool="picker" title="取色器（I）：点一下画布吸取该格颜色">💉</button>
       <button id="toolPan" class="tool" type="button" data-tool="pan" title="移动画布（H）：只拖动不落笔，任何尺寸都能用">✋</button>
+      <button id="toolLock" class="tool" type="button" title="拖动锁：开启后不管用哪个工具，拖动都是移动画布而不落笔">✥</button>
       <button id="toolColor" class="tool" type="button" title="颜色（C）"><span class="tool-swatch" id="toolSwatch"></span></button>
     </div>
 
@@ -2000,6 +2096,26 @@ color: var(--text-muted);
     <details class="disclaimer">
       <summary>使用须知与免责声明</summary>
       <p>本画板仅用于个人学习与技术交流。请勿上传、绘制、发布任何违反中华人民共和国法律法规的内容，包括但不限于色情、暴力、恐怖、赌博、涉政敏感、侵犯他人隐私或知识产权的内容。上传者须对自己发布的内容负全部法律责任。本平台有权在不事先通知的情况下删除违规内容，并保留追究法律责任的权利。</p>
+    </details>
+
+    <details class="author-note" id="authorNote">
+      <summary>✍️ 作者的话<span class="an-caret">⌄</span></summary>
+      <div class="an-body">
+        <p class="an-quote">
+          「像素小镇」里的代码、界面和每一个小功能，都是我借助 AI 一点点搭出来的。
+        </p>
+        <p>
+          它不投放广告，也不收费，因为服务器和域名都要花钱。
+          所以如果你在这里画得还顺手，或者它陪你完成过几幅作品，
+          愿意给我一点支持的话，它就能安稳地多运行一段时间，
+          我也更有底气继续往上加新功能、做优化。
+        </p>
+        <p>当然，赞助完全出于自愿，不给也一点不影响使用——谢谢每一个来这里画画的人。</p>
+        <div class="an-foot">
+          <span>© 2026 像素小镇</span>
+          <span>作者 Lin Sifan · 用 AI 创作</span>
+        </div>
+      </div>
     </details>
 
     <div class="copyright">© 2026 像素小镇 · 版权所有 · 作者 Lin Sifan</div>
@@ -2275,6 +2391,7 @@ color: var(--text-muted);
       }
 
       function enterMode(mode) {
+        if (window.sfx) window.sfx('ding')
         if (!modeAllowed(mode)) mode = 'free'
         const isPrompt = mode === 'prompt'
         const firstTime = createMode !== mode
@@ -2323,6 +2440,8 @@ color: var(--text-muted);
       )
       let currentColor = [229, 57, 53]
       let activeTool = 'brush'
+      /* 拖动锁：开启后任何工具拖动都只平移；按住空格/中键也能临时平移 */
+      let panLock = false
 
       const hint = document.getElementById('hint')
       const curSwatch = document.getElementById('curSwatch')
@@ -2367,6 +2486,7 @@ color: var(--text-muted);
       }
 
       undoBtn.addEventListener('click', () => {
+        if (window.sfx) window.sfx('undo')
         undo()
         scheduleSave()
       })
@@ -2881,6 +3001,7 @@ color: var(--text-muted);
 
       /* ---------- 导出 PNG ---------- */
       const savePngBtn = document.getElementById('savePngBtn')
+      if (savePngBtn) savePngBtn.addEventListener('click', () => window.sfx && window.sfx('save'))
       function exportPng(scale) {
         const n = size
         const k = scale || 8
@@ -3140,10 +3261,35 @@ color: var(--text-muted);
         refreshHint()
       }
 
+      const toolLock = document.getElementById('toolLock')
+      function setPanLock(v) {
+        panLock = !!v
+        if (toolLock) toolLock.classList.toggle('active', panLock)
+        try {
+          localStorage.setItem('lw-panlock', panLock ? '1' : '0')
+        } catch (e) {}
+        refreshHint()
+      }
+      if (toolLock) {
+        toolLock.addEventListener('click', () => {
+          setPanLock(!panLock)
+          if (window.sfx) window.sfx('tap')
+          toast(panLock ? '拖动锁已开启：拖动只移动画布' : '拖动锁已关闭：拖动正常涂色')
+        })
+        try {
+          panLock = localStorage.getItem('lw-panlock') === '1'
+        } catch (e) {}
+        toolLock.classList.toggle('active', panLock)
+      }
+
       function refreshHint() {
         let base = TOOL_HINTS[activeTool] || TOOL_HINTS.brush
         if (mirrorOn) base += ' · 🦋 镜像中'
-        hint.textContent = size > 16 ? base + ' · 拖动画布移动，点一下格子涂色，＋/－ 缩放' : base + ' · 拖动涂色'
+        if (size > 16) base += ' · 拖动画布移动，点一下格子涂色，＋/－ 缩放'
+        else if (activeTool === 'pan') base += ' · 只拖动画布，不会落笔'
+        else if (panLock) base += ' · ✥ 拖动锁已开：拖动只移动画布'
+        else base += ' · 拖动涂色 · 点 ✥ 可改为拖动画布'
+        hint.textContent = base
       }
 
       function resetCamera() {
@@ -3175,9 +3321,24 @@ color: var(--text-muted);
         panY = Math.max(0, Math.min(maxPan, panY))
       }
 
+      const miniShow = document.getElementById('miniShow')
+      const miniHide = document.getElementById('miniHide')
+      let miniOpen = false
       function updateMiniVis() {
-        miniWrap.hidden = size === 16 || zoom <= 1
+        const show = miniOpen && size > 16 && zoom > 1
+        miniWrap.hidden = !show
+        if (miniShow) miniShow.hidden = show || size <= 16
       }
+      if (miniShow)
+        miniShow.addEventListener('click', () => {
+          miniOpen = true
+          updateMiniVis()
+        })
+      if (miniHide)
+        miniHide.addEventListener('click', () => {
+          miniOpen = false
+          updateMiniVis()
+        })
 
       function updateZoomUI() {
         zoomLevel.textContent = Math.round(zoom * 100) + '%'
@@ -3282,16 +3443,6 @@ color: var(--text-muted);
         miniCtx.strokeRect(panX * k, panY * k, (512 / zoom) * k, (512 / zoom) * k)
       }
 
-      miniCanvas.addEventListener('pointerdown', (e) => {
-        if (size <= 16) return
-        const rect = miniCanvas.getBoundingClientRect()
-        const bx = ((e.clientX - rect.left) / rect.width) * 512
-        const by = ((e.clientY - rect.top) / rect.height) * 512
-        panX = bx - 256 / zoom
-        panY = by - 256 / zoom
-        clampPan()
-        redraw()
-      })
 
       function cellFromEvent(e) {
         const rect = canvas.getBoundingClientRect()
@@ -3321,6 +3472,7 @@ color: var(--text-muted);
       }
 
       function paintCell(row, col) {
+        if (activeTool === 'pan' || panLock) return
         fullDirty = true
         if (activeTool === 'picker') {
           const c = pixels[row][col]
@@ -3361,12 +3513,15 @@ color: var(--text-muted);
 
       canvas.addEventListener('pointerdown', (e) => {
         e.preventDefault()
+
         canvas.setPointerCapture(e.pointerId)
-        const canPan = activeTool === 'pan' || size > 16
+        const canPan = activeTool === 'pan' || panLock || size > 16
         if (canPan) {
           painting = true
           panning = false
-          downCell = cellFromEvent(e)
+          // 手型/拖动锁/空格/中键：只拖动，不记录落点，否则松手会被当成点一下而画出东西
+          const noPaint = activeTool === 'pan' || panLock
+          downCell = noPaint ? null : cellFromEvent(e)
           startX = e.clientX
           startY = e.clientY
           startPanX = panX
@@ -3382,10 +3537,10 @@ color: var(--text-muted);
 
       canvas.addEventListener('pointermove', (e) => {
         if (!painting) return
-        if (activeTool === 'pan' || size > 16) {
+        if (activeTool === 'pan' || panLock || size > 16) {
           const dx = e.clientX - startX
           const dy = e.clientY - startY
-          if (!panning && (activeTool === 'pan' || Math.hypot(dx, dy) >= PAN_DIST)) {
+          if (!panning && (activeTool === 'pan' || panLock || Math.hypot(dx, dy) >= PAN_DIST)) {
             panning = true
             canvas.classList.add('grabbing')
           }
@@ -3404,6 +3559,10 @@ color: var(--text-muted);
       })
 
       function finishTap() {
+        if (activeTool === 'pan' || panLock) {
+          downCell = null
+          return
+        }
         if (downCell) {
           pushUndo()
           paintCell(downCell.row, downCell.col)
@@ -3414,7 +3573,9 @@ color: var(--text-muted);
       }
 
       canvas.addEventListener('pointerup', () => {
-        if (painting && size > 16 && !panning) {
+        if (activeTool === 'pan' || panLock) {
+          // 纯拖动，不落笔、不存草稿
+        } else if (painting && size > 16 && !panning) {
           finishTap()
         } else if (painting && size <= 16) {
           scheduleSave()
@@ -3434,6 +3595,7 @@ color: var(--text-muted);
       })
 
       document.getElementById('clearBtn').addEventListener('click', () => {
+        if (window.sfx) window.sfx('warn')
         pushUndo()
         pixels = Array.from({ length: size }, () =>
           Array.from({ length: size }, () => [255, 255, 255])
@@ -4469,8 +4631,13 @@ color: var(--text-muted);
         applyFeatureVisibility()
         renderRecent()
         if (feat.drafts) renderSlots()
-        // 有草稿就先载入，但仍然先经过开局菜单
-        if (loadDraft()) toast('欢迎回来！你的数据已保存')
+        // 有草稿就直接回到画板，不再要求重选参数
+        if (loadDraft()) {
+          toast('欢迎回来！你的数据已保存')
+          const savedMode = localStorage.getItem('lw-mode')
+          enterMode(modeAllowed(savedMode) ? savedMode : 'free')
+          return
+        }
         openStartMenu()
       }
   },

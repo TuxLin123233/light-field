@@ -8,3 +8,16 @@
 
 /favicon.ico
   Cache-Control: public, max-age=604800
+
+# Service Worker 必须允许根路径拿到，否则离线能力失效
+/sw.js
+  Cache-Control: public, max-age=0, must-revalidate
+  Service-Worker-Allowed: /
+
+# PWA 清单与图标
+/manifest.webmanifest
+  Content-Type: application/manifest+json
+  Cache-Control: public, max-age=604800
+
+/icons/*
+  Cache-Control: public, max-age=604800

@@ -175,6 +175,100 @@ export default {
         cursor: pointer;
       }
 
+      /* ---------- 新手教程 ---------- */
+      .guide {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        margin-bottom: 14px;
+        overflow: hidden;
+      }
+      .guide summary {
+        list-style: none;
+        cursor: pointer;
+        padding: 14px 15px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .guide summary::-webkit-details-marker { display: none; }
+      .guide-hero { display: flex; flex-direction: column; gap: 3px; }
+      .guide-hero b { font-size: 14px; color: var(--text); line-height: 1.5; }
+      .guide-hero i { font-size: 12px; color: var(--text-muted2); font-style: normal; }
+      .guide-arrow { margin-left: auto; color: var(--text-faint); transition: transform 0.2s; }
+      .guide[open] .guide-arrow { transform: rotate(180deg); }
+      .guide-body { padding: 0 15px 15px; }
+      .guide-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 10px;
+      }
+      .g-item {
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        border-radius: 13px;
+        padding: 11px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .g-ico { font-size: 19px; }
+      .g-item b { font-size: 13px; color: var(--text); }
+      .g-item i {
+        font-size: 12px;
+        font-style: normal;
+        color: var(--text-muted);
+        line-height: 1.7;
+      }
+      .guide-tips {
+        margin-top: 12px;
+        background: var(--surface-2);
+        border-left: 3px solid var(--accent);
+        border-radius: 0 12px 12px 0;
+        padding: 11px 13px;
+      }
+      .guide-tips b { font-size: 13px; color: var(--text); }
+      .guide-tips ul { margin: 7px 0 0; padding-left: 18px; }
+      .guide-tips li { font-size: 12px; color: var(--text-muted); line-height: 1.9; }
+      .guide-tips kbd {
+        display: inline-block;
+        padding: 1px 6px;
+        border-radius: 6px;
+        border: 1px solid var(--border-strong);
+        background: var(--surface);
+        font-size: 11px;
+        color: var(--text);
+      }
+      .guide-close {
+        width: 100%;
+        margin-top: 12px;
+        padding: 11px;
+        border-radius: 12px;
+        border: none;
+        background: var(--accent);
+        color: #fff;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .row-col { flex-direction: column; align-items: stretch; gap: 10px; }
+
+      .theme-picks { display: flex; flex-wrap: wrap; gap: 8px; }
+
+      .theme-pick {
+        display: flex;
+        border: 2px solid transparent;
+        border-radius: 999px;
+        overflow: hidden;
+        padding: 2px;
+        background: var(--surface-2);
+        cursor: pointer;
+      }
+      .theme-pick.on { border-color: var(--accent); }
+
+      .tp-dot { width: 16px; height: 16px; display: block; }
+
       .row {
         display: flex;
         align-items: center;
@@ -376,6 +470,59 @@ export default {
       .claim-btn:disabled { opacity: 0.45; cursor: default; }
 `,
   template: `<div class="container">
+      <details class="guide" id="guideBox">
+        <summary>
+          <span class="guide-hero">
+            <b>👋 第一次来？两分钟看完这个网站能做什么</b>
+            <i>像素小镇 · 和朋友一起在线画像素画</i>
+          </span>
+          <span class="guide-arrow">⌄</span>
+        </summary>
+        <div class="guide-body">
+          <div class="guide-grid">
+            <div class="g-item">
+              <span class="g-ico">🎨</span>
+              <b>一个人画</b>
+              <i>16 / 32 / 64 三种尺寸，32 色彩板，橡皮、颜料桶、取色器、镜像、草稿槽，随时导出 PNG。</i>
+            </div>
+            <div class="g-item">
+              <span class="g-ico">👥</span>
+              <b>多人一起画</b>
+              <i>建房后把口令发给朋友，同一块画布上同时落笔，谁都能看到对方画到哪。</i>
+            </div>
+            <div class="g-item">
+              <span class="g-ico">🖼️</span>
+              <b>发到社区</b>
+              <i>上传作品进社区广场，被人点赞、投票，还能生成朋友圈小卡片分享。</i>
+            </div>
+            <div class="g-item">
+              <span class="g-ico">📷</span>
+              <b>照片变像素</b>
+              <i>用「像素相机」把照片一键转成像素画，再手动改几笔就是你的作品。</i>
+            </div>
+            <div class="g-item">
+              <span class="g-ico">🏆</span>
+              <b>每周主题比赛</b>
+              <i>开启后按题目作画，参赛作品能参加投票，赢的是本周最受欢迎的一张。</i>
+            </div>
+            <div class="g-item">
+              <span class="g-ico">✋</span>
+              <b>手型平移</b>
+              <i>选 ✋ 只拖动画布不落笔；任何工具下点 ✥ 都能切成拖动模式。</i>
+            </div>
+          </div>
+          <div class="guide-tips">
+            <b>💡 三个上手小提示</b>
+            <ul>
+              <li>画错了按 <kbd>↩️</kbd> 撤销；手机上也可以直接点工具栏的撤销。</li>
+              <li>点底部「社区」看看别人画了什么，喜欢的可以点♥。</li>
+              <li>不想被复杂界面打扰？到下面「画板布局」里把用不到的都关掉。</li>
+            </ul>
+          </div>
+          <button class="guide-close" id="guideClose" type="button">我知道了，开始画画</button>
+        </div>
+      </details>
+
       <div class="header">
         <div class="header-text">
           <h1>设置</h1>
@@ -424,6 +571,20 @@ export default {
             <div class="row-desc">适合在夜里画画，保护眼睛</div>
           </div>
           <input class="switch" id="darkSwitch" type="checkbox" role="switch">
+        </div>
+        <div class="row">
+          <div>
+            <div class="row-label">提示音效</div>
+            <div class="row-desc">操作时的轻提示音，如保存成功的「叮」</div>
+          </div>
+          <input class="switch" id="sfxSwitch" type="checkbox" role="switch">
+        </div>
+        <div class="row row-col">
+          <div>
+            <div class="row-label">配色主题</div>
+            <div class="row-desc">换一套画板的整体色调</div>
+          </div>
+          <div class="theme-picks" id="themePicks"></div>
         </div>
         <div class="row">
           <div>
@@ -689,7 +850,7 @@ export default {
         { key: 'anim', label: '帧动画', desc: '逐帧作画并导出循环 GIF' },
         { key: 'daily', label: '每日挑战', desc: '每天一个题目，作品进当日榜' },
         { key: 'contest', label: '本周主题比赛', desc: '每周一个主题，社区投票选最佳' },
-        { key: 'image', label: '图片转像素画', desc: '把照片变成像素画再继续手改' },
+        { key: 'image', label: '📷 像素相机', desc: '把照片变成像素画再继续手改' },
         { key: 'mirror', label: '镜像绘制', desc: '落笔自动左右对称' },
         { key: 'drafts', label: '多草稿槽', desc: '同时保存 3 幅草稿，随时切换' },
         { key: 'tags', label: '作品标签', desc: '给作品加标签，方便别人搜到' },
@@ -782,11 +943,87 @@ export default {
       })
       paintClaimUI()
 
-      function setTheme(dark) {
-        document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light')
+      /* ---------- 配色主题 ---------- */
+      const THEMES = [
+        { id: 'light', name: '暖白', c1: '#fdf8f2', c2: '#f2ece2', c3: '#5b8def' },
+        { id: 'dark', name: '夜间', c1: '#211c17', c2: '#18140f', c3: '#76a3ff' },
+        { id: 'sakura', name: '樱粉', c1: '#fdf2f5', c2: '#f0b9c9', c3: '#e0698a' },
+        { id: 'sea', name: '海盐', c1: '#f0f8fa', c2: '#a8d5e0', c3: '#2f93a8' },
+        { id: 'mint', name: '薄荷', c1: '#f2f9f1', c2: '#a9d9b2', c3: '#3f9c5c' },
+        { id: 'sunset', name: '暖阳', c1: '#fff6ec', c2: '#f6c896', c3: '#d9823e' },
+        { id: 'midnight', name: '夜阑', c1: '#21223a', c2: '#4a4a80', c3: '#8b7cf0' },
+      ]
+      function applyTheme(id) {
+        const t = THEMES.find((x) => x.id === id) ? id : 'light'
+        document.documentElement.setAttribute('data-theme', t)
         try {
-          localStorage.setItem('lw-theme', dark ? 'dark' : 'light')
+          localStorage.setItem('lw-theme', t)
         } catch (e) {}
+        syncThemePicks()
+        if (typeof syncThemeUI === 'function') syncThemeUI()
+      }
+      function syncThemePicks() {
+        const cur = document.documentElement.getAttribute('data-theme') || 'light'
+        document.querySelectorAll('.theme-pick').forEach((el) => {
+          el.classList.toggle('on', el.dataset.theme === cur)
+        })
+      }
+      const themePicks = document.getElementById('themePicks')
+      if (themePicks) {
+        THEMES.forEach((t) => {
+          const b = document.createElement('button')
+          b.type = 'button'
+          b.className = 'theme-pick'
+          b.dataset.theme = t.id
+          b.title = t.name
+          b.setAttribute('aria-label', t.name)
+          b.innerHTML =
+            '<span class="tp-dot" style="background:' + t.c1 + '"></span>' +
+            '<span class="tp-dot" style="background:' + t.c2 + '"></span>' +
+            '<span class="tp-dot" style="background:' + t.c3 + '"></span>'
+          b.addEventListener('click', () => applyTheme(t.id))
+          themePicks.appendChild(b)
+        })
+        syncThemePicks()
+      }
+
+      /* 教程：首次自动展开，看过之后记住选择 */
+      const guideBox = document.getElementById('guideBox')
+      const GUIDE_KEY = 'lw-guide-seen'
+      if (guideBox) {
+        let seen = false
+        try {
+          seen = localStorage.getItem(GUIDE_KEY) === '1'
+        } catch (e) {}
+        guideBox.open = !seen
+        guideBox.addEventListener('toggle', () => {
+          if (!guideBox.open) markSeen()
+        })
+      }
+      function markSeen() {
+        try {
+          localStorage.setItem(GUIDE_KEY, '1')
+        } catch (e) {}
+      }
+      const guideClose = document.getElementById('guideClose')
+      if (guideClose)
+        guideClose.addEventListener('click', () => {
+          markSeen()
+          if (guideBox) guideBox.open = false
+          toast('祝你画得开心 🎨')
+        })
+
+      const sfxSwitch = document.getElementById('sfxSwitch')
+      if (sfxSwitch) {
+        sfxSwitch.checked = window.getSfx ? window.getSfx() : true
+        sfxSwitch.addEventListener('change', () => {
+          if (window.setSfx) window.setSfx(sfxSwitch.checked)
+          toast(sfxSwitch.checked ? '音效已开启' : '音效已关闭')
+        })
+      }
+
+      function setTheme(dark) {
+        applyTheme(dark ? 'dark' : 'light')
         syncThemeUI()
       }
 

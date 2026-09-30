@@ -2,6 +2,14 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#fdf8f2">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="像素小镇">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <link rel="icon" href="/icons/icon-192.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>像素小镇</title>
     <script>
@@ -77,6 +85,157 @@
         --like: #ff8577;
         --like-bg: #3d231f;
         --like-border: #5e352c;
+      }
+
+      /* ---------- 5 套特色主题 ---------- */
+      html[data-theme="sakura"] {
+        --bg: linear-gradient(160deg, #fdf2f5 0%, #f6e3ea 100%);
+        --surface: #fffafb;
+        --surface-2: #f7e7ec;
+        --surface-3: #f2dde4;
+        --art-bg: #fff;
+        --text: #4a3540;
+        --text-muted: #7d6470;
+        --text-muted2: #a08d97;
+        --text-faint: #bfa9b3;
+        --border: #f2dde4;
+        --border-strong: #e8c6d1;
+        --border-input: #e4c2ce;
+        --accent: #e0698a;
+        --shadow1: rgba(150, 90, 110, 0.16);
+        --shadow-hover: rgba(150, 90, 110, 0.18);
+        --like: #e0576a;
+        --like-bg: #fdeef1;
+        --like-border: #f0c9d3;
+      }
+      html[data-theme="sea"] {
+        --bg: linear-gradient(160deg, #f0f8fa 0%, #ddeef2 100%);
+        --surface: #fbfeff;
+        --surface-2: #e4f1f4;
+        --surface-3: #d8eaee;
+        --art-bg: #fff;
+        --text: #2c3f47;
+        --text-muted: #5a7079;
+        --text-muted2: #8599a1;
+        --text-faint: #a3b4ba;
+        --border: #dcecef;
+        --border-strong: #c3dee3;
+        --border-input: #bfdbe1;
+        --accent: #2f93a8;
+        --shadow1: rgba(40, 100, 115, 0.15);
+        --shadow-hover: rgba(40, 100, 115, 0.18);
+        --like: #e05a6a;
+        --like-bg: #fdeff1;
+        --like-border: #f2ccd3;
+      }
+      html[data-theme="mint"] {
+        --bg: linear-gradient(160deg, #f2f9f1 0%, #e2f1e3 100%);
+        --surface: #fcfffc;
+        --surface-2: #e6f2e6;
+        --surface-3: #dcecdd;
+        --art-bg: #fff;
+        --text: #33452f;
+        --text-muted: #5c705a;
+        --text-muted2: #869a84;
+        --text-faint: #a3b4a1;
+        --border: #ddedde;
+        --border-strong: #c3ddc5;
+        --border-input: #bfd9c1;
+        --accent: #3f9c5c;
+        --shadow1: rgba(50, 110, 65, 0.15);
+        --shadow-hover: rgba(50, 110, 65, 0.18);
+        --like: #e0576a;
+        --like-bg: #fdeff1;
+        --like-border: #f2ccd3;
+      }
+      html[data-theme="sunset"] {
+        --bg: linear-gradient(160deg, #fff6ec 0%, #fbe6d2 100%);
+        --surface: #fffcf8;
+        --surface-2: #fbeedd;
+        --surface-3: #f7e3cf;
+        --art-bg: #fff;
+        --text: #4a3826;
+        --text-muted: #7d6248;
+        --text-muted2: #a08771;
+        --text-faint: #bda189;
+        --border: #f7e3cf;
+        --border-strong: #eecfb0;
+        --border-input: #ebc9a7;
+        --accent: #d9823e;
+        --shadow1: rgba(150, 100, 55, 0.16);
+        --shadow-hover: rgba(150, 100, 55, 0.18);
+        --like: #d9524a;
+        --like-bg: #fdeeea;
+        --like-border: #f2ccc4;
+      }
+      html[data-theme="midnight"] {
+        --bg: linear-gradient(160deg, #191a2e 0%, #12131f 100%);
+        --surface: #21223a;
+        --surface-2: #2b2c48;
+        --surface-3: #33345a;
+        --art-bg: #f4f2ee;
+        --text: #ece9f5;
+        --text-muted: #b6b2cc;
+        --text-muted2: #918ca8;
+        --text-faint: #6f6a86;
+        --border: #2e2f4c;
+        --border-strong: #3d3e63;
+        --border-input: #3a3b5e;
+        --ring: #21223a;
+        --shadow1: rgba(0, 0, 0, 0.34);
+        --shadow2: rgba(0, 0, 0, 0.26);
+        --shadow3: rgba(0, 0, 0, 0.18);
+        --shadow-hover: rgba(0, 0, 0, 0.58);
+        --accent: #8b7cf0;
+        --toast-bg: #34355a;
+        --like: #ff8f9c;
+        --like-bg: #3a2436;
+        --like-border: #553044;
+      }
+
+      /* ---------- PWA 安装提示条 ---------- */
+      .pwa-tip {
+        position: fixed;
+        left: 10px;
+        right: 10px;
+        bottom: calc(74px + env(safe-area-inset-bottom, 0px));
+        z-index: 900;
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 11px 13px;
+        border-radius: 14px;
+        background: var(--surface);
+        border: 1px solid var(--border-strong);
+        box-shadow: 0 6px 22px var(--shadow1);
+        font-size: 13px;
+        color: var(--text);
+        max-width: 460px;
+        margin: 0 auto;
+      }
+      .pwa-tip span { flex: 1; line-height: 1.5; }
+      .pwa-go {
+        padding: 7px 14px;
+        border-radius: 10px;
+        border: none;
+        background: var(--accent);
+        color: #fff;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        flex-shrink: 0;
+      }
+      .pwa-x {
+        width: 26px;
+        height: 26px;
+        flex-shrink: 0;
+        border-radius: 50%;
+        border: none;
+        background: var(--surface-2);
+        color: var(--text-muted);
+        font-size: 16px;
+        line-height: 1;
+        cursor: pointer;
       }
 
       * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -204,6 +363,106 @@
       #toast.show { opacity: 1; transform: translate(-50%, 0); }
     </style>
     <style id="view-style"></style>
+    <script>
+      /* ---------- 轻量音效（WebAudio 实时合成，无音频文件） ---------- */
+      ;(function () {
+        let ac = null
+        function ctx() {
+          if (!ac) {
+            const C = window.AudioContext || window.webkitAudioContext
+            if (!C) return null
+            ac = new C()
+          }
+          if (ac.state === 'suspended') ac.resume().catch(function () {})
+          return ac
+        }
+        let on = true
+        try {
+          const v = localStorage.getItem('lw-sfx')
+          if (v === '0') on = false
+        } catch (e) {}
+        const isSilent = () => {
+          try {
+            return localStorage.getItem('lw-sfx') === '0'
+          } catch (e) {
+            return false
+          }
+        }
+        /* 一个音符：正弦 + 快速衰减，听起来就是「叮」 */
+        function note(freq, at, dur, vol, type) {
+          const c = ctx()
+          if (!c) return
+          const t0 = c.currentTime + at
+          const osc = c.createOscillator()
+          const gain = c.createGain()
+          osc.type = type || 'sine'
+          osc.frequency.setValueAtTime(freq, t0)
+          gain.gain.setValueAtTime(0.0001, t0)
+          gain.gain.exponentialRampToValueAtTime(vol, t0 + 0.012)
+          gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur)
+          osc.connect(gain)
+          gain.connect(c.destination)
+          osc.start(t0)
+          osc.stop(t0 + dur + 0.02)
+        }
+        const SFX = {
+          /* 轻点：短促柔和的一声 */
+          tap: function () {
+            note(880, 0, 0.07, 0.05, 'sine')
+          },
+          /* 成功提示：清亮的双音「叮」 */
+          ding: function () {
+            note(1318.5, 0, 0.16, 0.09, 'sine')
+            note(1760, 0.045, 0.2, 0.07, 'sine')
+          },
+          /* 撤销：下行两音 */
+          undo: function () {
+            note(660, 0, 0.08, 0.05, 'triangle')
+            note(494, 0.06, 0.12, 0.05, 'triangle')
+          },
+          /* 弹出：上扬一音 */
+          pop: function () {
+            note(587, 0, 0.07, 0.05, 'sine')
+            note(880, 0.05, 0.1, 0.05, 'sine')
+          },
+          /* 保存：轻快的一小段 */
+          save: function () {
+            note(784, 0, 0.09, 0.055, 'sine')
+            note(1046.5, 0.07, 0.14, 0.05, 'sine')
+          },
+          /* 警示：低沉一声，用于清空等破坏性操作 */
+          warn: function () {
+            note(330, 0, 0.14, 0.06, 'triangle')
+          },
+        }
+        window.sfx = function (name) {
+          if (isSilent()) return
+          const fn = SFX[name]
+          if (fn) {
+            try {
+              fn()
+            } catch (e) {}
+          }
+        }
+        window.setSfx = function (v) {
+          on = !!v
+          try {
+            localStorage.setItem('lw-sfx', v ? '1' : '0')
+          } catch (e) {}
+          if (v) SFX.tap()
+        }
+        window.getSfx = function () {
+          return !isSilent()
+        }
+        /* 首次交互解锁音频（浏览器自动播放策略） */
+        const unlock = function () {
+          ctx()
+          document.removeEventListener('pointerdown', unlock)
+        }
+        document.addEventListener('pointerdown', unlock, { once: true })
+      })()
+    </script>
+
     <script src="/vue.global.prod.js"></script>
     <script src="/vue-router.global.prod.js"></script>
     <script src="/omggif.js"></script>
@@ -213,5 +472,47 @@
     <div id="app"></div>
     <div id="toast"></div>
     <script type="module" src="/app.js"></script>
+    <script>
+      /* ---------- PWA：注册 Service Worker，支持离线使用 ---------- */
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function () {
+          navigator.serviceWorker.register('/sw.js').catch(function () {})
+        })
+      }
+
+      /* 安装到桌面：Android/桌面 Chrome 走 beforeinstallprompt */
+      ;(function () {
+        var deferred = null
+        var KEY = 'lw-pwa-hint-dismissed'
+        window.addEventListener('beforeinstallprompt', function (e) {
+          e.preventDefault()
+          deferred = e
+          try { if (localStorage.getItem(KEY) === '1') return } catch (err) {}
+          if (!document.body) return
+          var tip = document.createElement('div')
+          tip.className = 'pwa-tip'
+          tip.innerHTML =
+            '<span>把像素小镇装到桌面，没网也能画画</span>' +
+            '<button class="pwa-go" type="button">安装</button>' +
+            '<button class="pwa-x" type="button" aria-label="关闭">×</button>'
+          document.body.appendChild(tip)
+          tip.querySelector('.pwa-go').addEventListener('click', function () {
+            tip.remove()
+            if (deferred) {
+              deferred.prompt()
+              deferred.userChoice.then(function () { deferred = null })
+            }
+          })
+          tip.querySelector('.pwa-x').addEventListener('click', function () {
+            try { localStorage.setItem(KEY, '1') } catch (err) {}
+            tip.remove()
+          })
+        })
+        window.addEventListener('appinstalled', function () {
+          try { localStorage.setItem(KEY, '1') } catch (err) {}
+          if (window.toast) window.toast('已添加到桌面，以后可以直接打开 🎉')
+        })
+      })()
+    </script>
   </body>
 </html>

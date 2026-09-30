@@ -854,6 +854,66 @@ export default {
         font-weight: 400;
       }
 
+      /* 举报入口刻意做小做灰，避免误触：需长按 1.5 秒才会真正提交 */
+      .report-hold {
+        position: relative;
+        padding: 6px 10px;
+        font-size: 12px;
+        color: var(--text-faint);
+        background: transparent;
+        border: 1px dashed var(--border-strong);
+        border-radius: 999px;
+        cursor: pointer;
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-touch-callout: none;
+        touch-action: manipulation;
+      }
+      .report-hold:active { background: var(--surface-2); }
+      .report-progress {
+        height: 3px;
+        border-radius: 999px;
+        background: var(--surface-3);
+        overflow: hidden;
+        margin-top: 8px;
+      }
+      .report-progress i {
+        display: block;
+        height: 100%;
+        width: 0;
+        background: var(--like);
+        border-radius: 999px;
+      }
+
+      .report-box { max-width: 340px; }
+      .report-reasons { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+      .report-reason {
+        padding: 7px 12px;
+        border-radius: 999px;
+        border: 1px solid var(--border-input);
+        background: var(--surface);
+        color: var(--text-muted);
+        font-size: 13px;
+        cursor: pointer;
+      }
+      .report-reason.on {
+        border-color: var(--like);
+        color: var(--like);
+        background: var(--like-bg);
+      }
+      .report-note {
+        width: 100%;
+        min-height: 64px;
+        padding: 9px 11px;
+        border-radius: 10px;
+        border: 1px solid var(--border-input);
+        background: var(--bg);
+        color: var(--text);
+        font-size: 13px;
+        font-family: inherit;
+        resize: vertical;
+      }
+
       .preview-like {
         display: flex;
         justify-content: center;
@@ -1198,8 +1258,31 @@ export default {
           <button class="vote-btn" id="previewVoteBtn" type="button" hidden>🏆 投一票</button>
           <button class="share-btn" id="previewShare" type="button">🔗 复制链接</button>
           <button class="share-btn" id="previewCard" type="button">🃏 生成朋友圈卡片</button>
+          <button class="report-hold" id="previewReport" type="button">🚩 长按举报</button>
         </div>
+        <div class="report-progress" id="reportProgress" hidden><i></i></div>
         <div class="preview-note">仅支持预览，不可载入作画。请勿抄袭或直接提交他人的作品。长按图片可保存到相册。</div>
+      </div>
+    </div>
+
+    <div class="card-overlay" id="reportOverlay" hidden>
+      <div class="card-box report-box">
+        <div class="card-head">
+          <span class="card-title">举报作品</span>
+          <button class="card-close" id="reportClose" type="button">取消</button>
+        </div>
+        <div class="report-reasons" id="reportReasons">
+          <button class="report-reason" type="button" data-r="违法违规">违法违规</button>
+          <button class="report-reason" type="button" data-r="色情低俗">色情低俗</button>
+          <button class="report-reason" type="button" data-r="辱骂攻击">辱骂攻击</button>
+          <button class="report-reason" type="button" data-r="抄袭他人">抄袭他人</button>
+          <button class="report-reason" type="button" data-r="广告诈骗">广告诈骗</button>
+          <button class="report-reason" type="button" data-r="其他">其他</button>
+        </div>
+        <textarea class="report-note" id="reportNote" maxlength="200" placeholder="补充说明（选填）"></textarea>
+        <div class="card-actions">
+          <button class="card-btn" id="reportSubmit" type="button">提交举报</button>
+        </div>
       </div>
     </div>
 
@@ -1296,6 +1379,7 @@ export default {
           })
           const data = await res.json().catch(() => ({}))
           if (res.ok) {
+            if (window.sfx) window.sfx('pop')
             rec.contestVotes = data.votes
             contestCtx.voted.push(key)
             const span = btn.querySelector('span') || btn
@@ -2445,6 +2529,105 @@ export default {
       }
 
       document.getElementById('previewClose').addEventListener('click', closePreview)
+      /* ---------- 举报（长按 1.5 秒触发，避免误触） ---------- */
+      const reportOverlay = document.getElementById('reportOverlay')
+      const reportProgress = document.getElementById('reportProgress')
+      const reportBar = reportProgress.querySelector('i')
+      const reportReasons = document.getElementById('reportReasons')
+      const reportNote = document.getElementById('reportNote')
+      const reportSubmit = document.getElementById('reportSubmit')
+      let reportHoldTimer = null
+      let reportHoldRaf = 0
+      let reportTarget = null
+      let reportReason = '违法违规'
+
+      const HOLD_MS = 1500
+      function stopHold() {
+        clearTimeout(reportHoldTimer)
+        cancelAnimationFrame(reportHoldRaf)
+        reportHoldTimer = null
+        if (reportProgress) reportProgress.hidden = true
+        reportBar.style.width = '0'
+      }
+      function startHold(rec) {
+        stopHold()
+        reportTarget = rec
+        if (reportProgress) reportProgress.hidden = false
+        const t0 = performance.now()
+        const tick = () => {
+          const k = Math.min(1, (performance.now() - t0) / HOLD_MS)
+          reportBar.style.width = (k * 100).toFixed(1) + '%'
+          if (k < 1) reportHoldRaf = requestAnimationFrame(tick)
+        }
+        reportHoldRaf = requestAnimationFrame(tick)
+        reportHoldTimer = setTimeout(() => {
+          stopHold()
+          if (window.sfx) window.sfx('ding')
+          if (reportNote) reportNote.value = ''
+          reportReasons.querySelectorAll('.report-reason').forEach((b, i) =>
+            b.classList.toggle('on', i === 0)
+          )
+          reportReason = '违法违规'
+          reportOverlay.hidden = false
+        }, HOLD_MS)
+      }
+
+      const reportBtn = document.getElementById('previewReport')
+      if (reportBtn) {
+        reportBtn.addEventListener('pointerdown', () => {
+          if (window.sfx) window.sfx('tap')
+          startHold(currentPreview)
+        })
+        reportBtn.addEventListener('pointerup', stopHold)
+        reportBtn.addEventListener('pointerleave', stopHold)
+        reportBtn.addEventListener('pointercancel', stopHold)
+        reportBtn.addEventListener('contextmenu', (e) => e.preventDefault())
+      }
+      document.getElementById('reportClose').addEventListener('click', () => {
+        stopHold()
+        reportOverlay.hidden = true
+      })
+      reportOverlay.addEventListener('click', (e) => {
+        if (e.target === reportOverlay) reportOverlay.hidden = true
+      })
+      reportReasons.addEventListener('click', (e) => {
+        const b = e.target.closest('.report-reason')
+        if (!b) return
+        reportReasons.querySelectorAll('.report-reason').forEach((x) => x.classList.remove('on'))
+        b.classList.add('on')
+        reportReason = b.dataset.r
+      })
+      reportSubmit.addEventListener('click', async () => {
+        const rec = reportTarget
+        if (!rec) return
+        reportSubmit.disabled = true
+        try {
+          const res = await fetch('/api/report', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              time: rec.time,
+              reason: reportReason,
+              note: reportNote ? reportNote.value : '',
+              title: rec.workName || rec.name || '',
+              author: rec.author || '',
+            }),
+          })
+          const data = await res.json().catch(() => ({}))
+          if (res.ok) {
+            reportOverlay.hidden = true
+            toast('举报已提交 thanks'.replace(' thanks', '，感谢你的反馈'))
+            if (window.sfx) window.sfx('save')
+          } else {
+            toast(data.error || '提交失败，请稍后再试')
+          }
+        } catch (e) {
+          toast('网络异常，举报未提交')
+        } finally {
+          reportSubmit.disabled = false
+        }
+      })
+
       previewOverlay.addEventListener('click', (e) => {
         if (e.target === previewOverlay) closePreview()
       })
@@ -2475,6 +2658,7 @@ export default {
         const url = location.origin + '/gallery?t=' + currentPreview.time
         const btn = document.getElementById('previewShare')
         const done = () => {
+          if (window.sfx) window.sfx('ding')
           btn.textContent = '✓ 已复制'
           btn.classList.add('copied')
           setTimeout(() => {
