@@ -6,9 +6,33 @@
 
 ## 技术栈
 
-- 前端：原生 HTML / CSS / JS（单文件页面，无框架）
+- 前端：Vue 3 + Vue Router 4（**单页应用**，无构建步骤，`git push` 即部署）
 - 后端：Cloudflare Pages Functions
 - 存储：Cloudflare KV（`LIGHTFIELD_KV`）
+
+## 前端结构（无构建 SPA）
+
+Vue 与 Vue Router 用的是官方**全局构建版**，直接放在 `public/` 下当静态文件用，没有打包步骤，
+因此不需要改 Cloudflare Pages 控制台的构建配置。
+
+```
+public/
+  index.html        应用外壳：主题变量、全局样式、底部导航、#toast、挂载点 #app
+  404.html          与 index.html 相同，用于 /paint 这类无扩展名深链回退到 SPA
+  app.js            路由表 + 外壳组件 + 视图卸载自动清理
+  views/*.js        每个页面一个视图组件：{ name, title, css, template, mounted() }
+  vue.global.prod.js / vue-router.global.prod.js   官方全局构建版
+  omggif.js / qrcode.js                            原有第三方库（全局脚本）
+```
+
+要点：
+
+- **路由切换不刷新页面**，底部导航常驻，切页时导航会做一次果冻弹跳。
+- 每个视图自带 `css`，切换路由时由 `app.js` 注入到 `#view-style`，所以各页样式互不污染。
+- `app.js` 的 `withAutoCleanup()` 会记录视图创建的**所有定时器与全局监听**，
+  在离开该路由时统一回收——原多文件页面里有 `setInterval` 没存变量、无法清除的问题。
+- 各视图最初由脚本从旧单文件页面转换而来；旧页面保留在 git 历史里，需要对照时用
+  `git show <commit>:web/public/gallery.html` 查看。
 
 ## 页面
 

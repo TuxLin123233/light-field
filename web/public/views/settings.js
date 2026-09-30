@@ -1,6 +1,7 @@
 // 由 settings.html 自动转换为 Vue 3 视图（无构建）
 export default {
   name: 'settings',
+  title: '设置',
   css: `      /* hidden 属性兜底：避免类选择器里的 display 覆盖 UA 的 [hidden]{display:none} */
       [hidden] { display: none !important; }
 
