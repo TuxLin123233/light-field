@@ -587,7 +587,6 @@ color: var(--text-muted);
         font-size: 10px;
         color: var(--like);
         background: var(--like-bg);
-        border: 1px solid var(--like-border);
         border-radius: 999px;
         padding: 1px 8px;
         margin-top: 4px;
@@ -599,14 +598,13 @@ color: var(--text-muted);
       .tile-like.liked {
         background: var(--like);
         color: #fff;
-        border-color: var(--like);
+        
       }
 
       .tile-load {
         font-size: 10px;
         color: var(--accent);
         background: var(--surface-2);
-        border: 1px solid var(--border-strong);
         border-radius: 999px;
         padding: 1px 8px;
         margin-top: 4px;
@@ -1262,34 +1260,62 @@ color: var(--text-muted);
         color: var(--accent);
         background: var(--surface-2);
       }
-.contest-row {
+      .join-card {
         width: 100%;
         max-width: 460px;
-        margin: 16px 0 0;
+        margin-top: 14px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
       }
 
-      .contest-check {
+      .join-title {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--text-faint);
+      }
+
+      .join-opt {
         display: flex;
-        align-items: center;
-        gap: 8px;
-        background: linear-gradient(135deg, #fff7e0, #ffeded);
-        border: 1px solid var(--border-strong);
+        align-items: flex-start;
+        gap: 10px;
+        padding: 11px 12px;
+        border: 1px solid var(--border);
         border-radius: 14px;
-        padding: 10px 14px;
+        background: var(--surface-2);
+        cursor: pointer;
+        min-width: 0;
+      }
+
+      .join-opt input {
+        flex: 0 0 auto;
+        margin: 2px 0 0;
+        width: 18px;
+        height: 18px;
+        accent-color: var(--accent);
+      }
+
+      .join-ico { flex: 0 0 auto; font-size: 18px; line-height: 1.2; }
+
+      .join-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+
+      .join-name {
         font-size: 13px;
         font-weight: 700;
         color: var(--text);
-        cursor: pointer;
+        word-break: break-all;
       }
 
-      [data-theme="dark"] .contest-check {
-        background: linear-gradient(135deg, #2b2620, #34261f);
-      }
+      .join-desc { font-size: 11px; color: var(--text-faint); }
 
-      .contest-check input {
-        width: 16px;
-        height: 16px;
-        accent-color: var(--accent);
+      .join-opt.on {
+        border-color: var(--accent);
+        border-width: 2px;
+        background: color-mix(in srgb, var(--accent) 14%, var(--surface));
       }
 
       /* ---------- 帧动画 ---------- */
@@ -1665,17 +1691,25 @@ color: var(--text-muted);
 
     <router-link id="moreBtn" class="more-btn" to="/gallery" hidden>去社区看更多作品 →</router-link>
 
-    <div class="daily-row" id="dailyRow" hidden>
-      <label class="contest-check" for="dailyCheck">
-        <input type="checkbox" id="dailyCheck">
-        <span id="dailyLabel"></span>
-      </label>
-    </div>
+    <div class="join-card" id="joinCard" hidden>
+      <div class="join-title">参加活动（只能选一个）</div>
 
-    <div class="contest-row" id="contestRow" hidden>
-      <label class="contest-check" for="contestCheck">
-        <input type="checkbox" id="contestCheck">
-        <span id="contestLabel"></span>
+      <label class="join-opt" id="dailyRow" hidden for="dailyCheck">
+        <input type="radio" name="joinPick" id="dailyCheck" value="daily">
+        <span class="join-ico">⚡</span>
+        <span class="join-text">
+          <span class="join-name" id="dailyLabel"></span>
+          <span class="join-desc">每天一个题目，作品进当日榜</span>
+        </span>
+      </label>
+
+      <label class="join-opt" id="contestRow" hidden for="contestCheck">
+        <input type="radio" name="joinPick" id="contestCheck" value="contest">
+        <span class="join-ico">🏆</span>
+        <span class="join-text">
+          <span class="join-name" id="contestLabel"></span>
+          <span class="join-desc">每周一个主题，社区投票选本周最佳</span>
+        </span>
       </label>
     </div>
 
@@ -3209,11 +3243,27 @@ color: var(--text-muted);
         } catch (e) {}
       }
 
+      const joinCard = document.getElementById('joinCard')
       const dailyRow = document.getElementById('dailyRow')
       const dailyCheck = document.getElementById('dailyCheck')
       const dailyLabel = document.getElementById('dailyLabel')
       let dailyId = ''
       let wantDaily = false
+
+      // 两个活动只能选一个（radio 同名已互斥，这里同步卡片高亮与显隐）
+      function syncJoinHighlight() {
+        document.querySelectorAll('.join-opt').forEach((el) => {
+          const inp = el.querySelector('input')
+          el.classList.toggle('on', !!(inp && inp.checked))
+        })
+        const dRow = document.getElementById('dailyRow')
+        const cRow = document.getElementById('contestRow')
+        if (joinCard) joinCard.hidden = !((dRow && !dRow.hidden) || (cRow && !cRow.hidden))
+      }
+      document.querySelectorAll('.join-opt input').forEach((inp) => {
+        inp.addEventListener('change', syncJoinHighlight)
+      })
+
 
       ;(async () => {
         try {
@@ -3223,13 +3273,14 @@ color: var(--text-muted);
           if (!d || !d.theme) return
           dailyId = d.day
           dailyLabel.textContent =
-            '⚡ 参加每日挑战《' + d.theme.zh + '》' + (d.theme.prompt ? ' · ' + d.theme.prompt : '')
+            '参加每日挑战《' + d.theme.zh + '》' + (d.theme.prompt ? ' · ' + d.theme.prompt : '')
           dailyRow.hidden = false
           if (new URLSearchParams(location.search).get('daily') === '1') {
             dailyCheck.checked = true
             wantDaily = true
           }
         } catch (e) {}
+        syncJoinHighlight()
       })()
 
       /* ---------- 每周主题比赛 ---------- */
@@ -3260,10 +3311,11 @@ color: var(--text-muted);
             contestWeek = c.week
             contestTheme = c.theme ? c.theme.zh : ''
             contestLabel.textContent =
-              '🏆 参与本周主题《' + contestTheme + '》' + ((c.theme && c.theme.prompt) ? ' · ' + c.theme.prompt : '')
+              '参与本周主题《' + contestTheme + '》' + ((c.theme && c.theme.prompt) ? ' · ' + c.theme.prompt : '')
             contestRow.hidden = false
             if (new URLSearchParams(location.search).get('contest') === '1') contestCheck.checked = true
             syncContestFields()
+            syncJoinHighlight()
           }
         } catch (e) {}
       })()
