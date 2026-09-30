@@ -1391,10 +1391,13 @@ export default {
       /* 轮询频率：房间越活跃越快，避免"2 个人在玩只显示 1 个"这种长时间不一致 */
       let pollDelay = 1500
       let refreshing = false
+      let joinedAt = 0
       function desiredPollDelay() {
         if (!room) return 1500
         if (room.game && room.game.active) return 800
         if (room.members.length > 1) return 1000
+        // 刚建/刚进房的一段时间内快轮询，等队友进来时立刻显示
+        if (joinedAt && Date.now() - joinedAt < 20000) return 500
         return 2000
       }
       function pollTick() {
@@ -1418,6 +1421,7 @@ export default {
       function enterRoom(state, id) {
         room = state
         memberId = id
+        joinedAt = Date.now()
         lastServerVersion = state.version
         applyPixels(state.pixels)
         renderRoom()
