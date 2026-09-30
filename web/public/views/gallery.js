@@ -1535,145 +1535,215 @@ export default {
         ctx.closePath()
       }
 
+      // 取作品里出现最多的几个颜色（相互拉开距离），用于卡片点缀
+      function dominantColors(pixels, n, count) {
+        const buckets = new Map()
+        for (let i = 0; i < n * n; i++) {
+          const p = pixels[i]
+          if (!p) continue
+          const key = (p[0] >> 4) + ',' + (p[1] >> 4) + ',' + (p[2] >> 4)
+          const cur = buckets.get(key)
+          if (cur) cur.n++
+          else buckets.set(key, { c: [p[0], p[1], p[2]], n: 1 })
+        }
+        const sorted = [...buckets.values()].sort((a, b) => b.n - a.n)
+        const picked = []
+        for (const item of sorted) {
+          if (picked.length >= count) break
+          const far = picked.every(
+            (q) => Math.abs(q[0] - item.c[0]) + Math.abs(q[1] - item.c[1]) + Math.abs(q[2] - item.c[2]) > 90
+          )
+          if (far) picked.push(item.c)
+        }
+        while (picked.length < count) picked.push([91, 141, 239])
+        return picked
+      }
+
+      function roundRect(ctx, x, y, w, h, r) {
+        if (ctx.roundRect) {
+          ctx.beginPath()
+          ctx.roundRect(x, y, w, h, r)
+          return
+        }
+        ctx.beginPath()
+        ctx.moveTo(x + r, y)
+        ctx.arcTo(x + w, y, x + w, y + h, r)
+        ctx.arcTo(x + w, y + h, x, y + h, r)
+        ctx.arcTo(x, y + h, x, y, r)
+        ctx.arcTo(x, y, x + w, y, r)
+        ctx.closePath()
+      }
+
       function buildMomentsCard(pixels, n, title, author, likes, tags) {
         const W = 1080
         const H = 1440
-        const PAD = 78
+        const PAD = 72
+        const FONT = '"PingFang SC", "Microsoft YaHei", sans-serif'
         const cv = document.createElement('canvas')
         cv.width = W
         cv.height = H
         const ctx = cv.getContext('2d')
-
-        const FONT = '"PingFang SC", "Microsoft YaHei", sans-serif'
+        const rgb = (c) => 'rgb(' + c[0] + ',' + c[1] + ',' + c[2] + ')'
+        const accent = dominantColors(pixels, n, 3)
         const ink = '#2b2620'
         const muted = '#7a6d5c'
-        const accent = dominantColors(pixels, n, 3)
 
-        // 背景：暖纸色渐变
-        const bg = ctx.createLinearGradient(0, 0, 0, H)
-        bg.addColorStop(0, '#fdf9f1')
-        bg.addColorStop(1, '#f2e9d8')
-        ctx.fillStyle = bg
-        ctx.fillRect(0, 0, W, H)
+        // 作品离屏图
+        const src = document.createElement('canvas')
+        src.width = n
+        src.height = n
+        const sctx = src.getContext('2d')
+        const id = sctx.createImageData(n, n)
+        for (let i = 0; i < n * n; i++) {
+          const p = pixels[i]
+          if (!p) continue
+          id.data[i * 4] = p[0]
+          id.data[i * 4 + 1] = p[1]
+          id.data[i * 4 + 2] = p[2]
+          id.data[i * 4 + 3] = 255
+        }
+        sctx.putImageData(id, 0, 0)
 
-        // 顶部：品牌标识（小方块用作品主色）
-        const markY = 84
+        // 背景：作品模糊铺满 + 米白蒙版（不支持 filter 时退回主色渐变）
+        if ('filter' in ctx) {
+          ctx.save()
+          ctx.filter = 'blur(80px) saturate(160%)'
+          const sc = 1.7
+          ctx.drawImage(src, (W - W * sc) / 2, (H - H * sc) / 2, W * sc, H * sc)
+          ctx.restore()
+          ctx.fillStyle = 'rgba(253,249,241,.84)'
+          ctx.fillRect(0, 0, W, H)
+        } else {
+          ctx.fillStyle = '#fbf6ec'
+          ctx.fillRect(0, 0, W, H)
+          const g = ctx.createLinearGradient(0, 0, W, H)
+          g.addColorStop(0, 'rgba(' + accent[0].join(',') + ',.22)')
+          g.addColorStop(1, 'rgba(' + accent[2].join(',') + ',.16)')
+          ctx.fillStyle = g
+          ctx.fillRect(0, 0, W, H)
+        }
+
+        /* ===== 固定纵向栅格，任何标题长度都不会挤压下方 ===== */
+        const HEAD_Y = 78
+        const ART_Y = 196
+        const ART_S = 936
+        const TITLE_Y = 1232
+        const META_Y = 1284
+        const TAG_Y = 1330
+        const FOOT_Y = 1372
+
+        // 顶部品牌
         const cell = 15
         const markSize = cell * 4
-        roundRect(ctx, PAD, markY, markSize, markSize, 12)
+        roundRect(ctx, PAD, HEAD_Y, markSize, markSize, 12)
         ctx.fillStyle = '#ffffff'
         ctx.fill()
         ctx.save()
-        roundRect(ctx, PAD, markY, markSize, markSize, 12)
+        roundRect(ctx, PAD, HEAD_Y, markSize, markSize, 12)
         ctx.clip()
-        // 用作品左上 4×4 的真实像素做标识，每张卡独一无二
         ctx.imageSmoothingEnabled = false
         for (let i = 0; i < 16; i++) {
           const px = pixels[Math.floor(i / 4) * n + (i % 4)]
-          ctx.fillStyle = px ? 'rgb(' + px[0] + ',' + px[1] + ',' + px[2] + ')' : accent[0]
-          ctx.fillRect(PAD + (i % 4) * cell, markY + Math.floor(i / 4) * cell, cell, cell)
+          ctx.fillStyle = px ? rgb(px) : rgb(accent[0])
+          ctx.fillRect(PAD + (i % 4) * cell, HEAD_Y + Math.floor(i / 4) * cell, cell, cell)
         }
         ctx.restore()
-        roundRect(ctx, PAD, markY, markSize, markSize, 12)
+        roundRect(ctx, PAD, HEAD_Y, markSize, markSize, 12)
         ctx.strokeStyle = 'rgba(43,38,32,.12)'
         ctx.lineWidth = 2
         ctx.stroke()
 
         ctx.textAlign = 'left'
         ctx.fillStyle = ink
-        ctx.font = '800 46px ' + FONT
-        ctx.fillText('像素小镇', PAD + markSize + 24, markY + 34)
-        ctx.font = '400 21px ' + FONT
+        ctx.font = '800 42px ' + FONT
+        ctx.fillText('像素小镇', PAD + markSize + 22, HEAD_Y + 32)
+        ctx.font = '400 20px ' + FONT
         ctx.fillStyle = muted
-        ctx.fillText('每一格光，点亮一个梦', PAD + markSize + 24, markY + 64)
+        ctx.fillText('每一格光，点亮一个梦', PAD + markSize + 22, HEAD_Y + 60)
 
-        // 主色装饰条
-        const stripeY = markY + markSize + 26
-        const stripeW = W - PAD * 2
-        const seg = stripeW / 3
-        accent.forEach((c, i) => {
-          roundRect(ctx, PAD + i * seg + 2, stripeY, seg - 4, 9, 4.5)
-          ctx.fillStyle = c
-          ctx.globalAlpha = i === 0 ? 1 : 0.72
-          ctx.fill()
-        })
-        ctx.globalAlpha = 1
+        ctx.textAlign = 'right'
+        ctx.fillStyle = muted
+        ctx.font = '500 22px ' + FONT
+        ctx.fillText(n + ' × ' + n, W - PAD, HEAD_Y + 44)
 
-        // 作品：白色相纸 + 柔和阴影
-        const artMax = 800
-        const artX = Math.round((W - artMax) / 2)
-        const artY = stripeY + 52
-        const mountPad = 18
+        // 作品
+        const artX = (W - ART_S) / 2
         ctx.save()
-        ctx.shadowColor = 'rgba(70,55,35,.18)'
-        ctx.shadowBlur = 34
-        ctx.shadowOffsetY = 12
-        roundRect(ctx, artX - mountPad, artY - mountPad, artMax + mountPad * 2, artMax + mountPad * 2, 26)
+        ctx.shadowColor = 'rgba(70,55,35,.20)'
+        ctx.shadowBlur = 36
+        ctx.shadowOffsetY = 14
+        roundRect(ctx, artX, ART_Y, ART_S, ART_S, 20)
         ctx.fillStyle = '#ffffff'
         ctx.fill()
         ctx.restore()
-
-        // 画面本身（圆角裁切）
         ctx.save()
-        roundRect(ctx, artX, artY, artMax, artMax, 10)
+        roundRect(ctx, artX, ART_Y, ART_S, ART_S, 20)
         ctx.clip()
-        ctx.fillStyle = '#ffffff'
-        ctx.fillRect(artX, artY, artMax, artMax)
-        const cellS = artMax / n
         ctx.imageSmoothingEnabled = false
+        const cs = ART_S / n
         for (let y = 0; y < n; y++) {
           for (let x = 0; x < n; x++) {
             const p = pixels[y * n + x]
             if (!p) continue
-            ctx.fillStyle = 'rgb(' + p[0] + ',' + p[1] + ',' + p[2] + ')'
-            ctx.fillRect(artX + x * cellS, artY + y * cellS, cellS + 0.6, cellS + 0.6)
+            ctx.fillStyle = rgb(p)
+            ctx.fillRect(artX + x * cs, ART_Y + y * cs, cs + 0.7, cs + 0.7)
           }
         }
         ctx.restore()
 
-        // 标题
+        // 标题（超长自动缩号，不会换行）
         const tTitle = title && title.trim() ? title.trim() : '未命名'
-        fitText(ctx, tTitle, W - PAD * 2, 62)
+        fitText(ctx, tTitle, W - PAD * 2 - 20, 58)
         ctx.textAlign = 'center'
         ctx.fillStyle = ink
-        ctx.fillText(tTitle, W / 2, artY + artMax + 104)
+        ctx.fillText(tTitle, W / 2, TITLE_Y)
 
-        // 副信息
+        // 作者
         const tAuthor = author && author.trim() ? author.trim() : '匿名'
-        ctx.font = '400 27px ' + FONT
+        ctx.font = '400 25px ' + FONT
         ctx.fillStyle = muted
-        const meta =
-          '画师 ' + tAuthor + '  ·  ' + n + '×' + n + (likes ? '  ·  ♥ ' + likes : '')
-        ctx.fillText(meta, W / 2, artY + artMax + 146)
+        ctx.fillText('画师 ' + tAuthor, W / 2, META_Y)
 
-        // 标签（有就显示）
+        // 右侧点赞（有才画）
+        if (likes) {
+          ctx.font = '700 22px ' + FONT
+          const txt = '♥ ' + likes
+          const tw = ctx.measureText(txt).width + 30
+          const tx = W - PAD - tw
+          roundRect(ctx, tx, META_Y - 28, tw, 36, 18)
+          ctx.fillStyle = 'rgba(229,72,77,.12)'
+          ctx.fill()
+          ctx.fillStyle = '#d4453f'
+          ctx.textAlign = 'center'
+          ctx.fillText(txt, tx + tw / 2, META_Y - 3)
+        }
+
+        // 标签（一行，最多 3 个）
         const tagList = Array.isArray(tags) ? tags.filter(Boolean).slice(0, 3) : []
         if (tagList.length) {
-          ctx.font = '600 22px ' + FONT
-          const gap = 14
-          const widths = tagList.map((t) => ctx.measureText('#' + t).width + 30)
-          let tw = widths.reduce((a, b) => a + b, 0) + gap * (tagList.length - 1)
+          ctx.font = '600 20px ' + FONT
+          const gap = 10
+          const widths = tagList.map((t) => ctx.measureText('#' + t).width + 26)
+          const tw = widths.reduce((a, b) => a + b, 0) + gap * (tagList.length - 1)
           let tx = (W - tw) / 2
-          const ty = artY + artMax + 176
           tagList.forEach((t, i) => {
             const w = widths[i]
-            roundRect(ctx, tx, ty, w, 40, 20)
+            roundRect(ctx, tx, TAG_Y, w, 34, 17)
             ctx.fillStyle = 'rgba(43,38,32,.06)'
             ctx.fill()
             ctx.fillStyle = muted
             ctx.textAlign = 'center'
-            ctx.fillText('#' + t, tx + w / 2, ty + 27)
+            ctx.fillText('#' + t, tx + w / 2, TAG_Y + 23)
             tx += w + gap
           })
         }
 
-        // 底部：二维码 + 站点
-        const fy = H - 148
+        // 底部：二维码 + 引导
         ctx.strokeStyle = 'rgba(43,38,32,.12)'
         ctx.lineWidth = 2
         ctx.beginPath()
-        ctx.moveTo(PAD, fy - 34)
-        ctx.lineTo(W - PAD, fy - 34)
+        ctx.moveTo(PAD, FOOT_Y - 22)
+        ctx.lineTo(W - PAD, FOOT_Y - 22)
         ctx.stroke()
 
         if (window.qrcode) {
@@ -1682,37 +1752,38 @@ export default {
           qr.addData(SITE)
           qr.make()
           const qS = qr.getModuleCount()
-          const qs = Math.max(2, Math.floor(84 / qS))
-          const qpad = 11
-          roundRect(ctx, PAD, fy - 6, qS * qs + qpad * 2, qS * qs + qpad * 2, 10)
+          const qs = Math.max(2, Math.floor(72 / qS))
+          const qpad = 9
+          const qSide = qS * qs + qpad * 2
+          roundRect(ctx, PAD, FOOT_Y + 4, qSide, qSide, 9)
           ctx.fillStyle = '#ffffff'
           ctx.fill()
           ctx.fillStyle = ink
           for (let yq = 0; yq < qS; yq++) {
             for (let xq = 0; xq < qS; xq++) {
-              if (qr.isDark(yq, xq)) ctx.fillRect(PAD + qpad + xq * qs, fy - 6 + qpad + yq * qs, qs, qs)
+              if (qr.isDark(yq, xq)) {
+                ctx.fillRect(PAD + qpad + xq * qs, FOOT_Y + 4 + qpad + yq * qs, qs, qs)
+              }
             }
           }
           ctx.textAlign = 'left'
           ctx.fillStyle = ink
-          ctx.font = '700 26px ' + FONT
-          ctx.fillText('扫码来画一笔', PAD + qS * qs + qpad * 2 + 22, fy + 22)
+          ctx.font = '700 24px ' + FONT
+          ctx.fillText('扫码来画一笔', PAD + qSide + 18, FOOT_Y + 36)
           ctx.fillStyle = muted
-          ctx.font = '400 21px ' + FONT
-          ctx.fillText('light-field.pages.dev', PAD + qS * qs + qpad * 2 + 22, fy + 52)
+          ctx.font = '400 19px ' + FONT
+          ctx.fillText('light-field.pages.dev', PAD + qSide + 18, FOOT_Y + 62)
         }
 
+        // 右下角落款
         const d = new Date()
+        const ds = d.getFullYear() + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.' + String(d.getDate()).padStart(2, '0')
         ctx.textAlign = 'right'
         ctx.fillStyle = muted
-        ctx.font = '400 23px ' + FONT
-        ctx.fillText(
-          d.getFullYear() + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.' + String(d.getDate()).padStart(2, '0'),
-          W - PAD,
-          fy + 24
-        )
-        ctx.font = '400 19px ' + FONT
-        ctx.fillText('扫码或搜索「像素小镇」', W - PAD, fy + 52)
+        ctx.font = '500 20px ' + FONT
+        ctx.fillText(ds, W - PAD, FOOT_Y + 34)
+        ctx.font = '400 18px ' + FONT
+        ctx.fillText('像素小镇 · 像素作品', W - PAD, FOOT_Y + 58)
 
         return cv
       }

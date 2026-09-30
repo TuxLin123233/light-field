@@ -103,6 +103,34 @@ export default {
         margin-bottom: 12px;
       }
 
+      .fold { padding: 4px 14px; }
+
+      .fold-head {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        border: none;
+        background: transparent;
+        padding: 12px 0;
+        cursor: pointer;
+        text-align: left;
+      }
+
+      .fold-title { flex: 1; font-size: 15px; font-weight: 800; color: var(--text); }
+      .fold-count {
+        flex: 0 0 auto;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--text-faint);
+        background: var(--surface-2);
+        border-radius: 999px;
+        padding: 3px 10px;
+      }
+      .fold-arrow { flex: 0 0 auto; font-size: 15px; color: var(--text-faint); transition: transform 0.2s; }
+      .fold-head.open .fold-arrow { transform: rotate(180deg); }
+      .fold-body { padding-bottom: 14px; }
+
       .lay-row, .lay-child-row {
         display: flex;
         align-items: flex-start;
@@ -356,25 +384,35 @@ export default {
         <button class="theme-btn" id="themeBtn" type="button" title="切换主题">🌙</button>
       </div>
 
-      <section class="group">
-        <div class="group-title">画板布局</div>
-        <div class="group-hint">调整画板上显示哪些区域，让画布更大、界面更清爽。</div>
-
-        <label class="lay-row">
-          <input type="checkbox" id="layAllOn">
-          <span class="lay-body"><b>全部显示</b><i>一键恢复默认</i></span>
-        </label>
-
-        <div class="lay-child" id="layBox"></div>
+      <section class="group fold">
+        <button class="fold-head" id="layFold" type="button" aria-expanded="false">
+          <span class="fold-title">画板布局</span>
+          <span class="fold-count" id="layCount"></span>
+          <span class="fold-arrow">⌄</span>
+        </button>
+        <div class="fold-body" id="layFoldBody" hidden>
+          <div class="group-hint">调整画板上显示哪些区域，让画布更大、界面更清爽。</div>
+          <label class="lay-row">
+            <input type="checkbox" id="layAllOn">
+            <span class="lay-body"><b>全部显示</b><i>一键恢复默认</i></span>
+          </label>
+          <div class="lay-child" id="layBox"></div>
+        </div>
       </section>
 
-      <section class="group">
-        <div class="group-title">进阶功能</div>
-        <div class="group-hint">这些功能默认都是关闭的，用不到就保持关闭，画板会更简单。只影响你这台设备。</div>
-        <div id="featBox"></div>
-        <div class="feat-all">
-          <button class="feat-btn" id="featAllOff" type="button">全部关闭</button>
-          <button class="feat-btn" id="featAllOn" type="button">全部开启</button>
+      <section class="group fold">
+        <button class="fold-head" id="featFold" type="button" aria-expanded="false">
+          <span class="fold-title">进阶功能</span>
+          <span class="fold-count" id="featCount"></span>
+          <span class="fold-arrow">⌄</span>
+        </button>
+        <div class="fold-body" id="featFoldBody" hidden>
+          <div class="group-hint">这些功能默认都是关闭的，用不到就保持关闭，画板会更简单。只影响你这台设备。</div>
+          <div id="featBox"></div>
+          <div class="feat-all">
+            <button class="feat-btn" id="featAllOff" type="button">全部关闭</button>
+            <button class="feat-btn" id="featAllOn" type="button">全部开启</button>
+          </div>
         </div>
       </section>
 
@@ -534,6 +572,27 @@ export default {
       })
       applyGlass()
 
+      /* ---------- 折叠分组 ---------- */
+      function setupFold(headId, bodyId, countId, items, isOn) {
+        const head = document.getElementById(headId)
+        const body = document.getElementById(bodyId)
+        const cnt = document.getElementById(countId)
+        if (!head || !body) return
+        const paint = () => {
+          const on = items.filter((k) => isOn(k)).length
+          if (cnt) cnt.textContent = on + ' / ' + items.length
+        }
+        head.addEventListener('click', () => {
+          const open = body.hidden
+          body.hidden = !open
+          head.setAttribute('aria-expanded', String(open))
+          head.classList.toggle('open', open)
+          paint()
+        })
+        paint()
+        return paint
+      }
+
       /* ---------- 画板布局（母/子） ---------- */
       const LAYOUTS = [
         { key: 'size', label: '画布尺寸栏', desc: '切换 16/32/64 的按钮' },
@@ -594,6 +653,20 @@ export default {
         layAllOn.addEventListener('change', () => {
           LAYOUTS.forEach((L) => setLay(L.key, layAllOn.checked))
           renderLayoutSwitches()
+      setupFold(
+        'layFold',
+        'layFoldBody',
+        'layCount',
+        LAYOUTS.map((L) => L.key),
+        isLayOn
+      )
+      setupFold(
+        'featFold',
+        'featFoldBody',
+        'featCount',
+        FEATURES.map((F) => F.key),
+        isFeatOn
+      )
           toast(layAllOn.checked ? '已显示画板全部区域' : '已隐藏画板全部区域')
         })
       }
