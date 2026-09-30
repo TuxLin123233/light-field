@@ -2094,7 +2094,32 @@ color: var(--text-muted);
       const switchModeBtn = document.getElementById('switchModeBtn')
       const MODE_LABEL = { free: '自由模式', prompt: '题目模式', anim: '帧动画' }
 
+      // 按开关隐藏模式按钮与相关 UI
+      function applyFeatureVisibility() {
+        const promptBtn = document.querySelector('[data-mode="prompt"]')
+        const animBtn = document.querySelector('[data-mode="anim"]')
+        if (promptBtn) promptBtn.hidden = !feat.prompt
+        if (animBtn) animBtn.hidden = !feat.anim
+        const imgBtnEl = document.getElementById('imgBtn')
+        if (imgBtnEl) imgBtnEl.hidden = !feat.image
+        const mirrorBtnEl = document.getElementById('mirrorBtn')
+        if (mirrorBtnEl) mirrorBtnEl.hidden = !feat.mirror
+        const tagRowEl = document.querySelector('.tag-row')
+        if (tagRowEl) tagRowEl.hidden = !feat.tags
+        if (mirrorBtnEl) {
+          mirrorBtnEl.classList.remove('active')
+          mirrorBtnEl.setAttribute('aria-pressed', 'false')
+        }
+      }
+
+      function modeAllowed(m) {
+        if (m === 'prompt') return feat.prompt
+        if (m === 'anim') return feat.anim
+        return true
+      }
+
       function enterMode(mode) {
+        if (!modeAllowed(mode)) mode = 'free'
         const isPrompt = mode === 'prompt'
         const firstTime = createMode !== mode
         createMode = mode
@@ -2466,17 +2491,39 @@ color: var(--text-muted);
             return
           }
           toast('已删除「' + name + '」')
-          try {
-            const ids = JSON.parse(localStorage.getItem('paintMyTimes') || '[]')
-            localStorage.setItem(
-              'paintMyTimes',
-              JSON.stringify(ids.filter((t) => String(t) !== String(rec.time)))
-            )
-          } catch (e) {}
-          loadRecords()
         } catch (e) {
           toast('删除失败：网络错误')
+          return
         }
+        // 删除已成功，下面这些收尾动作失败也不该影响结果
+        try {
+          const ids = JSON.parse(localStorage.getItem('paintMyTimes') || '[]')
+          localStorage.setItem(
+            'paintMyTimes',
+            JSON.stringify(ids.filter((t) => String(t) !== String(rec.time)))
+          )
+        } catch (e) {}
+        await loadOwned()
+        await fetchRecords()
+      }
+
+      /* ---------- 进阶功能开关 ---------- */
+      function isFeatOn(k) {
+        try {
+          return localStorage.getItem('lw-feat-' + k) === '1'
+        } catch (e) {
+          return false
+        }
+      }
+      const feat = {
+        get prompt() { return isFeatOn('prompt') },
+        get anim() { return isFeatOn('anim') },
+        get daily() { return isFeatOn('daily') },
+        get contest() { return isFeatOn('contest') },
+        get image() { return isFeatOn('image') },
+        get mirror() { return isFeatOn('mirror') },
+        get drafts() { return isFeatOn('drafts') },
+        get tags() { return isFeatOn('tags') },
       }
 
       /* ---------- 认领码 ---------- */
@@ -3346,6 +3393,7 @@ color: var(--text-muted);
 
 
       ;(async () => {
+        if (!feat.daily) return
         try {
           const res = await fetch('/api/challenge')
           if (!res.ok) return
@@ -3383,6 +3431,7 @@ color: var(--text-muted);
       }
 
       ;(async () => {
+        if (!feat.contest) return
         try {
           const res = await fetch('/api/contest')
           if (!res.ok) return
@@ -4124,8 +4173,9 @@ color: var(--text-muted);
       })
 
       function startCreation() {
+        applyFeatureVisibility()
         renderRecent()
-        renderSlots()
+        if (feat.drafts) renderSlots()
         const savedMode = localStorage.getItem('lw-mode')
         if (loadDraft()) {
           toast('欢迎回来！你的数据已保存')

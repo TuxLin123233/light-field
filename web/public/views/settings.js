@@ -103,6 +103,27 @@ export default {
         margin-bottom: 12px;
       }
 
+      .group-hint {
+        font-size: 12px;
+        color: var(--text-faint);
+        line-height: 1.6;
+        margin-bottom: 4px;
+      }
+
+      .feat-all { display: flex; gap: 10px; padding-top: 12px; }
+
+      .feat-btn {
+        flex: 1;
+        border: 1px solid var(--border-strong);
+        background: var(--surface-2);
+        color: var(--text-muted);
+        border-radius: 999px;
+        padding: 9px 0;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
       .row {
         display: flex;
         align-items: center;
@@ -313,6 +334,16 @@ export default {
       </div>
 
       <section class="group">
+        <div class="group-title">进阶功能</div>
+        <div class="group-hint">这些功能默认都是关闭的，用不到就保持关闭，画板会更简单。只影响你这台设备。</div>
+        <div id="featBox"></div>
+        <div class="feat-all">
+          <button class="feat-btn" id="featAllOff" type="button">全部关闭</button>
+          <button class="feat-btn" id="featAllOn" type="button">全部开启</button>
+        </div>
+      </section>
+
+      <section class="group">
         <div class="group-title">外观</div>
         <div class="row">
           <div>
@@ -459,6 +490,85 @@ export default {
         glassSwitch.classList.add('jelly')
       })
       applyGlass()
+
+      /* ---------- 轻提示 ---------- */
+      let featToastTimer = null
+      function toast(msg) {
+        const el = document.getElementById('toast')
+        if (!el) return
+        el.textContent = msg
+        el.classList.add('show')
+        clearTimeout(featToastTimer)
+        featToastTimer = setTimeout(() => el.classList.remove('show'), 1600)
+      }
+
+      /* ---------- 进阶功能开关（默认全关） ---------- */
+      const FEATURES = [
+        { key: 'prompt', label: '题目模式', desc: '按主题出题创作，顶部有换题按钮' },
+        { key: 'anim', label: '帧动画', desc: '逐帧作画并导出循环 GIF' },
+        { key: 'daily', label: '每日挑战', desc: '每天一个题目，作品进当日榜' },
+        { key: 'contest', label: '本周主题比赛', desc: '每周一个主题，社区投票选最佳' },
+        { key: 'image', label: '图片转像素画', desc: '把照片变成像素画再继续手改' },
+        { key: 'mirror', label: '镜像绘制', desc: '落笔自动左右对称' },
+        { key: 'drafts', label: '多草稿槽', desc: '同时保存 3 幅草稿，随时切换' },
+        { key: 'tags', label: '作品标签', desc: '给作品加标签，方便别人搜到' },
+      ]
+      const featKey = (k) => 'lw-feat-' + k
+      function isFeatOn(k) {
+        try {
+          return localStorage.getItem(featKey(k)) === '1'
+        } catch (e) {
+          return false
+        }
+      }
+      function setFeat(k, on) {
+        try {
+          localStorage.setItem(featKey(k), on ? '1' : '0')
+        } catch (e) {}
+      }
+      const featBox = document.getElementById('featBox')
+      if (featBox) {
+        FEATURES.forEach((f) => {
+          const row = document.createElement('div')
+          row.className = 'row'
+          const left = document.createElement('div')
+          const lb = document.createElement('div')
+          lb.className = 'row-label'
+          lb.textContent = f.label
+          const ds = document.createElement('div')
+          ds.className = 'row-desc'
+          ds.textContent = f.desc
+          left.append(lb, ds)
+          const sw = document.createElement('input')
+          sw.type = 'checkbox'
+          sw.className = 'switch'
+          sw.setAttribute('role', 'switch')
+          sw.id = 'feat-' + f.key
+          sw.checked = isFeatOn(f.key)
+          sw.addEventListener('change', () => {
+            setFeat(f.key, sw.checked)
+            toast(sw.checked ? '已开启「' + f.label + '」' : '已关闭「' + f.label + '」')
+          })
+          row.append(left, sw)
+          featBox.appendChild(row)
+        })
+      }
+      document.getElementById('featAllOff').addEventListener('click', () => {
+        FEATURES.forEach((f) => setFeat(f.key, false))
+        syncFeatSwitches()
+        toast('已关闭全部进阶功能')
+      })
+      document.getElementById('featAllOn').addEventListener('click', () => {
+        FEATURES.forEach((f) => setFeat(f.key, true))
+        syncFeatSwitches()
+        toast('已开启全部进阶功能')
+      })
+      function syncFeatSwitches() {
+        FEATURES.forEach((f) => {
+          const el = document.getElementById('feat-' + f.key)
+          if (el) el.checked = isFeatOn(f.key)
+        })
+      }
 
       /* ---------- 认领码 ---------- */
       const claimBox = document.getElementById('claimBox')
