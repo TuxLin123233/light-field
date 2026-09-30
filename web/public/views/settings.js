@@ -269,6 +269,29 @@ export default {
 
       .row-col { flex-direction: column; align-items: stretch; gap: 10px; }
 
+      /* ---------- 联系与社区：不透明的一张卡 ---------- */
+      .contact-card {
+        /* 用不透明的 surface，不跟导航栏那套透明度联动 */
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 4px 14px;
+        box-shadow: 0 2px 10px var(--shadow2, rgba(0, 0, 0, 0.06));
+        opacity: 1;
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+      }
+      .contact-card .entry {
+        background: transparent;
+        padding: 13px 0;
+      }
+      .contact-card .entry:hover { background: var(--surface-2); }
+      .entry-sep {
+        height: 1px;
+        background: var(--border);
+        margin: 0 -14px;
+      }
+
       /* ---------- 单选组（启动页 / 导航位置） ---------- */
       .radio-row { display: flex; flex-wrap: wrap; gap: 8px; }
       .radio-chip {
@@ -899,19 +922,28 @@ export default {
           </div>
           <span class="entry-arrow">›</span>
         </router-link>
-        <router-link class="entry" to="/admin">
-          <span class="entry-ico">🛡️</span>
-          <span class="entry-body">
-            <span class="entry-label">维护社区稳定</span>
-            <div class="entry-desc">维护者计划 · 发送正式申请书信后可加入</div>
-          </span>
-          <span class="entry-arrow">›</span>
-        </router-link>
-        <div class="row">
-          <div>
-            <div class="row-label">问题反馈</div>
-            <div class="row-desc">微信 Tux123233 或邮箱 linsifan123233@petalmail.com</div>
-          </div>
+      </section>
+
+      <section class="group">
+        <div class="group-title">联系与社区</div>
+        <div class="contact-card">
+          <router-link class="entry" to="/admin">
+            <span class="entry-ico">🛡️</span>
+            <span class="entry-body">
+              <span class="entry-label">维护社区稳定</span>
+              <div class="entry-desc">维护者计划 · 发送正式申请书信后可加入</div>
+            </span>
+            <span class="entry-arrow">›</span>
+          </router-link>
+          <div class="entry-sep"></div>
+          <router-link class="entry" to="/faq">
+            <span class="entry-ico">❓</span>
+            <span class="entry-body">
+              <span class="entry-label">问题反馈</span>
+              <div class="entry-desc">常见问题解答 · 微信 Tux123233 · 邮箱 linsifan123233@petalmail.com</div>
+            </span>
+            <span class="entry-arrow">›</span>
+          </router-link>
         </div>
       </section>
 

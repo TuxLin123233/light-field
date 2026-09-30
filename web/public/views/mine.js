@@ -476,14 +476,17 @@ export default {
       canvas.height = n * dpr
       const c = canvas.getContext('2d')
       c.scale(dpr, dpr)
-      for (let y = 0; y < n; y++) {
-        for (let x = 0; x < n; x++) {
-          const p = pixels && pixels[y * n + x]
-          if (p) c.fillStyle = 'rgb(' + p[0] + ',' + p[1] + ',' + p[2] + ')'
-          else continue
-          c.fillRect(x, y, 1, 1)
+        // 先铺白底：缺失的格子若留成透明，会在容器背景上显示成白条纹
+        c.fillStyle = '#ffffff'
+        c.fillRect(0, 0, n, n)
+        for (let y = 0; y < n; y++) {
+          for (let x = 0; x < n; x++) {
+            const p = pixels && pixels[y * n + x]
+            if (!Array.isArray(p) || p.length < 3) continue
+            c.fillStyle = 'rgb(' + p[0] + ',' + p[1] + ',' + p[2] + ')'
+            c.fillRect(x, y, 1, 1)
+          }
         }
-      }
     }
     function escapeHtml(s) {
       return String(s == null ? '' : s).replace(/[&<>"']/g, (m) =>

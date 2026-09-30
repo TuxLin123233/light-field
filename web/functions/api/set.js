@@ -1,6 +1,7 @@
 import { appendEntry, recentHistory, HISTORY_MAX } from './_history.js'
 import { contestInfo } from './_contest.js'
 import { resolveClaim, touchUser } from './claim.js'
+import { readToken, pickToken } from './_auth.js'
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -162,12 +163,15 @@ export async function onRequestPost(context) {
     if (clean.length) entry.tags = clean
   }
 
-  // 认领码：格式合法才认，不合法当没传，不影响上传
-  let claimHashValue = null
-  if (body && typeof body.claim === 'string' && body.claim.trim()) {
+  // 归属：优先用登录账号；没登录才回退到认领码（过渡期保留）
+  const who = await readToken(env, '', pickToken(request, body))
+  if (who) {
+    entry.ownerUser = who.uid
+    entry.ownerName = who.username
+  } else if (body && typeof body.claim === 'string' && body.claim.trim()) {
+    // 认领码：格式合法才认，不合法当没传，不影响上传
     const found = await resolveClaim(env.LIGHTFIELD_KV, body.claim)
     if (found) {
-      claimHashValue = found.hash
       entry.owner = found.hash
     }
   }
