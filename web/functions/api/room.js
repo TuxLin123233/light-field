@@ -9,9 +9,11 @@ import {
   newRoom,
   newCode,
   roomSummary,
+  pruneGhosts,
   pwHash,
   MAX_MEMBERS,
   ROOM_TTL,
+  GHOST_MS,
 } from './_roomcore.js'
 
 const CORS_HEADERS = {
@@ -116,6 +118,11 @@ async function viaKV(env, request, url) {
     const id = url.searchParams.get('id') || ''
     const room = await readRoomKV(kv, code)
     const res = readState(room, id)
+    if (res.drop) {
+      // 全是鬼成员，房间直接销毁
+      await kv.delete(roomKey(code))
+      return json({ ok: true, gone: true, state: null }, 200)
+    }
     if (res.changed && room) await kv.put(roomKey(code), JSON.stringify(room), { expirationTtl: ROOM_TTL })
     return json(res.payload, res.status)
   }
@@ -189,13 +196,19 @@ async function listRooms(env) {
       if (!room || !room.code) continue
       if (!room.members || !room.members.length) continue
 
+      // 先把鬼成员清掉，只统计真正在线的人
+      pruneGhosts(room)
+      const summary = roomSummary(room)
+      // 一个活人都没有 → 这是个鬼房间，不展示（下次有人访问时会被销毁）
+      if (!summary.live) continue
+
       // 闲置房间不展示：房间里最后有人操作才算出「在线」
       const idleMs = now - (room.updatedAt || 0)
       if (idleMs > IDLE_HIDE_MS) continue
       // 只有一个人的房间多半是等人等了没来，等太久就不再占用列表
-      if (room.members.length < 2 && idleMs > SOLO_HIDE_MS) continue
+      if (summary.live < 2 && idleMs > SOLO_HIDE_MS) continue
 
-      out.push(roomSummary(room))
+      out.push(summary)
     }
     if (out.length >= 60 || res.list_complete) break
     cursor = res.cursor

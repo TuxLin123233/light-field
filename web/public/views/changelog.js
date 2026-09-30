@@ -208,7 +208,9 @@ export default {
         padding: 7px 0 6px;
         border-radius: 14px;
         text-decoration: none;
-        color: var(--text-faint);
+        /* 导航越透明，文字反而越清晰、每个图标越自带底衬，保证任何内容上都能看清 */
+        color: color-mix(in srgb, var(--text-faint) calc(var(--nav-op, 0.66) * 100%), var(--text));
+        background: color-mix(in srgb, var(--surface) calc((1 - var(--nav-op, 0.66)) * 66%), transparent);
         font-size: 10px;
         font-weight: 700;
         transition: color 0.2s, background 0.2s;
@@ -266,6 +268,8 @@ export default {
               <li><span class="li-tag tag-fix">修复</span>深色模式下画板顶部「像素小镇 · 画板」等标题是黑字黑底看不清：补上页面文字颜色，现在跟随主题</li>
               <li><span class="li-tag tag-fix">修复</span>设置页「画板布局」「进阶功能」点不开：分组绑定曾被写进其它回调里，且引用了还没初始化的数据</li>
               <li><span class="li-tag tag-fix">修复</span>维护者页面顶部标题区是一段裸文字，现在与下方卡片一样有底色、边框和阴影</li>
+              <li><span class="li-tag tag-new">新功能</span>鬼房间自动清理：成员心跳超过 25 秒视为掉线并移出房间，房间没人时直接销毁；在线列表只显示真有人在线的房间</li>
+              <li><span class="li-tag tag-fix">修复</span>底部导航调到最透明时文字会看不见：现在越透明文字对比度越高，且每个图标会自动浮现浅色底衬，任何内容上都能看清</li>
               <li><span class="li-tag tag-fix">修复</span><b>联机房间改用 Durable Object 存储</b>：原先房间状态存在单个 KV key 上，而 KV 是最终一致的，两个人同时操作会各自读到旧快照再互相覆盖，导致房主看不到别人加入、落笔完全不同步、明明两人在线却提示「至少需要 2 人才能开始」。现在同一房间的请求串行处理，写入立即可见</li>
               <li><span class="li-tag tag-fix">修复</span>落笔的 250ms 限流原本与「加入房间、改标题」共用时间戳，进房后马上画会被误判为「操作太快」，已改为只按上一次落笔计时</li>
               <li><span class="li-tag tag-new">新功能</span>联机页新增「在线房间」列表：能看到当前所有还开着的房间（模式、人数、是否有密码、最后活跃时间），一键填码加入，每 5 秒自动刷新</li>

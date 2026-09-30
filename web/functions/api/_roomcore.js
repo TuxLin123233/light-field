@@ -5,6 +5,8 @@ export const ROOM_TTL = 1800
 export const MAX_MEMBERS = 6
 export const DRAW_GAP_MS = 250
 export const ROUND_MS = 90000
+// 超过这个时间没心跳的成员视为「鬼」（掉线但没发到离开请求），会被清掉
+export const GHOST_MS = 25000
 export const ROOM_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
 
 export const GUESS_WORDS = [
@@ -114,6 +116,38 @@ export function normalizeGuess(s) {
     .replace(/[\s，。,.!！?？、；;：:""''“”‘’()（）\-—_~@#￥%…·【】\[\]]/g, '')
 }
 
+/**
+ * 清掉「鬼成员」：心跳超时的成员直接移除。
+ * 没有心跳时间的旧房间，按房间最后更新时间兜底判断。
+ * 返回 true 表示成员列表变了。
+ */
+export function pruneGhosts(room) {
+  const now = Date.now()
+  const fallback = room.updatedAt || 0
+  const before = room.members.length
+  room.members = room.members.filter((m) => {
+    const seen = typeof m.seenAt === 'number' ? m.seenAt : fallback
+    return now - seen <= GHOST_MS
+  })
+  if (room.members.length === before) return false
+  // 分数表同步清理
+  if (room.game) {
+    for (const id of Object.keys(room.game.scores)) {
+      if (!room.members.some((m) => m.id === id)) delete room.game.scores[id]
+    }
+  }
+  room.updatedAt = now
+  return true
+}
+
+/** 标记某个成员此刻在线 */
+export function touchMember(room, id) {
+  const m = room.members.find((x) => x.id === id)
+  if (!m) return false
+  m.seenAt = Date.now()
+  return true
+}
+
 export function memberIndex(room, id) {
   return room.members.findIndex((m) => m.id === id)
 }
@@ -196,11 +230,17 @@ export function maybeAdvance(room) {
 export function apply(state, body) {
   const action = (body && body.action) || ''
   const id = (body && body.id) || ''
+  if (action !== 'leave') touchMember(state, id)
   const code = ((body && body.code) || '').toString().toUpperCase().trim()
 
   if (!state) {
     // 房间不存在时，只有 join 之外的动作都没有意义
     return { status: 404, payload: { error: '房间不存在或已过期' } }
+  }
+
+  pruneGhosts(state)
+  if (!state.members.length && action !== 'join') {
+    return { status: 200, changed: true, drop: true, payload: { ok: true } }
   }
 
   switch (action) {
@@ -238,7 +278,7 @@ export function apply(state, body) {
         state.members = state.members.filter((m) => sameName.indexOf(m) === -1)
       }
       const newId = body && body.newId ? String(body.newId) : crypto.randomUUID()
-      state.members.push({ id: newId, name: name || '匿名' })
+      state.members.push({ id: newId, name: name || '匿名', seenAt: Date.now() })
       state.updatedAt = Date.now()
       if (state.game) state.game.scores[newId] = 0
       return {
@@ -423,6 +463,9 @@ export function roomSummary(room) {
     code: room.code,
     mode: room.mode === 'game' ? 'game' : 'free',
     members: room.members.length,
+    live: room.members.filter(
+      (m) => Date.now() - (typeof m.seenAt === 'number' ? m.seenAt : room.updatedAt || 0) <= GHOST_MS
+    ).length,
     maxMembers: MAX_MEMBERS,
     hasPassword: !!room.pw,
     hasGame: !!(g && g.active),
@@ -434,6 +477,11 @@ export function roomSummary(room) {
 /** GET：读房间状态，顺带推进回合 */
 export function readState(state, viewerId) {
   if (!state) return { status: 404, payload: { error: '房间不存在或已过期' } }
-  const changed = maybeAdvance(state)
+  let changed = pruneGhosts(state)
+  if (touchMember(state, viewerId)) changed = true
+  if (!state.members.length) {
+    return { status: 200, changed: true, drop: true, payload: { ok: true, empty: true } }
+  }
+  changed = maybeAdvance(state) || changed
   return { status: 200, changed, payload: { ok: true, state: stripId(state, viewerId) } }
 }

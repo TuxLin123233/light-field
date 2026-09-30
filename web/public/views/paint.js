@@ -1306,7 +1306,9 @@ color: var(--text-muted);
         padding: 7px 0 6px;
         border-radius: 14px;
         text-decoration: none;
-        color: var(--text-faint);
+        /* 导航越透明，文字反而越清晰、每个图标越自带底衬，保证任何内容上都能看清 */
+        color: color-mix(in srgb, var(--text-faint) calc(var(--nav-op, 0.66) * 100%), var(--text));
+        background: color-mix(in srgb, var(--surface) calc((1 - var(--nav-op, 0.66)) * 66%), transparent);
         font-size: 10px;
         font-weight: 700;
         transition: color 0.2s, background 0.2s;

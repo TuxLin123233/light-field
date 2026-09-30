@@ -757,7 +757,9 @@ export default {
         padding: 7px 0 6px;
         border-radius: 14px;
         text-decoration: none;
-        color: var(--text-faint);
+        /* 导航越透明，文字反而越清晰、每个图标越自带底衬，保证任何内容上都能看清 */
+        color: color-mix(in srgb, var(--text-faint) calc(var(--nav-op, 0.66) * 100%), var(--text));
+        background: color-mix(in srgb, var(--surface) calc((1 - var(--nav-op, 0.66)) * 66%), transparent);
         font-size: 10px;
         font-weight: 700;
         transition: color 0.2s, background 0.2s;
@@ -920,7 +922,10 @@ export default {
       <div class="disclaimer-report">发现违规内容？请联系微信 Tux123233 或邮箱 linsifan123233@petalmail.com 举报。</div>
     </div>
     <div class="copyright">© 2026 像素小镇 · 版权所有 · 作者 Lin Sifan</div>`,
+
   mounted() {
+      // 组件实例引用：箭头函数里没有 this，用它来写回组件状态
+      const vm = this
       const SIZE = 16
       const PRESET_COLORS = [
         ['#e53935', '红'], ['#fb8c00', '橙'], ['#fdd835', '黄'],
@@ -1475,6 +1480,16 @@ export default {
           }
           const data = await res.json()
           const s = data.state
+          if (!s) {
+            // 房间已解散（成员全部离线），回到入口并清掉本机记录
+            leftAlready = true
+            try {
+              localStorage.removeItem('lw-roomid:' + room.code)
+            } catch (e) {}
+            toast('这个房间已经没有人在了')
+            enterLanding()
+            return
+          }
           room = s
           renderRoom()
           if (s.version !== lastServerVersion && !committing) {
@@ -1520,9 +1535,12 @@ export default {
       }
 
       /* ---------- 加入/创建 ---------- */
-      function enterRoom(state, id) {
+      const enterRoom = (state, id) => {
         room = state
         memberId = id
+        vm.room = state
+        vm.memberId = id
+        vm._left = false
         joinedAt = Date.now()
         lastServerVersion = state.version
         applyPixels(state.pixels)
@@ -1553,6 +1571,9 @@ export default {
       }
 
       function enterLanding() {
+        vm.room = null
+        vm.memberId = ''
+        vm._left = true
         clearInterval(pollTimer)
         startListPolling()
         setTimeout(() => landing && (landing.hidden = false), 0)
@@ -1801,41 +1822,6 @@ export default {
         }
       })
 
-      /* ---------- 离开房间 ----------
-       * 必须在「切页」和「关页面」两种情况下都把成员记录删掉，
-       * 否则下次再进房会多出一条同名成员，人数一直涨。 */
-      let leftAlready = false
-      function sendLeave() {
-        if (!room || !memberId) return
-        const body = JSON.stringify({ action: 'leave', code: room.code, id: memberId })
-        try {
-          // keepalive 让请求在页面关闭时也能发完，比 sendBeacon 稳
-          fetch('/api/room', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body,
-            keepalive: true,
-          }).catch(() => {})
-        } catch (e) {
-          try {
-            navigator.sendBeacon('/api/room', new Blob([body], { type: 'application/json' }))
-          } catch (e2) {}
-        }
-      }
-
-      // 真正离开时才发，且只发一次
-      function leaveRoom() {
-        if (leftAlready) return
-        leftAlready = true
-        sendLeave()
-        try {
-          localStorage.removeItem('lw-roomid:' + (room ? room.code : ''))
-        } catch (e) {}
-      }
-
-      window.addEventListener('pagehide', leaveRoom)
-      window.addEventListener('beforeunload', leaveRoom)
-
       /* ---------- 主题 ---------- */
       const themeBtn = document.getElementById('themeBtn')
       function applyThemeIcon() {
@@ -1875,8 +1861,31 @@ export default {
       }
     },
 
-    /* 切到别的页面时也要退出房间，否则成员记录会一直留在房间里 */
+    /* 切到别的页面时也要退出房间，否则成员记录会一直留在房间里。
+     * 必须内联实现：app.js 的组件包装只透传 css/template/title/mounted/
+     * beforeUnmount，methods 不会带过来。 */
     beforeUnmount() {
-      leaveRoom()
+      if (this._left) return
+      this._left = true
+      const code = this.room ? this.room.code : ''
+      const id = this.memberId
+      try {
+        if (code) localStorage.removeItem('lw-roomid:' + code)
+      } catch (e) {}
+      if (!code || !id) return
+      const body = JSON.stringify({ action: 'leave', code, id })
+      try {
+        // keepalive 让请求在页面关闭时也能发完，比 sendBeacon 稳
+        fetch('/api/room', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body,
+          keepalive: true,
+        }).catch(() => {})
+      } catch (err) {
+        try {
+          navigator.sendBeacon('/api/room', new Blob([body], { type: 'application/json' }))
+        } catch (e2) {}
+      }
     },
 }
