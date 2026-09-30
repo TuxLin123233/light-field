@@ -148,6 +148,7 @@ export async function onRequestPost(context) {
   if (animObj) entry.anim = animObj
   if (rawContest) entry.contest = rawContest
   if (body && body.room === true) entry.room = true
+  if (body && body.fromImage === true) entry.fromImage = true
 
   // 认领码：格式合法才认，不合法当没传，不影响上传
   let claimHashValue = null

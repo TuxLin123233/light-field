@@ -31,6 +31,8 @@ function normalizeEntry(e) {
     contest: e && e.contest,
     contestVotes: (e && e.contestVotes) || 0,
     room: e && e.room ? true : undefined,
+    fromImage: e && e.fromImage ? true : undefined,
+    tags: Array.isArray(e && e.tags) ? e.tags.slice(0, 6) : undefined,
   }
 }
 

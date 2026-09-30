@@ -331,6 +331,9 @@ color: var(--text-muted);
         margin-top: 18px;
       }
 
+      #board.drop-hint { outline: 3px dashed var(--accent); outline-offset: -3px; }
+      #imgBtn.active { background: var(--accent); color: #fff; }
+
       #mirrorBtn.active {
         background: var(--accent);
         color: #fff;
@@ -1578,7 +1581,8 @@ color: var(--text-muted);
     </div>
 
     <div class="board-wrap">
-      <canvas id="board" width="512" height="512"></canvas>
+      <canvas id="board" width="512" height="512"
+              title="也可以直接把照片拖到这里"></canvas>
     </div>
 
     <div class="size-row">
@@ -1655,7 +1659,9 @@ color: var(--text-muted);
     <div class="actions">
       <button id="undoBtn" type="button" title="撤销（Z）" disabled>↩️</button>
       <button id="clearBtn" type="button" title="清空">🗑️</button>
+      <button id="imgBtn" type="button" title="从照片生成像素画">🖼️</button>
       <button id="mirrorBtn" type="button" title="左右镜像绘制（M）" aria-pressed="false">🦋</button>
+      <input id="imgInput" type="file" accept="image/*" hidden>
       <button id="savePngBtn" type="button" title="导出 PNG">⬇️</button>
       <button id="uploadBtn" type="button">上传</button>
     </div>
@@ -2157,6 +2163,127 @@ color: var(--text-muted);
           if (rgb) setFromRgb(rgb)
         }
       })
+
+      /* ---------- 从照片生成像素画 ---------- */
+      const imgBtn = document.getElementById('imgBtn')
+      const imgInput = document.getElementById('imgInput')
+      let fromImage = false
+
+      // 均匀量化：把每个通道吸附到 levels 档
+      function quantize(rgb, levels) {
+        if (!levels) return rgb
+        const step = 255 / (levels - 1)
+        return rgb.map((v) => Math.round(Math.round(v / step) * step))
+      }
+      // 吸附到最接近的预设色
+      function snapToPalette(rgb, palette) {
+        if (!palette || !palette.length) return rgb
+        let best = palette[0]
+        let bestD = Infinity
+        for (const c of palette) {
+          const d =
+            (c[0] - rgb[0]) ** 2 + (c[1] - rgb[1]) ** 2 + (c[2] - rgb[2]) ** 2
+          if (d < bestD) {
+            bestD = d
+            best = c
+          }
+        }
+        return [best[0], best[1], best[2]]
+      }
+
+      function applyImageToCanvas(file, mode) {
+        if (!file || !/^image\//.test(file.type)) {
+          toast('请选择一张图片')
+          return
+        }
+        const url = URL.createObjectURL(file)
+        const im = new Image()
+        im.onload = () => {
+          try {
+            const n = size
+            const cv = document.createElement('canvas')
+            cv.width = n
+            cv.height = n
+            const ctx = cv.getContext('2d', { willReadFrequently: true })
+            ctx.imageSmoothingEnabled = true
+            ctx.imageSmoothingQuality = 'high'
+            // 居中裁切成正方形再缩放，避免拉伸变形
+            const side = Math.min(im.width, im.height)
+            const sx = (im.width - side) / 2
+            const sy = (im.height - side) / 2
+            ctx.drawImage(im, sx, sy, side, side, 0, 0, n, n)
+            const data = ctx.getImageData(0, 0, n, n).data
+
+            pushUndo()
+            const usePalette = mode === 'palette'
+            const levels = mode === 'quant' ? 6 : 0
+            for (let y = 0; y < n; y++) {
+              for (let x = 0; x < n; x++) {
+                const i = (y * n + x) * 4
+                if (data[i + 3] < 8) continue
+                let rgb = [data[i], data[i + 1], data[i + 2]]
+                rgb = quantize(rgb, levels)
+                if (usePalette) rgb = snapToPalette(rgb, presets)
+                pixels[y][x] = rgb
+              }
+            }
+            fromImage = true
+            imgBtn.classList.add('active')
+            fullDirty = true
+            redraw()
+            scheduleSave()
+            refreshHint()
+            toast(
+              '已生成 ' + n + '×' + n + ' 像素画，可继续手改' +
+                (usePalette ? '（已贴合色板）' : levels ? '（已降色）' : '')
+            )
+          } catch (err) {
+            toast('图片处理失败：' + err.message)
+          } finally {
+            URL.revokeObjectURL(url)
+          }
+        }
+        im.onerror = () => {
+          URL.revokeObjectURL(url)
+          toast('图片读取失败')
+        }
+        im.src = url
+      }
+
+      if (imgBtn && imgInput) {
+        imgBtn.addEventListener('click', () => {
+          const mode = window.confirm('要贴合你的色板吗？\n\n确定 = 贴合色板（颜色更统一）\n取消 = 保留原图色彩')
+          pendingImgMode = mode ? 'palette' : 'plain'
+          imgInput.click()
+        })
+        imgInput.addEventListener('change', () => {
+          const f = imgInput.files && imgInput.files[0]
+          if (f) applyImageToCanvas(f, pendingImgMode)
+          imgInput.value = ''
+        })
+      }
+      let pendingImgMode = 'plain'
+
+      // 画板直接拖入图片
+      const boardEl = document.getElementById('board')
+      if (boardEl) {
+        ;['dragenter', 'dragover'].forEach((t) =>
+          boardEl.addEventListener(t, (e) => {
+            e.preventDefault()
+            boardEl.classList.add('drop-hint')
+          })
+        )
+        ;['dragleave', 'drop'].forEach((t) =>
+          boardEl.addEventListener(t, (e) => {
+            e.preventDefault()
+            boardEl.classList.remove('drop-hint')
+          })
+        )
+        boardEl.addEventListener('drop', (e) => {
+          const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]
+          if (f) applyImageToCanvas(f, pendingImgMode)
+        })
+      }
 
       /* ---------- 删除自己的作品 ---------- */
       async function deleteOwnWork(rec) {
@@ -3608,6 +3735,7 @@ color: var(--text-muted);
         if (contestCheck.checked && contestWeek) payload.contest = contestWeek
         const claim = await ensureClaim(author)
         if (claim) payload.claim = claim
+        if (fromImage) payload.fromImage = true
 
         await doPublish(payload, uploadBtn)
       })
@@ -3630,6 +3758,7 @@ color: var(--text-muted);
         if (contestCheck.checked && contestWeek) payload.contest = contestWeek
         const claim2 = await ensureClaim(author)
         if (claim2) payload.claim = claim2
+        if (fromImage) payload.fromImage = true
         await doPublish(payload, animPublishBtn)
       })
 
