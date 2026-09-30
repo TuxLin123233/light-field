@@ -1318,6 +1318,116 @@ color: var(--text-muted);
         cursor: pointer;
       }
 
+      .start-box {
+        max-width: 400px;
+        max-height: 88vh;
+        overflow-y: auto;
+      }
+
+      .start-sec { margin-top: 16px; }
+
+      .start-label {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--text-faint);
+        margin-bottom: 8px;
+      }
+
+      .start-tip { font-weight: 400; color: var(--text-faint); opacity: 0.8; }
+
+      .start-sizes, .start-modes, .start-joins {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .start-sizes { flex-direction: row; gap: 8px; }
+
+      .start-size {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+        border: 1px solid var(--border);
+        background: var(--surface-2);
+        color: var(--text);
+        border-radius: 12px;
+        padding: 10px 0;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      .start-size em { font-style: normal; font-size: 10px; color: var(--text-faint); font-weight: 400; }
+      .start-size.on, .start-mode.on, .start-join.on {
+        border-color: var(--accent);
+        border-width: 2px;
+        background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+      }
+
+      .start-mode, .start-join {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        width: 100%;
+        text-align: left;
+        border: 1px solid var(--border);
+        background: var(--surface-2);
+        border-radius: 14px;
+        padding: 11px 13px;
+        cursor: pointer;
+      }
+
+      .start-ico { flex: 0 0 auto; font-size: 18px; line-height: 1.3; }
+      .start-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+      .start-body b { font-size: 14px; font-weight: 700; color: var(--text); }
+      .start-body i { font-style: normal; font-size: 11px; color: var(--text-muted); }
+
+      .start-toggle {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        border: 1px solid var(--border);
+        background: var(--surface-2);
+        border-radius: 14px;
+        padding: 11px 13px;
+        cursor: pointer;
+      }
+      .start-toggle input { margin-top: 2px; width: 18px; height: 18px; accent-color: var(--accent); }
+      .start-toggle:has(input:checked) {
+        border-color: var(--accent);
+        background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+      }
+
+      .start-go {
+        width: 100%;
+        margin-top: 20px;
+        height: 50px;
+        border: none;
+        border-radius: 16px;
+        background: var(--accent);
+        color: #fff;
+        font-size: 16px;
+        font-weight: 800;
+        cursor: pointer;
+      }
+      .start-go:active { transform: scale(0.98); }
+
+      .start-cancel {
+        width: 100%;
+        margin-top: 8px;
+        border: none;
+        background: transparent;
+        color: var(--text-faint);
+        font-size: 13px;
+        font-weight: 700;
+        padding: 10px;
+        cursor: pointer;
+      }
+
       .join-card {
         width: 100%;
         max-width: 460px;
@@ -1638,24 +1748,64 @@ color: var(--text-muted);
       </div>
     </div>
     <div class="mode-overlay" id="modeOverlay" hidden>
-      <div class="mode-box">
-        <h2>🎨 开始创作</h2>
-        <div class="mode-sub">先选择一种创作方式，再开始绘画</div>
-        <button class="mode-opt" data-mode="free" type="button">
-          <span class="mode-ico">🖌️</span>
-          <span class="mode-name">自由模式</span>
-          <span class="mode-desc">不受题目限制，想画什么就画什么</span>
-        </button>
-        <button class="mode-opt prompt" data-mode="prompt" type="button">
-          <span class="mode-ico">📝</span>
-          <span class="mode-name">题目模式</span>
-          <span class="mode-desc">按系统命题创作，可换题与分类，还会计入每日题数</span>
-        </button>
-        <button class="mode-opt anim" data-mode="anim" type="button">
-          <span class="mode-ico">🎞️</span>
-          <span class="mode-name">帧动画</span>
-          <span class="mode-desc">16×16 逐帧作画，导出循环 GIF</span>
-        </button>
+      <div class="mode-box start-box">
+        <h2>🎨 像素小镇 · 画板</h2>
+        <div class="mode-sub">选好这次的创作方式，再开始画</div>
+
+        <div class="start-sec">
+          <div class="start-label">画布尺寸</div>
+          <div class="start-sizes" id="startSizes">
+            <button type="button" class="start-size" data-size="16">16×16<em>默认</em></button>
+            <button type="button" class="start-size" data-size="32">32×32<em>细腻</em></button>
+            <button type="button" class="start-size" data-size="64">64×64<em>大幅</em></button>
+          </div>
+        </div>
+
+        <div class="start-sec">
+          <div class="start-label">创作模式</div>
+          <div class="start-modes" id="startModes">
+            <button type="button" class="start-mode" data-mode="free">
+              <span class="start-ico">🖌️</span>
+              <span class="start-body"><b>自由模式</b><i>想画什么就画什么</i></span>
+            </button>
+            <button type="button" class="start-mode" data-mode="prompt" hidden>
+              <span class="start-ico">📝</span>
+              <span class="start-body"><b>题目模式</b><i>按主题出题，可换题</i></span>
+            </button>
+            <button type="button" class="start-mode" data-mode="anim" hidden>
+              <span class="start-ico">🎞️</span>
+              <span class="start-body"><b>帧动画</b><i>逐帧作画导出 GIF</i></span>
+            </button>
+          </div>
+        </div>
+
+        <div class="start-sec" id="startJoinSec">
+          <div class="start-label">参加活动<span class="start-tip">可不选</span></div>
+          <div class="start-joins" id="startJoins">
+            <button type="button" class="start-join" data-join="none">
+              <span class="start-body"><b>暂不参加</b><i>只自己画</i></span>
+            </button>
+            <button type="button" class="start-join" data-join="daily" hidden>
+              <span class="start-ico">⚡</span>
+              <span class="start-body"><b>每日挑战</b><i id="startDailyText">每天一个题目</i></span>
+            </button>
+            <button type="button" class="start-join" data-join="contest" hidden>
+              <span class="start-ico">🏆</span>
+              <span class="start-body"><b>本周主题</b><i id="startContestText">每周一个主题</i></span>
+            </button>
+          </div>
+        </div>
+
+        <div class="start-sec" id="startToolSec" hidden>
+          <div class="start-label">辅助工具</div>
+          <label class="start-toggle">
+            <input type="checkbox" id="startImage">
+            <span class="start-body"><b>图片转像素画</b><i>把照片变成像素画再手改</i></span>
+          </label>
+        </div>
+
+        <button class="start-go" id="startGo" type="button">开始创作</button>
+        <button class="start-cancel" id="startCancel" type="button" hidden>先不画了</button>
       </div>
     </div>
 
@@ -2506,6 +2656,11 @@ color: var(--text-muted);
         await loadOwned()
         await fetchRecords()
       }
+
+      /* ---------- 开局菜单状态（须在 consent 块调用前完成初始化） ---------- */
+      let startMode = 'free'
+      let startJoin = 'none'
+      let startSize = 16
 
       /* ---------- 进阶功能开关 ---------- */
       function isFeatOn(k) {
@@ -3390,6 +3545,17 @@ color: var(--text-muted);
       document.querySelectorAll('.join-opt input').forEach((inp) => {
         inp.addEventListener('change', syncJoinHighlight)
       })
+      // 再点一次已选中的活动即取消选择
+      document.querySelectorAll('.join-opt').forEach((el) => {
+        el.addEventListener('click', (e) => {
+          e.preventDefault()
+          const inp = el.querySelector('input')
+          if (!inp) return
+          inp.checked = !inp.checked
+          inp.dispatchEvent(new Event('change'))
+          wantDaily = inp.checked && inp.value === 'daily'
+        })
+      })
 
 
       ;(async () => {
@@ -4172,17 +4338,95 @@ color: var(--text-muted);
           <div class="text">你已拒绝同意用户协议，根据规定无法使用本画板。若改变主意，可刷新页面重新选择。</div>`
       })
 
+      /* ---------- 开局菜单 ---------- */
+      function paintStartSelection() {
+        document.querySelectorAll('.start-size').forEach((b) =>
+          b.classList.toggle('on', Number(b.dataset.size) === startSize)
+        )
+        document.querySelectorAll('.start-mode').forEach((b) =>
+          b.classList.toggle('on', b.dataset.mode === startMode)
+        )
+        document.querySelectorAll('.start-join').forEach((b) =>
+          b.classList.toggle('on', b.dataset.join === startJoin)
+        )
+      }
+
+      // 单选组：再点一次已选中的项即取消选择
+      function bindSinglePick(containerSel, attr, onPick) {
+        const box = document.querySelector(containerSel)
+        if (!box) return
+        box.querySelectorAll('[' + attr + ']').forEach((b) => {
+          b.addEventListener('click', () => {
+            const v = b.getAttribute(attr)
+            if (b.classList.contains('on')) {
+              onPick(null)
+            } else {
+              onPick(v)
+            }
+            paintStartSelection()
+          })
+        })
+      }
+
+      function applyStartChoices() {
+        if (startSize !== size) switchSize(startSize)
+        // 活动选择同步到画板上的勾选框
+        const dc = document.getElementById('dailyCheck')
+        const cc = document.getElementById('contestCheck')
+        if (dc) dc.checked = startJoin === 'daily'
+        if (cc) {
+          cc.checked = startJoin === 'contest'
+          syncContestFields()
+        }
+        wantDaily = startJoin === 'daily'
+        // 图片工具
+        const imgBtnEl = document.getElementById('imgBtn')
+        const startImg = document.getElementById('startImage')
+        if (imgBtnEl) imgBtnEl.hidden = !(feat.image && startImg && startImg.checked)
+        syncJoinHighlight()
+      }
+
+      function openStartMenu() {
+        startSize = size
+        startMode = 'free'
+        startJoin = 'none'
+        const startImg = document.getElementById('startImage')
+        if (startImg) startImg.checked = false
+        const pBtn = document.querySelector('[data-mode="prompt"]')
+        const aBtn = document.querySelector('[data-mode="anim"]')
+        if (pBtn) pBtn.hidden = !feat.prompt
+        if (aBtn) aBtn.hidden = !feat.anim
+        document.querySelector('[data-join="daily"]').hidden = !feat.daily
+        document.querySelector('[data-join="contest"]').hidden = !feat.contest
+        document.getElementById('startToolSec').hidden = !feat.image
+        const jSec = document.getElementById('startJoinSec')
+        if (jSec) jSec.hidden = !(feat.daily || feat.contest)
+        paintStartSelection()
+        modeOverlay.hidden = false
+      }
+
+      bindSinglePick('#startSizes', 'data-size', (v) => {
+        startSize = v ? Number(v) : startSize
+      })
+      bindSinglePick('#startModes', 'data-mode', (v) => {
+        startMode = v || (startMode === 'free' ? 'free' : 'free')
+      })
+      bindSinglePick('#startJoins', 'data-join', (v) => {
+        startJoin = v || 'none'
+      })
+      document.getElementById('startGo').addEventListener('click', () => {
+        applyStartChoices()
+        enterMode(startMode)
+        modeOverlay.hidden = true
+      })
+
       function startCreation() {
         applyFeatureVisibility()
         renderRecent()
         if (feat.drafts) renderSlots()
-        const savedMode = localStorage.getItem('lw-mode')
-        if (loadDraft()) {
-          toast('欢迎回来！你的数据已保存')
-          enterMode(savedMode === 'anim' || savedMode === 'prompt' ? savedMode : 'free')
-          return
-        }
-        modeOverlay.hidden = false
+        // 有草稿就先载入，但仍然先经过开局菜单
+        if (loadDraft()) toast('欢迎回来！你的数据已保存')
+        openStartMenu()
       }
   },
 }
