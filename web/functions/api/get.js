@@ -84,6 +84,28 @@ export async function onRequestGet(context) {
     if (set.size) mineTimes = set
   }
 
+  // 社区搜索：关键词 / 标签 / 作者
+  const qParam = (url.searchParams.get('q') || '').trim().toLowerCase().slice(0, 20)
+  const tagParam = (url.searchParams.get('tag') || '').trim().slice(0, 6)
+  const authorParam = (url.searchParams.get('author') || '').trim().slice(0, 20)
+  const wantTags = url.searchParams.get('tagcloud') === '1'
+  const filtering = !!(qParam || tagParam || authorParam)
+
+  // 热门标签（按作品数排序）
+  if (wantTags) {
+    const { entries } = await readAllHistory(env.LIGHTFIELD_KV)
+    const counts = new Map()
+    for (const e of entries) {
+      if (!e || !Array.isArray(e.tags)) continue
+      for (const t of e.tags) counts.set(t, (counts.get(t) || 0) + 1)
+    }
+    const tags = [...counts.entries()]
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 24)
+    return json({ ok: true, tags })
+  }
+
   const single = url.searchParams.get('single') === '1'
   const locateParam = Number(url.searchParams.get('locate'))
   if (Number.isFinite(locateParam) && locateParam > 0) {
@@ -123,6 +145,23 @@ export async function onRequestGet(context) {
       ? mineAll.entries.slice(offset, offset + limitParam2)
       : mineAll.entries.slice(offset)
     history = sliced.map(normalizeEntry).filter((e) => Array.isArray(e.pixels))
+  } else if (filtering) {
+    // 搜索要扫全量再过滤，所以 limit 在过滤之后才生效
+    const { entries } = await readAllHistory(env.LIGHTFIELD_KV)
+    const matched = entries
+      .map(normalizeEntry)
+      .filter((e) => Array.isArray(e.pixels))
+      .filter((e) => {
+        if (authorParam && (e.author || '') !== authorParam) return false
+        if (tagParam && !(Array.isArray(e.tags) && e.tags.includes(tagParam))) return false
+        if (qParam) {
+          const hay = ((e.workName || '') + ' ' + (e.author || '') + ' ' + (e.tags || []).join(' ')).toLowerCase()
+          if (!hay.includes(qParam)) return false
+        }
+        return true
+      })
+    total = matched.length
+    history = limitParam2 ? matched.slice(offset, offset + limitParam2) : matched.slice(offset)
   } else {
     const { entries } = await recentHistory(env.LIGHTFIELD_KV, { offset, limit: limitParam2 })
     history = entries.map(normalizeEntry).filter((e) => Array.isArray(e.pixels))

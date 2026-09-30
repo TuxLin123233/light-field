@@ -150,6 +150,18 @@ export async function onRequestPost(context) {
   if (body && body.room === true) entry.room = true
   if (body && body.fromImage === true) entry.fromImage = true
 
+  // 标签：最多 3 个，每个最多 6 字，只保留安全字符
+  if (Array.isArray(body && body.tags)) {
+    const clean = []
+    for (const t of body.tags) {
+      if (typeof t !== 'string') continue
+      const v = t.trim().replace(/[\s#，,、]+/g, '').slice(0, 6)
+      if (v && !clean.includes(v)) clean.push(v)
+      if (clean.length >= 3) break
+    }
+    if (clean.length) entry.tags = clean
+  }
+
   // 认领码：格式合法才认，不合法当没传，不影响上传
   let claimHashValue = null
   if (body && typeof body.claim === 'string' && body.claim.trim()) {

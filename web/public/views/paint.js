@@ -646,6 +646,28 @@ color: var(--text-muted);
       .more-btn:hover { border-color: var(--border-strong); }
       .more-btn[hidden] { display: none; }
 
+      .tag-row {
+        width: 100%;
+        max-width: 460px;
+        margin-top: 10px;
+        display: flex;
+        gap: 8px;
+      }
+
+      .tag-row input {
+        flex: 1;
+        min-width: 0;
+        height: 40px;
+        border-radius: 12px;
+        border: 2px solid var(--border-input);
+        padding: 0 12px;
+        font-size: 13px;
+        background: var(--surface);
+        outline: none;
+        color: var(--text);
+      }
+      .tag-row input:focus { border-color: var(--accent); }
+
       .name-row {
         width: 100%;
         max-width: 460px;
@@ -1651,6 +1673,10 @@ color: var(--text-muted);
       </label>
     </div>
 
+    <div class="tag-row">
+      <input id="tagsInput" type="text" placeholder="标签：最多 3 个，用空格或逗号分隔" maxlength="24">
+    </div>
+
     <div class="name-row">
       <input id="titleInput" type="text" placeholder="作品名" maxlength="20">
       <input id="nameInput" type="text" placeholder="作者名" maxlength="20">
@@ -2573,6 +2599,18 @@ color: var(--text-muted);
           localStorage.setItem(RECENT_KEY, JSON.stringify(recentColors))
         } catch (e) {}
         renderRecent()
+      }
+
+      const tagsInput = document.getElementById('tagsInput')
+      function readTags() {
+        if (!tagsInput) return []
+        const raw = tagsInput.value.trim()
+        if (!raw) return []
+        return raw
+          .split(/[\s,，、#]+/)
+          .map((t) => t.trim().slice(0, 6))
+          .filter(Boolean)
+          .slice(0, 3)
       }
 
       function syncToolSwatch() {
@@ -3736,6 +3774,8 @@ color: var(--text-muted);
         const claim = await ensureClaim(author)
         if (claim) payload.claim = claim
         if (fromImage) payload.fromImage = true
+        const tg = readTags()
+        if (tg.length) payload.tags = tg
 
         await doPublish(payload, uploadBtn)
       })

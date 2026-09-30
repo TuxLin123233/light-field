@@ -125,6 +125,90 @@ export default {
 
       .featured[hidden] { display: none; }
 
+      .finder {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 14px;
+        margin-bottom: 16px;
+      }
+
+      .search-row { position: relative; display: flex; align-items: center; }
+
+      .search-input {
+        flex: 1;
+        min-width: 0;
+        height: 40px;
+        border-radius: 999px;
+        border: 1px solid var(--border-input);
+        background: var(--surface-2);
+        padding: 0 38px 0 16px;
+        font-size: 14px;
+        color: var(--text);
+        outline: none;
+      }
+      .search-input:focus { border-color: var(--accent); }
+
+      .search-clear {
+        position: absolute;
+        right: 6px;
+        width: 28px; height: 28px;
+        border: none; border-radius: 50%;
+        background: var(--surface-3);
+        color: var(--text-muted);
+        font-size: 13px; cursor: pointer;
+      }
+
+      .chip-row, .tag-cloud {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 10px;
+      }
+
+      .chip {
+        border: 1px solid var(--border-strong);
+        background: var(--surface-2);
+        color: var(--text-muted);
+        border-radius: 999px;
+        padding: 5px 12px;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      .chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+      .author-page {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 14px;
+        margin-bottom: 16px;
+      }
+      .author-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+      .author-back {
+        border: 1px solid var(--border-strong); background: var(--surface-2);
+        color: var(--text-muted); border-radius: 999px; padding: 5px 12px;
+        font-size: 12px; font-weight: 700; cursor: pointer;
+      }
+      .author-name { font-size: 16px; font-weight: 800; color: var(--text); }
+      .author-count { font-size: 12px; color: var(--text-faint); }
+      .author-works { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; }
+      .author-works img { width: 100%; aspect-ratio: 1; image-rendering: pixelated; border-radius: 10px; background: var(--art-bg); border: 1px solid var(--border); display: block; }
+
+      /* 卡片上的标签与来源标记 */
+      .card-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+      .card-tag {
+        font-size: 10px; font-weight: 700; color: var(--text-muted);
+        background: var(--surface-2); border: 1px solid var(--border);
+        border-radius: 999px; padding: 1px 7px; cursor: pointer;
+      }
+      .img-badge {
+        flex: 0 0 auto; font-size: 10px; font-weight: 800; color: #fff;
+        background: linear-gradient(135deg, #8aa4c8, #5b6b8c);
+        border-radius: 999px; padding: 2px 8px; white-space: nowrap;
+      }
+
       .contest {
         background: linear-gradient(135deg, #fff7e0, #ffeded);
         border: 1px solid var(--border-strong);
@@ -991,6 +1075,24 @@ export default {
         <button class="theme-btn" id="themeBtn" type="button" title="切换主题">🌙</button>
       </div>
 
+      <section class="finder" id="finder">
+        <div class="search-row">
+          <input class="search-input" id="searchInput" type="search" placeholder="搜作品名、作者或标签…" autocomplete="off">
+          <button class="search-clear" id="searchClear" type="button" hidden>✕</button>
+        </div>
+        <div class="chip-row" id="chipRow" hidden></div>
+        <div class="tag-cloud" id="tagCloud" hidden></div>
+      </section>
+
+      <section class="author-page" id="authorPage" hidden>
+        <div class="author-head">
+          <button class="author-back" id="authorBack" type="button">← 返回全部</button>
+          <span class="author-name" id="authorName"></span>
+          <span class="author-count" id="authorCount"></span>
+        </div>
+        <div class="author-works" id="authorWorks"></div>
+      </section>
+
       <section class="contest" id="contestPanel" hidden>
         <div class="contest-head">
           <span class="contest-title">🏆 每周主题比赛</span>
@@ -1552,6 +1654,7 @@ export default {
         })
       })
 
+      loadTagCloud()
       loadFeatured()
       loadContest()
 
@@ -1671,6 +1774,13 @@ export default {
             b.textContent = '👥 多人'
             meta.append(b)
           }
+          if (rec.fromImage) {
+            const b = document.createElement('span')
+            b.className = 'img-badge'
+            b.textContent = '🖼️ 来自图片'
+            b.title = '由照片转换生成'
+            meta.append(b)
+          }
           meta.append(makeLikeButton(rec))
           if (rec.contest) {
             const vb = makeVoteButton(rec)
@@ -1684,6 +1794,14 @@ export default {
           const au = document.createElement('span')
           au.className = 'card-author'
           au.textContent = rec.author || (rec.workName ? '匿名' : rec.name || '匿名')
+          if (rec.author) {
+            au.style.cursor = 'pointer'
+            au.title = '查看 ' + rec.author + ' 的主页'
+            au.addEventListener('click', (e) => {
+              e.stopPropagation()
+              openAuthor(rec.author)
+            })
+          }
           const sizeBadge = document.createElement('span')
           sizeBadge.className = 'card-size'
           sizeBadge.textContent = rs + '×' + rs
@@ -1693,6 +1811,25 @@ export default {
 
           sub.append(au, sizeBadge, tm)
           card.append(c, meta, sub)
+          if (Array.isArray(rec.tags) && rec.tags.length) {
+            const tw = document.createElement('div')
+            tw.className = 'card-tags'
+            rec.tags.forEach((t) => {
+              const tg = document.createElement('span')
+              tg.className = 'card-tag'
+              tg.textContent = '#' + t
+              tg.addEventListener('click', (e) => {
+                e.stopPropagation()
+                searchTag = t
+                renderChips()
+                loadTagCloud()
+                resetGallery('搜索中…')
+                window.scrollTo({ top: 0, behavior: 'smooth' })
+              })
+              tw.appendChild(tg)
+            })
+            card.appendChild(tw)
+          }
           card.addEventListener('click', () => preview(rec))
           card.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' || e.key === ' ') {
@@ -1705,12 +1842,157 @@ export default {
         })
       }
 
+      /* ---------- 搜索 / 标签 / 作者 ---------- */
+      const searchInput = document.getElementById('searchInput')
+      const searchClear = document.getElementById('searchClear')
+      const chipRow = document.getElementById('chipRow')
+      const tagCloud = document.getElementById('tagCloud')
+      const authorPage = document.getElementById('authorPage')
+      const authorName = document.getElementById('authorName')
+      const authorCount = document.getElementById('authorCount')
+      const authorWorks = document.getElementById('authorWorks')
+      const authorBack = document.getElementById('authorBack')
+      let searchQ = ''
+      let searchTag = ''
+      let searchAuthor = ''
+
+      function searchQuery() {
+        const p = new URLSearchParams()
+        p.set('limit', String(PAGE))
+        p.set('offset', String(offset))
+        if (searchQ) p.set('q', searchQ)
+        if (searchTag) p.set('tag', searchTag)
+        if (searchAuthor) p.set('author', searchAuthor)
+        return p.toString()
+      }
+
+      function resetGallery(msg) {
+        offset = 0
+        done = false
+        loading = false
+        gallery.innerHTML = ''
+        countEl.textContent = msg
+        sentinel.hidden = false
+        sentinel.textContent = '加载中…'
+        loadMore()
+      }
+
+      function renderChips() {
+        const items = []
+        if (searchQ) items.push(['关键词：' + searchQ, 'q'])
+        if (searchTag) items.push(['#' + searchTag, 'tag'])
+        if (searchAuthor) items.push(['作者：' + searchAuthor, 'author'])
+        chipRow.innerHTML = ''
+        chipRow.hidden = items.length === 0
+        items.forEach(([label, kind]) => {
+          const c = document.createElement('button')
+          c.type = 'button'
+          c.className = 'chip active'
+          c.textContent = label + ' ✕'
+          c.addEventListener('click', () => {
+            if (kind === 'q') {
+              searchQ = ''
+              searchInput.value = ''
+              searchClear.hidden = true
+            } else if (kind === 'tag') searchTag = ''
+            else searchAuthor = ''
+            renderChips()
+            resetGallery('搜索中…')
+          })
+          chipRow.appendChild(c)
+        })
+      }
+
+      async function loadTagCloud() {
+        try {
+          const res = await fetch('/api/get?tagcloud=1')
+          if (!res.ok) return
+          const data = await res.json()
+          const tags = data.tags || []
+          tagCloud.innerHTML = ''
+          tagCloud.hidden = tags.length === 0
+          tags.forEach((t) => {
+            const c = document.createElement('button')
+            c.type = 'button'
+            c.className = 'chip' + (searchTag === t.name ? ' active' : '')
+            c.textContent = '#' + t.name + ' ' + t.count
+            c.addEventListener('click', () => {
+              searchTag = searchTag === t.name ? '' : t.name
+              renderChips()
+              loadTagCloud()
+              resetGallery('搜索中…')
+            })
+            tagCloud.appendChild(c)
+          })
+        } catch (e) {}
+      }
+
+      let searchTimer = null
+      searchInput.addEventListener('input', () => {
+        searchClear.hidden = !searchInput.value
+        clearTimeout(searchTimer)
+        searchTimer = setTimeout(() => {
+          searchQ = searchInput.value.trim()
+          renderChips()
+          resetGallery('搜索中…')
+        }, 320)
+      })
+      searchClear.addEventListener('click', () => {
+        searchInput.value = ''
+        searchClear.hidden = true
+        searchQ = ''
+        renderChips()
+        resetGallery('加载中…')
+      })
+
+      // 打开某位作者的主页
+      async function openAuthor(name) {
+        searchAuthor = name
+        searchQ = ''
+        searchTag = ''
+        searchInput.value = ''
+        searchClear.hidden = true
+        renderChips()
+        authorPage.hidden = false
+        authorName.textContent = name
+        authorWorks.innerHTML = '<div class="status">加载中…</div>'
+        try {
+          const res = await fetch('/api/get?limit=60&author=' + encodeURIComponent(name))
+          const data = await res.json()
+          const list = data.history || []
+          authorCount.textContent = list.length + ' 件作品'
+          authorWorks.innerHTML = ''
+          if (!list.length) {
+            authorWorks.innerHTML = '<div class="status">这位作者还没有公开作品</div>'
+            return
+          }
+          list.forEach((w) => {
+            const img = document.createElement('img')
+            img.src = pixelsToURL(w.pixels, workSize(w))
+            img.alt = w.workName || w.name || '未命名'
+            img.loading = 'lazy'
+            img.addEventListener('click', () => preview(w))
+            authorWorks.appendChild(img)
+          })
+        } catch (e) {
+          authorWorks.innerHTML = '<div class="status">加载失败</div>'
+        }
+        authorPage.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }
+
+      authorBack.addEventListener('click', () => {
+        searchAuthor = ''
+        authorPage.hidden = true
+        renderChips()
+        resetGallery('加载中…')
+      })
+
       async function loadMore() {
         if (loading || done) return
         loading = true
         sentinel.textContent = '加载中…'
         try {
-          const res = await fetch(`/api/get?limit=${PAGE}&offset=${offset}`)
+          const res = await fetch('/api/get?' + searchQuery())
           if (!res.ok) throw new Error('HTTP ' + res.status)
           const data = await res.json()
           const list = data.history || []
@@ -1754,7 +2036,9 @@ export default {
       loadMore()
 
       /* ---------- 分享定位（/gallery?t=时间戳） ---------- */
-      const shareTarget = new URLSearchParams(location.search).get('t')
+      const qs0 = new URLSearchParams(location.search)
+      if (qs0.get('author')) openAuthor(qs0.get('author'))
+      const shareTarget = qs0.get('t')
 
       async function ensureLoadedTo(upTo) {
         let guard = 0
