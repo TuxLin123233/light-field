@@ -19,7 +19,17 @@ export default {
         color: var(--text);
       }
 
-      .page-head { width: 100%; max-width: 460px; }
+      /* 顶部标题区：做成和下面一致的卡片，不再是一段裸文字 */
+      .page-head {
+        width: 100%;
+        max-width: 460px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 18px 20px;
+        margin-bottom: 16px;
+        box-shadow: 0 2px 10px var(--shadow2, rgba(0, 0, 0, 0.06));
+      }
 
       .back {
         display: inline-block;

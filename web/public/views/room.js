@@ -1239,6 +1239,7 @@ export default {
         }
         await applyGameState(data)
         await refreshRoom()
+        if (window.sfx) window.sfx('ding')
         toast('游戏开始，各就各位！')
       })
 
@@ -1252,6 +1253,7 @@ export default {
           if (data.correct) {
             guessInput.value = ''
             await applyGameState(data)
+            if (window.sfx) window.sfx('ok')
             toast('答对啦！+10 分 🎉')
           } else if (!data.ok) {
             if (data.error) toast(data.error)
@@ -1269,7 +1271,10 @@ export default {
 
       skipBtn.addEventListener('click', async () => {
         const data = await postAction({ action: 'skip', code: room.code, id: memberId })
-        if (!data.ok && data.error) toast(data.error)
+        if (!data.ok && data.error) {
+          if (window.sfx) window.sfx('error')
+          toast(data.error)
+        }
         if (data.state) await applyGameState(data)
         await refreshRoom()
       })

@@ -239,6 +239,21 @@ export default {
         font-size: 11px;
         color: var(--text);
       }
+      .an-p {
+        margin: 0 0 11px;
+        font-size: 13px;
+        line-height: 1.9;
+        color: var(--text-muted);
+      }
+      .an-p b { color: var(--text); }
+      .an-quote {
+        background: var(--surface-2);
+        border-left: 3px solid var(--accent);
+        border-radius: 0 12px 12px 0;
+        padding: 11px 13px;
+      }
+      .an-last { margin-bottom: 0; }
+
       .guide-close {
         width: 100%;
         margin-top: 12px;
@@ -520,6 +535,39 @@ export default {
             </ul>
           </div>
           <button class="guide-close" id="guideClose" type="button">我知道了，开始画画</button>
+        </div>
+      </details>
+
+      <details class="guide" id="authorNote">
+        <summary>
+          <span class="guide-hero">
+            <b>💌 作者的话</b>
+            <i>这个网站是谁做的，以及为什么需要你的支持</i>
+          </span>
+          <span class="guide-arrow">⌄</span>
+        </summary>
+        <div class="guide-body">
+          <p class="an-p">
+            「像素小镇」里的每一行代码、每一处界面，都是我借助 AI 一个字一个字搭出来的。
+            说实话，一个人做完整点的东西很难，这个网站能走到今天，很大程度上靠的是 AI 帮我扛下了大部分的活。
+          </p>
+          <p class="an-p">
+            也正因为这样，它更新得很慢。AI 本身要花钱调用接口，而我没有太多经费去长期承担这笔开销；
+            加上我还要同时维护灯板那一端，能挤出来做网站的时间就非常有限。
+            所以它不是被弃置了，而是真的<b>有心无力</b>——我不想随便糊弄你们，更不想让 AI 写出自己都看不懂的代码。
+          </p>
+          <p class="an-p an-quote">
+            做这个网站，其实是为了圆我自己一个很小的愿望：<b>拥有一个真正属于自己的、能和朋友实时互动的小网站。</b><br />
+            不是玩完就走的应用，不是关掉就消失的网页，而是一个我说了算、你也随时能来的地方。
+            现在的它已经做到了——你们能一起画同一块画布，能看到彼此的笔迹，这就是我当初想要的全部。
+          </p>
+          <p class="an-p">
+            继续维护它需要服务器和接口的钱。如果它陪你画过几次画，你愿意给我一点支持，
+            它就能安稳地多运行一段时间，我也更有底气慢慢把想做的都补上。
+          </p>
+          <p class="an-p an-last">
+            当然，赞助完全出于自愿，不给也一点都不影响使用。谢谢每一个愿意留下来画画的人。
+          </p>
         </div>
       </details>
 

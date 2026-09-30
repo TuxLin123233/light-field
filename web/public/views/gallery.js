@@ -885,6 +885,69 @@ export default {
         border-radius: 999px;
       }
 
+      /* ---------- 用色色板 ---------- */
+      .share-btn.on {
+        border-color: var(--accent);
+        color: var(--accent);
+        background: var(--surface-2);
+      }
+
+      .pal-box {
+        margin-top: 10px;
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 11px 12px 9px;
+        text-align: left;
+      }
+      .pal-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 9px;
+      }
+      .pal-title { font-size: 13px; font-weight: 600; color: var(--text); }
+      .pal-count { font-size: 12px; color: var(--text-faint); margin-left: auto; }
+      .pal-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 7px;
+        max-height: 190px;
+        overflow-y: auto;
+      }
+      .pal-grid::-webkit-scrollbar { display: none; }
+      .pal-chip {
+        width: 46px;
+        border-radius: 9px;
+        overflow: hidden;
+        border: 1px solid var(--border-strong);
+        background: var(--surface);
+        padding: 0;
+        cursor: pointer;
+        transition: transform 0.12s ease;
+      }
+      .pal-chip:active { transform: scale(0.9); }
+      .pal-chip i {
+        display: block;
+        height: 26px;
+        width: 100%;
+      }
+      .pal-chip span {
+        display: block;
+        font-size: 9px;
+        line-height: 1.5;
+        color: var(--text-muted);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        text-align: center;
+        padding-bottom: 1px;
+      }
+      .pal-tip {
+        margin-top: 8px;
+        font-size: 11px;
+        color: var(--text-faint);
+        text-align: center;
+      }
+
       .report-box { max-width: 340px; }
       .report-reasons { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
       .report-reason {
@@ -1258,9 +1321,18 @@ export default {
           <button class="vote-btn" id="previewVoteBtn" type="button" hidden>🏆 投一票</button>
           <button class="share-btn" id="previewShare" type="button">🔗 复制链接</button>
           <button class="share-btn" id="previewCard" type="button">🃏 生成朋友圈卡片</button>
+          <button class="share-btn" id="previewPaletteBtn" type="button" aria-expanded="false">🎨 用色</button>
           <button class="report-hold" id="previewReport" type="button">🚩 长按举报</button>
         </div>
         <div class="report-progress" id="reportProgress" hidden><i></i></div>
+        <div class="pal-box" id="previewPalette" hidden>
+          <div class="pal-head">
+            <span class="pal-title">这幅画用到的颜色</span>
+            <span class="pal-count" id="palCount"></span>
+          </div>
+          <div class="pal-grid" id="palGrid"></div>
+          <div class="pal-tip">点任意色块即可复制它的色号</div>
+        </div>
         <div class="preview-note">仅支持预览，不可载入作画。请勿抄袭或直接提交他人的作品。长按图片可保存到相册。</div>
       </div>
     </div>
@@ -2466,6 +2538,112 @@ export default {
         }
       }
 
+      /* ---------- 用色色板：列出作品用到的全部颜色，点一下复制色号 ---------- */
+      const palBtn = document.getElementById('previewPaletteBtn')
+      const palBox = document.getElementById('previewPalette')
+      const palGrid = document.getElementById('palGrid')
+      const palCount = document.getElementById('palCount')
+
+      function hexOf(px) {
+        return (
+          '#' +
+          px
+            .slice(0, 3)
+            .map((v) => Number(v).toString(16).padStart(2, '0'))
+            .join('')
+            .toUpperCase()
+        )
+      }
+
+      /* 收集作品（动画则取第一帧）里所有不重复的颜色，按用得多少排序 */
+      function colorsOf(rec) {
+        const rs = workSize(rec)
+        let arr = rec.pixels
+        if (rec.type === 'anim' && rec.anim && Array.isArray(rec.anim.frames) && rec.anim.frames[0]) {
+          arr = rec.anim.frames[0]
+        }
+        if (!Array.isArray(arr) || !arr.length) return []
+        const map = new Map()
+        for (const px of arr) {
+          if (!Array.isArray(px) || px.length < 3) continue
+          const hex = hexOf(px)
+          map.set(hex, (map.get(hex) || 0) + 1)
+        }
+        // 纯白通常是画布底色，排在最后且不展示
+        const list = Array.from(map.entries())
+          .filter((e) => e[0] !== '#FFFFFF')
+          .sort((a, b) => b[1] - a[1])
+        return list
+      }
+
+      async function copyHex(hex) {
+        try {
+          if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(hex)
+          } else {
+            const ta = document.createElement('textarea')
+            ta.value = hex
+            ta.style.position = 'fixed'
+            ta.style.opacity = '0'
+            document.body.appendChild(ta)
+            ta.select()
+            document.execCommand('copy')
+            ta.remove()
+          }
+          if (window.sfx) window.sfx('tick')
+          toast('已复制色号 ' + hex)
+        } catch (e) {
+          toast('复制失败，请长按色块手动复制')
+        }
+      }
+
+      function renderPalette(rec) {
+        if (!palGrid) return
+        palGrid.innerHTML = ''
+        const list = colorsOf(rec)
+        if (palCount) palCount.textContent = list.length ? list.length + ' 种颜色' : '没有可用颜色'
+        if (!list.length) {
+          const tip = document.createElement('div')
+          tip.className = 'pal-tip'
+          tip.textContent = '这幅画还没有可提取的颜色'
+          palGrid.appendChild(tip)
+          return
+        }
+        list.forEach(([hex, n]) => {
+          const chip = document.createElement('button')
+          chip.type = 'button'
+          chip.className = 'pal-chip'
+          chip.title = hex + '（用了 ' + n + ' 格）· 点击复制'
+          chip.innerHTML = '<i style="background:' + hex + '"></i><span>' + hex.slice(1) + '</span>'
+          chip.addEventListener('click', () => copyHex(hex))
+          palGrid.appendChild(chip)
+        })
+      }
+
+      function closePalette() {
+        if (palBox) palBox.hidden = true
+        if (palBtn) {
+          palBtn.setAttribute('aria-expanded', 'false')
+          palBtn.classList.remove('on')
+        }
+      }
+
+      if (palBtn) {
+        palBtn.addEventListener('click', () => {
+          const willOpen = palBox.hidden
+          if (willOpen) {
+            if (!currentPreview) return
+            renderPalette(currentPreview)
+            palBox.hidden = false
+            palBtn.setAttribute('aria-expanded', 'true')
+            palBtn.classList.add('on')
+            if (window.sfx) window.sfx('tick')
+          } else {
+            closePalette()
+          }
+        })
+      }
+
       function preview(rec) {
         stopAnimPlay()
         const img = document.getElementById('previewImg')
@@ -2496,6 +2674,7 @@ export default {
         document.getElementById('previewLikeCount').textContent = rec.likes || 0
         updateLikedState(document.getElementById('previewLike'), rec.time)
         currentPreview = rec
+        closePalette()
         syncPreviewVoteBtn()
         previewOverlay.hidden = false
       }
@@ -2523,6 +2702,7 @@ export default {
       }
 
       function closePreview() {
+        if (window.sfx) window.sfx('close')
         stopAnimPlay()
         previewOverlay.hidden = true
         currentPreview = null

@@ -246,11 +246,18 @@
         margin: 0;
         min-height: 100vh;
         background: var(--bg);
+        /* 不设这一行时 body 用浏览器默认的纯黑，深色模式下会变成黑字黑底 */
+        color: var(--text);
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
         padding: 16px 16px 112px;
         transition: background 0.25s ease, color 0.25s ease;
         overflow-x: clip;
       }
+
+      /* 让表单控件、滚动条也跟着主题走 */
+      :root { color-scheme: light; }
+      html[data-theme="dark"] { color-scheme: dark; }
+      html[data-theme="midnight"] { color-scheme: dark; }
 
       /* 路由出口用 display:contents 彻底"透明"：
          各视图的根元素直接参与 body 的布局，与迁移前的单文件页面完全一致。
@@ -433,6 +440,69 @@
           /* 警示：低沉一声，用于清空等破坏性操作 */
           warn: function () {
             note(330, 0, 0.14, 0.06, 'triangle')
+          },
+
+          /* ---------- 以下为扩充音效 ---------- */
+
+          /* 开局：轻快上行三音，像打开工具箱 */
+          open: function () {
+            note(523, 0, 0.07, 0.05, 'sine')
+            note(659, 0.055, 0.07, 0.05, 'sine')
+            note(784, 0.11, 0.12, 0.05, 'sine')
+          },
+          /* 关闭：下行两音 */
+          close: function () {
+            note(659, 0, 0.07, 0.045, 'sine')
+            note(440, 0.055, 0.11, 0.045, 'sine')
+          },
+          /* 切换：极短的一点，用于开关、标签页 */
+          tick: function () {
+            note(1046, 0, 0.035, 0.035, 'square')
+          },
+          /* 错误：两声低沉短促 */
+          error: function () {
+            note(233, 0, 0.09, 0.055, 'sawtooth')
+            note(196, 0.1, 0.14, 0.055, 'sawtooth')
+          },
+          /* 成功：明亮三音，比 ding 更长一点 */
+          ok: function () {
+            note(880, 0, 0.09, 0.07, 'sine')
+            note(1108, 0.07, 0.09, 0.06, 'sine')
+            note(1318, 0.14, 0.2, 0.06, 'sine')
+          },
+          /* 新消息：两粒上行铃音 */
+          msg: function () {
+            note(988, 0, 0.08, 0.05, 'sine')
+            note(1318, 0.07, 0.16, 0.05, 'sine')
+          },
+          /* 载入：一小段滑上去 */
+          load: function () {
+            note(392, 0, 0.07, 0.04, 'sine')
+            note(523, 0.05, 0.07, 0.04, 'sine')
+            note(659, 0.1, 0.07, 0.04, 'sine')
+            note(880, 0.15, 0.14, 0.04, 'sine')
+          },
+          /* 倒计时：短促一声 */
+          beep: function () {
+            note(784, 0, 0.05, 0.045, 'square')
+          },
+          /* 加入：欢迎上行的双音 */
+          join: function () {
+            note(587, 0, 0.08, 0.05, 'sine')
+            note(880, 0.07, 0.14, 0.05, 'sine')
+          },
+          /* 离开：下行双音 */
+          leave: function () {
+            note(880, 0, 0.08, 0.045, 'sine')
+            note(587, 0.07, 0.13, 0.045, 'sine')
+          },
+          /* 选中：清脆一记 */
+          select: function () {
+            note(1174, 0, 0.06, 0.05, 'sine')
+          },
+          /* 心跳：低低一记，联机时有人动笔 */
+          heartbeat: function () {
+            note(196, 0, 0.16, 0.035, 'sine')
           },
         }
         window.sfx = function (name) {

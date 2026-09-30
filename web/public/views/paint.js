@@ -746,14 +746,28 @@ color: var(--text-muted);
         margin-top: 18px;
       }
 
+      /* 按钮行的观感与工具栏 .tool 对齐：同样的描边、圆角与阴影 */
       .actions button {
         flex: 1;
         min-width: 0;
         height: 52px;
-        border-radius: 16px;
+        border-radius: 999px;
+        border: 1px solid var(--border-input);
+        background: var(--surface-2);
+        color: var(--text);
         font-size: 17px;
         font-weight: 600;
-        transition: transform 0.12s ease, opacity 0.15s ease;
+        box-shadow: 0 1px 3px var(--shadow1);
+        transition: transform 0.12s ease, opacity 0.15s ease,
+          background 0.15s ease, box-shadow 0.15s ease;
+      }
+      .actions button:active {
+        transform: scale(0.96);
+        box-shadow: 0 1px 2px var(--shadow1);
+      }
+      .actions button:disabled {
+        opacity: 0.45;
+        box-shadow: none;
       }
 
       #undoBtn, #clearBtn {
@@ -765,6 +779,7 @@ color: var(--text-muted);
       #uploadBtn {
         flex: 1.2;
         background: var(--accent);
+        border-color: transparent;
         color: #fff;
       }
 
@@ -925,59 +940,6 @@ color: var(--text-muted);
         color: var(--text-faint);
       }
 
-      /* ---------- 作者的话 ---------- */
-      .author-note {
-        width: 100%;
-        max-width: 460px;
-        margin-top: 10px;
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 14px;
-        overflow: hidden;
-      }
-      .author-note summary {
-        list-style: none;
-        cursor: pointer;
-        padding: 12px 14px;
-        font-size: 13px;
-        font-weight: 600;
-        color: var(--text);
-        display: flex;
-        align-items: center;
-        gap: 7px;
-      }
-      .author-note summary::-webkit-details-marker { display: none; }
-      .author-note summary .an-caret {
-        margin-left: auto;
-        color: var(--text-faint);
-        transition: transform 0.2s;
-      }
-      .author-note[open] summary .an-caret { transform: rotate(180deg); }
-      .an-body {
-        padding: 0 14px 14px;
-        font-size: 13px;
-        line-height: 1.85;
-        color: var(--text-muted);
-      }
-      .an-body p { margin: 0 0 10px; }
-      .an-body p:last-child { margin-bottom: 0; }
-      .an-quote {
-        margin: 0 0 10px;
-        padding: 9px 12px;
-        background: var(--surface-2);
-        border-left: 3px solid var(--accent);
-        border-radius: 0 10px 10px 0;
-        color: var(--text);
-      }
-      .an-foot {
-        margin-top: 10px;
-        font-size: 12px;
-        color: var(--text-faint);
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        flex-wrap: wrap;
-      }
 
       .tip-btn {
         width: 100%;
@@ -2098,26 +2060,6 @@ color: var(--text-muted);
       <p>本画板仅用于个人学习与技术交流。请勿上传、绘制、发布任何违反中华人民共和国法律法规的内容，包括但不限于色情、暴力、恐怖、赌博、涉政敏感、侵犯他人隐私或知识产权的内容。上传者须对自己发布的内容负全部法律责任。本平台有权在不事先通知的情况下删除违规内容，并保留追究法律责任的权利。</p>
     </details>
 
-    <details class="author-note" id="authorNote">
-      <summary>✍️ 作者的话<span class="an-caret">⌄</span></summary>
-      <div class="an-body">
-        <p class="an-quote">
-          「像素小镇」里的代码、界面和每一个小功能，都是我借助 AI 一点点搭出来的。
-        </p>
-        <p>
-          它不投放广告，也不收费，因为服务器和域名都要花钱。
-          所以如果你在这里画得还顺手，或者它陪你完成过几幅作品，
-          愿意给我一点支持的话，它就能安稳地多运行一段时间，
-          我也更有底气继续往上加新功能、做优化。
-        </p>
-        <p>当然，赞助完全出于自愿，不给也一点不影响使用——谢谢每一个来这里画画的人。</p>
-        <div class="an-foot">
-          <span>© 2026 像素小镇</span>
-          <span>作者 Lin Sifan · 用 AI 创作</span>
-        </div>
-      </div>
-    </details>
-
     <div class="copyright">© 2026 像素小镇 · 版权所有 · 作者 Lin Sifan</div>
 
     <button id="tipBtn" class="tip-btn" type="button">赞赏支持</button>
@@ -2391,7 +2333,7 @@ color: var(--text-muted);
       }
 
       function enterMode(mode) {
-        if (window.sfx) window.sfx('ding')
+        if (window.sfx) window.sfx('open')
         if (!modeAllowed(mode)) mode = 'free'
         const isPrompt = mode === 'prompt'
         const firstTime = createMode !== mode
@@ -2482,6 +2424,7 @@ color: var(--text-muted);
         fullDirty = true
         redraw()
         updateUndoBtn()
+        if (window.sfx) window.sfx('ok')
         toast('已撤销')
       }
 
@@ -2712,6 +2655,7 @@ color: var(--text-muted);
           })
         })
         imgModeCancel.addEventListener('click', () => {
+          if (window.sfx) window.sfx('close')
           imgModeOverlay.hidden = true
         })
         imgModeOverlay.addEventListener('click', (e) => {
@@ -3361,6 +3305,7 @@ color: var(--text-muted);
         document.querySelectorAll('.size-btn').forEach((b) =>
           b.classList.toggle('active', Number(b.dataset.size) === size)
         )
+        if (window.sfx) window.sfx('select')
         resetCamera()
         refreshHint()
         redraw()

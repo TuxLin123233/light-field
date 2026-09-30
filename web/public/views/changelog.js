@@ -253,20 +253,25 @@ export default {
           <div class="ver-body">
             <div class="ver-title"><span class="ver-tag">v1.3.1</span> 举报审核 · 新手教程 · 5 套主题 · 音效 · 装到桌面 <span class="ver-date">2026-10</span></div>
             <ul class="ver-list">
+              <li><span class="li-tag tag-new">新功能</span>作品预览新增「🎨 用色」：下拉列出这幅画用到的全部颜色（按用量排序、自动略去白色底色），点任意色块即可复制它的色号</li>
               <li><span class="li-tag tag-new">新功能</span>内容安全：作品预览里可举报违规内容，需长按 1.5 秒才会弹出（避免误触），维护者后台可查看、核实或直接删除作品</li>
               <li><span class="li-tag tag-new">新功能</span>新手教程：设置页最顶部新增「第一次来？两分钟看完这个网站能做什么」，六张卡片讲清一个人画、多人画、社区、像素相机、主题比赛与平移，看过后自动收起</li>
               <li><span class="li-tag tag-new">新功能</span>PWA 离线使用：可把网站安装到手机/桌面，断网也能打开画板继续画，附安装提示条</li>
               <li><span class="li-tag tag-new">新功能</span>5 套特色主题：樱粉、海盐、薄荷、暖阳、夜阑，可在设置里一键切换，与深色模式并存</li>
-              <li><span class="li-tag tag-new">新功能</span>提示音效：保存、撤销、清空、投票、复制链接各有不同的轻提示音，可在设置里开关（声音由 WebAudio 实时合成，不额外占用流量）</li>
+              <li><span class="li-tag tag-new">新功能</span>18 种提示音效：保存、撤销、清空、投票、复制链接、开关、开局、载入、答题、加入/离开房间等各有不同音色，可在设置里一键开关（声音由 WebAudio 实时合成，不额外占用流量）</li>
+              <li><span class="li-tag tag-new">新功能</span>设置页新增「💌 作者的话」：说明本站由 AI 协助编写、因接口经费有限更新较慢，以及这个小网站承载的个人心愿</li>
               <li><span class="li-tag tag-fix">修复</span>手型平移工具之前会误画出一个像素点，现在单击和拖动都只平移、绝不落笔</li>
               <li><span class="li-tag tag-fix">修复</span>有已保存的画稿时不再弹出开局菜单，直接回到画板继续画</li>
               <li><span class="li-tag tag-fix">修复</span>小地图不再遮挡画布右上角：默认收起，点 🗺 才显示，显示时也不会挡住落笔</li>
+              <li><span class="li-tag tag-fix">修复</span>深色模式下画板顶部「像素小镇 · 画板」等标题是黑字黑底看不清：补上页面文字颜色，现在跟随主题</li>
+              <li><span class="li-tag tag-fix">修复</span>设置页「画板布局」「进阶功能」点不开：分组绑定曾被写进其它回调里，且引用了还没初始化的数据</li>
+              <li><span class="li-tag tag-fix">修复</span>维护者页面顶部标题区是一段裸文字，现在与下方卡片一样有底色、边框和阴影</li>
               <li><span class="li-tag tag-fix">修复</span>取色器图标换成更贴切的 💉</li>
               <li><span class="li-tag tag-update">更新</span>任意工具都能拖动画布：工具栏新增 ✥ 拖动锁，开启后不管选哪个工具，拖动都只移动画布</li>
               <li><span class="li-tag tag-update">更新</span>「图片转像素画」更名为「📷 像素相机」</li>
               <li><span class="li-tag tag-update">更新</span>设置页的「画板布局」与「进阶功能」收进可折叠分组，并显示已开启数量，开关不再铺满整页</li>
               <li><span class="li-tag tag-update">更新</span>朋友圈分享卡片重做：作品模糊成背景氛围，元素按固定栅格排布不再重叠，超长标题会自动缩号</li>
-              <li><span class="li-tag tag-update">更新</span>画板底部新增「作者的话」：说明本站由 AI 协助创作、服务器开销需要支持，欢迎自愿赞助</li>
+              <li><span class="li-tag tag-update">更新</span>操作按钮行（撤销、清空、导出、上传）的描边、圆角与阴影改为与绘画工具栏一致</li>
             </ul>
           </div>
         </div>
