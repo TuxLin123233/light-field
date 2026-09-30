@@ -20,6 +20,7 @@ function withAutoCleanup(comp) {
     name: comp.name,
     css: comp.css,
     title: comp.title,
+    noZoom: comp.noZoom,
     template: comp.template,
     mounted(...args) {
       const rawSetTimeout = window.setTimeout
@@ -107,12 +108,18 @@ router.beforeEach((to) => {
   return target
 })
 
-// 切页：换样式、换标题、导航果冻弹一下
+const VIEWPORT_LOOSE = 'width=device-width, initial-scale=1.0'
+const VIEWPORT_LOCKED = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no'
+
+// 切页：换样式、换标题、换 viewport 缩放策略、导航果冻弹一下
 router.afterEach((to) => {
   const comp = (to.matched[0] && to.matched[0].components.default) || null
   const vs = document.getElementById('view-style')
   if (vs) vs.textContent = (comp && comp.css) || ''
   document.title = (comp && comp.title ? comp.title + ' · ' : '') + '像素小镇'
+  // 画板/联机在迁移前就是锁死缩放的，按页还原，避免手机按记忆的缩放级别渲染
+  const vp = document.querySelector('meta[name="viewport"]')
+  if (vp) vp.setAttribute('content', comp && comp.noZoom ? VIEWPORT_LOCKED : VIEWPORT_LOOSE)
   const nav = document.getElementById('appNav')
   if (nav) {
     nav.classList.remove('jelly')

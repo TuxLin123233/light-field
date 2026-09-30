@@ -2,6 +2,7 @@
 export default {
   name: 'paint',
   title: '画板',
+  noZoom: true,
   css: `      /* hidden 属性兜底：避免类选择器里的 display 覆盖 UA 的 [hidden]{display:none} */
       [hidden] { display: none !important; }
 
