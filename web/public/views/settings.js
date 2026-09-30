@@ -260,11 +260,11 @@ export default {
 
       /* ---------- 毛玻璃切换动画（果冻惯性） ---------- */
       @keyframes glassJelly {
-        0%   { transform: scale(1, 0.98) translateY(5px); }
-        30%  { transform: scale(1.04, 0.99) translateY(-4px); }
-        55%  { transform: scale(0.985, 1.012) translateY(3px); }
-        78%  { transform: scale(1.01, 0.997) translateY(-1px); }
-        100% { transform: scale(1, 1) translateY(0); }
+        0%   { transform: translateX(-50%) scale(1, 0.98) translateY(5px); }
+        30%  { transform: translateX(-50%) scale(1.04, 0.99) translateY(-4px); }
+        55%  { transform: translateX(-50%) scale(0.985, 1.012) translateY(3px); }
+        78%  { transform: translateX(-50%) scale(1.01, 0.997) translateY(-1px); }
+        100% { transform: translateX(-50%) scale(1, 1) translateY(0); }
       }
       .bottom-nav.jelly {
         animation: glassJelly 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);

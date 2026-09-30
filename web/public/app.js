@@ -124,9 +124,9 @@ router.afterEach((to) => {
 
 const App = {
   template: `
-    <main id="siteRoot">
+    <div id="siteRoot">
       <router-view :key="$route.fullPath" />
-    </main>
+    </div>
     <nav class="bottom-nav" id="appNav">
       <router-link to="/paint"><span class="nav-icon">🎨</span>画板</router-link>
       <router-link to="/room"><span class="nav-icon">👥</span>联机</router-link>
