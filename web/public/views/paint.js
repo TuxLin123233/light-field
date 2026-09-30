@@ -1308,7 +1308,7 @@ color: var(--text-muted);
         text-decoration: none;
         /* 导航越透明，文字反而越清晰、每个图标越自带底衬，保证任何内容上都能看清 */
         color: color-mix(in srgb, var(--text-faint) calc(var(--nav-op, 0.66) * 100%), var(--text));
-        background: color-mix(in srgb, var(--surface) calc((1 - var(--nav-op, 0.66)) * 66%), transparent);
+        background: rgba(var(--nav-base, 255, 253, 250), calc((1 - var(--nav-op, 0.66)) * 0.72));
         font-size: 10px;
         font-weight: 700;
         transition: color 0.2s, background 0.2s;
@@ -1318,7 +1318,7 @@ color: var(--text-muted);
 
       .bottom-nav a.active {
         color: var(--accent);
-        background: var(--surface-2);
+        background: color-mix(in srgb, rgb(var(--nav-base, 255, 253, 250)) 82%, var(--accent));
       }
       .imgmode-overlay {
         position: fixed;
@@ -1774,14 +1774,14 @@ color: var(--text-muted);
     
       /* ---------- 导航栏毛玻璃（苹果 Liquid Glass） ---------- */
       .bottom-nav {
-        background: rgba(255, 253, 250, var(--nav-op, 0.66)) !important;
+        background: rgba(var(--nav-base, 255, 253, 250), var(--nav-op, 0.66)) !important;
         -webkit-backdrop-filter: blur(calc(6px + var(--nav-op, 0.66) * 22px)) saturate(180%);
         backdrop-filter: blur(calc(6px + var(--nav-op, 0.66) * 22px)) saturate(180%);
         border-color: rgba(180, 168, 150, 0.30) !important;
         box-shadow: 0 14px 40px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.35);
       }
       [data-theme="dark"] .bottom-nav {
-        background: rgba(42, 38, 33, var(--nav-op, 0.62)) !important;
+        background: rgba(var(--nav-base, 42, 38, 33), var(--nav-op, 0.62)) !important;
         border-color: rgba(255, 255, 255, 0.10) !important;
         box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
       }

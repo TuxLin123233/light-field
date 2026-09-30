@@ -210,7 +210,7 @@ export default {
         text-decoration: none;
         /* 导航越透明，文字反而越清晰、每个图标越自带底衬，保证任何内容上都能看清 */
         color: color-mix(in srgb, var(--text-faint) calc(var(--nav-op, 0.66) * 100%), var(--text));
-        background: color-mix(in srgb, var(--surface) calc((1 - var(--nav-op, 0.66)) * 66%), transparent);
+        background: rgba(var(--nav-base, 255, 253, 250), calc((1 - var(--nav-op, 0.66)) * 0.72));
         font-size: 10px;
         font-weight: 700;
         transition: color 0.2s, background 0.2s;
@@ -218,18 +218,21 @@ export default {
 
       .bottom-nav a .nav-icon { font-size: 18px; line-height: 1; }
 
-      .bottom-nav a.active { color: var(--accent); background: var(--surface-2); }
+      .bottom-nav a.active {
+        color: var(--accent);
+        background: color-mix(in srgb, rgb(var(--nav-base, 255, 253, 250)) 82%, var(--accent));
+      }
     
       /* ---------- 导航栏毛玻璃（苹果 Liquid Glass） ---------- */
       .bottom-nav {
-        background: rgba(255, 253, 250, var(--nav-op, 0.66)) !important;
+        background: rgba(var(--nav-base, 255, 253, 250), var(--nav-op, 0.66)) !important;
         -webkit-backdrop-filter: blur(calc(6px + var(--nav-op, 0.66) * 22px)) saturate(180%);
         backdrop-filter: blur(calc(6px + var(--nav-op, 0.66) * 22px)) saturate(180%);
         border-color: rgba(180, 168, 150, 0.30) !important;
         box-shadow: 0 14px 40px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.35);
       }
       [data-theme="dark"] .bottom-nav {
-        background: rgba(42, 38, 33, var(--nav-op, 0.62)) !important;
+        background: rgba(var(--nav-base, 42, 38, 33), var(--nav-op, 0.62)) !important;
         border-color: rgba(255, 255, 255, 0.10) !important;
         box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
       }
@@ -268,6 +271,14 @@ export default {
               <li><span class="li-tag tag-fix">修复</span>深色模式下画板顶部「像素小镇 · 画板」等标题是黑字黑底看不清：补上页面文字颜色，现在跟随主题</li>
               <li><span class="li-tag tag-fix">修复</span>设置页「画板布局」「进阶功能」点不开：分组绑定曾被写进其它回调里，且引用了还没初始化的数据</li>
               <li><span class="li-tag tag-fix">修复</span>维护者页面顶部标题区是一段裸文字，现在与下方卡片一样有底色、边框和阴影</li>
+              <li><span class="li-tag tag-announce">移除</span><b>联机功能已下掉</b>：它的多人同步依赖强一致存储，而现有 KV 是最终一致的，两人同时落笔会互相覆盖（房主看不到别人加入、笔迹不同步、两人在线却提示不足 2 人）。修好需要换 Durable Object，但那会让整站自动部署失败、线上卡在旧版本，所以选择下掉而不是留一个时好时坏的功能。详见常见问题</li>
+              <li><span class="li-tag tag-new">新功能</span>底部导航新增「🌱 我的」：每日签到（连续天数 + 里程碑徽章）、创作数据（作品数、获赞、绘制格数、创作天数、尺寸分布、最受欢迎作品）以及我的作品墙</li>
+              <li><span class="li-tag tag-new">新功能</span>导航栏可自定义：启动时打开哪个页面改成单选（画板/社区/我的/设置），导航位置可选顶部或底部，四个入口的先后顺序也能调整</li>
+              <li><span class="li-tag tag-new">新功能</span>社区新增「🔍 发现」：随机翻出一件旧作品，点赞多的更容易被翻出来，让被时间埋掉的好东西重见天日</li>
+              <li><span class="li-tag tag-new">新功能</span>配色主题从 7 套扩到 20 套，新增 6 套夜间系（深海、墨林、玫瑰夜、森语、夜航、炭）与 7 套浅色系（奶茶、薰衣草、蜜桃、雾霭、抹茶、燕麦、复古）</li>
+              <li><span class="li-tag tag-fix">修复</span>导航栏在深色主题下，当前页会浮出一个比导航条更亮的方块：改为同底色的淡强调色；图标底衬也统一用导航条本身的颜色</li>
+              <li><span class="li-tag tag-fix">修复</span>「启动直达」此前完全没生效：根路径写的是静态 redirect，会在守卫之前就被解析掉，导致永远进画板。现改为函数式 redirect，四个页面都能选</li>
+              <li><span class="li-tag tag-update">更新</span>新手教程移除「多人一起画」，社区点赞提示补充「再点一次可取消」</li>
               <li><span class="li-tag tag-new">新功能</span>鬼房间自动清理：成员心跳超过 25 秒视为掉线并移出房间，房间没人时直接销毁；在线列表只显示真有人在线的房间</li>
               <li><span class="li-tag tag-fix">修复</span>底部导航调到最透明时文字会看不见：现在越透明文字对比度越高，且每个图标会自动浮现浅色底衬，任何内容上都能看清</li>
               <li><span class="li-tag tag-fix">修复</span><b>联机房间改用 Durable Object 存储</b>：原先房间状态存在单个 KV key 上，而 KV 是最终一致的，两个人同时操作会各自读到旧快照再互相覆盖，导致房主看不到别人加入、落笔完全不同步、明明两人在线却提示「至少需要 2 人才能开始」。现在同一房间的请求串行处理，写入立即可见</li>

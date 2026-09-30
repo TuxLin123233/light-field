@@ -46,9 +46,65 @@ export async function onRequestPost(context) {
         size: e.size === 32 || e.size === 64 ? e.size : 16,
         type: e.type,
         likes: e.likes || 0,
+        // 缩略图需要像素数据；只给自己人看，不对外暴露
+        pixels: e.pixels,
       }))
       .sort((a, b) => b.time - a.time)
     return json({ ok: true, works: mine, total: mine.length })
+  }
+
+  if (action === 'stats') {
+    const { entries } = await readAllHistory(env.LIGHTFIELD_KV)
+    const mine = entries.filter((e) => e && e.owner === hash)
+
+    // 统计真正「画了东西」的格子：与画布默认白底不同的都算
+    let cells = 0
+    const days = new Set()
+    let likes = 0
+    let best = null
+    let first = 0
+    let last = 0
+    const sizeCount = { 16: 0, 32: 0, 64: 0 }
+
+    for (const e of mine) {
+      const t = Number(e.time) || 0
+      if (t) {
+        days.add(new Date(t).toDateString())
+        if (!first || t < first) first = t
+        if (t > last) last = t
+      }
+      likes += Number(e.likes) || 0
+      const s = e.size === 32 || e.size === 64 ? e.size : 16
+      sizeCount[s] = (sizeCount[s] || 0) + 1
+      const px = Array.isArray(e.pixels) ? e.pixels : []
+      for (const p of px) {
+        if (!Array.isArray(p) || p.length < 3) continue
+        // 接近纯白视为底色，不计入
+        if (p[0] > 246 && p[1] > 246 && p[2] > 246) continue
+        cells += 1
+      }
+      if (!best || (Number(e.likes) || 0) > (Number(best.likes) || 0)) {
+        best = { time: t, workName: e.workName || '', likes: Number(e.likes) || 0, size: s }
+      }
+    }
+
+    return json({
+      ok: true,
+      stats: {
+        works: mine.length,
+        likes,
+        cells,
+        days: days.size,
+        sizeCount,
+        best,
+        first,
+        last,
+        // 精确到「天」的连续创作天数
+        spanDays: first && last
+          ? Math.max(1, Math.round((new Date(last).setHours(0, 0, 0, 0) - new Date(first).setHours(0, 0, 0, 0)) / 86400000) + 1)
+          : 0,
+      },
+    })
   }
 
   if (action === 'delete') {

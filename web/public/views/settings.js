@@ -269,6 +269,58 @@ export default {
 
       .row-col { flex-direction: column; align-items: stretch; gap: 10px; }
 
+      /* ---------- 单选组（启动页 / 导航位置） ---------- */
+      .radio-row { display: flex; flex-wrap: wrap; gap: 8px; }
+      .radio-chip {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 9px 14px;
+        border-radius: 999px;
+        border: 1px solid var(--border-input);
+        background: var(--surface-2);
+        color: var(--text-muted);
+        font-size: 13px;
+        cursor: pointer;
+        transition: border-color 0.15s, color 0.15s, background 0.15s;
+      }
+      .radio-chip.on {
+        border-color: var(--accent);
+        color: var(--accent);
+        background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+        font-weight: 600;
+      }
+      .radio-chip .rc-ico { font-size: 15px; }
+
+      /* ---------- 导航排序 ---------- */
+      .order-list { display: flex; flex-direction: column; gap: 8px; }
+      .order-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        background: var(--surface-2);
+        font-size: 14px;
+        color: var(--text);
+      }
+      .order-item .oi-ico { font-size: 17px; }
+      .order-item .oi-name { font-weight: 600; }
+      .order-item .oi-pos { margin-left: auto; font-size: 11px; color: var(--text-faint); }
+      .order-btns { display: flex; gap: 5px; margin-left: auto; }
+      .order-btns button {
+        width: 30px;
+        height: 30px;
+        border-radius: 9px;
+        border: 1px solid var(--border-input);
+        background: var(--surface);
+        color: var(--text-muted);
+        font-size: 13px;
+        cursor: pointer;
+      }
+      .order-btns button:disabled { opacity: 0.35; cursor: default; }
+
       /* ---------- 底部导航透明度 ---------- */
       .slider-head { display: flex; align-items: flex-start; gap: 10px; }
       .slider-val {
@@ -510,7 +562,7 @@ export default {
         text-decoration: none;
         /* 导航越透明，文字反而越清晰、每个图标越自带底衬，保证任何内容上都能看清 */
         color: color-mix(in srgb, var(--text-faint) calc(var(--nav-op, 0.66) * 100%), var(--text));
-        background: color-mix(in srgb, var(--surface) calc((1 - var(--nav-op, 0.66)) * 66%), transparent);
+        background: rgba(var(--nav-base, 255, 253, 250), calc((1 - var(--nav-op, 0.66)) * 0.72));
         font-size: 10px;
         font-weight: 700;
         transition: color 0.2s, background 0.2s;
@@ -520,19 +572,19 @@ export default {
 
       .bottom-nav a.active {
         color: var(--accent);
-        background: var(--surface-2);
+        background: color-mix(in srgb, rgb(var(--nav-base, 255, 253, 250)) 82%, var(--accent));
       }
     
       /* ---------- 导航栏毛玻璃（苹果 Liquid Glass） ---------- */
       .bottom-nav {
-        background: rgba(255, 253, 250, var(--nav-op, 0.66)) !important;
+        background: rgba(var(--nav-base, 255, 253, 250), var(--nav-op, 0.66)) !important;
         -webkit-backdrop-filter: blur(calc(6px + var(--nav-op, 0.66) * 22px)) saturate(180%);
         backdrop-filter: blur(calc(6px + var(--nav-op, 0.66) * 22px)) saturate(180%);
         border-color: rgba(180, 168, 150, 0.30) !important;
         box-shadow: 0 14px 40px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.35);
       }
       [data-theme="dark"] .bottom-nav {
-        background: rgba(42, 38, 33, var(--nav-op, 0.62)) !important;
+        background: rgba(var(--nav-base, 42, 38, 33), var(--nav-op, 0.62)) !important;
         border-color: rgba(255, 255, 255, 0.10) !important;
         box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
       }
@@ -606,11 +658,6 @@ export default {
               <i>16 / 32 / 64 三种尺寸，32 色彩板，橡皮、颜料桶、取色器、镜像、草稿槽，随时导出 PNG。</i>
             </div>
             <div class="g-item">
-              <span class="g-ico">👥</span>
-              <b>多人一起画</b>
-              <i>建房后把口令发给朋友，同一块画布上同时落笔，谁都能看到对方画到哪。</i>
-            </div>
-            <div class="g-item">
               <span class="g-ico">🖼️</span>
               <b>发到社区</b>
               <i>上传作品进社区广场，被人点赞、投票，还能生成朋友圈小卡片分享。</i>
@@ -635,7 +682,7 @@ export default {
             <b>💡 三个上手小提示</b>
             <ul>
               <li>画错了按 <kbd>↩️</kbd> 撤销；手机上也可以直接点工具栏的撤销。</li>
-              <li>点底部「社区」看看别人画了什么，喜欢的可以点♥。</li>
+              <li>点底部「社区」看看别人画了什么，喜欢的可以点♥；再点一次能取消。</li>
               <li>不想被复杂界面打扰？到下面「画板布局」里把用不到的都关掉。</li>
             </ul>
           </div>
@@ -773,13 +820,27 @@ export default {
       </section>
 
       <section class="group">
-        <div class="group-title">启动</div>
-        <div class="row">
+        <div class="group-title">启动与导航</div>
+        <div class="row row-col">
           <div>
-            <div class="row-label">启动直达社区</div>
-            <div class="row-desc">每次进入先打开社区；若有未完成的绘画内容，则自动进入画板继续创作</div>
+            <div class="row-label">启动时打开</div>
+            <div class="row-desc">打开网站时先进哪一个页面</div>
           </div>
-          <input class="switch" id="entranceSwitch" type="checkbox" role="switch">
+          <div class="radio-row" id="entranceRow"></div>
+        </div>
+        <div class="row row-col">
+          <div>
+            <div class="row-label">导航栏位置</div>
+            <div class="row-desc">放在屏幕底部还是顶部，切换后立刻生效</div>
+          </div>
+          <div class="radio-row" id="navPosRow"></div>
+        </div>
+        <div class="row row-col">
+          <div>
+            <div class="row-label">导航栏顺序</div>
+            <div class="row-desc">点一下即可调整先后次序</div>
+          </div>
+          <div class="order-list" id="navOrderList"></div>
         </div>
       </section>
 
@@ -871,17 +932,148 @@ export default {
   mounted() {
       const darkSwitch = document.getElementById('darkSwitch')
       const themeBtn = document.getElementById('themeBtn')
-      const entranceSwitch = document.getElementById('entranceSwitch')
+      /* ---------- 导航项定义（与 app.js 的导航保持一致） ---------- */
+      const NAV_ITEMS = [
+        { path: '/paint', ico: '🎨', name: '画板' },
+        { path: '/gallery', ico: '🌆', name: '社区' },
+        { path: '/mine', ico: '🌱', name: '我的' },
+        { path: '/settings', ico: '⚙️', name: '设置' },
+      ]
 
-      try {
-        entranceSwitch.checked = localStorage.getItem('lw-entrance') === 'community'
-      } catch (e) {}
-
-      entranceSwitch.addEventListener('change', () => {
+      function readLS(k, d) {
         try {
-          localStorage.setItem('lw-entrance', entranceSwitch.checked ? 'community' : '')
+          const v = localStorage.getItem(k)
+          return v === null || v === '' ? d : v
+        } catch (e) {
+          return d
+        }
+      }
+      function writeLS(k, v) {
+        try {
+          localStorage.setItem(k, v)
         } catch (e) {}
-      })
+      }
+
+      /* ---------- 启动直达：单选，覆盖全部导航页 ---------- */
+      const ENTRANCE_KEY = 'lw-entrance'
+      const entranceRow = document.getElementById('entranceRow')
+      if (entranceRow) {
+        let cur = readLS(ENTRANCE_KEY, '/paint')
+        if (!NAV_ITEMS.some((i) => i.path === cur)) cur = '/paint'
+        const paint = () => {
+          entranceRow.querySelectorAll('.radio-chip').forEach((c) => {
+            c.classList.toggle('on', c.dataset.path === cur)
+          })
+        }
+        NAV_ITEMS.forEach((it) => {
+          const b = document.createElement('button')
+          b.type = 'button'
+          b.className = 'radio-chip'
+          b.dataset.path = it.path
+          b.innerHTML = '<span class="rc-ico">' + it.ico + '</span>' + it.name
+          b.addEventListener('click', () => {
+            cur = it.path
+            writeLS(ENTRANCE_KEY, cur)
+            paint()
+            if (window.sfx) window.sfx('tick')
+            toast('下次打开将先进「' + it.name + '」')
+          })
+          entranceRow.appendChild(b)
+        })
+        paint()
+      }
+
+      /* ---------- 导航栏位置：底部 / 顶部 ---------- */
+      const NAV_POS_KEY = 'lw-nav-pos'
+      const navPosRow = document.getElementById('navPosRow')
+      if (navPosRow) {
+        const POS = [
+          { v: 'bottom', ico: '⬇️', name: '底部' },
+          { v: 'top', ico: '⬆️', name: '顶部' },
+        ]
+        let cur = readLS(NAV_POS_KEY, 'bottom')
+        if (!POS.some((p) => p.v === cur)) cur = 'bottom'
+        const paint = () => {
+          navPosRow.querySelectorAll('.radio-chip').forEach((c) => {
+            c.classList.toggle('on', c.dataset.v === cur)
+          })
+        }
+        POS.forEach((p) => {
+          const b = document.createElement('button')
+          b.type = 'button'
+          b.className = 'radio-chip'
+          b.dataset.v = p.v
+          b.innerHTML = '<span class="rc-ico">' + p.ico + '</span>' + p.name
+          b.addEventListener('click', () => {
+            cur = p.v
+            writeLS(NAV_POS_KEY, cur)
+            paint()
+            if (window.setNavPosition) window.setNavPosition(cur)
+            if (window.sfx) window.sfx('tick')
+          })
+          navPosRow.appendChild(b)
+        })
+        paint()
+      }
+
+      /* ---------- 导航栏顺序 ---------- */
+      const NAV_ORDER_KEY = 'lw-nav-order'
+      const orderList = document.getElementById('navOrderList')
+      if (orderList) {
+        let order = readLS(NAV_ORDER_KEY, '')
+          .split(',')
+          .filter((x) => NAV_ITEMS.some((i) => i.path === x))
+        // 补齐缺失项（新增导航时不会丢）
+        NAV_ITEMS.forEach((i) => {
+          if (!order.includes(i.path)) order.push(i.path)
+        })
+
+        const render = () => {
+          orderList.innerHTML = ''
+          order.forEach((path, idx) => {
+            const it = NAV_ITEMS.find((i) => i.path === path)
+            if (!it) return
+            const row = document.createElement('div')
+            row.className = 'order-item'
+            row.innerHTML =
+              '<span class="oi-ico">' + it.ico + '</span><span class="oi-name">' + it.name + '</span>'
+            const btns = document.createElement('div')
+            btns.className = 'order-btns'
+            const up = document.createElement('button')
+            up.type = 'button'
+            up.textContent = '↑'
+            up.title = '上移'
+            up.disabled = idx === 0
+            up.addEventListener('click', () => {
+              const t = order.slice()
+              ;[t[idx - 1], t[idx]] = [t[idx], t[idx - 1]]
+              order = t
+              commit()
+            })
+            const down = document.createElement('button')
+            down.type = 'button'
+            down.textContent = '↓'
+            down.title = '下移'
+            down.disabled = idx === order.length - 1
+            down.addEventListener('click', () => {
+              const t = order.slice()
+              ;[t[idx + 1], t[idx]] = [t[idx], t[idx + 1]]
+              order = t
+              commit()
+            })
+            btns.append(up, down)
+            row.appendChild(btns)
+            orderList.appendChild(row)
+          })
+        }
+        const commit = () => {
+          writeLS(NAV_ORDER_KEY, order.join(','))
+          render()
+          if (window.sfx) window.sfx('tick')
+          if (window.setNavOrder) window.setNavOrder(order)
+        }
+        render()
+      }
 
       function syncThemeUI() {
         const dark = document.documentElement.getAttribute('data-theme') === 'dark'
@@ -1133,6 +1325,21 @@ export default {
         { id: 'mint', name: '薄荷', c1: '#f2f9f1', c2: '#a9d9b2', c3: '#3f9c5c' },
         { id: 'sunset', name: '暖阳', c1: '#fff6ec', c2: '#f6c896', c3: '#d9823e' },
         { id: 'midnight', name: '夜阑', c1: '#21223a', c2: '#4a4a80', c3: '#8b7cf0' },
+        // 夜间系
+        { id: 'ocean-night', name: '深海', c1: '#0e1a26', c2: '#2a3f52', c3: '#4cc2e0' },
+        { id: 'ink', name: '墨林', c1: '#121714', c2: '#2b3a31', c3: '#5fc98d' },
+        { id: 'rose-night', name: '玫瑰夜', c1: '#241419', c2: '#45242c', c3: '#e8778f' },
+        { id: 'forest-night', name: '森语', c1: '#131c16', c2: '#2c3b2f', c3: '#9bd167' },
+        { id: 'night-flight', name: '夜航', c1: '#161a2e', c2: '#2e3350', c3: '#f0b45c' },
+        { id: 'charcoal', name: '炭', c1: '#1c1c1e', c2: '#3a3a3e', c3: '#f08a4b' },
+        // 浅色系
+        { id: 'milktea', name: '奶茶', c1: '#faf4ec', c2: '#e0cbb2', c3: '#b3805a' },
+        { id: 'lavender', name: '薰衣草', c1: '#f7f5fc', c2: '#d5cce9', c3: '#8b72d8' },
+        { id: 'peach', name: '蜜桃', c1: '#fff5f1', c2: '#f8cdb9', c3: '#ef7a52' },
+        { id: 'mist', name: '雾霭', c1: '#f4f6f7', c2: '#d0d6dc', c3: '#5b7c99' },
+        { id: 'matcha', name: '抹茶', c1: '#f6f8ee', c2: '#d3dcbe', c3: '#7a9c4a' },
+        { id: 'oat', name: '燕麦', c1: '#faf7f0', c2: '#dcd2bd', c3: '#8a7a55' },
+        { id: 'sepia', name: '复古', c1: '#f6efe2', c2: '#d4c19f', c3: '#a2703c' },
       ]
       function applyTheme(id) {
         const t = THEMES.find((x) => x.id === id) ? id : 'light'

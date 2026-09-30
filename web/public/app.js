@@ -1,13 +1,13 @@
 // 像素小镇 · Vue 3 + Vue Router 单页应用（无构建，push 即部署）
 // 视图放在 /views/*.js，由 _genviews.py 从原单文件页面生成
 import paint from './views/paint.js'
-import room from './views/room.js'
 import gallery from './views/gallery.js'
 import settings from './views/settings.js'
 import changelog from './views/changelog.js'
 import admin from './views/admin.js'
 import terms from './views/terms.js'
 import faq from './views/faq.js'
+import mine from './views/mine.js'
 
 const { createApp } = window.Vue
 const { createRouter, createWebHistory } = window.VueRouter
@@ -74,17 +74,38 @@ function withAutoCleanup(comp) {
   }
 }
 
+/* 首页入口：
+   有未完成的草稿 → 直接回画板接着画；
+   否则按设置里选的启动页（画板/社区/我的/设置）。
+   必须用函数式 redirect：写成静态 redirect 的话会在守卫之前就被解析掉。 */
+const ENTRANCE_PATHS = ['/paint', '/gallery', '/mine', '/settings']
+function resolveEntrance() {
+  let target = '/paint'
+  try {
+    const raw = localStorage.getItem('paintDraft')
+    if (raw) {
+      const d = JSON.parse(raw)
+      if (d && Array.isArray(d.pixels) && d.pixels.length) {
+        return '/paint'
+      }
+    }
+    const want = localStorage.getItem('lw-entrance') || ''
+    if (ENTRANCE_PATHS.indexOf(want) >= 0) target = want
+  } catch (e) {}
+  return target
+}
+
 const routes = [
-  { path: '/', redirect: '/paint' },
+  { path: '/', redirect: resolveEntrance },
   { path: '/paint', component: withAutoCleanup(paint) },
-  { path: '/room', component: withAutoCleanup(room) },
   { path: '/gallery', component: withAutoCleanup(gallery) },
+  { path: '/mine', component: withAutoCleanup(mine) },
   { path: '/settings', component: withAutoCleanup(settings) },
   { path: '/changelog', component: withAutoCleanup(changelog) },
   { path: '/admin', component: withAutoCleanup(admin) },
   { path: '/terms', component: withAutoCleanup(terms) },
   { path: '/faq', component: withAutoCleanup(faq) },
-  { path: '/:pathMatch(.*)*', redirect: '/paint' },
+  { path: '/:pathMatch(.*)*', redirect: resolveEntrance },
 ]
 
 const router = createRouter({
@@ -92,22 +113,6 @@ const router = createRouter({
   routes,
   linkActiveClass: 'active',
   linkExactActiveClass: 'active',
-})
-
-// 首页入口：有草稿进画板，否则按设置直达社区
-router.beforeEach((to) => {
-  if (to.path !== '/') return true
-  let target = '/paint'
-  try {
-    const raw = localStorage.getItem('paintDraft')
-    let hasDraft = false
-    if (raw) {
-      const d = JSON.parse(raw)
-      if (d && Array.isArray(d.pixels)) hasDraft = true
-    }
-    if (localStorage.getItem('lw-entrance') === 'community' && !hasDraft) target = '/gallery'
-  } catch (e) {}
-  return target
 })
 
 const VIEWPORT_LOOSE = 'width=device-width, initial-scale=1.0'
@@ -131,16 +136,56 @@ router.afterEach((to) => {
   window.scrollTo(0, 0)
 })
 
+/* ---------- 导航项：顺序与位置可由设置页调整 ---------- */
+const NAV_ITEMS = [
+  { path: '/paint', ico: '🎨', name: '画板' },
+  { path: '/gallery', ico: '🌆', name: '社区' },
+  { path: '/mine', ico: '🌱', name: '我的' },
+  { path: '/settings', ico: '⚙️', name: '设置' },
+]
+function readLS(k, d) {
+  try {
+    const v = localStorage.getItem(k)
+    return v === null || v === '' ? d : v
+  } catch (e) {
+    return d
+  }
+}
+/** 按本机保存的顺序返回导航项；缺失的自动补到末尾 */
+function navOrder() {
+  let order = readLS('lw-nav-order', '')
+    .split(',')
+    .filter((x) => NAV_ITEMS.some((i) => i.path === x))
+  NAV_ITEMS.forEach((i) => {
+    if (!order.includes(i.path)) order.push(i.path)
+  })
+  return order.map((p) => NAV_ITEMS.find((i) => i.path === p)).filter(Boolean)
+}
+function applyNavPosition() {
+  const pos = readLS('lw-nav-pos', 'bottom') === 'top' ? 'top' : 'bottom'
+  document.documentElement.setAttribute('data-nav-pos', pos)
+}
+
 const App = {
+  data() {
+    return { navItems: navOrder() }
+  },
+  mounted() {
+    applyNavPosition()
+    // 设置页改完顺序/位置后调用即可立刻生效
+    window.setNavOrder = () => {
+      this.navItems = navOrder()
+    }
+    window.setNavPosition = applyNavPosition
+  },
   template: `
     <div id="siteRoot">
       <router-view :key="$route.fullPath" />
     </div>
     <nav class="bottom-nav" id="appNav">
-      <router-link to="/paint"><span class="nav-icon">🎨</span>画板</router-link>
-      <router-link to="/room"><span class="nav-icon">👥</span>联机</router-link>
-      <router-link to="/gallery"><span class="nav-icon">🌆</span>社区</router-link>
-      <router-link to="/settings"><span class="nav-icon">⚙️</span>设置</router-link>
+      <router-link v-for="it in navItems" :key="it.path" :to="it.path">
+        <span class="nav-icon">{{ it.ico }}</span>{{ it.name }}
+      </router-link>
     </nav>
   `,
 }

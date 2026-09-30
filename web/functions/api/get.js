@@ -89,6 +89,8 @@ export async function onRequestGet(context) {
   const tagParam = (url.searchParams.get('tag') || '').trim().slice(0, 6)
   const authorParam = (url.searchParams.get('author') || '').trim().slice(0, 20)
   const wantTags = url.searchParams.get('tagcloud') === '1'
+  // 发现：随机抽一件「旧作品」，优先挑有点赞且不在最新一批里的
+  const discover = url.searchParams.get('discover') === '1'
   const filtering = !!(qParam || tagParam || authorParam)
 
   // 热门标签（按作品数排序）
@@ -104,6 +106,44 @@ export async function onRequestGet(context) {
       .sort((a, b) => b.count - a.count)
       .slice(0, 24)
     return json({ ok: true, tags })
+  }
+
+  if (discover) {
+    if (!env.LIGHTFIELD_KV) return json({ error: 'LIGHTFIELD_KV is not configured' }, 500)
+    // 多抽一些再随机，保证每次点「发现」都能翻到不同的东西
+    const { entries } = await readAllHistory(env.LIGHTFIELD_KV, { limit: 400 })
+    const pool = entries.filter(
+      (e) =>
+        Array.isArray(e.pixels) &&
+        e.pixels.length &&
+        // 跳过最近一批，避免和首页首屏重复
+        (e.time || 0) < Date.now() - 3 * 3600 * 1000
+    )
+    const usable = pool.length ? pool : entries.filter((e) => Array.isArray(e.pixels) && e.pixels.length)
+    if (!usable.length) return json({ ok: true, work: null })
+    // 越靠前越优先被抽中（有赞的更容易被翻出来）
+    const weighted = []
+    usable.forEach((e, i) => {
+      const w = 1 + Math.min(6, Number(e.likes) || 0)
+      for (let k = 0; k < w; k++) weighted.push(e)
+    })
+    const pick = weighted[Math.floor(Math.random() * weighted.length)]
+    const legacy = !(pick.workName || pick.author)
+    return json({
+      ok: true,
+      work: {
+        time: pick.time,
+        size: pick.size === 32 || pick.size === 64 ? pick.size : 16,
+        pixels: pick.pixels,
+        workName: legacy ? pick.name || '' : pick.workName || '',
+        author: legacy ? '匿名' : pick.author || '',
+        likes: pick.likes || 0,
+        tags: Array.isArray(pick.tags) ? pick.tags : [],
+        type: pick.type,
+        room: pick.room === true,
+        contest: pick.contest,
+      },
+    })
   }
 
   const single = url.searchParams.get('single') === '1'

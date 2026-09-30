@@ -916,6 +916,81 @@ export default {
         overflow-y: auto;
       }
       .pal-grid::-webkit-scrollbar { display: none; }
+      /* ---------- 发现 ---------- */
+      .discover {
+        width: 100%;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 14px;
+        margin-bottom: 16px;
+      }
+      .discover-head {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .discover-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+      .discover-text b { font-size: 14px; color: var(--text); }
+      .discover-text i {
+        font-size: 12px;
+        font-style: normal;
+        color: var(--text-faint);
+        line-height: 1.5;
+      }
+      .discover-btn {
+        margin-left: auto;
+        flex-shrink: 0;
+        padding: 9px 16px;
+        border-radius: 999px;
+        border: none;
+        background: var(--accent);
+        color: #fff;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: transform 0.12s ease;
+      }
+      .discover-btn:active { transform: scale(0.94); }
+      .discover-btn:disabled { opacity: 0.55; }
+      .discover-empty {
+        font-size: 13px;
+        color: var(--text-faint);
+        text-align: center;
+        padding: 18px 8px 6px;
+      }
+      .discover-card {
+        margin-top: 12px;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        padding: 11px;
+        border-radius: 13px;
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        cursor: pointer;
+      }
+      .discover-card canvas {
+        width: 76px;
+        height: 76px;
+        flex-shrink: 0;
+        border-radius: 10px;
+        image-rendering: pixelated;
+        background: var(--art-bg);
+        border: 1px solid var(--border);
+      }
+      .discover-info { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+      .discover-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .discover-meta { font-size: 12px; color: var(--text-muted); }
+      .discover-ago { font-size: 11px; color: var(--text-faint); }
+
       .pal-chip {
         width: 46px;
         border-radius: 9px;
@@ -1108,7 +1183,7 @@ export default {
         text-decoration: none;
         /* 导航越透明，文字反而越清晰、每个图标越自带底衬，保证任何内容上都能看清 */
         color: color-mix(in srgb, var(--text-faint) calc(var(--nav-op, 0.66) * 100%), var(--text));
-        background: color-mix(in srgb, var(--surface) calc((1 - var(--nav-op, 0.66)) * 66%), transparent);
+        background: rgba(var(--nav-base, 255, 253, 250), calc((1 - var(--nav-op, 0.66)) * 0.72));
         font-size: 10px;
         font-weight: 700;
         transition: color 0.2s, background 0.2s;
@@ -1118,7 +1193,7 @@ export default {
 
       .bottom-nav a.active {
         color: var(--accent);
-        background: var(--surface-2);
+        background: color-mix(in srgb, rgb(var(--nav-base, 255, 253, 250)) 82%, var(--accent));
       }
 
       /* ---------- 朋友圈卡片弹层 ---------- */
@@ -1196,14 +1271,14 @@ export default {
     
       /* ---------- 导航栏毛玻璃（苹果 Liquid Glass） ---------- */
       .bottom-nav {
-        background: rgba(255, 253, 250, var(--nav-op, 0.66)) !important;
+        background: rgba(var(--nav-base, 255, 253, 250), var(--nav-op, 0.66)) !important;
         -webkit-backdrop-filter: blur(calc(6px + var(--nav-op, 0.66) * 22px)) saturate(180%);
         backdrop-filter: blur(calc(6px + var(--nav-op, 0.66) * 22px)) saturate(180%);
         border-color: rgba(180, 168, 150, 0.30) !important;
         box-shadow: 0 14px 40px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.35);
       }
       [data-theme="dark"] .bottom-nav {
-        background: rgba(42, 38, 33, var(--nav-op, 0.62)) !important;
+        background: rgba(var(--nav-base, 42, 38, 33), var(--nav-op, 0.62)) !important;
         border-color: rgba(255, 255, 255, 0.10) !important;
         box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
       }
@@ -1270,6 +1345,19 @@ export default {
           <span class="contest-tip" id="contestTip"></span>
         </div>
         <div class="contest-top" id="contestTop"></div>
+      </section>
+
+      <section class="discover" id="discover">
+        <div class="discover-head">
+          <div class="discover-text">
+            <b>🔍 发现</b>
+            <i>随机翻出一件旧作品，给被时间埋掉的好东西一次机会</i>
+          </div>
+          <button class="discover-btn" id="discoverBtn" type="button">掷一个</button>
+        </div>
+        <div class="discover-body" id="discoverBody">
+          <div class="discover-empty">点「掷一个」随机看看别人以前画了什么</div>
+        </div>
       </section>
 
       <section class="featured" id="featured" hidden>
@@ -2063,6 +2151,89 @@ export default {
       /* ---------- 佳作展示 ---------- */
       const featured = document.getElementById('featured')
       const featuredRow = document.getElementById('featuredRow')
+      /* ---------- 发现：随机翻出旧作品 ---------- */
+      const discoverBtn = document.getElementById('discoverBtn')
+      const discoverBody = document.getElementById('discoverBody')
+      let discovering = false
+
+      function agoTextOf(ts) {
+        const d = Math.max(0, Date.now() - (Number(ts) || 0))
+        const mins = Math.round(d / 60000)
+        if (mins < 60) return mins + ' 分钟前发布'
+        const hrs = Math.round(mins / 60)
+        if (hrs < 24) return hrs + ' 小时前发布'
+        const days = Math.round(hrs / 24)
+        if (days < 30) return days + ' 天前发布'
+        if (days < 365) return Math.round(days / 30) + ' 个月前发布'
+        return Math.round(days / 365) + ' 年前发布'
+      }
+
+      function drawDiscoverThumb(cv, pixels, size) {
+        const n = size === 32 || size === 64 ? size : 16
+        const dpr = Math.min(2, window.devicePixelRatio || 1)
+        cv.width = n * dpr
+        cv.height = n * dpr
+        const c = cv.getContext('2d')
+        c.scale(dpr, dpr)
+        for (let y = 0; y < n; y++) {
+          for (let x = 0; x < n; x++) {
+            const p = pixels && pixels[y * n + x]
+            if (!p) continue
+            c.fillStyle = 'rgb(' + p[0] + ',' + p[1] + ',' + p[2] + ')'
+            c.fillRect(x, y, 1, 1)
+          }
+        }
+      }
+
+      async function rollDiscover() {
+        if (discovering || !discoverBody) return
+        discovering = true
+        discoverBtn.disabled = true
+        discoverBtn.textContent = '翻找中…'
+        try {
+          const res = await fetch('/api/get?discover=1&t=' + Date.now(), { cache: 'no-store' })
+          const data = await res.json().catch(() => ({}))
+          const w = data && data.work
+          if (!w) {
+            discoverBody.innerHTML = '<div class="discover-empty">社区还没有作品，先去画一幅吧</div>'
+            return
+          }
+          discoverBody.innerHTML = ''
+          const card = document.createElement('div')
+          card.className = 'discover-card'
+          const cv = document.createElement('canvas')
+          drawDiscoverThumb(cv, w.pixels, w.size)
+          const info = document.createElement('div')
+          info.className = 'discover-info'
+          const nm = document.createElement('div')
+          nm.className = 'discover-name'
+          nm.textContent = w.workName || '未命名'
+          const meta = document.createElement('div')
+          meta.className = 'discover-meta'
+          meta.textContent =
+            (w.author || '匿名') + ' · ' + w.size + '×' + w.size + (w.likes ? ' · ♥ ' + w.likes : '')
+          const ago = document.createElement('div')
+          ago.className = 'discover-ago'
+          ago.textContent = agoTextOf(w.time)
+          info.append(nm, meta, ago)
+          card.append(cv, info)
+          card.addEventListener('click', () => {
+            // 复用现成的预览逻辑
+            if (typeof preview === 'function') preview(w)
+            else location.href = '/gallery?t=' + w.time
+          })
+          discoverBody.appendChild(card)
+          if (window.sfx) window.sfx('pop')
+        } catch (e) {
+          discoverBody.innerHTML = '<div class="discover-empty">网络不太好，稍后再试</div>'
+        } finally {
+          discovering = false
+          discoverBtn.disabled = false
+          discoverBtn.textContent = '掷一个'
+        }
+      }
+      if (discoverBtn) discoverBtn.addEventListener('click', rollDiscover)
+
       const featuredSub = document.getElementById('featuredSub')
       const rangeTabs = document.getElementById('rangeTabs')
       let featuredRange = 'all'
