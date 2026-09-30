@@ -268,6 +268,9 @@ export default {
               <li><span class="li-tag tag-fix">修复</span>维护者页面顶部标题区是一段裸文字，现在与下方卡片一样有底色、边框和阴影</li>
               <li><span class="li-tag tag-fix">修复</span><b>联机房间改用 Durable Object 存储</b>：原先房间状态存在单个 KV key 上，而 KV 是最终一致的，两个人同时操作会各自读到旧快照再互相覆盖，导致房主看不到别人加入、落笔完全不同步、明明两人在线却提示「至少需要 2 人才能开始」。现在同一房间的请求串行处理，写入立即可见</li>
               <li><span class="li-tag tag-fix">修复</span>落笔的 250ms 限流原本与「加入房间、改标题」共用时间戳，进房后马上画会被误判为「操作太快」，已改为只按上一次落笔计时</li>
+              <li><span class="li-tag tag-update">更新</span>点赞可以取消了：再点一次即可撤回，点赞数与「我赞过的」记录同步更新</li>
+              <li><span class="li-tag tag-update">更新</span>佳作展示只收录真正被喜欢过的作品，0 赞的不再占用位置</li>
+              <li><span class="li-tag tag-update">更新</span>朋友圈分享卡片底部留出空白，二维码不再紧贴图片下边缘</li>
               <li><span class="li-tag tag-fix">修复</span>维护后台的举报列表之前会被浏览器缓存，导致新提交的举报看不到、已处理的举报刷新后又冒出来；现已禁用缓存、加载互不依赖，并在本机记住已处理的条目</li>
               <li><span class="li-tag tag-fix">修复</span>取色器图标换成更贴切的 💉</li>
               <li><span class="li-tag tag-update">更新</span>任意工具都能拖动画布：工具栏新增 ✥ 拖动锁，开启后不管选哪个工具，拖动都只移动画布</li>

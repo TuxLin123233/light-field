@@ -1,4 +1,4 @@
-import { recentHistory, incrementLikes } from './_history.js'
+import { recentHistory, incrementLikes, decrementLikes} from './_history.js'
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -35,7 +35,10 @@ export async function onRequestPost(context) {
     return json({ error: 'LIGHTFIELD_KV is not configured' }, 500)
   }
 
-  const res = await incrementLikes(env.LIGHTFIELD_KV, time)
+  // unlike=1 表示取消点赞
+  const res = body.unlike
+    ? await decrementLikes(env.LIGHTFIELD_KV, time)
+    : await incrementLikes(env.LIGHTFIELD_KV, time)
   if (!res.found) {
     return json({ error: '作品不存在' }, 404)
   }
@@ -73,6 +76,8 @@ export async function onRequestGet(context) {
   const { entries } = await recentHistory(env.LIGHTFIELD_KV, { limit: scanCap })
   const sorted = entries
     .filter((e) => Array.isArray(e.pixels) && (e.time || 0) >= minTime)
+    // 佳作展示只推真正被喜欢过的作品，0 赞的不占位
+    .filter((e) => (e.likes || 0) > 0)
     .sort((a, b) => (b.likes || 0) - (a.likes || 0))
     .slice(0, top)
     .map((e) => {

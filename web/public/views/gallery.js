@@ -1317,7 +1317,7 @@ export default {
           <span id="previewTime" class="preview-time"></span>
         </div>
         <div class="preview-like">
-          <button class="like-btn" id="previewLike" type="button">♥ <span id="previewLikeCount">0</span></button>
+          <button class="like-btn" id="previewLike" type="button" title="再点一次可取消点赞">♥ <span id="previewLikeCount">0</span></button>
           <button class="vote-btn" id="previewVoteBtn" type="button" hidden>🏆 投一票</button>
           <button class="share-btn" id="previewShare" type="button">🔗 复制链接</button>
           <button class="share-btn" id="previewCard" type="button">🃏 生成朋友圈卡片</button>
@@ -1732,7 +1732,7 @@ export default {
 
       function buildMomentsCard(pixels, n, title, author, likes, tags) {
         const W = 1080
-        const H = 1440
+        const H = 1520
         const PAD = 72
         const FONT = '"PingFang SC", "Microsoft YaHei", sans-serif'
         const cv = document.createElement('canvas')
@@ -1786,7 +1786,7 @@ export default {
         const TITLE_Y = 1232
         const META_Y = 1284
         const TAG_Y = 1330
-        const FOOT_Y = 1372
+        const FOOT_Y = 1350
 
         // 顶部品牌
         const cell = 15
@@ -1977,38 +1977,60 @@ export default {
         return btn
       }
 
+      /* 同一作品可能同时出现在佳作区、列表和预览里，一起更新 */
+      function syncLikeEverywhere(time, likes, liked) {
+        const t = String(time)
+        document.querySelectorAll('[data-like-time="' + t + '"]').forEach((el) => {
+          const n = el.querySelector('.f-like')
+          if (n) n.textContent = '♥ ' + likes
+        })
+        if (liked) likedMap.add(t)
+        else likedMap.delete(t)
+        saveLiked()
+        const pv = document.getElementById('previewLikeCount')
+        if (pv && currentPreview && String(currentPreview.time) === t) pv.textContent = likes
+      }
+
       function updateLikedState(btn, time) {
         btn.classList.toggle('liked', likedMap.has(String(time)))
       }
 
+      /* 再点一次就是取消点赞 */
       async function like(rec, btn) {
         const key = String(rec.time)
-        if (likedMap.has(key)) {
-          toast('你已经赞过这幅作品啦')
-          return
-        }
+        const undo = likedMap.has(key)
         btn.disabled = true
         try {
           const res = await fetch('/api/like', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ time: rec.time }),
+            body: JSON.stringify({ time: rec.time, unlike: undo ? 1 : 0 }),
           })
           const data = await res.json().catch(() => ({}))
           if (res.ok) {
-            likedMap.add(key)
+            if (undo) {
+              likedMap.delete(key)
+              if (window.sfx) window.sfx('close')
+              toast('已取消点赞')
+            } else {
+              likedMap.add(key)
+              if (window.sfx) window.sfx('pop')
+              toast('点赞成功 ♥')
+            }
             saveLiked()
-            rec.likes = data.likes
-            btn.querySelector('span').textContent = rec.likes
+            rec.likes = Math.max(0, Number(data.likes) || 0)
+            const span = btn.querySelector('span')
+            if (span) span.textContent = rec.likes
             updateLikedState(btn, rec.time)
             const pv = document.getElementById('previewLikeCount')
             if (pv) pv.textContent = rec.likes
-            toast('点赞成功 ♥')
+            // 同步刷新列表与佳作区里同一作品的显示
+            syncLikeEverywhere(rec.time, rec.likes, !undo)
           } else {
-            toast('点赞失败：' + (data.error || res.status))
+            toast((undo ? '取消点赞失败：' : '点赞失败：') + (data.error || res.status))
           }
         } catch (err) {
-          toast('点赞失败：网络错误')
+          toast((undo ? '取消点赞失败：' : '点赞失败：') + '网络错误')
         } finally {
           btn.disabled = false
         }
@@ -2107,6 +2129,7 @@ export default {
             fz.className = 'f-size'
             fz.textContent = fs + '×' + fs
 
+            card.dataset.likeTime = String(w.time)
             const lk = document.createElement('span')
             lk.className = 'f-like'
             lk.textContent = '♥ ' + (w.likes || 0)

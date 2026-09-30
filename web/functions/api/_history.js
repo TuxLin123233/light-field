@@ -198,6 +198,15 @@ export async function incrementLikes(kv, time) {
   return { found: res.found, likes: res.entry ? res.entry.likes : 0 }
 }
 
+// 取消点赞：减 1，最低为 0
+export async function decrementLikes(kv, time) {
+  const res = await findAndUpdate(kv, time, (e) => ({
+    ...e,
+    likes: Math.max(0, (e.likes || 0) - 1),
+  }))
+  return { found: res.found, likes: res.entry ? res.entry.likes || 0 : 0 }
+}
+
 // 主题比赛投票 +1
 export async function incrementContestVotes(kv, time) {
   const res = await findAndUpdate(kv, time, (e) => ({ ...e, contestVotes: (e.contestVotes || 0) + 1 }))
