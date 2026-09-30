@@ -42,8 +42,21 @@ export function newRoom(code, mode) {
     title: '',
     updatedAt: Date.now(),
     mode: mode === 'game' ? 'game' : 'free',
+    // 密码只存哈希，原文永不落库
+    pw: null,
     game: null,
   }
+}
+
+/** 极简哈希：仅用于「是不是同一个密码」的判断，不承担安全性 */
+export function pwHash(s) {
+  let h = 2166136261
+  const str = String(s || '')
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i)
+    h = Math.imul(h, 16777619)
+  }
+  return (h >>> 0).toString(36)
 }
 
 export function normalizePixels(pixels) {
@@ -72,6 +85,7 @@ export function stripId(room, viewerId) {
     title: room.title || '',
     updatedAt: room.updatedAt,
     maxMembers: MAX_MEMBERS,
+    hasPassword: !!room.pw,
     mode: room.mode === 'game' ? 'game' : 'free',
     game: g
       ? {
@@ -193,6 +207,12 @@ export function apply(state, body) {
     case 'join': {
       const name = (body && typeof body.name === 'string' ? body.name : '').trim()
       const existing = state.members.find((m) => m.id === id)
+      if (state.pw) {
+        const given = (body && body.pw) || ''
+        if (pwHash(given) !== state.pw) {
+          return { status: 401, payload: { error: '房间密码不正确' } }
+        }
+      }
       if (existing) {
         if (name) existing.name = name
         state.updatedAt = Date.now()
@@ -381,6 +401,21 @@ export function apply(state, body) {
 
     default:
       return { status: 400, payload: { error: '未知 action：' + action } }
+  }
+}
+
+/** 房间列表用的摘要 */
+export function roomSummary(room) {
+  const g = room.game
+  return {
+    code: room.code,
+    mode: room.mode === 'game' ? 'game' : 'free',
+    members: room.members.length,
+    maxMembers: MAX_MEMBERS,
+    hasPassword: !!room.pw,
+    hasGame: !!(g && g.active),
+    title: room.title || '',
+    updatedAt: room.updatedAt || 0,
   }
 }
 

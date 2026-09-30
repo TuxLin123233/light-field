@@ -220,14 +220,14 @@ export default {
     
       /* ---------- 导航栏毛玻璃（苹果 Liquid Glass） ---------- */
       .bottom-nav {
-        background: rgba(255, 253, 250, 0.66) !important;
-        -webkit-backdrop-filter: blur(24px) saturate(180%);
-        backdrop-filter: blur(24px) saturate(180%);
+        background: rgba(255, 253, 250, var(--nav-op, 0.66)) !important;
+        -webkit-backdrop-filter: blur(calc(6px + var(--nav-op, 0.66) * 22px)) saturate(180%);
+        backdrop-filter: blur(calc(6px + var(--nav-op, 0.66) * 22px)) saturate(180%);
         border-color: rgba(180, 168, 150, 0.30) !important;
         box-shadow: 0 14px 40px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.35);
       }
       [data-theme="dark"] .bottom-nav {
-        background: rgba(42, 38, 33, 0.62) !important;
+        background: rgba(42, 38, 33, var(--nav-op, 0.62)) !important;
         border-color: rgba(255, 255, 255, 0.10) !important;
         box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
       }
@@ -268,6 +268,9 @@ export default {
               <li><span class="li-tag tag-fix">修复</span>维护者页面顶部标题区是一段裸文字，现在与下方卡片一样有底色、边框和阴影</li>
               <li><span class="li-tag tag-fix">修复</span><b>联机房间改用 Durable Object 存储</b>：原先房间状态存在单个 KV key 上，而 KV 是最终一致的，两个人同时操作会各自读到旧快照再互相覆盖，导致房主看不到别人加入、落笔完全不同步、明明两人在线却提示「至少需要 2 人才能开始」。现在同一房间的请求串行处理，写入立即可见</li>
               <li><span class="li-tag tag-fix">修复</span>落笔的 250ms 限流原本与「加入房间、改标题」共用时间戳，进房后马上画会被误判为「操作太快」，已改为只按上一次落笔计时</li>
+              <li><span class="li-tag tag-new">新功能</span>联机页新增「在线房间」列表：能看到当前所有还开着的房间（模式、人数、是否有密码、最后活跃时间），一键填码加入，每 5 秒自动刷新</li>
+              <li><span class="li-tag tag-new">新功能</span>创建房间时可选择是否设置密码：密码以哈希形式存储，原文不落库；加入时若需要密码会自动展开输入框，自己建房的密码会记在本机下次自动填好</li>
+              <li><span class="li-tag tag-new">新功能</span>设置页新增「底部导航透明度」滑块：0% 全透明到 100% 完全不透明，拖动时底部导航和预览条同步实时变化，附常用预设</li>
               <li><span class="li-tag tag-update">更新</span>点赞可以取消了：再点一次即可撤回，点赞数与「我赞过的」记录同步更新</li>
               <li><span class="li-tag tag-update">更新</span>佳作展示只收录真正被喜欢过的作品，0 赞的不再占用位置</li>
               <li><span class="li-tag tag-update">更新</span>朋友圈分享卡片底部留出空白，二维码不再紧贴图片下边缘</li>

@@ -269,6 +269,102 @@ export default {
 
       .row-col { flex-direction: column; align-items: stretch; gap: 10px; }
 
+      /* ---------- 底部导航透明度 ---------- */
+      .slider-head { display: flex; align-items: flex-start; gap: 10px; }
+      .slider-val {
+        margin-left: auto;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--accent);
+        font-variant-numeric: tabular-nums;
+        flex-shrink: 0;
+      }
+      .slider {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 100%;
+        height: 26px;
+        background: transparent;
+        cursor: pointer;
+        margin: 0;
+      }
+      .slider::-webkit-slider-runnable-track {
+        height: 8px;
+        border-radius: 999px;
+        background: var(--surface-3);
+        border: 1px solid var(--border);
+      }
+      .slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 22px;
+        height: 22px;
+        margin-top: -8px;
+        border-radius: 50%;
+        background: var(--accent);
+        border: 2px solid var(--surface);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.22);
+      }
+      .slider::-moz-range-track {
+        height: 8px;
+        border-radius: 999px;
+        background: var(--surface-3);
+        border: 1px solid var(--border);
+      }
+      .slider::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--accent);
+        border: 2px solid var(--surface);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.22);
+      }
+      .slider-presets { display: flex; flex-wrap: wrap; gap: 7px; }
+      .slider-presets button {
+        padding: 5px 11px;
+        border-radius: 999px;
+        border: 1px solid var(--border-input);
+        background: var(--surface-2);
+        color: var(--text-muted);
+        font-size: 12px;
+        cursor: pointer;
+      }
+      .slider-presets button.on {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .nav-preview {
+        margin-top: 2px;
+        padding: 14px 12px 10px;
+        border-radius: 12px;
+        background: var(--bg);
+        border: 1px dashed var(--border-strong);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 7px;
+        overflow: hidden;
+      }
+      .np-bar {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        width: min(240px, 100%);
+        padding: 8px 12px;
+        border-radius: 999px;
+        /* 预览条复用真实导航的观感 */
+        background: rgba(255, 253, 250, var(--nav-op, 0.66));
+        border: 1px solid rgba(180, 168, 150, 0.3);
+        box-shadow: 0 8px 22px rgba(0, 0, 0, 0.16);
+        -webkit-backdrop-filter: blur(calc(6px + var(--nav-op, 0.66) * 22px));
+        backdrop-filter: blur(calc(6px + var(--nav-op, 0.66) * 22px));
+      }
+      [data-theme='dark'] .np-bar { background: rgba(42, 38, 33, var(--nav-op, 0.62)); }
+      [data-theme='midnight'] .np-bar { background: rgba(33, 34, 58, var(--nav-op, 0.62)); }
+      .np-dot { width: 22px; height: 22px; border-radius: 50%; background: var(--surface-3); }
+      .np-dot:first-child { background: var(--accent); opacity: 0.85; }
+      .np-note { font-size: 11px; color: var(--text-faint); }
+
       .theme-picks { display: flex; flex-wrap: wrap; gap: 8px; }
 
       .theme-pick {
@@ -420,14 +516,14 @@ export default {
     
       /* ---------- 导航栏毛玻璃（苹果 Liquid Glass） ---------- */
       .bottom-nav {
-        background: rgba(255, 253, 250, 0.66) !important;
-        -webkit-backdrop-filter: blur(24px) saturate(180%);
-        backdrop-filter: blur(24px) saturate(180%);
+        background: rgba(255, 253, 250, var(--nav-op, 0.66)) !important;
+        -webkit-backdrop-filter: blur(calc(6px + var(--nav-op, 0.66) * 22px)) saturate(180%);
+        backdrop-filter: blur(calc(6px + var(--nav-op, 0.66) * 22px)) saturate(180%);
         border-color: rgba(180, 168, 150, 0.30) !important;
         box-shadow: 0 14px 40px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.35);
       }
       [data-theme="dark"] .bottom-nav {
-        background: rgba(42, 38, 33, 0.62) !important;
+        background: rgba(42, 38, 33, var(--nav-op, 0.62)) !important;
         border-color: rgba(255, 255, 255, 0.10) !important;
         box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
       }
@@ -619,6 +715,30 @@ export default {
             <div class="row-desc">适合在夜里画画，保护眼睛</div>
           </div>
           <input class="switch" id="darkSwitch" type="checkbox" role="switch">
+        </div>
+        <div class="row row-col">
+          <div class="slider-head">
+            <div>
+              <div class="row-label">底部导航透明度</div>
+              <div class="row-desc">拖动即可实时预览，越低越通透</div>
+            </div>
+            <span class="slider-val" id="navOpVal">66%</span>
+          </div>
+          <input class="slider" id="navOpSlider" type="range" min="0" max="100" step="1" value="66"
+                 aria-label="底部导航透明度">
+          <div class="slider-presets" id="navOpPresets">
+            <button type="button" data-v="0">全透明</button>
+            <button type="button" data-v="35">很透</button>
+            <button type="button" data-v="66">默认</button>
+            <button type="button" data-v="88">偏实</button>
+            <button type="button" data-v="100">完全不透明</button>
+          </div>
+          <div class="nav-preview" id="navPreview">
+            <span class="np-bar">
+              <i class="np-dot"></i><i class="np-dot"></i><i class="np-dot"></i><i class="np-dot"></i>
+            </span>
+            <span class="np-note">这就是底部导航的样子</span>
+          </div>
         </div>
         <div class="row">
           <div>
@@ -1064,6 +1184,66 @@ export default {
           if (guideBox) guideBox.open = false
           toast('祝你画得开心 🎨')
         })
+
+      /* ---------- 底部导航透明度：实时预览 ---------- */
+      const NAV_OP_KEY = 'lw-nav-op'
+      const navOpSlider = document.getElementById('navOpSlider')
+      const navOpVal = document.getElementById('navOpVal')
+      const navOpPresets = document.getElementById('navOpPresets')
+
+      function applyNavOp(v) {
+        const n = Math.max(0, Math.min(100, Math.round(Number(v) || 0)))
+        const ratio = (n / 100).toFixed(3)
+        // 写到根元素，所有页面（含底部导航本体）立即生效
+        document.documentElement.style.setProperty('--nav-op', ratio)
+        if (navOpSlider) navOpSlider.value = String(n)
+        if (navOpVal) navOpVal.textContent = n + '%'
+        if (navOpPresets) {
+          navOpPresets.querySelectorAll('button').forEach((b) => {
+            b.classList.toggle('on', Number(b.dataset.v) === n)
+          })
+        }
+        return n
+      }
+
+      // 全局函数：设置页之外（如管理页）也能调用
+      window.setNavOpacity = function (v) {
+        const n = applyNavOp(v)
+        try {
+          localStorage.setItem(NAV_OP_KEY, String(n))
+        } catch (e) {}
+        return n
+      }
+
+      if (navOpSlider) {
+        let saved = 66
+        try {
+          const raw = localStorage.getItem(NAV_OP_KEY)
+          if (raw !== null && raw !== '') saved = Number(raw)
+        } catch (e) {}
+        // 进入设置页先把已保存的值应用到真实导航
+        applyNavOp(saved)
+        // 拖动时只改内存，不落盘；松手才保存，避免频繁写 localStorage
+        navOpSlider.addEventListener('input', () => {
+          applyNavOp(navOpSlider.value)
+        })
+        const commit = () => {
+          try {
+            localStorage.setItem(NAV_OP_KEY, String(Number(navOpSlider.value)))
+          } catch (e) {}
+        }
+        navOpSlider.addEventListener('change', commit)
+        navOpSlider.addEventListener('pointerup', commit)
+        navOpSlider.addEventListener('touchend', commit)
+      }
+      if (navOpPresets) {
+        navOpPresets.addEventListener('click', (e) => {
+          const b = e.target.closest('button[data-v]')
+          if (!b) return
+          window.setNavOpacity(b.dataset.v)
+          if (window.sfx) window.sfx('tick')
+        })
+      }
 
       const sfxSwitch = document.getElementById('sfxSwitch')
       if (sfxSwitch) {

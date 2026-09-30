@@ -295,21 +295,23 @@
         gap: 2px;
         width: min(420px, calc(100% - 36px));
         padding: 8px 12px;
-        background: rgba(255, 253, 250, 0.66) !important;
-        -webkit-backdrop-filter: blur(24px) saturate(180%);
-        backdrop-filter: blur(24px) saturate(180%);
+        /* --nav-op 由设置页的滑块实时调节，0 = 完全透明，1 = 最实 */
+        background: rgba(255, 253, 250, var(--nav-op, 0.66)) !important;
+        -webkit-backdrop-filter: blur(calc(6px + var(--nav-op, 0.66) * 22px)) saturate(180%);
+        backdrop-filter: blur(calc(6px + var(--nav-op, 0.66) * 22px)) saturate(180%);
         border: 1px solid rgba(180, 168, 150, 0.30) !important;
         border-radius: 999px;
         box-shadow: 0 14px 40px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.35);
       }
       [data-theme="dark"] .bottom-nav {
-        background: rgba(42, 38, 33, 0.62) !important;
+        background: rgba(42, 38, 33, var(--nav-op, 0.62)) !important;
         border-color: rgba(255, 255, 255, 0.10) !important;
         box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
       }
       html.glass-off .bottom-nav,
       html.glass-off [data-theme="dark"] .bottom-nav {
-        background: var(--surface) !important;
+        /* 关掉毛玻璃：仍按同一个不透明度混色，滑块依然有效 */
+        background: color-mix(in srgb, var(--surface) calc(var(--nav-op, 0.66) * 100%), transparent) !important;
         border-color: var(--border) !important;
         -webkit-backdrop-filter: none;
         backdrop-filter: none;
@@ -543,6 +545,17 @@
     <div id="toast"></div>
     <script type="module" src="/app.js"></script>
     <script>
+      /* ---------- 底部导航透明度：尽早应用，避免刷新后闪一下默认值 ---------- */
+      ;(function () {
+        try {
+          var raw = localStorage.getItem('lw-nav-op')
+          if (raw !== null && raw !== '') {
+            var n = Math.max(0, Math.min(100, Number(raw) || 0))
+            document.documentElement.style.setProperty('--nav-op', (n / 100).toFixed(3))
+          }
+        } catch (e) {}
+      })()
+
       /* ---------- PWA：注册 Service Worker，支持离线使用 ---------- */
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', function () {

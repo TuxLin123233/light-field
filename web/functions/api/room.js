@@ -8,6 +8,8 @@ import {
   readState,
   newRoom,
   newCode,
+  roomSummary,
+  pwHash,
   MAX_MEMBERS,
   ROOM_TTL,
 } from './_roomcore.js'
@@ -69,6 +71,7 @@ async function viaDO(env, request, url) {
         code,
         mode: (body && body.mode) || 'free',
         name: (body && body.name) || '',
+        pw: (body && body.pw) || '',
         id: crypto.randomUUID(),
       }),
     })
@@ -123,13 +126,16 @@ async function viaKV(env, request, url) {
 
   if (action === 'create') {
     const mode = body && body.mode === 'game' ? 'game' : 'free'
+    const pw = String((body && body.pw) || '').trim().slice(0, 20)
     let code = ''
     for (let i = 0; i < 6; i++) {
       code = newCode()
       if (!(await kv.get(roomKey(code)))) break
     }
-    await kv.put(roomKey(code), JSON.stringify(newRoom(code, mode)), { expirationTtl: ROOM_TTL })
-    return json({ ok: true, code, maxMembers: MAX_MEMBERS })
+    const room = newRoom(code, mode)
+    if (pw) room.pw = pwHash(pw)
+    await kv.put(roomKey(code), JSON.stringify(room), { expirationTtl: ROOM_TTL })
+    return json({ ok: true, code, maxMembers: MAX_MEMBERS, hasPassword: !!room.pw })
   }
 
   const code = ((body && body.code) || '').toString().toUpperCase().trim()
@@ -153,6 +159,42 @@ async function viaKV(env, request, url) {
   return json(res.payload, res.status)
 }
 
+/* ============================== 在线房间列表 ============================== */
+
+/**
+ * 列出当前还活着的房间。
+ * 直接扫 KV 的 room: 前缀，按人数/更新时间排序，只回摘要不含像素数据。
+ */
+async function listRooms(env) {
+  const kv = env.LIGHTFIELD_KV
+  const now = Date.now()
+  const out = []
+  let cursor = null
+  // 房间最多 6 人、TTL 30 分钟，扫 200 条足够覆盖活跃房间
+  for (let page = 0; page < 4; page++) {
+    const res = await kv.list({ prefix: 'room:', cursor, limit: 200 })
+    for (const key of res.keys) {
+      const raw = await kv.get(key.name)
+      if (!raw) continue
+      let room
+      try {
+        room = JSON.parse(raw)
+      } catch {
+        continue
+      }
+      if (!room || !room.code) continue
+      // 长时间没动静的视为已解散
+      if (room.updatedAt && now - room.updatedAt > ROOM_TTL * 1000) continue
+      if (!room.members || !room.members.length) continue
+      out.push(roomSummary(room))
+    }
+    if (out.length >= 60 || res.list_complete) break
+    cursor = res.cursor
+  }
+  out.sort((a, b) => b.members - a.members || b.updatedAt - a.updatedAt)
+  return { ok: true, rooms: out.slice(0, 40) }
+}
+
 /* ================================ 入口 ================================ */
 
 export async function onRequestOptions() {
@@ -162,7 +204,9 @@ export async function onRequestOptions() {
 export async function onRequestGet(context) {
   const { request, env } = context
   if (!env.LIGHTFIELD_KV) return json({ error: 'LIGHTFIELD_KV is not configured' }, 500)
-  return doAvailable(env) ? viaDO(env, request, new URL(request.url)) : viaKV(env, request, new URL(request.url))
+  const url = new URL(request.url)
+  if (url.searchParams.get('action') === 'list') return json(await listRooms(env))
+  return doAvailable(env) ? viaDO(env, request, url) : viaKV(env, request, url)
 }
 
 export async function onRequestPost(context) {

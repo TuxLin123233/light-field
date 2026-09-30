@@ -369,6 +369,85 @@ export default {
         color: var(--text-faint);
       }
 
+      /* ---------- 房间密码 ---------- */
+      .pw-row { margin-top: 10px; }
+      .pw-toggle {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 11px 14px;
+        border-radius: 12px;
+        border: 1px solid var(--border-input);
+        background: var(--surface-2);
+        color: var(--text-muted);
+        font-size: 14px;
+        cursor: pointer;
+      }
+      .pw-toggle[aria-pressed='true'] {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .pw-input { margin-top: 8px; text-transform: none; letter-spacing: 0; }
+
+      /* ---------- 在线房间列表 ---------- */
+      .online-sec { margin-top: 18px; text-align: left; }
+      .online-head {
+        display: flex;
+        align-items: center;
+        margin-bottom: 9px;
+      }
+      .online-title { font-size: 14px; font-weight: 700; color: var(--text); }
+      .online-refresh {
+        margin-left: auto;
+        padding: 5px 13px;
+        border-radius: 999px;
+        border: 1px solid var(--border-input);
+        background: var(--surface-2);
+        color: var(--text-muted);
+        font-size: 12px;
+        cursor: pointer;
+      }
+      .online-list { display: flex; flex-direction: column; gap: 8px; }
+      .online-empty {
+        font-size: 13px;
+        color: var(--text-faint);
+        text-align: center;
+        padding: 14px 0;
+      }
+      .room-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 11px 13px;
+        border-radius: 13px;
+        border: 1px solid var(--border);
+        background: var(--surface-2);
+      }
+      .ri-code {
+        font-size: 16px;
+        font-weight: 800;
+        letter-spacing: 2px;
+        color: var(--text);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+      .ri-meta { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+      .ri-line1 { font-size: 12px; color: var(--text-muted); }
+      .ri-line2 { font-size: 11px; color: var(--text-faint); }
+      .ri-join {
+        margin-left: auto;
+        flex-shrink: 0;
+        padding: 8px 15px;
+        border-radius: 10px;
+        border: none;
+        background: var(--accent);
+        color: #fff;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .ri-join:disabled { opacity: 0.45; }
+
       .landing { text-align: center; }
       .landing h2 { margin: 0 0 6px; font-size: 18px; color: var(--text); }
       .landing p { margin: 0 0 16px; font-size: 13px; color: var(--text-muted2); }
@@ -693,14 +772,14 @@ export default {
     
       /* ---------- 导航栏毛玻璃（苹果 Liquid Glass） ---------- */
       .bottom-nav {
-        background: rgba(255, 253, 250, 0.66) !important;
-        -webkit-backdrop-filter: blur(24px) saturate(180%);
-        backdrop-filter: blur(24px) saturate(180%);
+        background: rgba(255, 253, 250, var(--nav-op, 0.66)) !important;
+        -webkit-backdrop-filter: blur(calc(6px + var(--nav-op, 0.66) * 22px)) saturate(180%);
+        backdrop-filter: blur(calc(6px + var(--nav-op, 0.66) * 22px)) saturate(180%);
         border-color: rgba(180, 168, 150, 0.30) !important;
         box-shadow: 0 14px 40px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.35);
       }
       [data-theme="dark"] .bottom-nav {
-        background: rgba(42, 38, 33, 0.62) !important;
+        background: rgba(42, 38, 33, var(--nav-op, 0.62)) !important;
         border-color: rgba(255, 255, 255, 0.10) !important;
         box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
       }
@@ -740,11 +819,29 @@ export default {
         </button>
       </div>
       <input class="field" id="nameInput" placeholder="你的昵称（可留空）" maxlength="20">
+      <div class="pw-row" id="pwRow">
+        <button class="pw-toggle" id="pwToggle" type="button" aria-pressed="false">
+          <span class="pw-ico">🔒</span>
+          <span class="pw-text">不设密码</span>
+        </button>
+        <input class="field pw-input" id="pwInput" placeholder="房间密码" maxlength="20"
+               autocomplete="off" hidden>
+      </div>
       <button class="primary" id="createBtn" type="button">创建房间</button>
       <div class="divider">或</div>
       <div class="join-row">
         <input class="field" id="codeInput" placeholder="房间码" maxlength="6" autocomplete="off">
         <button class="primary" id="joinBtn" type="button" style="width:auto;padding:0 22px;margin-top:0">加入</button>
+      </div>
+
+      <div class="online-sec">
+        <div class="online-head">
+          <span class="online-title">🟢 在线房间</span>
+          <button class="online-refresh" id="listRefresh" type="button">刷新</button>
+        </div>
+        <div class="online-list" id="onlineList">
+          <div class="online-empty">正在获取…</div>
+        </div>
       </div>
     </div>
 
@@ -1438,11 +1535,27 @@ export default {
         try {
           localStorage.setItem('lw-roomid:' + state.code, id)
         } catch (e) {}
+        // 记下本机在这个房间用过的密码，下次回来自动填好
+        if (state.hasPassword) {
+          try {
+            const savedPw = localStorage.getItem('lw-myroom:' + state.code) || ''
+            if (savedPw) {
+              pwOn = true
+              pwToggle.setAttribute('aria-pressed', 'true')
+              pwToggle.querySelector('.pw-text').textContent = '已设密码（点击取消）'
+              pwInput.hidden = false
+              pwInput.value = savedPw
+            }
+          } catch (e) {}
+        }
+        clearInterval(listTimer)
         startPolling()
       }
 
       function enterLanding() {
         clearInterval(pollTimer)
+        startListPolling()
+        setTimeout(() => landing && (landing.hidden = false), 0)
         room = null
         landing.hidden = false
         roomPanel.hidden = true
@@ -1458,14 +1571,25 @@ export default {
           const res = await fetch('/api/room', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'create', name, mode: landMode }),
+            body: JSON.stringify({
+              action: 'create',
+              name,
+              mode: landMode,
+              pw: pwOn ? pwInput.value.trim() : '',
+            }),
           })
           const data = await res.json().catch(() => ({}))
           if (!res.ok) {
             toast('创建失败：' + (data.error || res.status))
             return
           }
-          await joinRoom({ code: data.code, name })
+          // 房主自己加入时带上密码，省得再输一次
+          await joinRoom({ code: data.code, name, pw: pwOn ? pwInput.value.trim() : '' })
+          if (data.code) {
+            try {
+              localStorage.setItem('lw-myroom:' + data.code, pwOn ? pwInput.value.trim() : '')
+            } catch (e) {}
+          }
         } finally {
           createBtn.disabled = false
         }
@@ -1484,10 +1608,23 @@ export default {
           const res = await fetch('/api/room', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'join', code, name, id: savedId }),
+            body: JSON.stringify({
+              action: 'join',
+              code,
+              name,
+              id: savedId,
+              pw: opts.pw != null ? opts.pw : pwInput.value.trim(),
+            }),
           })
           const data = await res.json().catch(() => ({}))
           if (!res.ok) {
+            if (res.status === 401) {
+              // 房间有密码：展开密码框让人输
+              setPwOn(true)
+              toast('这个房间需要密码')
+              pwInput.focus()
+              return
+            }
             toast('加入失败：' + (data.error || res.status))
             return
           }
@@ -1498,6 +1635,101 @@ export default {
           joinBtn.disabled = false
         }
       }
+
+      /* ---------- 房间密码开关 ---------- */
+      const pwToggle = document.getElementById('pwToggle')
+      const pwInput = document.getElementById('pwInput')
+      let pwOn = false
+      function setPwOn(v) {
+        pwOn = !!v
+        pwToggle.setAttribute('aria-pressed', String(pwOn))
+        pwToggle.querySelector('.pw-text').textContent = pwOn ? '已设密码（点击取消）' : '不设密码'
+        pwInput.hidden = !pwOn
+        if (pwOn) {
+          setTimeout(() => pwInput.focus(), 60)
+          if (window.sfx) window.sfx('tick')
+        }
+      }
+      pwToggle.addEventListener('click', () => setPwOn(!pwOn))
+
+      /* ---------- 在线房间列表 ---------- */
+      const onlineList = document.getElementById('onlineList')
+      const listRefresh = document.getElementById('listRefresh')
+      let listTimer = null
+
+      function agoText(ts) {
+        const s = Math.max(0, Math.round((Date.now() - ts) / 1000))
+        if (s < 60) return s + ' 秒前活跃'
+        if (s < 3600) return Math.round(s / 60) + ' 分钟前活跃'
+        return Math.round(s / 3600) + ' 小时前活跃'
+      }
+
+      async function loadRoomList() {
+        if (!onlineList) return
+        try {
+          const res = await fetch('/api/room?action=list&t=' + Date.now(), { cache: 'no-store' })
+          const data = await res.json().catch(() => ({}))
+          const rooms = (data && data.rooms) || []
+          onlineList.innerHTML = ''
+          if (!rooms.length) {
+            const e = document.createElement('div')
+            e.className = 'online-empty'
+            e.textContent = '现在还没有人开房，来当第一个吧'
+            onlineList.appendChild(e)
+            return
+          }
+          rooms.forEach((r) => {
+            const item = document.createElement('div')
+            item.className = 'room-item'
+
+            const code = document.createElement('span')
+            code.className = 'ri-code'
+            code.textContent = r.code
+
+            const meta = document.createElement('div')
+            meta.className = 'ri-meta'
+            const l1 = document.createElement('span')
+            l1.className = 'ri-line1'
+            l1.textContent =
+              (r.mode === 'game' ? '🎮 你画我猜' : '🖌️ 自由画') +
+              ' · ' + r.members + '/' + r.maxMembers + ' 人' +
+              (r.hasPassword ? ' · 🔒' : '')
+            const l2 = document.createElement('span')
+            l2.className = 'ri-line2'
+            l2.textContent = (r.title ? r.title + ' · ' : '') + agoText(r.updatedAt)
+            meta.append(l1, l2)
+
+            const join = document.createElement('button')
+            join.className = 'ri-join'
+            join.type = 'button'
+            join.textContent = r.members >= r.maxMembers ? '已满' : '加入'
+            join.disabled = r.members >= r.maxMembers
+            join.addEventListener('click', () => {
+              codeInput.value = r.code
+              // 密码房间：先展开密码框，直接点加入即可
+              if (r.hasPassword) setPwOn(true)
+              joinRoom({ code: r.code })
+            })
+
+            item.append(code, meta, join)
+            onlineList.appendChild(item)
+          })
+        } catch (e) {
+          onlineList.innerHTML = '<div class="online-empty">房间列表加载失败，稍后自动重试</div>'
+        }
+      }
+
+      function startListPolling() {
+        clearInterval(listTimer)
+        loadRoomList()
+        listTimer = setInterval(() => {
+          if (!room && !landing.hidden) loadRoomList()
+        }, 5000)
+      }
+      listRefresh.addEventListener('click', () => {
+        loadRoomList()
+        if (window.sfx) window.sfx('tick')
+      })
 
       createBtn.addEventListener('click', createRoom)
       joinBtn.addEventListener('click', joinRoom)
@@ -1604,6 +1836,7 @@ export default {
       } else {
         landing.hidden = false
         hint.hidden = false
+        startListPolling()
       }
 
       let toastTimer
