@@ -855,8 +855,12 @@ export default {
         </div>
       </section>
 
-      <section class="group">
-        <div class="group-title">外观</div>
+      <section class="group fold">
+        <button class="group-fold" id="foldLook" type="button" aria-expanded="true">
+          <span class="group-title">🎨 外观</span>
+          <span class="fold-caret">▾</span>
+        </button>
+        <div class="fold-body" id="foldLookBody">
         <div class="row">
           <div>
             <div class="row-label">深色模式</div>
@@ -910,10 +914,15 @@ export default {
           </div>
           <input class="switch" id="glassSwitch" type="checkbox" role="switch">
         </div>
+        </div>
       </section>
 
-      <section class="group">
-        <div class="group-title">启动与导航</div>
+      <section class="group fold">
+        <button class="group-fold" id="foldNav" type="button" aria-expanded="true">
+          <span class="group-title">🚀 启动与导航</span>
+          <span class="fold-caret">▾</span>
+        </button>
+        <div class="fold-body" id="foldNavBody">
         <div class="row row-col">
           <div>
             <div class="row-label">启动时打开</div>
@@ -941,6 +950,7 @@ export default {
             <div class="row-desc">点一下即可调整先后次序</div>
           </div>
           <div class="order-list" id="navOrderList"></div>
+        </div>
         </div>
       </section>
 
@@ -1431,6 +1441,35 @@ export default {
           if (el) el.checked = isFeatOn(f.key)
         })
       }
+
+      /* ---------- 可折叠分组的展开/收起 ---------- */
+      const FOLD_KEY = 'lw-settings-fold'
+      function applyFold(headId, bodyId, key) {
+        const head = document.getElementById(headId)
+        const body = document.getElementById(bodyId)
+        if (!head || !body) return
+        let open = true
+        try {
+          const saved = JSON.parse(localStorage.getItem(FOLD_KEY) || '{}')
+          if (saved && typeof saved[key] === 'boolean') open = saved[key]
+        } catch (e) {}
+        const set = (v) => {
+          head.setAttribute('aria-expanded', String(v))
+          body.hidden = !v
+          if (window.sfx) window.sfx('tap')
+          try {
+            const saved = JSON.parse(localStorage.getItem(FOLD_KEY) || '{}')
+            saved[key] = v
+            localStorage.setItem(FOLD_KEY, JSON.stringify(saved))
+          } catch (e) {}
+        }
+        set(open)
+        head.addEventListener('click', () => {
+          set(head.getAttribute('aria-expanded') !== 'true')
+        })
+      }
+      applyFold('foldLook', 'foldLookBody', 'look')
+      applyFold('foldNav', 'foldNavBody', 'nav')
 
       /* ---------- 配色主题 ---------- */
       // 主题数据来自 /themes.js（唯一数据源，CSS 也由它生成）

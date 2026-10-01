@@ -514,7 +514,8 @@ color: var(--text-muted);
       .custom-toggle {
         display: flex;
         justify-content: center;
-        margin-bottom: 12px;
+        /* 上方留出空隙，否则「自定义」按钮会紧贴上方的当前色值行 */
+        margin: 14px 0 12px;
       }
 
       #customBtn {
