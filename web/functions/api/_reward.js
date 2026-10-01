@@ -15,7 +15,6 @@
 
 import { creditDust } from './_dust.js'
 import { deliver } from './_mail.js'
-import { dayIndex } from './_daily.js'
 import { mondayStart, WEEK_MS, TZ, weekIdOf } from './_contest.js'
 
 /* 每日挑战榜奖励 */
@@ -40,16 +39,27 @@ const KIND = { daily: 'd', weekly: 'w' }
 
 const payKey = (kind, period, uid) => 'rwd:' + kind + ':' + period + ':' + uid
 
-/** 东八区某一天 [start, end) 的时间范围 */
-export function dayRange(dayId) {
-  const n = Number(String(dayId).replace(/^D/, ''))
+/* 每日榜的期号与时间范围。
+   注意：这里不能用 _daily.js 的 dayIndex() —— 它返回的是「年内第几天」，
+   而算时间戳需要「1970 起第几天」，两者不是一个基准，混用会让区间永远错位。
+   统一用东八区下的 epoch 天，和 _dust.js 的签到口径一致。 */
+
+/** 东八区下的 epoch 天序号 */
+export function dayStamp(ms = Date.now()) {
+  return Math.floor((ms + TZ) / 86400000)
+}
+
+/** 某个 epoch 天对应的 [start, end) 时间范围 */
+export function dayRange(epochDay) {
+  const n = Number(epochDay)
   if (!Number.isFinite(n)) return null
   const start = n * 86400000 - TZ
   return { start, end: start + 86400000 }
 }
 
-export function todayId() {
-  return 'D' + dayIndex()
+/** 期号，仅用于展示与去重键 */
+export function periodId(epochDay) {
+  return 'D' + epochDay
 }
 
 /** 按名次查奖励；rank=0 表示「进榜但没进前三」 */
@@ -96,7 +106,8 @@ export async function settle(kv, kind, period, table, ranked) {
     await deliver(kv, uid, {
       id: 'reward-' + k + '-' + period + '-' + uid,
       claimId: 'reward-' + k + '-' + period,
-      kind: 'attach',
+      // 光尘已直接入账，这封信只是通知，不再挂附件
+      kind: 'text',
       icon: kind === 'daily' ? '🏅' : '🏆',
       title: r.label + '！奖励 ' + r.dust + ' 个光尘',
       body:
@@ -130,8 +141,8 @@ export function rankEntries(entries, periodStart, periodEnd, scoreKey) {
 
 /** 结算上一期每日榜 */
 export async function settleDaily(kv, entries, now = Date.now()) {
-  const prev = 'D' + (dayIndex(new Date(now)) - 1)
-  const range = dayRange(prev)
+  const prev = periodId(dayStamp(now) - 1)
+  const range = dayRange(dayStamp(now) - 1)
   if (!range) return { paid: [], skipped: 0, period: prev }
   const ranked = rankEntries(entries, range.start, range.end, 'likes')
   if (!ranked.length) return { paid: [], skipped: 0, period: prev }
@@ -141,7 +152,8 @@ export async function settleDaily(kv, entries, now = Date.now()) {
 /** 结算上一期周赛 */
 export async function settleWeekly(kv, entries, now = Date.now()) {
   const prevMonday = mondayStart(now) - WEEK_MS
-  const period = weekIdOf(prevMonday)
+  // weekIdOf 返回的是对象，要取 .week 才是 '2026-W39' 这样的字符串
+  const period = weekIdOf(prevMonday).week
   const pool = entries.filter((e) => e && e.contest === period)
   if (!pool.length) return { paid: [], skipped: 0, period }
   const ranked = rankEntries(pool, prevMonday, prevMonday + WEEK_MS, 'contestVotes')
