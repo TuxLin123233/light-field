@@ -1,6 +1,5 @@
 import { appendEntry, recentHistory, HISTORY_MAX } from './_history.js'
 import { contestInfo } from './_contest.js'
-import { resolveClaim, touchUser } from './claim.js'
 import { hitWords } from './_lexicon.js'
 import { readActiveUser, pickToken, BANNED_ERROR } from './_auth.js'
 
@@ -184,12 +183,6 @@ export async function onRequestPost(context) {
   if (who) {
     entry.ownerUser = who.uid
     entry.ownerName = who.username
-  } else if (body && typeof body.claim === 'string' && body.claim.trim()) {
-    // 认领码：格式合法才认，不合法当没传，不影响上传
-    const found = await resolveClaim(env.LIGHTFIELD_KV, body.claim)
-    if (found) {
-      entry.owner = found.hash
-    }
   }
   const entryJson = JSON.stringify(entry)
   if (entryJson.length > 90000) {

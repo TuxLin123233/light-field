@@ -1,10 +1,8 @@
 // 「我自己的作品」：列出 / 统计 / 删除。
-// 归属有两种（过渡期并存）：
-//   1. 登录账号 —— 优先。作品发布时按账号记 ownerUser
-//   2. 认领码   —— 老作品没有账号时的兜底，KV 里只存哈希
-// owner / ownerUser 字段都绝不对外暴露。
+// 归属只看登录账号（ownerUser）。认领码那套已整体移除，
+// 账号系统之前发布的老作品没有 ownerUser，属于无人认领的历史数据。
+// ownerUser 字段绝不对外暴露。
 import { readAllHistory, removeByTime } from './_history.js'
-import { claimHash, bumpWorks } from './claim.js'
 import { readActiveUser, pickToken, BANNED_ERROR } from './_auth.js'
 
 const CORS_HEADERS = {
@@ -36,15 +34,11 @@ export async function onRequestPost(context) {
 
   const action = (body && body.action) || 'list'
 
-  // 登录用户按账号取；没登录才回退认领码
   const who = await readActiveUser(env, pickToken(request, body), request.headers.get('authorization'))
-  if (who && who.banned) return json(BANNED_ERROR, 403)
-  let hash = ''
-  if (!who) {
-    hash = await claimHash(body && body.code)
-    if (!hash) return json({ error: '认领码无效', code: 'nocred' }, 401)
-  }
-  const isMine = (e) => (who ? e && e.ownerUser === who.uid : e && e.owner === hash)
+  if (!who) return json({ error: '未登录', code: 'noauth' }, 401)
+  if (who.banned) return json(BANNED_ERROR, 403)
+  if (who.gone) return json({ error: '账号不存在', code: 'gone' }, 401)
+  const isMine = (e) => e && e.ownerUser === who.uid
 
   if (action === 'list') {
     const { entries } = await readAllHistory(env.LIGHTFIELD_KV)
@@ -130,8 +124,6 @@ export async function onRequestPost(context) {
     }
 
     await removeByTime(env.LIGHTFIELD_KV, time)
-    // 认领码时代有计数要一起减；账号作品没有这个计数
-    if (!who && hash) await bumpWorks(env.LIGHTFIELD_KV, hash, -1)
     return json({ ok: true, time })
   }
 

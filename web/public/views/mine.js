@@ -1,5 +1,5 @@
 // 我的：签到 + 创作数据 + 我的作品
-// 身份沿用现有的「认领码」：它就是本机的账号凭证，作品归属靠它。
+// 身份就是登录账号（令牌），作品归属靠账号 uid。
 export default {
   title: '我的',
   css: `
@@ -828,7 +828,7 @@ export default {
 
     function renderStatError(msg) {
       $('statGrid').innerHTML =
-        '<div class="m-empty">' + msg + '<br />在设置页查看你的认领码后即可看到数据</div>'
+        '<div class="m-empty">' + msg + '</div>'
     }
 
     /* ---------- 我的作品 ---------- */
@@ -858,14 +858,11 @@ export default {
     }
 
     async function loadMine() {
-      // 优先用登录账号；没有账号才回退认领码（老作品）
-      let code = ''
       let token = ''
       try {
-        code = localStorage.getItem('paintClaim') || ''
         token = localStorage.getItem('lw-token') || ''
       } catch (e) {}
-      if (!code && !token) {
+      if (!token) {
         $('mineEmpty').innerHTML =
           '登录后就能看到你发布的作品。<br /><a href="/login">去登录 / 注册</a>'
         $('mineTip').textContent = '需要登录'
@@ -879,7 +876,7 @@ export default {
         const res = await fetch('/api/mine', {
           method: 'POST',
           headers,
-          body: JSON.stringify({ code, token, action: 'stats' }),
+          body: JSON.stringify({ token, action: 'stats' }),
         })
         const d1 = await res.json().catch(() => ({}))
         if (d1.stats) renderStats(d1.stats)
@@ -887,7 +884,7 @@ export default {
         const res2 = await fetch('/api/mine', {
           method: 'POST',
           headers,
-          body: JSON.stringify({ code, token, action: 'list' }),
+          body: JSON.stringify({ token, action: 'list' }),
         })
         const d2 = await res2.json().catch(() => ({}))
         allWorks = (d2 && d2.works) || []

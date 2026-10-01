@@ -2904,9 +2904,11 @@ color: var(--text-muted);
 
       /* ---------- 删除自己的作品 ---------- */
       async function deleteOwnWork(rec) {
-        const code = getClaim()
-        if (!code) {
-          toast('还没有认领码，先上传一次作品就会自动生成')
+        if (!authToken()) {
+          toast('删除作品需要先登录')
+          setTimeout(() => {
+            location.href = '/login'
+          }, 800)
           return
         }
         const name = rec.workName || '未命名'
@@ -2914,8 +2916,8 @@ color: var(--text-muted);
         try {
           const res = await fetch('/api/mine', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'delete', code, time: rec.time }),
+            headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + authToken() },
+            body: JSON.stringify({ action: 'delete', token: authToken(), time: rec.time }),
           })
           const data = await res.json().catch(() => ({}))
           if (!res.ok) {
@@ -2993,43 +2995,6 @@ color: var(--text-muted);
         get mirror() { return isFeatOn('mirror') },
         get drafts() { return isFeatOn('drafts') },
         get tags() { return isFeatOn('tags') },
-      }
-
-      /* ---------- 认领码 ---------- */
-      const CLAIM_KEY = 'paintClaim'
-      function getClaim() {
-        try {
-          return localStorage.getItem(CLAIM_KEY) || ''
-        } catch (e) {
-          return ''
-        }
-      }
-      function setClaim(code) {
-        try {
-          localStorage.setItem(CLAIM_KEY, code)
-        } catch (e) {}
-      }
-      let claimReady = null
-      // 首次上传前确保有一串认领码
-      function ensureClaim(authorName) {
-        const existing = getClaim()
-        if (existing) return Promise.resolve(existing)
-        if (claimReady) return claimReady
-        claimReady = fetch('/api/claim', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'issue', name: authorName || '' }),
-        })
-          .then((r) => r.json())
-          .then((d) => {
-            if (d && d.code) {
-              setClaim(d.code)
-              return d.code
-            }
-            return existing
-          })
-          .catch(() => existing)
-        return claimReady
       }
 
       /* ---------- 多张草稿槽 ---------- */
@@ -4049,19 +4014,18 @@ color: var(--text-muted);
       const moreBtn = document.getElementById('moreBtn')
 
       const mineSet = loadMine()
-      // 认领码真正持有的作品时间戳（只有这些才显示删除按钮）
+      // 当前账号真正持有的作品时间戳（只有这些才显示删除按钮）
       let ownedSet = new Set()
       async function loadOwned() {
-        const code = getClaim()
-        if (!code) {
+        if (!authToken()) {
           ownedSet = new Set()
           return
         }
         try {
           const res = await fetch('/api/mine', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'list', code }),
+            headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + authToken() },
+            body: JSON.stringify({ action: 'list', token: authToken() }),
           })
           if (!res.ok) return
           const data = await res.json()
@@ -4537,8 +4501,6 @@ color: var(--text-muted);
         const workName = (contestCheck.checked && contestTheme) ? '《' + contestTheme + '》' : titleInput.value.trim()
         if (workName) payload.workName = workName
         if (contestCheck.checked && contestWeek) payload.contest = contestWeek
-        const claim = await ensureClaim(author)
-        if (claim) payload.claim = claim
         if (fromImage) payload.fromImage = true
         const tg = readTags()
         if (tg.length) payload.tags = tg
@@ -4565,8 +4527,6 @@ color: var(--text-muted);
         const workName = (contestCheck.checked && contestTheme) ? '《' + contestTheme + '》' : titleInput.value.trim()
         if (workName) payload.workName = workName
         if (contestCheck.checked && contestWeek) payload.contest = contestWeek
-        const claim2 = await ensureClaim(author)
-        if (claim2) payload.claim = claim2
         if (fromImage) payload.fromImage = true
         const done2 = await doPublish(payload, animPublishBtn)
         if (done2 && wantDaily && dailyId) joinDaily(done2.time)
