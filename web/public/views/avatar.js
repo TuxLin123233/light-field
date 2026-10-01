@@ -225,6 +225,7 @@ export default {
       <div class="av-head">
         <router-link class="av-back" to="/mine">← 我的</router-link>
         <div class="av-title">🎨 画头像</div>
+        <button class="lw-refresh" id="avRefresh" type="button" data-label="刷新"></button>
       </div>
       <div id="avBody">
         <div class="av-cost">正在读取…</div>
@@ -634,6 +635,14 @@ export default {
         hasAvatar = true
         if (d.book) balance = d.book.bal
         dirty = false
+        // 存的是服务端给的最新状态：直接覆盖缓存，切页面回来不用重新请求
+        // 就看到新头像；顺带作废，避免把旧的像素留在缓存里。
+        try {
+          const store = window.__lwCache
+          if (store) {
+            delete store.avatar
+          }
+        } catch (e) {}
         // 让别处立刻用上新头像
         if (A) A.put(d.uid || '', d.pixels)
         if (window.sfx) window.sfx('ding')
@@ -648,24 +657,43 @@ export default {
     }
 
     // 初始加载
-    ;(async function init() {
+    /* 取数 */
+    async function fetchMine() {
       const t = token()
       if (!t) {
         $('avBody').innerHTML =
           '<div class="av-cost"><span class="av-cost-warn">画头像需要登录。</span></div>'
-        return
+        return null
       }
       try {
         const res = await fetch('/api/avatar', { headers: { Authorization: 'Bearer ' + t }, cache: 'no-store' })
         if (res.status === 401) {
           $('avBody').innerHTML = '<div class="av-cost"><span class="av-cost-warn">登录状态已失效，请重新登录。</span></div>'
-          return
+          return null
         }
         const d = await res.json().catch(() => ({}))
         if (!d || !d.ok) {
           $('avBody').innerHTML = '<div class="av-cost">读取失败：' + esc((d && d.error) || res.status) + '</div>'
-          return
+          return null
         }
+        AC.put('avatar', d)
+        paintMine(d)
+        return d
+      } catch (e) {
+        // 这里以前只写「网络错误」，把真实异常全吞了：接口 200 正常也显示网络错误，
+        // 排查时完全看不出是哪一行炸的。把真实信息带上。
+        console.error('[avatar] 初始化失败', e)
+        const why = (e && (e.message || e.name)) || '未知错误'
+        $('avBody').innerHTML =
+          '<div class="av-cost"><span class="av-cost-warn">读取失败：' + esc(why) + '</span></div>'
+        return null
+      }
+    }
+
+    /* 只把拿到的数据铺到画布上，不发请求 —— 切页面回来时用缓存走这一段。 */
+    function paintMine(d) {
+      if (!d || !d.ok) return
+      try {
         // cost 现在是两个画法各自的价格
         if (d.cost && typeof d.cost === 'object') {
           COSTS = {
@@ -690,13 +718,21 @@ export default {
         }
         renderFrame()
       } catch (e) {
-        // 这里以前只写「网络错误」，把真实异常全吞了：接口 200 正常也显示网络错误，
-        // 排查时完全看不出是哪一行炸的。把真实信息带上。
-        console.error('[avatar] 初始化失败', e)
-        const why = (e && (e.message || e.name)) || '未知错误'
-        $('avBody').innerHTML =
-          '<div class="av-cost"><span class="av-cost-warn">读取失败：' + esc(why) + '</span></div>'
+        console.error('[avatar] 绘制失败', e)
       }
-    })()
+    }
+
+    /* 切页面不自动刷新：第一次进来读一次，之后切回来用内存缓存重画。 */
+    const AC = window.LWCache || {}
+    AC.bindRefresh($('avRefresh'), () => {
+      AC.drop('avatar')
+      return fetchMine()
+    }, () => {}, true)
+    if (AC.cached('avatar', () => { fetchMine() })) {
+      /* 第一次，正在读 */
+    } else {
+      const box = AC.get('avatar')
+      if (box) setTimeout(() => paintMine(box), 0)
+    }
   },
 }

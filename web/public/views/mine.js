@@ -561,7 +561,7 @@ export default {
 
     <!-- 我的作品：页内完整列表，只显示自己的 -->
     <div class="m-card" id="mineCard">
-      <div class="m-card-title">🎨 我的作品<span class="m-tip" id="mineTip"></span></div>
+      <div class="m-card-title">🎨 我的作品<span class="m-tip" id="mineTip"></span><button class="lw-refresh" id="mineRefresh" type="button" data-label="刷新"></button></div>
       <div class="mine-filter" id="mineFilter" hidden>
         <span class="mf-label">筛选</span>
         <div class="mf-chips" id="mineChips"></div>
@@ -580,20 +580,44 @@ export default {
   mounted() {
     const $ = (id) => document.getElementById(id)
 
-    // 登录用户的账本来自服务端，进入页面先拉一次
+    /* 账本来自服务端。启动时 dust 模块已经静默拉过一次了，
+       这里只在「那次没拿到」时才补拉一次 —— 以前是无条件拉，
+       于是每切一次「我的」页就多一个 /api/dust 请求。 */
     if (window.dust && window.dust.refresh) {
-      window.dust.refresh().then(function () {
-        renderDustBalance()
-        renderSign()
-      })
+      if (window.dust.isServer && window.dust.isServer()) {
+        /* 必须延到下一帧：renderSign 会读 MEDALS，那是 mounted 后面
+           才声明的 const，同步调用会撞上 TDZ
+           （Cannot access 'MEDALS' before initialization）。 */
+        setTimeout(function () {
+          renderDustBalance()
+          renderSign()
+        }, 0)
+      } else {
+        window.dust.refresh().then(function () {
+          renderDustBalance()
+          renderSign()
+        })
+      }
     }
     // 社区赠送光尘后回到本页时，余额要跟着变
     const onDust = function () {
       renderDustBalance()
       renderSign()
     }
-    window.addEventListener('lw-mail-claimed', onDust)
+    window.addEventListener('lw-mail-claimed', function () {
+      // 附件被领走了，待领数变了，角标要真的重算
+      try {
+        const store = window.__lwCache
+        if (store) delete store.mailBadge
+      } catch (e) {}
+      onDust()
+    })
     window.addEventListener('lw-achieve-changed', function () {
+      // 成就真的变了，这里要重新算，不能用缓存
+      try {
+        const store = window.__lwCache
+        if (store) delete store.achBadge
+      } catch (e) {}
       loadAchBadge()
     })
     // 领完每日任务，光尘变了，角标要重新算（强制绕过缓存）
@@ -686,24 +710,36 @@ export default {
       }
       el.textContent = '读取中…'
       el.classList.remove('empty')
-      fetch('/api/auth', { headers: { Authorization: 'Bearer ' + t }, cache: 'no-store' })
-        .then((r) => (r.ok ? r.json() : null))
-        .then((d) => {
-          if (!d || !d.loggedIn) {
-            el.textContent = '登录后可写简介'
+      /* 简介只跟登录状态有关，不会因为切了页面就变，读一次就够。
+         改了简介会派发 lw-bio-changed，那时再作废缓存。 */
+      const BC = window.LWCache || {}
+      BC.cached('bio', () => {
+        fetch('/api/auth', { headers: { Authorization: 'Bearer ' + t }, cache: 'no-store' })
+          .then((r) => (r.ok ? r.json() : null))
+          .then((d) => {
+            BC.put('bio', d)
+            if (!d || !d.loggedIn) {
+              el.textContent = '登录后可写简介'
+              el.classList.add('empty')
+              return
+            }
+            const bb = (d.bio || '').trim()
+            el.textContent = bb || '点此写简介'
+            el.classList.toggle('empty', !bb)
+          })
+          .catch(() => {
+            el.textContent = '点此写简介'
             el.classList.add('empty')
-            return
-          }
-          const b = (d.bio || '').trim()
-          el.textContent = b || '点此写简介'
-          el.classList.toggle('empty', !b)
-        })
-        .catch(() => {
-          el.textContent = '点此写简介'
-          el.classList.add('empty')
-        })
+          })
+      })
     }
-    window.addEventListener('lw-bio-changed', renderBio)
+    window.addEventListener('lw-bio-changed', () => {
+      try {
+        const store = window.__lwCache
+        if (store) delete store.bio
+      } catch (e) {}
+      renderBio()
+    })
     const bioEl = $('meBio')
     if (bioEl) {
       bioEl.addEventListener('click', () => {
@@ -736,14 +772,33 @@ export default {
         return
       }
       A.draw(cv, 'anon', 72)
-      fetch('/api/avatar', { headers: { Authorization: 'Bearer ' + t }, cache: 'no-store' })
-        .then((r) => (r.ok ? r.json() : null))
-        .then((d) => {
-          if (!d || !d.ok) return
-          if (d.uid) A.put(d.uid, d.pixels || null)
-          A.draw(cv, d.uid || 'anon', 72)
-        })
-        .catch(() => {})
+      /* 自己的 uid 和头像不怎么会变，进这一页读一次就够。
+         画完把 uid 记住，下次先用它画，再决定要不要更新。 */
+      const MC = window.LWCache || {}
+      const known = MC.get('meUid') || (localStorage.getItem('lw-uid') || '')
+      if (known) A.draw(cv, known, 72)
+      if (MC.cached('meAvatar', () => {
+        fetch('/api/avatar', { headers: { Authorization: 'Bearer ' + t }, cache: 'no-store' })
+          .then((r) => (r.ok ? r.json() : null))
+          .then((d) => {
+            if (!d || !d.ok) return
+            MC.put('meAvatar', d)
+            if (d.uid) {
+              MC.put('meUid', d.uid)
+              try {
+                localStorage.setItem('lw-uid', d.uid)
+              } catch (e) {}
+            }
+            if (d.uid) A.put(d.uid, d.pixels || null)
+            A.draw(cv, d.uid || 'anon', 72)
+          })
+          .catch(() => {})
+      })) {
+        /* 第一次，正在读 */
+      } else {
+        const box = MC.get('meAvatar')
+        if (box && box.uid) A.draw(cv, box.uid, 72)
+      }
     }
     window.addEventListener('lw-avatar-changed', renderMyAvatar)
 
@@ -971,17 +1026,28 @@ export default {
         if (!d || !d.ok) return
         el.textContent = d.total ? d.unlocked + '/' + d.total : ''
       }
-      if (window.achSync) window.achSync({ silent: true, then: show })
-      else
-        fetch('/api/achieve', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t },
-          body: JSON.stringify({ action: 'sync' }),
-          cache: 'no-store',
-        })
-          .then((r) => (r.status === 401 ? null : r.json()))
-          .then(show)
-          .catch(() => {})
+      const AC2 = window.LWCache || {}
+      if (AC2.cached('achBadge', () => {
+        if (window.achSync) window.achSync({ silent: true, then: show })
+        else
+          fetch('/api/achieve', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t },
+            body: JSON.stringify({ action: 'sync' }),
+            cache: 'no-store',
+          })
+            .then((r) => (r.status === 401 ? null : r.json()))
+            .then((d) => {
+              AC2.put('achBadge', d)
+              show(d)
+            })
+            .catch(() => {})
+      })) {
+        /* 第一次，正在同步 */
+      } else {
+        const box = AC2.get('achBadge')
+        if (box) show(box)
+      }
     }
 
     /* 信箱待领附件数：只对登录用户请求 */
@@ -996,13 +1062,24 @@ export default {
         el.textContent = ''
         return
       }
-      fetch('/api/mail', { headers: { Authorization: 'Bearer ' + t }, cache: 'no-store' })
-        .then((r) => (r.status === 401 ? null : r.json()))
-        .then((d) => {
-          if (!d || !d.ok) return
-          el.textContent = d.claimable ? String(d.claimable) : ''
-        })
-        .catch(() => {})
+      const MLC = window.LWCache || {}
+      const paintBadge = (d) => {
+        if (!d || !d.ok) return
+        el.textContent = d.claimable ? String(d.claimable) : ''
+      }
+      if (MLC.cached('mailBadge', () => {
+        fetch('/api/mail', { headers: { Authorization: 'Bearer ' + t }, cache: 'no-store' })
+          .then((r) => (r.status === 401 ? null : r.json()))
+          .then((d) => {
+            MLC.put('mailBadge', d)
+            paintBadge(d)
+          })
+          .catch(() => {})
+      })) {
+        /* 第一次，正在读 */
+      } else {
+        paintBadge(MLC.get('mailBadge'))
+      }
     }
 
     /* ---------- 创作数据 ---------- */
@@ -1154,22 +1231,30 @@ export default {
           body: JSON.stringify({ token, action: 'stats' }),
         })
         const d1 = await res.json().catch(() => ({}))
-        if (d1.stats) renderStats(d1.stats)
-
         const res2 = await fetch('/api/mine', {
           method: 'POST',
           headers,
           body: JSON.stringify({ token, action: 'list' }),
         })
         const d2 = await res2.json().catch(() => ({}))
-        allWorks = (d2 && d2.works) || []
-        $('lnkWorks').textContent = allWorks.length
-        $('mineTip').textContent = allWorks.length ? allWorks.length + ' 件' : ''
-        renderMineFilter()
-        renderMineWorks(true)
+        const box = { stats: d1.stats || null, works: (d2 && d2.works) || [] }
+        C.put('mine', box)
+        paintMine(box)
       } catch (e) {
         renderStatError('加载失败，请检查网络')
       }
+    }
+
+    /* 只负责把数据画出来，不发请求 —— 切页面回来时用缓存走这一段。 */
+    function paintMine(box) {
+      if (!box) return
+      if (box.stats) renderStats(box.stats)
+      else renderStatError('加载失败，请检查网络')
+      allWorks = box.works || []
+      $('lnkWorks').textContent = allWorks.length
+      $('mineTip').textContent = allWorks.length ? allWorks.length + ' 件' : ''
+      renderMineFilter()
+      renderMineWorks(true)
     }
 
     /* ---------- 我的作品：完整列表 + 尺寸筛选 + 分页 ---------- */
@@ -1349,7 +1434,19 @@ export default {
     renderBio()
     renderMyAvatar()
     renderSign()
-    loadMine()
+    /* 切页面不自动刷新：第一次进来请求一次（stats+list 两次 POST），
+       之后切回来直接拿内存缓存重画，不发请求。想更新点「我的作品」右边的刷新。 */
+    const C = window.LWCache || {}
+    C.bindRefresh($('mineRefresh'), () => {
+      C.drop('mine')
+      return loadMine()
+    }, () => {}, true)
+    if (C.cached('mine', () => { loadMine() })) {
+      /* 第一次，正在请求 */
+    } else {
+      const box = C.get('mine')
+      if (box) setTimeout(() => paintMine(box), 0)
+    }
     // 直接进 /mine/gifted 时也要加载列表，不依赖点入口
     if (MODE === 'gifted') loadLiked()
   },

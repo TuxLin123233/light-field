@@ -275,6 +275,7 @@ export default {
       <div class="ach-head">
         <router-link class="ach-back" to="/mine">← 我的</router-link>
         <div class="ach-title">🏅 成就</div>
+        <button class="lw-refresh" id="achRefresh" type="button" data-label="刷新"></button>
       </div>
       <div id="achBody"><div class="ach-empty">正在读取…</div></div>
     </div>`,
@@ -418,6 +419,7 @@ export default {
         }
         const d = await res.json().catch(() => ({}))
         if (d && d.ok) {
+          AC.put('achieve', d)
           render(d)
           // 新解锁的成就弹一次提示，并刷新光尘余额
           if (Array.isArray(d.fresh) && d.fresh.length) {
@@ -426,16 +428,30 @@ export default {
             if (d.book) window.dispatchEvent(new CustomEvent('lw-dust-changed', { detail: d.book }))
           }
         } else {
+          AC.drop('achieve')
           $('achBody').innerHTML = '<div class="ach-empty">读取失败：' + esc((d && d.error) || res.status) + '</div>'
         }
       } catch (e) {
         // 这里以前只写「网络错误」，真实异常被吞掉了
         console.error('[achieve] 读取失败', e)
+        AC.drop('achieve')
         const why = (e && (e.message || e.name)) || '未知错误'
         $('achBody').innerHTML = '<div class="ach-empty">读取失败：' + esc(why) + '</div>'
       }
     }
 
-    sync()
+    /* 切页面不自动刷新：第一次进来同步一次（这个 sync 是 POST，
+       每次进来都发会白白烧额度），之后切回来用内存缓存重画。 */
+    const AC = window.LWCache || {}
+    AC.bindRefresh($('achRefresh'), () => {
+      AC.drop('achieve')
+      return sync()
+    }, () => {}, true)
+    if (AC.cached('achieve', () => { sync() })) {
+      /* 第一次，正在同步 */
+    } else {
+      const box = AC.get('achieve')
+      if (box) setTimeout(() => render(box), 0)
+    }
   },
 }
