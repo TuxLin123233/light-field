@@ -26,6 +26,7 @@ export const PROGRESS = [
   { id: 'days30', ico: '🗓️', name: '月度勤勉', desc: '累计创作 30 天', need: 30, metric: 'days', reward: 40 },
   { id: 'sign30', ico: '🎫', name: '签到常客', desc: '累计签到 30 天', need: 30, metric: 'signTotal', reward: 30 },
   { id: 'sign100', ico: '🏅', name: '百日之约', desc: '累计签到 100 天', need: 100, metric: 'signTotal', reward: 100 },
+  { id: 'got100', ico: '💝', name: '攒到 100 个', desc: '累计收到别人送的 100 个光尘', need: 100, metric: 'got', reward: 50 },
 ]
 
 /** 里程碑型成就：条件成立即解锁，不可逆 */
@@ -109,6 +110,8 @@ export function computeMetrics(entries, book, user) {
     likes,
     days: days.size,
     gifted,
+    // 累计收到的光尘（别人送到自己作品上的）
+    got: book ? Number(book.got) || 0 : 0,
     signTotal: book ? Number(book.total) || 0 : 0,
     signStreak: book ? Number(book.streak) || 0 : 0,
     badges,

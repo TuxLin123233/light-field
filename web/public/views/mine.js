@@ -326,7 +326,7 @@ export default {
     <div class="header">
       <div class="header-text">
         <h1 id="mineTitle">我的</h1>
-        <div class="header-sub" id="mineSub">签到 · 创作数据 · 我的作品</div>
+        <div class="header-sub" id="mineSub" hidden></div>
       </div>
     </div>
 
@@ -447,7 +447,6 @@ export default {
       const back = $('mineBack')
       if (MODE === 'home') {
         if (title) title.textContent = '我的'
-        if (sub) sub.textContent = '签到 · 创作数据 · 我的作品'
         if (back) back.hidden = true
         CARDS.forEach((id) => {
           const el = $(id)

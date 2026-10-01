@@ -132,3 +132,44 @@ export async function stats(kv, uid) {
   const p = await pending(kv, uid)
   return { total: box.length, claimable: p.length, dust: p.reduce((s, m) => s + m.dust, 0) }
 }
+
+/* -------------------- 活动信件 --------------------
+   这里的每一项都是「一次性信件」：claimId 保证同一个人只会收到一次，
+   所以这个函数可以放心地在每次登录时调用，重放也不会刷出第二封。
+   往后要发活动，往这个数组里加一条即可，不用改别处。 */
+
+export const OFFERS = [
+  {
+    id: 'national-day-2026',
+    claimId: 'welcome-gift-2026',
+    kind: 'attach',
+    icon: '🎉',
+    title: '国庆快乐，附赠 20 个光尘',
+    body: '感谢你来到像素小镇。\n这份光尘是我们的一点心意，去社区看看，给喜欢的画送上一份认可吧。\n（换设备登录同一账号，光尘会跟着你走）',
+    dust: 20,
+  },
+  {
+    id: 'how-to-2026',
+    claimId: 'guide-2026',
+    kind: 'text',
+    icon: '🧭',
+    title: '新手指南：光尘怎么花',
+    body: '· 每天登录后去「我的」签到，得 5 个光尘\n· 连续签到到 3/7/15/30… 天会额外奖励，数额等于天数\n· 在社区点「✨ 送光尘」给喜欢的作品，一幅只能送一次\n· 别人送你的光尘也会进你的账本，「我的」页能看到累计收到\n· 光尘和成就都存在服务器上，换设备登录同一账号即可同步',
+    dust: 0,
+  },
+]
+
+/**
+ * 把所有还没投过的活动信件投进信箱。
+ * 幂等：已投过的 claimId 会被跳过，重复调用安全。
+ * 返回本次新投递的件数。
+ */
+export async function ensureOffers(kv, uid) {
+  if (!kv || !uid) return 0
+  let n = 0
+  for (const offer of OFFERS) {
+    const got = await deliver(kv, uid, { ...offer, time: Date.now() })
+    if (got > 0) n += got
+  }
+  return n
+}

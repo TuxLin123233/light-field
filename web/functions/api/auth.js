@@ -24,6 +24,7 @@ import {
   isBanned,
   BANNED_ERROR,
 } from './_auth.js'
+import { ensureOffers } from './_mail.js'
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -54,6 +55,8 @@ export async function onRequestGet(context) {
   if (!who) return json({ ok: true, loggedIn: false })
   const user = await readUser(env.LIGHTFIELD_KV, who.uid)
   if (!user) return json({ ok: true, loggedIn: false })
+  // 已登录但还没走过登录流程的号，在这里补投
+  if (!isBanned(user)) await ensureOffers(env.LIGHTFIELD_KV, user.uid).catch(() => {})
   return json({
     ok: true,
     loggedIn: true,
@@ -101,6 +104,8 @@ export async function onRequestPost(context) {
       createdAt: Date.now(),
     }
     await writeUser(kv, user)
+    // 新号立刻收到活动信件（国庆礼包 + 新手指南）
+    await ensureOffers(kv, user.uid).catch(() => {})
     const token = await issueToken(env, user)
     return json({ ok: true, token, username: user.username })
   }
@@ -124,6 +129,8 @@ export async function onRequestPost(context) {
       return json({ error: '账号已被封禁' + (user.banReason ? '：' + user.banReason : ''), code: 'banned' }, 403)
     }
 
+    // 老号在这里补投漏掉的活动信件；claimId 保证不会重复收到
+    await ensureOffers(kv, user.uid).catch(() => {})
     const token = await issueToken(env, user)
     return json({ ok: true, token, username: user.username })
   }

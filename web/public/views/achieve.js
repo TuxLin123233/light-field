@@ -86,6 +86,22 @@ export default {
         font-size: 11px;
         color: var(--text-faint);
       }
+      .ach-wide {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 8px;
+        padding: 9px 12px;
+        background: var(--surface-2);
+        border-radius: 10px;
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+      .ach-wide b {
+        font-size: 15px;
+        font-weight: 800;
+        color: var(--text);
+      }
       .ach-sec {
         font-size: 13px;
         font-weight: 700;
@@ -278,6 +294,7 @@ export default {
           likes10: m.likes, likes50: m.likes, likes200: m.likes,
           days7: m.days, days30: m.days,
           sign30: m.signTotal, sign100: m.signTotal,
+          got100: m.got,
         }[a.id]
         const w = a.type === 'progress' ? Math.min(100, Math.round(((Number(metricVal) || 0) / num) * 100)) : a.got ? 100 : 0
         return (
@@ -309,7 +326,11 @@ export default {
         '<div class="ach-stat"><b>' + fmt(m.cells) + '</b><span>格数</span></div>' +
         '<div class="ach-stat"><b>' + fmt(m.likes) + '</b><span>收到赞</span></div>' +
         '<div class="ach-stat"><b>' + fmt(m.days) + '</b><span>创作天</span></div>' +
-        '</div></div>' +
+        '</div>' +
+        '</div>' +
+        '<div class="ach-wide">' +
+        '<span>💝 累计收到光尘</span><b>' + fmt(m.got) + '</b>' +
+        '</div>' +
         '<div class="ach-sec">进度成就</div>' +
         '<div class="ach-list">' + progress.map(card).join('') + '</div>' +
         '<div class="ach-sec">里程碑</div>' +
