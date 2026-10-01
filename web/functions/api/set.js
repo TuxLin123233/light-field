@@ -174,12 +174,25 @@ export async function onRequestPost(context) {
 
   // 内容安全：作品名、作者名、标签任一命中敏感词就拒绝发布。
   // 词库只在服务端使用，不下发到浏览器，改前端也绕不过。
-  const risky = hitWords(workName).concat(hitWords(author)).concat(hitWords((entry.tags || []).join(' ')))
+  // 分字段返回命中词：只说「不合规」用户根本不知道该改哪一项。
+  const hitName = hitWords(workName)
+  const hitAuthor = hitWords(author)
+  const hitTags = []
+  for (const t of entry.tags || []) hitTags.push(...hitWords(t))
+  const risky = hitName.concat(hitAuthor).concat(hitTags)
   if (risky.length) {
-    // 把命中的词一起返回：用户能看到到底哪个词被判了，
-    // 否则只能猜「为什么我的标题不行」。
+    const where = []
+    if (hitName.length) where.push('作品名')
+    if (hitAuthor.length) where.push('作者名')
+    if (hitTags.length) where.push('标签')
     return json(
-      { error: '作品名或标签含有不合适的内容，请修改后再发布', hit: risky.slice(0, 3) },
+      {
+        error: where.join('、') + '含有不合适的内容，请修改后再发布',
+        hit: [...new Set(risky)].slice(0, 3),
+        hitName: hitName.slice(0, 3),
+        hitAuthor: hitAuthor.slice(0, 3),
+        hitTags: [...new Set(hitTags)].slice(0, 3),
+      },
       400
     )
   }

@@ -293,7 +293,9 @@ export default {
       }
 
       /* ---------- 可折叠分组（外观 / 启动与导航） ---------- */
-      .group.fold { padding: 0; overflow: hidden; }
+      /* 用独立的 .foldx，不复用 .fold —— 否则会连原有的
+         「画板布局」「进阶功能」左右内边距一起清掉 */
+      .group.foldx { padding: 0; overflow: hidden; }
       .group-fold {
         width: 100%;
         display: flex;
@@ -329,7 +331,7 @@ export default {
       }
       .group-fold[aria-expanded='false'] .fold-caret { transform: rotate(-90deg); }
       .group-fold:active { opacity: 0.7; }
-      .fold-body { padding: 0 14px 4px; }
+      .group.foldx .fold-body { padding: 0 14px 4px; }
       .group-fold[aria-expanded='false'] + .fold-body { display: none; }
 
       /* ---------- 致谢：与联系卡同风格 ---------- */
@@ -897,7 +899,7 @@ export default {
         </div>
       </section>
 
-      <section class="group fold">
+      <section class="group foldx">
         <button class="group-fold" id="foldLook" type="button" aria-expanded="true">
           <span class="group-title">🎨 外观</span>
           <span class="fold-caret">▾</span>
@@ -959,7 +961,7 @@ export default {
         </div>
       </section>
 
-      <section class="group fold">
+      <section class="group foldx">
         <button class="group-fold" id="foldNav" type="button" aria-expanded="true">
           <span class="group-title">🚀 启动与导航</span>
           <span class="fold-caret">▾</span>

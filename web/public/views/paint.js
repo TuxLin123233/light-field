@@ -2738,6 +2738,45 @@ color: var(--text-muted);
         return [rr, gg, bb]
       }
 
+      /* RGB → HSV。取色器吸到颜色后靠它把 H/S/V 还原回去，
+         否则 SV 方块和色相条的 marker 不会跟着动
+         —— 表现就是「取色器不同步到选取的位置」。 */
+      function rgbToHsv(r, g, b) {
+        const rr = r / 255, gg = g / 255, bb = b / 255
+        const max = Math.max(rr, gg, bb)
+        const min = Math.min(rr, gg, bb)
+        const d = max - min
+        let h = 0
+        if (d > 0) {
+          if (max === rr) h = ((gg - bb) / d) % 6
+          else if (max === gg) h = (bb - rr) / d + 2
+          else h = (rr - gg) / d + 4
+          h /= 6
+          if (h < 0) h += 1
+        }
+        const sat = max === 0 ? 0 : d / max
+        return [h, sat, max]
+      }
+
+      /**
+       * 把外部设置的颜色（取色器吸取、导入等）同步进选择器：
+       * 更新 H/S/V、重画 SV 渐变与色相条、挪动两个 marker。
+       * 选择器没打开时只更新状态，等打开时 resizePicker 会按新状态绘制。
+       */
+      function syncPickerFromRgb(rgb) {
+        const hsv = rgbToHsv(rgb[0], rgb[1], rgb[2])
+        // 灰色系没有色相，保留原来的 H，否则色相条会乱跳
+        H = hsv[1] < 0.02 ? H : hsv[0]
+        S = hsv[1]
+        V = hsv[2]
+        if (pickOpen && hsvOpen) {
+          renderSV()
+          renderHue()
+          drawSVMarker()
+          drawHueMarker()
+        }
+      }
+
       function sameRgb(a, b) {
         return a[0] === b[0] && a[1] === b[1] && a[2] === b[2]
       }
@@ -3647,6 +3686,9 @@ color: var(--text-muted);
           const c = pixels[row][col]
           if (c) {
             currentColor = [c[0], c[1], c[2]]
+            // 关键：把吸到的颜色反解回 H/S/V 并刷新选择器，
+            // 否则 SV 方块和色相条的 marker 停在旧位置
+            syncPickerFromRgb(currentColor)
             updateDisplay(currentColor)
             syncToolSwatch()
             toast('已吸取颜色 rgb(' + c.join(',') + ')')
@@ -4481,7 +4523,18 @@ color: var(--text-muted);
             toast('发布太频繁，' + (data.waitSec || 30) + ' 秒后再试')
             return false
           }
-          toast('发布失败：' + (data.error || res.status))
+          if (res.status === 400 && data.hit && data.hit.length) {
+            // 明确告诉用户是哪个字段、哪个词被判了，
+            // 只说「不合规」的话根本不知道该改哪里
+            const parts = []
+            if (data.hitName && data.hitName.length) parts.push('作品名「' + data.hitName.join('、') + '」')
+            if (data.hitAuthor && data.hitAuthor.length) parts.push('作者名「' + data.hitAuthor.join('、') + '」')
+            if (data.hitTags && data.hitTags.length) parts.push('标签「' + data.hitTags.join('、') + '」')
+            toast('发布失败：' + (parts.join('；') || data.error))
+            if (window.console && console.warn) console.warn('[内容安全]', data)
+          } else {
+            toast('发布失败：' + (data.error || res.status))
+          }
         } catch (err) {
           toast('发布失败：网络错误')
         } finally {

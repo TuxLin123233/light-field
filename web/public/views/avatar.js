@@ -110,6 +110,26 @@ export default {
       .av-mode b { display: block; font-size: 14px; font-weight: 700; }
       .av-mode i { display: block; font-size: 11px; font-style: normal; color: var(--text-faint); margin-top: 2px; }
       .av-mode.on i { color: var(--accent, #5b8def); }
+      /* 喷漆的紧凑色板：两行，每行 9 个 */
+      .av-spray-pal {
+        display: grid;
+        grid-template-columns: repeat(9, 1fr);
+        gap: 5px;
+        width: 100%;
+        margin-bottom: 10px;
+      }
+      .av-swatch {
+        aspect-ratio: 1;
+        border-radius: 6px;
+        border: 2px solid transparent;
+        cursor: pointer;
+        padding: 0;
+      }
+      .av-swatch.on {
+        border-color: var(--text);
+        transform: scale(1.08);
+      }
+
       .av-brush {
         display: flex; align-items: center; gap: 9px;
         width: 100%; margin-top: 12px;
@@ -353,7 +373,8 @@ export default {
         '<span class="av-pv"><canvas id="pv32"></canvas><canvas id="pv16"></canvas></span>' +
         '</div></div>' +
         (mode === 'spray'
-          ? '<div class="av-tools">' +
+          ? '<div class="av-spray-pal" id="avPal"></div>' +
+            '<div class="av-tools">' +
             '<button class="av-tool" type="button" id="sprayUndo">↩️ 撤销</button>' +
             '<button class="av-tool' + (sprayMirror ? ' on' : '') + '" type="button" id="sprayMirror">🦋 镜像</button>' +
             '</div>' +
@@ -372,19 +393,21 @@ export default {
         '</div>' +
         '<p class="av-note">用手指或鼠标在格子上涂。16×16 很小，画不出细节，建议只做几块色块。<br />头像会显示在社区里你发布的每幅作品上。</p>'
 
-      // 喷漆模式下没有调色板元素（用的是笔刷条），这里必须判空，
-      // 否则会在这里抛错，导致后面的 draw() / mountSpray() 都不执行
+      /* 两种画法都要能选颜色：像素画用大方格 .av-sw，
+         喷漆用紧凑色板 .av-swatch，但都是同一份 PALETTE 和同一个 color 状态。 */
       const pal = $('avPal')
-      if (pal)
+      if (pal) {
+        const sprayMode = mode === 'spray'
         PALETTE.forEach((c, i) => {
           const b = document.createElement('button')
           b.type = 'button'
-          b.className = 'av-sw' + (i === 0 ? ' on' : '')
+          b.className = (sprayMode ? 'av-swatch' : 'av-sw') + (sameRGB(c, color) ? ' on' : '')
           b.style.background = 'rgb(' + c[0] + ',' + c[1] + ',' + c[2] + ')'
           b.setAttribute('data-i', String(i))
           b.setAttribute('aria-label', '颜色 ' + (i + 1))
           pal.appendChild(b)
         })
+      }
 
       draw()
       mountSpray()
@@ -404,6 +427,14 @@ export default {
           return
         }
       }
+      // 笔刷滑块是 input 事件
+      if (e.target.id === 'sprayBrush') {
+        const n = Number(e.target.value) || 1
+        const num = $('sprayBrushNum')
+        if (num) num.textContent = n
+        if (spray) spray.setBrush(n)
+        return
+      }
       if (e.target.id === 'sprayUndo') {
         if (spray && spray.undo() && window.sfx) window.sfx('tick')
         return
@@ -415,13 +446,17 @@ export default {
         renderFrame()
         return
       }
-      const sw = e.target.closest('.av-sw')
+      // 像素画(.av-sw) 和喷漆(.av-swatch) 共用同一个 color 状态
+      const sw = e.target.closest('.av-sw, .av-swatch')
       if (sw) {
         color = PALETTE[Number(sw.getAttribute('data-i'))] || PALETTE[0]
         if (tool === 'eraser') tool = 'pen'
-        $('avBody').querySelectorAll('.av-sw').forEach((x) => x.classList.remove('on'))
+        $('avBody').querySelectorAll('.av-sw, .av-swatch').forEach((x) => x.classList.remove('on'))
         sw.classList.add('on')
         $('avBody').querySelectorAll('.av-tool').forEach((x) => x.classList.toggle('on', x.getAttribute('data-tool') === tool))
+        // 喷漆是实时上色的，换色立刻反映到画布
+        if (mode === 'spray' && spray) spray.render()
+        drawPreview()
         return
       }
       const tl = e.target.closest('.av-tool')
