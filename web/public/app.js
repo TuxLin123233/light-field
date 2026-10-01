@@ -142,6 +142,15 @@ const VIEWPORT_LOCKED = 'width=device-width, initial-scale=1.0, maximum-scale=1.
 
 // 切页：换样式、换标题、换 viewport 缩放策略、导航果冻弹一下
 router.afterEach((to) => {
+  /* 账本是全局的，但各页只在自己挂载时读它。
+     切页时统一喊一嗓子：「余额可能变了，重画一下」——
+     纯内存操作，不发请求，但这样任何页面切进来数字都是对的，
+     不用整页刷新才能看到。 */
+  if (window.dust && window.dust.repaint) {
+    try {
+      window.dust.repaint()
+    } catch (e) {}
+  }
   const comp = (to.matched[0] && to.matched[0].components.default) || null
   const vs = document.getElementById('view-style')
   if (vs) vs.textContent = (comp && comp.css) || ''

@@ -227,6 +227,7 @@ export default {
         border-radius: 12px;
         overflow: hidden;
         cursor: pointer;
+        position: relative; /* 长按进度条要贴着卡片底边 */
       }
       /* 缩略图。LWThumb 会按整数倍缩放并水平居中，
          这里不写死 width:100% —— 那样会把整数倍缩放的好处（不切出白条纹）毁掉，
@@ -310,6 +311,21 @@ export default {
       }
       button.m-link { font-family: inherit; cursor: pointer; }
 
+      /* 屏蔽手机上的长按菜单/选中/拖放：
+         不加这些，按住画布超过半秒浏览器会启动自己的长按行为，
+         我们的删除长按就抢不到了。 */
+      .mine-item {
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .mine-item canvas, .mine-item .mine-cap { -webkit-touch-callout: none; user-select: none; }
+      .mine-hold-bar {
+        position: absolute; left: 0; bottom: 0; height: 3px; width: 0;
+        background: var(--accent, #5b8def); border-radius: 0 3px 3px 0;
+        pointer-events: none; z-index: 2;
+      }
       .mine-del-tip {
         font-size: 11px; color: var(--text-faint);
         margin: -2px 0 8px;
@@ -634,6 +650,16 @@ export default {
     window.addEventListener('lw-dust-changed', onDust)
     window.addEventListener('lw-auth-changed', onDust)
 
+    /* 余额会变：签到、领任务、送光尘、领附件、领成就奖励都会改。
+       订阅账本，变了就重画 —— 以前只有「我的」页在 mounted 里读一次，
+       在别处领了光尘再切回来，数字还是老的，非得整页刷新。 */
+    if (window.dust && window.dust.onChange) {
+      window.dust.onChange(function () {
+        renderDustBalance()
+        renderSign()
+      })
+    }
+
     /* ---------- 过滤页模式 ----------
        /mine          完整面板（签到 + 数据 + 快捷入口 + 作品预览）
        /mine/works    只显示「我的作品」的过滤页
@@ -726,27 +752,50 @@ export default {
       el.textContent = '读取中…'
       el.classList.remove('empty')
       /* 简介只跟登录状态有关，不会因为切了页面就变，读一次就够。
-         改了简介会派发 lw-bio-changed，那时再作废缓存。 */
+         改了简介会派发 lw-bio-changed，那时再作废缓存。
+         注意 cached() 命中缓存时不会执行回调，所以必须自己判断：
+         只在回调里写文字的话，第二次进这一页就永远停在「读取中…」。 */
       const BC = window.LWCache || {}
-      BC.cached('bio', () => {
+      const paintBio = (d) => {
+        if (!d || !d.loggedIn) {
+          el.textContent = '登录后可写简介'
+          el.classList.add('empty')
+          return
+        }
+        const bb = (d.bio || '').trim()
+        el.textContent = bb || '点此写简介'
+        el.classList.toggle('empty', !bb)
+      }
+      const fetching = BC.cached('bio', () => {
         fetch('/api/auth', { headers: { Authorization: 'Bearer ' + t }, cache: 'no-store' })
           .then((r) => (r.ok ? r.json() : null))
           .then((d) => {
-            BC.put('bio', d)
-            if (!d || !d.loggedIn) {
-              el.textContent = '登录后可写简介'
+            if (!d) {
+              // 失败就把占位清掉，下次进来还能重试（不然缓存里永远是个 null）
+              BC.drop('bio')
+              el.textContent = '点此写简介'
               el.classList.add('empty')
               return
             }
-            const bb = (d.bio || '').trim()
-            el.textContent = bb || '点此写简介'
-            el.classList.toggle('empty', !bb)
+            BC.put('bio', d)
+            paintBio(d)
           })
           .catch(() => {
+            BC.drop('bio')
             el.textContent = '点此写简介'
             el.classList.add('empty')
           })
       })
+      // 命中缓存：直接用缓存里的重画，别让「读取中…」挂在那儿
+      if (!fetching) {
+        const box = BC.get('bio')
+        if (box) paintBio(box)
+        else {
+          // 缓存是个空占位（上次请求还没回来或失败了）：主动再取一次
+          BC.drop('bio')
+          renderBio()
+        }
+      }
     }
     window.addEventListener('lw-bio-changed', () => {
       try {
@@ -1454,26 +1503,69 @@ export default {
       })
       /* 长按 1.2 秒删掉自己这幅画。
          为什么用长按：单击是「去社区看这幅」，两个操作挨在一起，
-         误触就删了不可恢复。跟举报的交互保持一致。 */
+         误触就删了不可恢复。跟举报的交互保持一致。
+
+         真机上踩过的坑：早期版本在 pointercancel 里清掉了计时器，
+         结果长按永远不触发 —— 手机按住 <div>/<canvas> 超过半秒，
+         浏览器会启动自己的长按行为（弹出菜单 / 选中 / 拖放），
+         随即发 pointercancel，把刚开始的计时器清了。
+         现在三处一起改：
+           · 抓住指针（setPointerCapture），不让手势被别人抢
+           · CSS 里 -webkit-touch-callout / user-select 屏蔽系统长按菜单
+           · pointercancel 不再清计时器，只是停止进度条动画；
+             时间到了照样触发删除
+           · 有一条进度条，按住时能看到在走（不然用户不知道有没有生效） */
+      const HOLD_MS = 1200
       let holdTimer = null
+      let holdRaf = 0
+      let bar = null
+      const stopBar = () => {
+        cancelAnimationFrame(holdRaf)
+        holdRaf = 0
+        if (bar) {
+          bar.remove()
+          bar = null
+        }
+      }
+      const cancelHold = () => {
+        clearTimeout(holdTimer)
+        holdTimer = null
+        stopBar()
+      }
       const startHold = (e) => {
         if (e.target.closest('button, a')) return
-        clearTimeout(holdTimer)
+        cancelHold()
+        try {
+          if (item.setPointerCapture && e.pointerId != null) item.setPointerCapture(e.pointerId)
+        } catch (err) {}
+        bar = document.createElement('i')
+        bar.className = 'mine-hold-bar'
+        item.appendChild(bar)
+        const t0 = performance.now()
+        const tick = () => {
+          if (!bar) return
+          const k = Math.min(1, (performance.now() - t0) / HOLD_MS)
+          bar.style.width = (k * 100).toFixed(1) + '%'
+          if (k < 1) holdRaf = requestAnimationFrame(tick)
+        }
+        holdRaf = requestAnimationFrame(tick)
         holdTimer = setTimeout(() => {
           holdTimer = null
+          stopBar()
           if (window.sfx) window.sfx('tap')
           deleteOwnWork(w, item)
-        }, 1200)
+        }, HOLD_MS)
       }
-      const cancelHold = () => clearTimeout(holdTimer)
       item.addEventListener('pointerdown', startHold)
       item.addEventListener('pointerup', cancelHold)
       item.addEventListener('pointerleave', cancelHold)
-      item.addEventListener('pointercancel', cancelHold)
-      item.addEventListener('contextmenu', (e) => {
-        // 自己的画不给举报，长按菜单直接拦掉
-        if (!item.dataset.own) e.preventDefault()
-      })
+      /* pointercancel 故意不清计时器：手指按住不动时浏览器照样会发它，
+         清掉就等于长按永远不生效（这正是之前删不掉的原因）。 */
+      item.addEventListener('pointercancel', stopBar)
+      item.addEventListener('contextmenu', (e) => e.preventDefault())
+      // iOS Safari 的长按选中/放大
+      item.addEventListener('touchstart', (e) => { if (e.touches.length > 1) cancelHold() }, { passive: true })
+      item.addEventListener('dragstart', (e) => e.preventDefault())
       return item
     }
 

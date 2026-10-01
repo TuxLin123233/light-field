@@ -886,6 +886,18 @@
           balance: function () {
             return server ? Math.max(0, server.bal) : 0
           },
+          /* 让所有页面把余额重画一遍。
+             账本是全局的，但以前只有「我的」页在挂载时读它，
+             别的页面（画板顶部、简介、头像）要等整页刷新才看得到新数字 ——
+             切页不过是不发请求的切页，账本没变但界面没重画。
+             路由 afterEach 会调这个，纯内存操作，不发任何请求。 */
+          repaint: function () {
+            for (var i = 0; i < listeners.length; i++) {
+              try {
+                listeners[i](server)
+              } catch (e) {}
+            }
+          },
           /* 订阅余额变化。
              头像页、简介页各自存了一份 balance 用来判断「够不够花」，
              以前谁都不监听变化：不领任务直接切过去，或者在别处领了再回来，

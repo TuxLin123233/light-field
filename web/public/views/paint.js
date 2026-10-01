@@ -3603,9 +3603,9 @@ color: var(--text-muted);
       function refreshHint() {
         let base = TOOL_HINTS[activeTool] || TOOL_HINTS.brush
         if (mirrorOn) base += ' · 🦋 镜像中'
-        if (size > 16) base += ' · 拖动画布移动，点一下格子涂色，＋/－ 缩放'
-        else if (activeTool === 'pan') base += ' · 只拖动画布，不会落笔'
+        if (activeTool === 'pan') base += ' · 只拖动画布，不会落笔'
         else if (panLock) base += ' · ✥ 拖动锁已开：拖动只移动画布'
+        else if (size > 16) base += ' · 拖动涂色 · ✥ 切换成拖动画布 · ＋/－ 缩放'
         else base += ' · 拖动涂色 · 点 ✥ 可改为拖动画布'
         hint.textContent = base
       }
@@ -3842,7 +3842,12 @@ color: var(--text-muted);
         e.preventDefault()
 
         canvas.setPointerCapture(e.pointerId)
-        const canPan = activeTool === 'pan' || panLock || size > 16
+        /* 能不能拖动画布，只看工具，不看尺寸。
+           以前加了 `|| size > 16`：32×32 和 64×64 上拖动一律当平移，
+           于是大尺寸根本没法拖动滑画，只能一格一格点（用户反馈的问题）。
+           现在笔刷/橡皮在哪种尺寸下都能拖着画；
+           要移动画面用 ✥ 手型、✥ 拖动锁、空格或中键。 */
+        const canPan = activeTool === 'pan' || panLock
         if (canPan) {
           painting = true
           panning = false
@@ -3864,7 +3869,7 @@ color: var(--text-muted);
 
       canvas.addEventListener('pointermove', (e) => {
         if (!painting) return
-        if (activeTool === 'pan' || panLock || size > 16) {
+        if (activeTool === 'pan' || panLock) {
           const dx = e.clientX - startX
           const dy = e.clientY - startY
           if (!panning && (activeTool === 'pan' || panLock || Math.hypot(dx, dy) >= PAN_DIST)) {
@@ -3902,9 +3907,8 @@ color: var(--text-muted);
       canvas.addEventListener('pointerup', () => {
         if (activeTool === 'pan' || panLock) {
           // 纯拖动，不落笔、不存草稿
-        } else if (painting && size > 16 && !panning) {
-          finishTap()
-        } else if (painting && size <= 16) {
+        } else if (painting) {
+          // 落笔了就存草稿，不管什么尺寸
           scheduleSave()
         }
         painting = false
@@ -3913,7 +3917,8 @@ color: var(--text-muted);
       })
 
       canvas.addEventListener('pointercancel', () => {
-        if (painting && size > 16 && !panning) {
+        if (painting && !panning && downCell) {
+          // 拖到一半被系统打断：至少把起手那一格保住，别白按一下
           finishTap()
         }
         painting = false
