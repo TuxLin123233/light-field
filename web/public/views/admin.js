@@ -59,6 +59,112 @@ export default {
         color: var(--text-faint);
         margin-left: 6px;
       }
+      /* 封号 */
+      .ban-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--border);
+        flex-wrap: wrap;
+      }
+      .ban-row:last-child { border-bottom: 0; }
+      .ban-name {
+        font-weight: 700;
+        color: var(--text);
+        font-size: 14px;
+      }
+      .ban-uid {
+        font-size: 11px;
+        color: var(--text-faint);
+        font-family: ui-monospace, monospace;
+      }
+      .ban-when {
+        font-size: 11px;
+        color: var(--text-faint);
+      }
+      .ban-tag {
+        font-size: 11px;
+        font-weight: 700;
+        color: #fff;
+        background: #d9534f;
+        border-radius: 999px;
+        padding: 2px 9px;
+      }
+      .ban-reason {
+        font-size: 12px;
+        color: var(--text-muted);
+        flex-basis: 100%;
+        line-height: 1.6;
+      }
+      .ban-btn {
+        margin-left: auto;
+        border: 1px solid var(--border);
+        background: var(--surface-2);
+        color: var(--text);
+        border-radius: 999px;
+        padding: 6px 14px;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        font-family: inherit;
+      }
+      .ban-btn.warn { background: #d9534f; color: #fff; border-color: #d9534f; }
+      .ban-lookup {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+      .ban-lookup input {
+        flex: 1;
+        border: 1px solid var(--border-input);
+        background: var(--surface);
+        color: var(--text);
+        border-radius: 10px;
+        padding: 9px 12px;
+        font-size: 14px;
+        font-family: inherit;
+      }
+      .ban-lookup button {
+        border: 0;
+        border-radius: 10px;
+        padding: 9px 16px;
+        font-size: 13px;
+        font-weight: 700;
+        color: #fff;
+        background: var(--accent, #5b8def);
+        cursor: pointer;
+        font-family: inherit;
+        flex: none;
+      }
+      .ban-hint {
+        font-size: 12px;
+        line-height: 1.7;
+        color: var(--text-faint);
+        margin: 10px 0 0;
+      }
+      .ban-target {
+        margin-top: 10px;
+        padding: 10px 12px;
+        border: 1px dashed var(--border);
+        border-radius: 10px;
+        font-size: 13px;
+        color: var(--text);
+        line-height: 1.7;
+      }
+      .ban-reason-input {
+        width: 100%;
+        box-sizing: border-box;
+        border: 1px solid var(--border-input);
+        background: var(--surface);
+        color: var(--text);
+        border-radius: 10px;
+        padding: 9px 12px;
+        font-size: 13px;
+        font-family: inherit;
+        margin-top: 8px;
+      }
+
       .rp-item {
         border: 1px solid var(--border);
         border-radius: 12px;
@@ -364,6 +470,17 @@ export default {
       </div>
 
       <div class="card">
+        <div class="card-title">账号封禁<span class="rp-count" id="banCount"></span></div>
+        <div class="ban-lookup">
+          <input id="banName" type="text" placeholder="输入用户名查 uid" autocomplete="off">
+          <button id="banFindBtn" type="button">查找</button>
+        </div>
+        <div id="banTarget"></div>
+        <div id="banList"><div class="empty">加载中…</div></div>
+        <p class="ban-hint">封禁会立即生效：对方已登录的设备上，签到、送光尘、发布作品都会被拒绝，直到解封。登录凭证本身不销毁，所以解封后无需重新登录。</p>
+      </div>
+
+      <div class="card">
         <div class="card-title">紧急处置</div>
         <div class="card-text" style="margin-bottom:12px">若社区出现大面积违规内容，可一键清空全部作品。此操作不可恢复，请务必慎重。</div>
         <button class="clear" id="clearAllBtn" type="button">一键清空全部作品</button>
@@ -467,8 +584,9 @@ export default {
       })
 
       async function refresh() {
-        // 举报与作品列表互不影响：任何一边失败另一边照样能看
+        // 举报、封号与作品列表互不影响：任何一边失败另一边照样能看
         loadReports()
+        loadBanned()
         try {
           const res = await fetch('/api/get?limit=30&t=' + Date.now(), { cache: 'no-store' })
           if (!res.ok) {
@@ -634,6 +752,184 @@ export default {
           const data = await res.json().catch(() => ({}))
           renderReports(data.reports || [])
         } catch (err) {}
+      }
+
+      /* ---------- 封号 ---------- */
+      const banList = document.getElementById('banList')
+      const banCount = document.getElementById('banCount')
+      const banTarget = document.getElementById('banTarget')
+      // 查到的目标账号暂存这里，确认后才执行封禁
+      let banCandidate = null
+
+      function fmtDate(n) {
+        const t = Number(n) || 0
+        if (!t) return ''
+        const d = new Date(t)
+        const p = (x) => String(x).padStart(2, '0')
+        return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes())
+      }
+
+      function renderBanned(list) {
+        if (!banList) return
+        const arr = Array.isArray(list) ? list : []
+        if (banCount) banCount.textContent = arr.length ? '共 ' + arr.length + ' 人' : ''
+        banList.innerHTML = ''
+        if (!arr.length) {
+          const empty = document.createElement('div')
+          empty.className = 'empty'
+          empty.textContent = '当前没有被封禁的账号'
+          banList.appendChild(empty)
+          return
+        }
+        arr.forEach((u) => {
+          const row = document.createElement('div')
+          row.className = 'ban-row'
+
+          const name = document.createElement('span')
+          name.className = 'ban-name'
+          name.textContent = u.username
+
+          const tag = document.createElement('span')
+          tag.className = 'ban-tag'
+          tag.textContent = '已封'
+
+          const when = document.createElement('span')
+          when.className = 'ban-when'
+          when.textContent = u.bannedAt ? '封于 ' + fmtDate(u.bannedAt) : ''
+
+          const btn = document.createElement('button')
+          btn.className = 'ban-btn'
+          btn.type = 'button'
+          btn.textContent = '解封'
+          btn.addEventListener('click', async () => {
+            if (!confirm('确定解封「' + u.username + '」吗？')) return
+            btn.disabled = true
+            try {
+              const res = await fetch('/api/ban', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-admin-key': getKey() },
+                body: JSON.stringify({ action: 'unban', uid: u.uid }),
+              })
+              const d = await res.json().catch(() => ({}))
+              if (d && d.ok) {
+                toast('已解封 ' + u.username)
+                loadBanned()
+              } else {
+                btn.disabled = false
+                toast(d && d.error ? d.error : '解封失败')
+              }
+            } catch (e) {
+              btn.disabled = false
+              toast('网络错误')
+            }
+          })
+
+          row.append(name, tag, when, btn)
+          if (u.banReason) {
+            const r = document.createElement('div')
+            r.className = 'ban-reason'
+            r.textContent = '原因：' + u.banReason
+            row.appendChild(r)
+          }
+          banList.appendChild(row)
+        })
+      }
+
+      async function loadBanned() {
+        if (!banList) return
+        try {
+          const res = await fetch('/api/ban?t=' + Date.now(), {
+            headers: { 'x-admin-key': getKey(), 'Cache-Control': 'no-cache' },
+            cache: 'no-store',
+          })
+          if (!res.ok) return
+          const d = await res.json().catch(() => ({}))
+          if (d && d.ok) renderBanned(d.banned)
+        } catch (e) {}
+      }
+
+      function renderBanCandidate(u) {
+        if (!banTarget) return
+        banCandidate = u
+        banTarget.innerHTML = ''
+        if (!u) return
+        const box = document.createElement('div')
+        box.className = 'ban-target'
+        box.textContent = '找到：' + u.username + '（' + u.uid + '）' + (u.banned ? ' · 当前已封禁' : '')
+
+        const input = document.createElement('input')
+        input.className = 'ban-reason-input'
+        input.type = 'text'
+        input.placeholder = '封禁原因（会记入封号列表）'
+        input.maxLength = 100
+
+        const btn = document.createElement('button')
+        btn.className = 'ban-btn warn'
+        btn.type = 'button'
+        btn.style.marginTop = '8px'
+        btn.textContent = u.banned ? '解封该账号' : '封禁该账号'
+        btn.addEventListener('click', async () => {
+          const act = u.banned ? 'unban' : 'ban'
+          if (act === 'ban' && !confirm('确定封禁「' + u.username + '」吗？\n\n对方将无法签到、送光尘和发布作品，直到解封。')) return
+          btn.disabled = true
+          try {
+            const res = await fetch('/api/ban', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'x-admin-key': getKey() },
+              body: JSON.stringify({ action: act, uid: u.uid, reason: input.value || '' }),
+            })
+            const d = await res.json().catch(() => ({}))
+            if (d && d.ok) {
+              toast(act === 'ban' ? '已封禁 ' + u.username : '已解封 ' + u.username)
+              banCandidate = null
+              banTarget.innerHTML = ''
+              loadBanned()
+            } else {
+              btn.disabled = false
+              toast(d && d.error ? d.error : '操作失败')
+            }
+          } catch (e) {
+            btn.disabled = false
+            toast('网络错误')
+          }
+        })
+
+        box.appendChild(btn)
+        banTarget.append(box, input)
+      }
+
+      const banFindBtn = document.getElementById('banFindBtn')
+      const banName = document.getElementById('banName')
+      if (banFindBtn && banName) {
+        const doFind = async () => {
+          const name = banName.value.trim()
+          if (!name) {
+            toast('请输入用户名')
+            return
+          }
+          banFindBtn.disabled = true
+          try {
+            const res = await fetch('/api/ban', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'x-admin-key': getKey() },
+              body: JSON.stringify({ action: 'lookup', name }),
+            })
+            const d = await res.json().catch(() => ({}))
+            if (d && d.ok) renderBanCandidate(d.user)
+            else {
+              renderBanCandidate(null)
+              toast(d && d.error ? d.error : '查找失败')
+            }
+          } catch (e) {
+            toast('网络错误')
+          } finally {
+            banFindBtn.disabled = false
+          }
+        }
+        banFindBtn.addEventListener('click', doFind)
+        banName.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') doFind()
+        })
       }
 
       function renderLatest(data) {

@@ -2,7 +2,7 @@
 //
 //   GET                    取信箱列表与可领附件统计
 //   POST {action:'claim', id}  领取附件（光尘直接进账本）
-import { readToken, pickToken } from './_auth.js'
+import { readActiveUser, pickToken, BANNED_ERROR } from './_auth.js'
 import { readBox, claim, stats, ATTACH_DUST } from './_mail.js'
 import { readBook, writeBook, publicView } from './_dust.js'
 
@@ -26,8 +26,10 @@ export async function onRequestGet(context) {
   const { request, env } = context
   if (!env.LIGHTFIELD_KV) return json({ error: 'LIGHTFIELD_KV is not configured' }, 500)
 
-  const who = await readToken(env, '', request.headers.get('authorization'))
+  const who = await readActiveUser(env, '', request.headers.get('authorization'))
   if (!who) return json({ error: '未登录', code: 'noauth' }, 401)
+  if (who.banned) return json(BANNED_ERROR, 403)
+  if (who.gone) return json({ error: '账号不存在', code: 'gone' }, 401)
 
   const kv = env.LIGHTFIELD_KV
   const box = await readBox(kv, who.uid)
@@ -46,8 +48,10 @@ export async function onRequestPost(context) {
     return json({ error: 'Invalid JSON body' }, 400)
   }
 
-  const who = await readToken(env, pickToken(request, body), request.headers.get('authorization'))
+  const who = await readActiveUser(env, pickToken(request, body), request.headers.get('authorization'))
   if (!who) return json({ error: '未登录', code: 'noauth' }, 401)
+  if (who.banned) return json(BANNED_ERROR, 403)
+  if (who.gone) return json({ error: '账号不存在', code: 'gone' }, 401)
 
   const action = (body && body.action) || ''
   if (action !== 'claim') return json({ error: '未知操作' }, 400)

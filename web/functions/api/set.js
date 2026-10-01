@@ -2,7 +2,7 @@ import { appendEntry, recentHistory, HISTORY_MAX } from './_history.js'
 import { contestInfo } from './_contest.js'
 import { resolveClaim, touchUser } from './claim.js'
 import { hitWords } from './_lexicon.js'
-import { readToken, pickToken } from './_auth.js'
+import { readActiveUser, pickToken, BANNED_ERROR } from './_auth.js'
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -172,7 +172,9 @@ export async function onRequestPost(context) {
   }
 
   // 归属：优先用登录账号；没登录才回退到认领码（过渡期保留）
-  const who = await readToken(env, '', pickToken(request, body))
+  const who = await readActiveUser(env, pickToken(request, body), request.headers.get('authorization'))
+  if (who && who.banned) return json(BANNED_ERROR, 403)
+  if (who && who.gone) return json({ error: '账号不存在', code: 'gone' }, 401)
   if (who) {
     entry.ownerUser = who.uid
     entry.ownerName = who.username

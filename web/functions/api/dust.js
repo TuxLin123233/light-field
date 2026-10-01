@@ -5,7 +5,7 @@
 //   POST {action:'give', time:xxx}  送光尘给某幅作品（同时给它加赞）
 //
 // 未登录返回 401，前端继续使用本地账本。
-import { readToken, pickToken } from './_auth.js'
+import { readActiveUser, pickToken, BANNED_ERROR } from './_auth.js'
 import { readBook, signIn, giveDust, publicView, DUST_PER_SIGNIN, DUST_COST } from './_dust.js'
 import { incrementLikes } from './_history.js'
 
@@ -29,8 +29,10 @@ export async function onRequestGet(context) {
   const { request, env } = context
   if (!env.LIGHTFIELD_KV) return json({ error: 'LIGHTFIELD_KV is not configured' }, 500)
 
-  const who = await readToken(env, '', request.headers.get('authorization'))
+  const who = await readActiveUser(env, '', request.headers.get('authorization'))
   if (!who) return json({ error: '未登录', code: 'noauth' }, 401)
+  if (who.banned) return json(BANNED_ERROR, 403)
+  if (who.gone) return json({ error: '账号不存在', code: 'gone' }, 401)
 
   const book = await readBook(env.LIGHTFIELD_KV, who.uid)
   return json({ ok: true, uid: who.uid, username: who.username, book: publicView(book) })
@@ -47,8 +49,10 @@ export async function onRequestPost(context) {
     return json({ error: 'Invalid JSON body' }, 400)
   }
 
-  const who = await readToken(env, pickToken(request, body), request.headers.get('authorization'))
+  const who = await readActiveUser(env, pickToken(request, body), request.headers.get('authorization'))
   if (!who) return json({ error: '未登录', code: 'noauth' }, 401)
+  if (who.banned) return json(BANNED_ERROR, 403)
+  if (who.gone) return json({ error: '账号不存在', code: 'gone' }, 401)
 
   const action = (body && body.action) || ''
 

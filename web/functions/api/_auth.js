@@ -212,6 +212,47 @@ export async function readUser(kv, uid) {
   }
 }
 
+/* -------------------- 封禁 --------------------
+   令牌是无状态签名，签发后 30 天内 HMAC 一直有效，
+   所以「封禁」不能只改令牌 —— 必须每次写操作都回 KV 查一次用户状态。
+   这里集中判断，避免每个接口各写一遍而漏掉。 */
+
+/** 封禁响应：统一文案，不透露封禁原因细节以外的信息 */
+export const BANNED_ERROR = { error: '账号已被封禁，无法执行此操作', code: 'banned' }
+
+export function isBanned(user) {
+  return !!(user && user.banned)
+}
+
+/**
+ * 校验令牌并确认账号未被封禁。
+ * 返回 { uid, username, user } ；被封禁时返回 { banned:true, uid }。
+ */
+export async function readActiveUser(env, token, headerToken) {
+  const who = await readToken(env, token, headerToken)
+  if (!who) return null
+  const user = await readUser(env.LIGHTFIELD_KV, who.uid)
+  if (!user) return { ...who, gone: true }
+  if (isBanned(user)) return { ...who, user, banned: true }
+  return { ...who, user }
+}
+
+/** 封禁 / 解封；返回落库后的用户 */
+export async function setBanned(kv, uid, banned, reason) {
+  const user = await readUser(kv, uid)
+  if (!user) return null
+  if (banned) {
+    user.banned = true
+    user.bannedAt = Date.now()
+    user.banReason = String(reason || '').slice(0, 100)
+  } else {
+    delete user.banned
+    delete user.bannedAt
+    delete user.banReason
+  }
+  return writeUser(kv, user)
+}
+
 export async function readUserByName(kv, username) {
   const lower = normalizeName(username).toLowerCase()
   if (!lower) return null

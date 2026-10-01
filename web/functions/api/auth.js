@@ -21,6 +21,8 @@ import {
   readUserByName,
   writeUser,
   pickToken,
+  isBanned,
+  BANNED_ERROR,
 } from './_auth.js'
 
 const CORS_HEADERS = {
@@ -55,6 +57,8 @@ export async function onRequestGet(context) {
   return json({
     ok: true,
     loggedIn: true,
+    banned: isBanned(user),
+    banReason: isBanned(user) ? user.banReason || '' : '',
     username: user.username,
     createdAt: user.createdAt,
   })
@@ -112,7 +116,13 @@ export async function onRequestPost(context) {
     const ok = user
       ? await verifyPassword(password, user.pw)
       : await verifyPassword(password, 'pbkdf2$' + 10000 + '$' + '00'.repeat(16) + '$' + '00'.repeat(32))
+    // 密码错和账号不存在返回同一句话，避免被人枚举账号
     if (!user || !ok) return json(BAD_CREDENTIALS, 401)
+
+    // 被封禁的账号即使密码正确也不能登录
+    if (isBanned(user)) {
+      return json({ error: '账号已被封禁' + (user.banReason ? '：' + user.banReason : ''), code: 'banned' }, 403)
+    }
 
     const token = await issueToken(env, user)
     return json({ ok: true, token, username: user.username })
@@ -129,6 +139,7 @@ export async function onRequestPost(context) {
 
     const user = await readUser(kv, who.uid)
     if (!user) return json({ error: '账号不存在' }, 404)
+    if (isBanned(user)) return json(BANNED_ERROR, 403)
     if (!(await verifyPassword(oldPw, user.pw))) {
       return json({ error: '原密码不正确' }, 401)
     }
