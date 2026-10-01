@@ -618,6 +618,15 @@ export default {
         white-space: nowrap;
       }
 
+      .card-av {
+        width: 20px;
+        height: 20px;
+        border-radius: 6px;
+        image-rendering: pixelated;
+        flex: none;
+        border: 1px solid var(--border);
+        background: var(--surface-2);
+      }
       .card-sub {
         display: flex;
         align-items: center;
@@ -2504,6 +2513,9 @@ export default {
       }
 
       function appendCards(records) {
+        // 先把卡片画出来（此时头像用默认的），再批量拉真头像回来重绘，
+        // 这样不用等接口就能出内容
+        const authorAvatars = []
         records.forEach((rec) => {
           const card = document.createElement('div')
           card.className = 'card'
@@ -2555,6 +2567,15 @@ export default {
 
           const sub = document.createElement('div')
           sub.className = 'card-sub'
+          // 作者头像：有 uid 才有头像，老作品走默认头像
+          if (rec.ownerUser && window.LWAvatar) {
+            const ac = document.createElement('canvas')
+            ac.className = 'card-av'
+            ac.title = '作者头像'
+            sub.appendChild(ac)
+            window.LWAvatar.draw(ac, rec.ownerUser, 20)
+            authorAvatars.push({ el: ac, uid: rec.ownerUser })
+          }
           const au = document.createElement('span')
           au.className = 'card-author'
           au.textContent = rec.author || (rec.workName ? '匿名' : rec.name || '匿名')
@@ -2604,6 +2625,15 @@ export default {
           cardsByTime.set(String(rec.time), card)
           gallery.appendChild(card)
         })
+
+        // 批量取作者头像，回来后重绘（默认头像先顶着，所以这一步不阻塞内容）
+        if (authorAvatars.length && window.LWAvatar) {
+          window.LWAvatar.loadForWorks(records, function () {
+            for (const it of authorAvatars) {
+              window.LWAvatar.draw(it.el, it.uid, 20)
+            }
+          })
+        }
       }
 
       /* ---------- 每日挑战 ---------- */

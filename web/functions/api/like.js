@@ -91,6 +91,8 @@ export async function onRequestGet(context) {
         size: e.size === 32 || e.size === 64 ? e.size : 16,
         time: e.time || 0,
         likes: e.likes || 0,
+        // 作者 uid：前端据此取头像；老作品/认领码时代没有则为空
+        ownerUser: e.ownerUser || '',
         type: e.type,
         anim: e.anim ? { frames: e.anim.frames, delay: e.anim.delay || 10 } : undefined,
         contest: e.contest,

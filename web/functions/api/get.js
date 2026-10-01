@@ -27,6 +27,9 @@ function normalizeEntry(e) {
     time: (e && e.time) || 0,
     likes: (e && e.likes) || 0,
     type: e && e.type,
+    // 作者 uid：前端据此取头像
+    ownerUser: (e && e.ownerUser) || '',
+    ownerName: (e && e.ownerName) || '',
     anim: e && e.anim ? { frames: e.anim.frames, delay: e.anim.delay || 10 } : undefined,
     contest: e && e.contest,
     contestVotes: (e && e.contestVotes) || 0,

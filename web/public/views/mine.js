@@ -321,6 +321,41 @@ export default {
       }
       .m-link .ml-ico { font-size: 19px; }
       .m-link .ml-num { font-size: 15px; font-weight: 800; color: var(--accent); }
+
+      /* 头部头像，点一下去画 */
+      .me-av {
+        position: relative;
+        flex: none;
+        display: block;
+        width: 46px;
+        height: 46px;
+        border-radius: 14px;
+        overflow: visible;
+        text-decoration: none;
+      }
+      .me-av canvas {
+        display: block;
+        width: 46px;
+        height: 46px;
+        border-radius: 14px;
+        border: 1px solid var(--border);
+        image-rendering: pixelated;
+        background: var(--surface-2);
+      }
+      .me-av-badge {
+        position: absolute;
+        right: -4px;
+        bottom: -4px;
+        width: 19px;
+        height: 19px;
+        border-radius: 50%;
+        background: var(--accent, #5b8def);
+        color: #fff;
+        font-size: 10px;
+        line-height: 19px;
+        text-align: center;
+        border: 2px solid var(--surface);
+      }
   `,
   template: `<div class="container mine-wrap">
     <div class="header">
@@ -328,6 +363,10 @@ export default {
         <h1 id="mineTitle">我的</h1>
         <div class="header-sub" id="mineSub" hidden></div>
       </div>
+      <router-link class="me-av" to="/avatar" id="meAv" title="画头像">
+        <canvas id="meAvCanvas"></canvas>
+        <span class="me-av-badge">✏️</span>
+      </router-link>
     </div>
 
     <router-link class="back-bar" id="mineBack" to="/mine" hidden>← 返回我的</router-link>
@@ -481,6 +520,34 @@ export default {
       clearTimeout(toastTimer)
       toastTimer = setTimeout(() => el.classList.remove('show'), 2200)
     }
+
+    /* ---------- 头部头像 ----------
+       头像按 uid 索引，而本机只存了用户名（令牌是签名串，解不出 uid），
+       所以直接问服务端要「我的 uid + 我的像素」，顺带把 uid 记进缓存，
+       之后社区列表里看到自己的作品也能对上号。 */
+    function renderMyAvatar() {
+      const cv = $('meAvCanvas')
+      const A = window.LWAvatar
+      if (!cv || !A) return
+      let t = ''
+      try {
+        t = localStorage.getItem('lw-token') || ''
+      } catch (e) {}
+      if (!t) {
+        A.draw(cv, 'anon', 46)
+        return
+      }
+      A.draw(cv, 'anon', 46)
+      fetch('/api/avatar', { headers: { Authorization: 'Bearer ' + t }, cache: 'no-store' })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => {
+          if (!d || !d.ok) return
+          if (d.uid) A.put(d.uid, d.pixels || null)
+          A.draw(cv, d.uid || 'anon', 46)
+        })
+        .catch(() => {})
+    }
+    window.addEventListener('lw-avatar-changed', renderMyAvatar)
 
     /* ---------- 签到（只走服务端，必须登录） ---------- */
     // 达成里程碑时额外奖励「等于里程碑天数」的光尘
@@ -939,6 +1006,7 @@ export default {
     loadAchBadge()
 
     applyMode()
+    renderMyAvatar()
     renderSign()
     loadMine()
     // 直接进 /mine/gifted 时也要加载列表，不依赖点入口
