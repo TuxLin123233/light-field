@@ -785,8 +785,14 @@
             return ''
           }
         }
+        var listeners = []
         function applyBook(book) {
           server = book && typeof book.bal === 'number' ? book : null
+          for (var i = 0; i < listeners.length; i++) {
+            try {
+              listeners[i](server)
+            } catch (e) {}
+          }
         }
 
         /* 拉取服务端账本；未登录或令牌失效时把 server 置空 */
@@ -879,6 +885,24 @@
           },
           balance: function () {
             return server ? Math.max(0, server.bal) : 0
+          },
+          /* 订阅余额变化。
+             头像页、简介页各自存了一份 balance 用来判断「够不够花」，
+             以前谁都不监听变化：不领任务直接切过去，或者在别处领了再回来，
+             那个数还是旧的，会平白无故把人拦在门外。
+             传进来的 book 就是最新的账本；立即调一次，页面刚挂载时也能拿到当前值。 */
+          onChange: function (fn) {
+            if (typeof fn !== 'function') return function () {}
+            listeners.push(fn)
+            if (server) {
+              try {
+                fn(server)
+              } catch (e) {}
+            }
+            return function () {
+              var i = listeners.indexOf(fn)
+              if (i >= 0) listeners.splice(i, 1)
+            }
           },
           /* 累计收到的光尘（别人送到自己作品上的） */
           received: function () {

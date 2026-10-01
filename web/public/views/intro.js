@@ -160,6 +160,18 @@ export default {
     let bio = ''
     let saved = ''
     let balance = 0
+    /* 余额会跟着签到、领任务、送光尘变。这里用它判断「够不够付保存简介的钱」，
+       不跟上就会拿着旧数字挡住保存。 */
+    if (window.dust && window.dust.onChange) {
+      window.dust.onChange(function (b) {
+        const nb = b ? Number(b.bal) || 0 : 0
+        if (nb === balance) return
+        balance = nb
+        try {
+          if (typeof render === 'function') render()
+        } catch (e) {}
+      })
+    }
     let username = ''
 
     let toastTimer = null

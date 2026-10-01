@@ -153,7 +153,35 @@ export async function onRequestGet(context) {
   const locateParam = Number(url.searchParams.get('locate'))
   if (Number.isFinite(locateParam) && locateParam > 0) {
     const loc = await findIndexByTime(env.LIGHTFIELD_KV, locateParam)
-    return json({ found: loc.index !== -1, index: loc.index, total: loc.total })
+    /* 除了索引，把作品本身也带回去。
+       「我的」页的「送过光尘的」就是靠这个接口取作品的
+       （fetch('/api/get?single=1&locate=' + 时间) 然后读 d.work.pixels），
+       而这里以前只返回 {found,index,total}，取不到任何像素，
+       于是每一件都进不了列表，页面只能显示「可能已被作者删除」——
+       作品其实都还在，那句提示是假的。
+       顺带修好了「分享链接定位」以外的所有按时间取单件的用法。 */
+    if (loc.index === -1) return json({ found: false, index: -1, total: loc.total, work: null })
+    const { entries } = await readAllHistory(env.LIGHTFIELD_KV)
+    const e = entries[loc.index]
+    return json({
+      found: true,
+      index: loc.index,
+      total: loc.total,
+      work: e
+        ? {
+            time: Number(e.time) || 0,
+            pixels: e.pixels,
+            size: e.size === 32 || e.size === 64 ? e.size : 16,
+            workName: e.workName || e.name || '',
+            // 登录系统之前发布的作品没有 author，显示「匿名」而不是空白
+            author: e.author || '匿名',
+            ownerUser: e.ownerUser || '',
+            likes: Number(e.likes) || 0,
+            type: e.type,
+            fromImage: e.fromImage === true,
+          }
+        : null,
+    })
   }
 
   if (single) {

@@ -59,7 +59,7 @@ export default {
       }
       .mail-clear:active { background: var(--border); }
       .mail-clear[disabled] { opacity: 0.5; cursor: default; }
-      }
+
       .mail-list {
         display: flex;
         flex-direction: column;
@@ -112,8 +112,8 @@ export default {
         display: flex;
         align-items: center;
         gap: 8px;
-        margin-top: 10px;
-        padding-top: 10px;
+        margin-top: 12px;
+        padding-top: 12px;
         border-top: 1px dashed var(--border);
       }
       .mail-attach {
@@ -238,15 +238,18 @@ export default {
             '<div class="mail-item' + (can ? ' claimable' : '') + '" data-id="' + esc(m.id) + '">' +
             '<div class="mail-row">' +
             '<span class="mail-ico">' + esc(m.icon || '✉️') + '</span>' +
+            /* 正文和附件行必须放在 .mail-main 里面：
+               以前它们是 .mail-row 的兄弟节点，位置只按 item 的 padding 算，
+               比标题那一列往左突出来三十多像素，正文和标题对不齐。 */
             '<div class="mail-main">' +
             '<div class="mail-name">' + esc(m.title) + '</div>' +
             '<div class="mail-time">' + esc(fmtTime(m.time)) + '</div>' +
-            '</div></div>' +
             (m.body ? '<div class="mail-text">' + esc(m.body) + '</div>' : '') +
             (can
               ? '<div class="mail-act"><span class="mail-attach">✨ 附件 ' + m.dust + ' 个光尘</span>' +
                 '<button class="mail-btn" type="button" data-claim="' + esc(m.id) + '">领取</button></div>'
               : '') +
+            '</div></div>' +
             '</div>'
           )
         })

@@ -722,6 +722,25 @@ export default {
       }
     }
 
+    /* 余额会变：领任务、送光尘、领附件、领成就奖励都会改。
+       这个页面用 balance 判断「够不够画头像」，不跟上就会拿着旧数字
+       拦人 —— 明明刚领到 20 个却说不够。订阅账本，变了就重画。 */
+    if (window.dust && window.dust.onChange) {
+      window.dust.onChange(function (b) {
+        const nb = b ? Number(b.bal) || 0 : 0
+        if (nb === balance) return
+        balance = nb
+        // 缓存里那份账本一起改掉，切回这一页不用重新请求也是对的
+        try {
+          const store = window.__lwCache
+          if (store && store.avatar && b) {
+            store.avatar = Object.assign({}, store.avatar, { book: b })
+          }
+        } catch (e) {}
+        if (px) renderFrame()
+      })
+    }
+
     /* 切页面不自动刷新：第一次进来读一次，之后切回来用内存缓存重画。 */
     const AC = window.LWCache || {}
     AC.bindRefresh($('avRefresh'), () => {

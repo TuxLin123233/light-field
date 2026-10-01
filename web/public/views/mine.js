@@ -1410,9 +1410,17 @@ export default {
         } catch (e) {}
       }
       got.forEach((w) => grid.appendChild(buildWorkItem(w)))
+      /* 原来这里一律写「可能已被作者删除」，但取不到作品的原因多了去了
+         （接口没返回、没网络、对方注销），直接这么说会让人以为自己的记录没了。
+         说清楚实际情况。 */
+      const miss = times.length - got.length
       $('likedEmpty').innerHTML = got.length
-        ? ''
-        : '送过光尘的作品可能已被作者删除'
+        ? miss
+          ? '<div class="me-empty">有 ' + miss + ' 件没能取到（对方可能已注销，或作品已被删除）</div>'
+          : ''
+        : times.length
+          ? '<div class="me-empty">送过光尘的 ' + times.length + ' 件作品这会儿都取不到<br />（对方可能已注销，或作品已被删除）</div>'
+          : '<div class="me-empty">还没有送出过光尘</div>'
     }
 
     $('lnkWorksBtn') &&
