@@ -133,7 +133,15 @@ export async function onRequestPost(context) {
       const waitSec = Math.ceil((UPLOAD_WINDOW_MS - (nowRl - last)) / 1000)
       return json({ error: '发布太频繁，请 ' + waitSec + ' 秒后再试', waitSec }, 429)
     }
-    await env.LIGHTFIELD_KV.put(rateKey, String(nowRl), { expirationTtl: Math.ceil(UPLOAD_WINDOW_MS / 1000) })
+    // Cloudflare KV 规定 expirationTtl 最小 60 秒，传更小会直接抛异常。
+    // 限流窗口改成 30 秒后这里算出来就是 30，导致整个发布请求 500。
+    // 记录本身多留一会儿没有副作用（下次比较时 now-last 会大于窗口，照样放行）。
+    const rlTtl = Math.max(60, Math.ceil(UPLOAD_WINDOW_MS / 1000))
+    try {
+      await env.LIGHTFIELD_KV.put(rateKey, String(nowRl), { expirationTtl: rlTtl })
+    } catch (e) {
+      // 限流记录写不进去不该拦住发布，放行即可
+    }
   }
 
   const { entries } = await recentHistory(env.LIGHTFIELD_KV, { limit: 300 })

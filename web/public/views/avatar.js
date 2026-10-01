@@ -7,7 +7,7 @@ export default {
   css: `
       .av-page {
         min-height: 100vh;
-        padding: 14px 14px calc(30px + env(safe-area-inset-bottom, 0px));
+        padding: 8px 14px calc(30px + env(safe-area-inset-bottom, 0px));
         max-width: 520px;
         margin: 0 auto;
       }
@@ -15,7 +15,7 @@ export default {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        margin-bottom: 12px;
+        margin-bottom: 8px;
       }
       .av-back {
         display: inline-flex;
@@ -31,8 +31,8 @@ export default {
         background: var(--surface);
         border: 1px solid var(--border);
         border-radius: 14px;
-        padding: 12px 14px;
-        margin-bottom: 12px;
+        padding: 11px 13px;
+        margin-bottom: 10px;
         font-size: 13px;
         line-height: 1.7;
         color: var(--text-muted);
@@ -91,7 +91,7 @@ export default {
       }
 
       /* 两种画法切换 */
-      .av-modes { display: flex; gap: 8px; margin-bottom: 12px; }
+      .av-modes { display: flex; gap: 8px; margin-bottom: 10px; }
       .av-mode {
         flex: 1;
         border: 1.5px solid var(--border-input);

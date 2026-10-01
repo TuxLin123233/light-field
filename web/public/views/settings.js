@@ -292,6 +292,46 @@ export default {
         margin: 0 -14px;
       }
 
+      /* ---------- 可折叠分组（外观 / 启动与导航） ---------- */
+      .group.fold { padding: 0; overflow: hidden; }
+      .group-fold {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: transparent;
+        border: 0;
+        margin: 0;
+        padding: 14px;
+        font-family: inherit;
+        font-size: inherit;
+        color: inherit;
+        cursor: pointer;
+        text-align: left;
+        -webkit-appearance: none;
+        appearance: none;
+      }
+      .group-fold .group-title {
+        flex: 1;
+        min-width: 0;
+        margin: 0;
+        /* 原样式是分组小标题的浅色小字，折叠头上要更醒目 */
+        font-size: 15px;
+        font-weight: 800;
+        color: var(--text);
+      }
+      .fold-caret {
+        font-size: 12px;
+        color: var(--text-faint);
+        transition: transform 0.2s ease;
+        flex: none;
+        line-height: 1;
+      }
+      .group-fold[aria-expanded='false'] .fold-caret { transform: rotate(-90deg); }
+      .group-fold:active { opacity: 0.7; }
+      .fold-body { padding: 0 14px 4px; }
+      .group-fold[aria-expanded='false'] + .fold-body { display: none; }
+
       /* ---------- 致谢：与联系卡同风格 ---------- */
       .credit-card {
         background: var(--surface);
@@ -317,11 +357,12 @@ export default {
 
       /* ---------- 单选组（启动页 / 导航位置） ---------- */
       .radio-row { display: flex; flex-wrap: wrap; gap: 8px; }
-      /* 「启动时打开」固定四个一排，等宽对齐，不再 3+1 折行 */
+      /* 「启动时打开」四个一排太窄(每格只剩 ~85px, 文字被挤),
+         改两列，每格宽一倍 */
       #entranceRow {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 6px;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
       }
       #entranceRow .radio-chip {
         flex-direction: column;
@@ -356,9 +397,10 @@ export default {
       .radio-chip .rc-ico { font-size: 15px; }
 
       /* ---------- 导航排序 ---------- */
+      /* 6 款导航样式：三列每格太窄，预览条和标签都挤，改两列 */
       .nav-style-row {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(2, 1fr);
         gap: 8px;
       }
       .ns-item {
