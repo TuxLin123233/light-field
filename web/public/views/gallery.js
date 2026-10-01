@@ -2368,13 +2368,24 @@ export default {
         // 像素相机转图的作品不支持送光尘，按钮直接置灰并说明原因，
         // 免得点了才弹一句看不懂的拒绝
         if (rec.fromImage) {
-          btn.disabled = true
+          /* 置灰但**不要**加 disabled：
+             disabled 的按钮在手机上点下去没有任何反应，
+             看起来就像坏了（用户反馈「按钮是暗的、就是点不了」）。
+             保留可点，点了明确告诉他为什么不行。
+             title 在手机上不显示，所以还把标识写进按钮文字里。 */
           btn.classList.add('no-dust')
           btn.title = '像素相机转出来的作品不支持收光尘，请给手绘作品送光尘'
+          const sp0 = btn.querySelector('span')
+          if (sp0) sp0.textContent = '🚫 ' + (rec.likes || 0)
         }
         updateLikedState(btn, rec.time)
         btn.addEventListener('click', (e) => {
           e.stopPropagation()
+          if (btn.classList.contains('no-dust')) {
+            toast('这幅是用像素相机转出来的照片，不支持收光尘\n请给手绘作品送光尘 ✏️')
+            if (window.sfx) window.sfx('no')
+            return
+          }
           like(rec, btn)
         })
         return btn
@@ -3333,9 +3344,11 @@ export default {
         const pvLike = document.getElementById('previewLike')
         // 相机作品不给送光尘，预览里也要置灰
         if (rec.fromImage === true) {
-          pvLike.disabled = true
+          pvLike.disabled = false // 保持可点，点了给解释（见上面列表里的说明）
           pvLike.classList.add('no-dust')
           pvLike.title = '像素相机转出来的作品不支持收光尘，请给手绘作品送光尘'
+          const pvSp = pvLike.querySelector('span')
+          if (pvSp) pvSp.textContent = '🚫 ' + (rec.likes || 0)
         } else {
           pvLike.disabled = false
           pvLike.classList.remove('no-dust')
@@ -3969,6 +3982,12 @@ export default {
       document.getElementById('previewLike').addEventListener('click', () => {
         if (!currentPreview) return
         const btn = document.getElementById('previewLike')
+        // 相机作品：按钮是灰的，但点了要说明原因，不能让人以为坏了
+        if (btn.classList.contains('no-dust')) {
+          toast('这幅是用像素相机转出来的照片，不支持收光尘\n请给手绘作品送光尘 ✏️')
+          if (window.sfx) window.sfx('no')
+          return
+        }
         like(currentPreview, btn)
       })
 

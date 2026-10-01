@@ -63,6 +63,19 @@ export default {
         font-size: 12px; color: var(--text-muted); line-height: 1.6; margin-top: 6px;
         white-space: pre-wrap; word-break: break-word;
       }
+      .u-work { position: relative; }
+      .u-work img { display: block; width: 100%; height: auto; }
+      .u-give {
+        position: absolute; left: 4px; bottom: 4px;
+        border: 0; border-radius: 999px; padding: 3px 8px;
+        font-size: 11px; font-weight: 800; font-family: inherit;
+        background: rgba(0, 0, 0, 0.55); color: #fff; cursor: pointer;
+        backdrop-filter: blur(3px);
+      }
+      .u-give:active { transform: scale(0.94); }
+      .u-give[disabled] { opacity: 0.6; cursor: default; }
+      .u-give.on { background: var(--accent); }
+      .u-give.no-dust { opacity: 0.5; filter: grayscale(1); }
       .u-follow {
         flex: none; border: 0; border-radius: 11px; padding: 8px 13px;
         font-size: 12px; font-weight: 800; font-family: inherit; cursor: pointer;
@@ -327,11 +340,27 @@ export default {
         '<div class="u-grid" id="uWorks">' +
         (works.length
           ? works
-              .map(
-                (w) =>
-                  '<img alt="' + esc(w.workName || '未命名') + '" data-t="' + (w.time || 0) +
-                  '" src="' + pixelsToURL(w.pixels, w.size === 32 || w.size === 64 ? w.size : 16) + '">'
-              )
+              .map((w) => {
+                const t = w.time || 0
+                /* 每幅作品上给一个送光尘的按钮。
+                   以前这里只有一张图、点了开大图，主页上完全没法送光尘 ——
+                   用户反馈「无法给其它用户点赞」。 */
+                const gave = !!(window.dust && window.dust.gave(String(t)))
+                /* 相机作品不能收光尘：置灰但保持可点，点了说明原因。
+                   加 disabled 的话手机上点了没反应，看着就像坏了。 */
+                const noDust = w.fromImage === true
+                return (
+                  '<div class="u-work" data-t="' + t + '">' +
+                  '<img alt="' + esc(w.workName || '未命名') + '" data-t="' + t +
+                  '" src="' + pixelsToURL(w.pixels, w.size === 32 || w.size === 64 ? w.size : 16) + '">' +
+                  '<button class="u-give' + (gave ? ' on' : '') + (noDust ? ' no-dust' : '') +
+                  '" type="button" data-give="' + t + '"' +
+                  (noDust ? ' title="像素相机转出来的作品不支持收光尘"' : '') + '>' +
+                  (noDust ? '🚫 ' : '✨ ') + (Number(w.likes) || 0) +
+                  '</button>' +
+                  '</div>'
+                )
+              })
               .join('')
           : '<div class="u-empty">这位画师还没有公开作品。</div>') +
         '</div>' +
@@ -347,11 +376,83 @@ export default {
         window.LWAvatar.draw(cv, profile.uid, 62)
       }
       // 作品点开：复用社区的预览
+      /* 送光尘。和社区里用的是同一套接口与账本，行为一致：
+         未登录引导登录、余额不足提示、送过的不给重复送。 */
+      async function giveDust(t, btn) {
+        if (!window.dust) return
+        if (!window.dust.logged()) {
+          showMsg('登录后才能送光尘', true)
+          setTimeout(() => {
+            location.href = '/login'
+          }, 800)
+          return
+        }
+        if (window.dust.gave(String(t))) {
+          showMsg('你已经送过光尘给这幅画了', true)
+          return
+        }
+        if (window.dust.balance() < window.dust.cost) {
+          showMsg('光尘不够了，去「我的」签到领一些吧', true)
+          return
+        }
+        const w0 = works.find((x) => (x.time || 0) === Number(t))
+        if (w0 && w0.fromImage === true) {
+          showMsg('这幅是用像素相机转出来的照片，不支持收光尘，请给手绘作品送光尘', true)
+          return
+        }
+        btn.disabled = true
+        btn.textContent = '…'
+        let ok = false
+        try {
+          const d = await window.dust.giveRemote(t)
+          if (!d) {
+            showMsg('赠送失败：网络错误', true)
+            return
+          }
+          if (d.needLogin || d.code === 'noauth') {
+            showMsg('登录状态已失效，请重新登录', true)
+            setTimeout(() => {
+              location.href = '/login'
+            }, 800)
+            return
+          }
+          if (!d.ok) {
+            showMsg(d.error || '赠送失败', true)
+            return
+          }
+          if (window.sfx) window.sfx('ding')
+          ok = true
+          const w = works.find((x) => (x.time || 0) === Number(t))
+          if (w) w.likes = (Number(w.likes) || 0) + (Number(d.charged) || 0)
+          showMsg('送出了 ' + (d.charged || window.dust.cost) + ' 个光尘 ✨ 余额 ' + window.dust.balance())
+        } catch (e) {
+          showMsg('赠送失败：' + ((e && e.message) || '网络错误'), true)
+        } finally {
+          btn.disabled = false
+          if (ok) {
+            // 送过了：点亮按钮并显示这幅画累计收到多少
+            btn.classList.add('on')
+            const w = works.find((x) => (x.time || 0) === Number(t))
+            btn.textContent = '✨ ' + (w ? Number(w.likes) || 0 : 0)
+          } else {
+            const w = works.find((x) => (x.time || 0) === Number(t))
+            btn.textContent = '✨ ' + (w ? Number(w.likes) || 0 : 0)
+          }
+        }
+      }
       $('uWorks') &&
         [...$('uWorks').querySelectorAll('img[data-t]')].forEach((im) => {
           im.addEventListener('click', () => {
             const w = works.find((x) => (x.time || 0) === Number(im.getAttribute('data-t')))
             if (w && window.LWOpenWork) window.LWOpenWork(w)
+          })
+        })
+      $('uWorks') &&
+        [...$('uWorks').querySelectorAll('[data-give]')].forEach((btn) => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation()
+            const t = Number(btn.getAttribute('data-give'))
+            giveDust(t, btn)
           })
         })
       // 成就分类
