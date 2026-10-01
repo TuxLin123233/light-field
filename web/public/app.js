@@ -189,6 +189,11 @@ const App = {
       this.navItems = navOrder()
     }
     window.setNavPosition = applyNavPosition
+    // 导航栏样式：设置页切换时直接改根元素属性即可
+    window.setNavStyle = (v) => {
+      if (v === 'glass' || !v) document.documentElement.removeAttribute('data-nav-style')
+      else document.documentElement.setAttribute('data-nav-style', v)
+    }
   },
   template: `
     <div id="siteRoot">

@@ -292,6 +292,29 @@ export default {
         margin: 0 -14px;
       }
 
+      /* ---------- 致谢：与联系卡同风格 ---------- */
+      .credit-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 4px 14px;
+        box-shadow: 0 2px 10px var(--shadow2, rgba(0, 0, 0, 0.06));
+        opacity: 1;
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+      }
+      .credit-card .entry {
+        background: transparent;
+        padding: 13px 0;
+      }
+      .credit-card .entry:hover { background: var(--surface-2); }
+      .credit-note {
+        margin: 10px 4px 0;
+        font-size: 12px;
+        line-height: 1.6;
+        color: var(--text-2);
+      }
+
       /* ---------- 单选组（启动页 / 导航位置） ---------- */
       .radio-row { display: flex; flex-wrap: wrap; gap: 8px; }
       /* 「启动时打开」固定四个一排，等宽对齐，不再 3+1 折行 */
@@ -333,6 +356,40 @@ export default {
       .radio-chip .rc-ico { font-size: 15px; }
 
       /* ---------- 导航排序 ---------- */
+      .nav-style-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+      }
+      .ns-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+        padding: 9px 4px 7px;
+        border-radius: 12px;
+        border: 2px solid var(--border);
+        background: var(--surface-2);
+        cursor: pointer;
+        transition: border-color 0.15s, transform 0.12s;
+      }
+      .ns-item:active { transform: scale(0.94); }
+      .ns-item.on { border-color: var(--accent); }
+      .ns-bar {
+        width: 100%;
+        height: 16px;
+        border-radius: 999px;
+        border: 1px solid var(--border-strong);
+        display: flex;
+        align-items: center;
+        justify-content: space-evenly;
+        overflow: hidden;
+      }
+      .ns-bar i { width: 4px; height: 4px; border-radius: 50%; background: var(--text-faint); }
+      .ns-item.on .ns-bar i.on { background: var(--accent); width: 12px; border-radius: 999px; }
+      .ns-name { font-size: 11px; color: var(--text-muted); }
+      .ns-item.on .ns-name { color: var(--accent); font-weight: 600; }
+
       .order-list { display: flex; flex-direction: column; gap: 8px; }
       .order-item {
         display: flex;
@@ -898,6 +955,13 @@ export default {
         </div>
         <div class="row row-col">
           <div>
+            <div class="row-label">导航栏样式</div>
+            <div class="row-desc">除毛玻璃外另有 5 种外观，切换后立刻生效</div>
+          </div>
+          <div class="nav-style-row" id="navStyleRow"></div>
+        </div>
+        <div class="row row-col">
+          <div>
             <div class="row-label">导航栏顺序</div>
             <div class="row-desc">点一下即可调整先后次序</div>
           </div>
@@ -980,6 +1044,30 @@ export default {
           <img src="/images/赞赏码.jpg" alt="赞赏码">
           <div class="qr-note">喜欢像素小镇？长按识别二维码 → 扫码赞赏，感谢你的支持！<br>每一格光，都由大家点亮</div>
         </div>
+      </section>
+
+      <section class="group">
+        <div class="group-title">致谢</div>
+        <div class="credit-card">
+          <a class="entry" href="https://github.com/Konsheng/Sensitive-lexicon" target="_blank" rel="noopener noreferrer">
+            <span class="entry-ico">🛡️</span>
+            <span class="entry-body">
+              <span class="entry-label">Sensitive-lexicon</span>
+              <div class="entry-desc">内容安全词库 · MIT License · Copyright (c) 2024~2099 Konsheng</div>
+            </span>
+            <span class="entry-arrow">›</span>
+          </a>
+          <div class="entry-sep"></div>
+          <a class="entry" href="https://opencode.ai" target="_blank" rel="noopener noreferrer">
+            <span class="entry-ico">⌨️</span>
+            <span class="entry-body">
+              <span class="entry-label">OpenCode</span>
+              <div class="entry-desc">本站代码编写工具</div>
+            </span>
+            <span class="entry-arrow">›</span>
+          </a>
+        </div>
+        <div class="credit-note">本项目源码与词库均遵循各自许可证要求，词库仅在服务端用于发布内容校验。</div>
       </section>
 
       <div class="notice">
@@ -1073,6 +1161,50 @@ export default {
           navPosRow.appendChild(b)
         })
         paint()
+      }
+
+      /* ---------- 导航栏样式：玻璃 + 另外 5 款 ---------- */
+      const NAV_STYLES = [
+        { v: 'glass', name: '玻璃' },
+        { v: 'solid', name: '实心' },
+        { v: 'outline', name: '描边' },
+        { v: 'pill', name: '药丸' },
+        { v: 'segmented', name: '分段' },
+        { v: 'gradient', name: '渐变' },
+      ]
+      const navStyleRow = document.getElementById('navStyleRow')
+      if (navStyleRow) {
+        let curStyle = readLS('lw-nav-style', 'glass')
+        if (!NAV_STYLES.some((x) => x.v === curStyle)) curStyle = 'glass'
+        const paintStyles = () => {
+          navStyleRow.querySelectorAll('.ns-item').forEach((el) => {
+            el.classList.toggle('on', el.dataset.v === curStyle)
+          })
+        }
+        NAV_STYLES.forEach((st) => {
+          const b = document.createElement('button')
+          b.type = 'button'
+          b.className = 'ns-item'
+          b.dataset.v = st.v
+          b.innerHTML =
+            '<span class="ns-bar">' + '<i></i>'.repeat(4) + '</span>' +
+            '<span class="ns-name">' + st.name + '</span>'
+          b.addEventListener('click', () => {
+            curStyle = st.v
+            writeLS('lw-nav-style', st.v)
+            applyNavStyle(curStyle)
+            paintStyles()
+            if (window.sfx) window.sfx('tick')
+            toast('导航栏样式：' + st.name)
+          })
+          navStyleRow.appendChild(b)
+        })
+        applyNavStyle(curStyle)
+        paintStyles()
+      }
+      function applyNavStyle(v) {
+        if (v === 'glass') document.documentElement.removeAttribute('data-nav-style')
+        else document.documentElement.setAttribute('data-nav-style', v)
       }
 
       /* ---------- 导航栏顺序 ---------- */

@@ -335,6 +335,96 @@
       }
       .bottom-nav.jelly { animation: glassJelly 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
 
+      /* ---------- 导航栏样式：共 6 款，用 data-nav-style 切换 ----------
+         玻璃(glass)为默认。其余 5 款覆盖背景、边框、阴影与高亮方式。
+         原有规则用了 !important，所以这里也必须带 !important 才能覆盖。 */
+
+      /* 实心：不透明色块，边界最清楚 */
+      html[data-nav-style='solid'] .bottom-nav,
+      html[data-nav-style='solid'][data-theme] .bottom-nav {
+        background: var(--surface) !important;
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
+        border-color: var(--border) !important;
+        box-shadow: 0 6px 20px var(--shadow1, rgba(0, 0, 0, 0.08)) !important;
+      }
+
+      /* 描边：完全透明底，只留一圈细边 */
+      html[data-nav-style='outline'] .bottom-nav,
+      html[data-nav-style='outline'][data-theme] .bottom-nav {
+        background: transparent !important;
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
+        border-color: var(--border-strong) !important;
+        box-shadow: none !important;
+      }
+      html[data-nav-style='outline'] .bottom-nav a.active {
+        box-shadow: none !important;
+        border-radius: 999px;
+        outline: 1.5px solid var(--accent);
+        outline-offset: -1.5px;
+      }
+
+      /* 药丸：底透明，只有当前页是个填充药丸 */
+      html[data-nav-style='pill'] .bottom-nav,
+      html[data-nav-style='pill'][data-theme] .bottom-nav {
+        background: transparent !important;
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
+        border-color: transparent !important;
+        box-shadow: none !important;
+        padding: 6px 10px !important;
+      }
+      html[data-nav-style='pill'] .bottom-nav a.active {
+        background: var(--accent) !important;
+        color: #fff !important;
+        box-shadow: none !important;
+        text-shadow: none !important;
+        border-radius: 999px !important;
+      }
+
+      /* 分段：四格之间用竖线分隔，像经典 tabbar */
+      html[data-nav-style='segmented'] .bottom-nav,
+      html[data-nav-style='segmented'][data-theme] .bottom-nav {
+        background: var(--surface) !important;
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
+        border-color: var(--border) !important;
+        border-radius: 16px !important;
+        box-shadow: 0 4px 14px var(--shadow1, rgba(0, 0, 0, 0.07)) !important;
+        padding: 6px 8px !important;
+        gap: 0 !important;
+      }
+      html[data-nav-style='segmented'] .bottom-nav a {
+        border-radius: 10px;
+        border-right: 1px solid var(--border);
+      }
+      html[data-nav-style='segmented'] .bottom-nav a:last-child { border-right: none; }
+      html[data-nav-style='segmented'] .bottom-nav a.active {
+        background: var(--surface-2) !important;
+        box-shadow: none !important;
+      }
+
+      /* 渐变：用强调色渐变，存在感最强 */
+      html[data-nav-style='gradient'] .bottom-nav,
+      html[data-nav-style='gradient'][data-theme] .bottom-nav {
+        background: linear-gradient(135deg, var(--accent) 0%,
+          color-mix(in srgb, var(--accent) 62%, #000) 100%) !important;
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
+        border-color: transparent !important;
+        box-shadow: 0 8px 22px color-mix(in srgb, var(--accent) 34%, transparent) !important;
+      }
+      html[data-nav-style='gradient'] .bottom-nav a {
+        color: rgba(255, 255, 255, 0.82) !important;
+        text-shadow: none !important;
+      }
+      html[data-nav-style='gradient'] .bottom-nav a.active {
+        color: #fff !important;
+        background: rgba(255, 255, 255, 0.22) !important;
+        box-shadow: none !important;
+      }
+
       /* ---------- 导航栏放到顶部 ---------- */
       html[data-nav-pos='top'] .bottom-nav {
         top: calc(10px + env(safe-area-inset-top, 0px));
@@ -657,7 +747,15 @@
         }
       })()
 
-      /* ---------- 导航栏位置：尽早应用，避免刷新后闪一下默认底部 ---------- */
+      /* ---------- 导航栏样式/位置：尽早应用，避免刷新后闪一下默认值 ---------- */
+      ;(function () {
+        try {
+          var st = localStorage.getItem('lw-nav-style')
+          if (st) document.documentElement.setAttribute('data-nav-style', st)
+        } catch (e) {}
+      })()
+
+      /* ---------- 导航栏位置：尽早应用 ---------- */
       ;(function () {
         try {
           if (localStorage.getItem('lw-nav-pos') === 'top') {

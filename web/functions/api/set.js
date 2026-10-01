@@ -1,6 +1,7 @@
 import { appendEntry, recentHistory, HISTORY_MAX } from './_history.js'
 import { contestInfo } from './_contest.js'
 import { resolveClaim, touchUser } from './claim.js'
+import { hitWords } from './_lexicon.js'
 import { readToken, pickToken } from './_auth.js'
 
 const CORS_HEADERS = {
@@ -161,6 +162,13 @@ export async function onRequestPost(context) {
       if (clean.length >= 3) break
     }
     if (clean.length) entry.tags = clean
+  }
+
+  // 内容安全：作品名、作者名、标签任一命中敏感词就拒绝发布。
+  // 词库只在服务端使用，不下发到浏览器，改前端也绕不过。
+  const risky = hitWords(workName).concat(hitWords(author)).concat(hitWords((entry.tags || []).join(' ')))
+  if (risky.length) {
+    return json({ error: '作品名或标签含有不合适的内容，请修改后再发布', hit: risky.slice(0, 3) }, 400)
   }
 
   // 归属：优先用登录账号；没登录才回退到认领码（过渡期保留）
