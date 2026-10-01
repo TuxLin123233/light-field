@@ -5,7 +5,7 @@
 //
 // 指标全部从作品历史实时算，不单独维护计数，所以不会出现
 // 「成就说 20 幅、作品列表只有 18 幅」这种对不上的情况。
-import { readActiveUser, BANNED_ERROR } from './_auth.js'
+import { readActiveUser, readUser, isBanned, BANNED_ERROR } from './_auth.js'
 import { readAllHistory } from './_history.js'
 import { readBook, writeBook, publicView } from './_dust.js'
 import { computeMetrics, diffUnlock, view, SIGN_MILESTONES } from './_achieve.js'
@@ -46,12 +46,41 @@ export async function onRequestGet(context) {
   const { request, env } = context
   if (!env.LIGHTFIELD_KV) return json({ error: 'LIGHTFIELD_KV is not configured' }, 500)
 
+  const kv = env.LIGHTFIELD_KV
+  const url = new URL(request.url)
   const who = await readActiveUser(env, '', request.headers.get('authorization'))
+
+  /* 看别人的成就墙：只读的公开信息，不给光尘余额和签到状态。
+     别人的解锁记录和创作数据都是公开的（作品本身就在社区里），
+     但不发奖、不给任何写操作。 */
+  const wantUid = (url.searchParams.get('uid') || '').trim()
+  if (wantUid) {
+    // 看自己时 who.user 里就有记录，省一次读；看别人必须查
+    const u = who && who.uid === wantUid ? who.user : await readUser(kv, wantUid)
+    if (!u || isBanned(u)) return json({ error: '没有这个用户' }, 404)
+    const unlocked = await readUnlocked(kv, wantUid)
+    const book = await readBook(kv, wantUid)
+    const { entries } = await readAllHistory(kv)
+    const theirs = entries.filter((e) => e && e.ownerUser === wantUid)
+    const metrics = computeMetrics(theirs, book, u)
+    // 只给展示用的字段：不给 book（余额/签到是私事），也不触发发奖
+    const v = view(unlocked)
+    return json({
+      ok: true,
+      uid: wantUid,
+      username: u.username,
+      total: v.total,
+      unlocked: v.unlocked,
+      categories: v.categories,
+      items: v.items,
+      metrics,
+    })
+  }
+
   if (!who) return json({ error: '未登录', code: 'noauth' }, 401)
   if (who.banned) return json(BANNED_ERROR, 403)
   if (who.gone) return json({ error: '账号不存在', code: 'gone' }, 401)
 
-  const kv = env.LIGHTFIELD_KV
   const unlocked = await readUnlocked(kv, who.uid)
   const book = await readBook(kv, who.uid)
   const { entries } = await readAllHistory(kv)

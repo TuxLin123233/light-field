@@ -42,9 +42,15 @@ export default {
       .tk-head {
         display: flex;
         align-items: center;
-        justify-content: space-between;
         gap: 10px;
         margin: 12px 0 4px;
+      }
+      .tk-head2 {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 2px;
       }
       .tk-title { font-size: 19px; font-weight: 800; color: var(--text); }
       .tk-sum { font-size: 12px; color: var(--text-faint); text-align: right; line-height: 1.6; }
@@ -121,8 +127,11 @@ export default {
   `,
   template: `
     <div class="tk-wrap">
-      <router-link class="tk-back" to="/mine">← 返回我的</router-link>
       <div class="tk-head">
+        <router-link class="tk-back" to="/mine">← 返回我的</router-link>
+        <button class="lw-refresh" id="tkRefresh" type="button" data-label="刷新"></button>
+      </div>
+      <div class="tk-head2">
         <span class="tk-title">📋 每日任务</span>
         <span class="tk-sum" id="tkSum" hidden></span>
       </div>
@@ -207,7 +216,9 @@ export default {
         '任务送的光尘可以用来改头像、写简介，也能送给别人喜欢的作品。'
     }
 
-    async function load() {
+    async function load(force) {
+      const C2 = window.LWCache || {}
+      if (force) C2.drop('tasks')
       const t = token()
       if (!t) {
         showMsg('每日任务需要登录后查看。', true)
@@ -229,8 +240,10 @@ export default {
         }
         showMsg('')
         render(d)
+        return d
       } catch (e) {
         showMsg('读取失败：' + esc((e && e.message) || '网络错误'), true)
+        return null
       }
     }
 
@@ -282,6 +295,12 @@ export default {
       }
     }
 
-    load()
+    /* 第一次进来才请求，之后切回来用缓存；想更新点刷新 */
+    const C = window.LWCache || {}
+    C.bindRefresh($('tkRefresh'), () => load(true), () => {}, true)
+    if (!C.cached('tasks', () => { load().then((d) => { if (d) C.put('tasks', d) }) })) {
+      const d = C.get('tasks')
+      if (d) render(d)
+    }
   },
 }

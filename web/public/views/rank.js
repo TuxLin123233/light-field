@@ -42,7 +42,8 @@ export default {
         font-weight: 700;
         text-decoration: none;
       }
-      .rk-title { font-size: 19px; font-weight: 800; color: var(--text); margin: 12px 0 2px; }
+      .rk-head { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+      .rk-title { font-size: 19px; font-weight: 800; color: var(--text); margin: 6px 0 2px; }
       .rk-sub { font-size: 12px; color: var(--text-faint); line-height: 1.7; }
 
       .rk-tabs { display: flex; gap: 7px; margin: 14px 0 4px; }
@@ -114,7 +115,10 @@ export default {
   `,
   template: `
     <div class="rk-wrap">
-      <router-link class="rk-back" to="/mine">← 返回我的</router-link>
+      <div class="rk-head">
+        <router-link class="rk-back" to="/mine">← 返回我的</router-link>
+        <button class="lw-refresh" id="rkRefresh" type="button" data-label="刷新"></button>
+      </div>
       <div class="rk-title">🏆 排行榜</div>
       <div class="rk-sub" id="rkSub">看看谁今天最受欢迎</div>
       <div class="rk-tabs">
@@ -294,7 +298,10 @@ export default {
       note.innerHTML = '当前余额 <b>' + ((d.book && d.book.bal) || 0) + '</b> 个光尘，累计收到 <b>' + ((d.book && d.book.got) || 0) + '</b> 个。'
     }
 
-    async function load() {
+    async function load(force) {
+      const C2 = window.LWCache || {}
+      const ck2 = 'rank:' + tab
+      if (force) C2.drop(ck2)
       const t = token()
       $('rkList').innerHTML = '<div class="rk-msg">加载中…</div>'
       showMsg('')
@@ -316,9 +323,12 @@ export default {
         }
         if (tab === 'my') drawMine(d)
         else drawBoard(d)
+        C2.put(ck2, d)
+        return d
       } catch (e) {
         $('rkList').innerHTML = ''
         showMsg('读取失败：' + esc((e && e.message) || '网络错误'), true)
+        return null
       }
     }
 
@@ -329,10 +339,24 @@ export default {
         tab = b.dataset.t
         document.querySelectorAll('.rk-tab').forEach((x) => x.classList.toggle('on', x.dataset.t === tab))
         if (window.sfx) window.sfx('tap')
+        // 切页签优先用缓存，没有才请求
+        const C2 = window.LWCache || {}
+        const cd = C2.get('rank:' + tab)
+        if (cd) {
+          if (tab === 'my') drawMine(cd)
+          else drawBoard(cd)
+          return
+        }
         load()
       })
     })
     document.querySelector('.rk-tab[data-t="daily"]').classList.add('on')
-    load()
+    /* 第一次进来才请求，之后切回来用缓存；想更新点刷新 */
+    const C = window.LWCache || {}
+    C.bindRefresh($('rkRefresh'), () => load(true), () => {}, true)
+    if (!C.cached('rank:daily', () => { load().then((d) => { if (d) C.put('rank:daily', d) }) })) {
+      const d = C.get('rank:daily')
+      if (d) drawBoard(d)
+    }
   },
 }

@@ -2582,7 +2582,7 @@ export default {
             au.title = '查看 ' + rec.author + ' 的主页'
             au.addEventListener('click', (e) => {
               e.stopPropagation()
-              openAuthor(rec.author)
+              gotoAuthor(rec)
             })
           }
           const sizeBadge = document.createElement('span')
@@ -2813,6 +2813,19 @@ export default {
           if (s.cells) bits.push('绘制 ' + s.cells + ' 格')
           if (bits.length) authorCount.textContent = bits.join(' · ')
         } catch (e) { /* 资料拿不到就只显示名字，不报错 */ }
+      }
+
+      /* 去某个人的主页。
+         有 ownerUser（账号时代发布的）→ /u，能看到头像、简介、成就、关注按钮；
+         没有（认领码时代的老作品）→ 退回原来那个只看作品的作者页。 */
+      function gotoAuthor(rec) {
+        const name = rec && rec.author
+        if (!name) return
+        if (rec.ownerUser && window.__lwRouter) {
+          window.__lwRouter.push('/u?uid=' + encodeURIComponent(rec.ownerUser))
+          return
+        }
+        openAuthor(name)
       }
 
       async function openAuthor(name) {
@@ -3119,10 +3132,10 @@ export default {
         bioBox.textContent = ''
         rptBtn.hidden = !rec.ownerUser
         rptBtn.onclick = null
-        authorBtn.onclick = rec.ownerUser
+        authorBtn.onclick = rec.author
           ? () => {
               closePreview()
-              openAuthor(authorName)
+              gotoAuthor(rec)
             }
           : null
         if (rec.ownerUser && window.LWAvatar) {

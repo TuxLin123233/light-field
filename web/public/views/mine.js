@@ -559,9 +559,9 @@ export default {
     window.addEventListener('lw-achieve-changed', function () {
       loadAchBadge()
     })
-    // 领完每日任务，光尘变了，角标也跟着清
+    // 领完每日任务，光尘变了，角标要重新算（强制绕过缓存）
     window.addEventListener('lw-dust-changed', function () {
-      loadTaskBadge()
+      loadTaskBadge(true)
     })
     window.addEventListener('lw-dust-changed', onDust)
     window.addEventListener('lw-auth-changed', onDust)
@@ -836,8 +836,11 @@ export default {
       })
     })
 
-    /* 每日任务角标：显示「还有几个能领」。静默同步，不弹提示。 */
-    function loadTaskBadge() {
+    /* 每日任务角标：显示「还有几个能领」。
+       角标以前每次进「我的」都请求一次，切几轮页面就多打几次接口。
+       现在只在这台设备第一次看时请求，之后用缓存；领了任务
+       （lw-dust-changed）会主动作废缓存重新拉。 */
+    function loadTaskBadge(force) {
       const el = $('lnkTask')
       if (!el) return
       let t = ''
@@ -848,12 +851,29 @@ export default {
         el.textContent = ''
         return
       }
+      const C = window.LWCache || {}
+      const apply = (d) => {
+        if (!d || !d.ok) return
+        el.textContent = d.claimable > 0 ? String(d.claimable) : ''
+        C.put('taskBadge', d)
+      }
+      if (!force) {
+        const hit = C.cached('taskBadge', () => {
+          fetch('/api/dailytask', { headers: { Authorization: 'Bearer ' + t }, cache: 'no-store' })
+            .then((r) => (r.status === 401 ? null : r.json()))
+            .then(apply)
+            .catch(() => {})
+        })
+        if (!hit) {
+          const d = C.get('taskBadge')
+          if (d) apply(d)
+        }
+        return
+      }
+      C.drop('taskBadge')
       fetch('/api/dailytask', { headers: { Authorization: 'Bearer ' + t }, cache: 'no-store' })
         .then((r) => (r.status === 401 ? null : r.json()))
-        .then((d) => {
-          if (!d || !d.ok) return
-          el.textContent = d.claimable > 0 ? String(d.claimable) : ''
-        })
+        .then(apply)
         .catch(() => {})
     }
 

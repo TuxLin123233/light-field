@@ -164,6 +164,7 @@ export default {
       <div class="mail-head">
         <router-link class="mail-back" to="/mine">← 我的</router-link>
         <div class="mail-title">✉️ 信箱</div>
+        <button class="lw-refresh" id="mailRefresh" type="button" data-label="刷新"></button>
       </div>
       <div class="mail-bar">
         <div class="mail-sum" id="mailSum">正在读取…</div>
@@ -252,7 +253,9 @@ export default {
         .join('')
     }
 
-    async function load() {
+    async function load(force) {
+      const C2 = window.LWCache || {}
+      if (force) C2.drop('mail')
       const t = token()
       if (!t) {
         renderNoLogin()
@@ -265,12 +268,17 @@ export default {
           return
         }
         const d = await res.json().catch(() => ({}))
-        if (d && d.ok) render(d)
-        else $('mailSum').textContent = '读取失败：' + ((d && d.error) || res.status)
+        if (d && d.ok) {
+          render(d)
+          return d
+        }
+        $('mailSum').textContent = '读取失败：' + ((d && d.error) || res.status)
+        return null
       } catch (e) {
         // 以前一律写「网络错误」，真实异常被吞掉了
         console.error('[mail] 读取失败', e)
         $('mailSum').textContent = '读取失败：' + ((e && e.message) || '未知错误')
+        return null
       }
     }
 
@@ -359,6 +367,16 @@ export default {
       }
     })
 
-    load()
+    /* 切页面不自动刷新：第一次进来才请求，之后切回来用内存缓存。
+       信箱是变化最频繁的一页，所以放个显眼的刷新按钮。 */
+    const C = window.LWCache || {}
+    C.bindRefresh($('mailRefresh'), () => load(true), () => {}, true)
+    const hit = C.cached('mail', () => {
+      load().then((d) => { C.put('mail', d); if (d && d.ok) render(d) })
+    })
+    if (!hit) {
+      const d = C.get('mail')
+      if (d && d.ok) render(d)
+    }
   },
 }

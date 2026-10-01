@@ -1,0 +1,428 @@
+// 别人的主页（/u?name=xxx 或 /u?uid=xxx）
+//
+// 展示：头像、用户名、简介、注册时间、关注/粉丝数、关注按钮（互关=好友）、
+//       创作数据、作品墙、成就墙。
+//
+// 数据全部来自三个只读接口：
+//   /api/profile?uid=  头像、简介、公开统计
+//   /api/achieve?uid=  成就墙（公开，不给光尘余额）
+//   /api/follow?uid=   关注状态
+//   /api/get?author=   他的作品
+//
+// 配合「切页面不自动刷新」：第一次进来才请求，之后切回来直接用内存缓存，
+// 右上角有刷新按钮。
+export default {
+  name: 'user',
+  title: '画师主页',
+  css: `
+      [hidden] { display: none !important; }
+      :root {
+        --bg: #faf5ef;
+        --surface: #ffffff;
+        --surface-2: #efe9e0;
+        --text: #3b342c;
+        --text-muted: #6b5f50;
+        --text-faint: #b0a697;
+        --border: #efe7da;
+        --border-strong: #e0d3c0;
+        --accent: #5b8def;
+        --ok: #4caf7d;
+      }
+      .u-wrap { max-width: 460px; margin: 0 auto; padding: 14px 16px 96px; }
+      .u-back {
+        display: inline-block;
+        border: 1px solid var(--border-strong);
+        background: var(--surface-2);
+        color: var(--text-muted);
+        border-radius: 999px;
+        padding: 6px 13px;
+        font-size: 12px;
+        font-weight: 700;
+        text-decoration: none;
+      }
+      .u-bar { display: flex; align-items: center; gap: 10px; margin: 12px 0 4px; }
+      .u-bar-main { flex: 1; min-width: 0; }
+      .u-hint { font-size: 12px; color: var(--text-faint); }
+
+      .u-hero {
+        display: flex; align-items: center; gap: 13px;
+        background: var(--surface); border: 1px solid var(--border);
+        border-radius: 16px; padding: 14px; margin-top: 10px;
+      }
+      .u-av {
+        width: 62px; height: 62px; flex: 0 0 62px; border-radius: 16px; overflow: hidden;
+        background: var(--surface-2); border: 1px solid var(--border-strong);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 22px; font-weight: 800; color: var(--text-faint);
+      }
+      .u-av canvas { width: 100%; height: 100%; image-rendering: pixelated; display: block; }
+      .u-id { flex: 1; min-width: 0; }
+      .u-name { font-size: 17px; font-weight: 800; color: var(--text); }
+      .u-joined { font-size: 11px; color: var(--text-faint); margin-top: 2px; }
+      .u-bio {
+        font-size: 12px; color: var(--text-muted); line-height: 1.6; margin-top: 6px;
+        white-space: pre-wrap; word-break: break-word;
+      }
+      .u-follow {
+        flex: none; border: 0; border-radius: 11px; padding: 8px 13px;
+        font-size: 12px; font-weight: 800; font-family: inherit; cursor: pointer;
+        background: var(--accent); color: #fff;
+      }
+      .u-follow.on { background: var(--surface-2); color: var(--text-muted); border: 1px solid var(--border-strong); }
+      .u-follow[disabled] { opacity: 0.55; cursor: default; }
+      .u-friend-tip {
+        font-size: 11px; color: var(--ok); font-weight: 700; margin-top: 6px;
+      }
+
+      .u-nums { display: flex; gap: 8px; margin-top: 10px; }
+      .u-num {
+        flex: 1; text-align: center; background: var(--surface);
+        border: 1px solid var(--border); border-radius: 13px; padding: 9px 4px;
+      }
+      .u-num b { display: block; font-size: 16px; font-weight: 800; color: var(--text); }
+      .u-num span { font-size: 11px; color: var(--text-faint); }
+
+      .u-stats {
+        display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 10px;
+      }
+      .u-stat {
+        background: var(--surface); border: 1px solid var(--border);
+        border-radius: 13px; padding: 10px 4px; text-align: center;
+      }
+      .u-stat b { display: block; font-size: 15px; font-weight: 800; color: var(--text); }
+      .u-stat span { font-size: 10px; color: var(--text-faint); }
+
+      .u-sec {
+        display: flex; align-items: center; gap: 8px;
+        margin: 20px 0 9px; font-size: 14px; font-weight: 800; color: var(--text);
+      }
+      .u-sec span { font-size: 11px; font-weight: 600; color: var(--text-faint); }
+
+      .u-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); gap: 9px; }
+      .u-grid img {
+        width: 100%; aspect-ratio: 1; image-rendering: pixelated;
+        border-radius: 11px; background: var(--art-bg);
+        border: 1px solid var(--border); display: block; cursor: pointer;
+      }
+      .u-empty {
+        font-size: 13px; color: var(--text-faint); text-align: center;
+        padding: 22px 0; line-height: 1.8;
+      }
+
+      .u-ach-bar { height: 7px; border-radius: 999px; background: var(--surface-2); overflow: hidden; margin-bottom: 10px; }
+      .u-ach-bar i { display: block; height: 100%; background: var(--accent); border-radius: 999px; }
+      .u-cats { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+      .u-cat {
+        border: 1px solid var(--border-input); background: var(--surface-2);
+        color: var(--text-muted); border-radius: 999px; padding: 4px 10px;
+        font-size: 11px; font-weight: 700; font-family: inherit; cursor: pointer;
+      }
+      .u-cat.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+      .u-ach-list { display: flex; flex-direction: column; gap: 7px; }
+      .u-ach {
+        display: flex; align-items: center; gap: 10px;
+        background: var(--surface); border: 1px solid var(--border);
+        border-radius: 12px; padding: 8px 11px;
+      }
+      .u-ach.got { border-color: var(--ok); background: #f4fbf7; }
+      .u-ach-ico { font-size: 18px; flex: none; width: 26px; text-align: center; }
+      .u-ach-main { flex: 1; min-width: 0; }
+      .u-ach-name { font-size: 13px; font-weight: 700; color: var(--text); }
+      .u-ach-desc {
+        font-size: 11px; color: var(--text-faint); line-height: 1.5;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      }
+      .u-ach:not(.got) .u-ach-name { color: var(--text-faint); }
+      .u-msg {
+        margin-top: 12px; font-size: 12px; border-radius: 10px; padding: 9px 11px;
+        background: var(--surface-2); color: var(--text-muted);
+      }
+      .u-msg.bad { background: #fdecea; color: #c0392b; }
+  `,
+  template: `
+    <div class="u-wrap">
+      <router-link class="u-back" to="/gallery">← 返回社区</router-link>
+      <div class="u-bar">
+        <div class="u-bar-main">
+          <div class="u-hint" id="uHint">画师主页</div>
+        </div>
+        <button class="lw-refresh" id="uRefresh" type="button" data-label="刷新"></button>
+      </div>
+      <div id="uBody"><div class="u-empty"><span class="lw-load"></span>正在读取…</div></div>
+      <div class="u-msg" id="uMsg" hidden></div>
+    </div>
+  `,
+  mounted() {
+    const $ = (id) => document.getElementById(id)
+    const esc = (s) =>
+      String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
+    const fmt = (n) => {
+      const v = Number(n) || 0
+      if (v >= 10000) return (v / 10000).toFixed(1) + '万'
+      return String(v)
+    }
+    const token = () => {
+      try {
+        return localStorage.getItem('lw-token') || ''
+      } catch (e) {
+        return ''
+      }
+    }
+    const C = window.LWCache || {}
+
+    // 从地址里拿要看谁
+    const q = new URLSearchParams(location.search)
+    const wantName = (q.get('name') || '').trim()
+    let wantUid = (q.get('uid') || '').trim()
+
+    let achCat = 'all' // 成就分类筛选
+    let works = []
+    let profile = null
+    let follow = null
+    let ach = null
+
+    function showMsg(text, bad) {
+      const el = $('uMsg')
+      el.textContent = text || ''
+      el.hidden = !text
+      el.classList.toggle('bad', !!bad)
+    }
+
+    /* 一次性把三个接口都拉了。任何一个失败都不影响其它部分显示 */
+    async function load(force) {
+      if (force) {
+        if (wantUid) {
+          C.drop('u:uid:' + wantUid)
+          C.drop('u:ach:' + wantUid)
+          C.drop('u:fu:' + wantUid)
+        } else if (wantName) {
+          C.drop('u:name:' + wantName)
+        }
+      }
+      const head = {}
+      const t = token()
+      if (t) head.Authorization = 'Bearer ' + t
+      const j = async (u) => {
+        const r = await fetch(u, { headers: head, cache: 'no-store' })
+        return r.json().catch(() => ({}))
+      }
+
+      if (!wantUid) {
+        // 只给了用户名：先换成 uid，后面几个接口都要用
+        const p = await j('/api/profile?name=' + encodeURIComponent(wantName))
+        if (!p || !p.ok) {
+          $('uBody').innerHTML = '<div class="u-empty">没有找到这位画师。</div>'
+          return
+        }
+        wantUid = p.uid
+        profile = p
+      }
+      const key = wantUid
+      profile = profile || (await j('/api/profile?uid=' + encodeURIComponent(key)))
+      if (!profile || !profile.ok) {
+        $('uBody').innerHTML = '<div class="u-empty">没有找到这位画师。</div>'
+        return
+      }
+      // 只显示解锁了的成就就够了，未解锁的当灰盒
+      ach = ach || (await j('/api/achieve?uid=' + encodeURIComponent(key)))
+      follow = follow || (await j('/api/follow?uid=' + encodeURIComponent(key)))
+      works = works.length ? works : ((await j('/api/get?limit=60&author=' + encodeURIComponent(profile.username))).history || [])
+
+      C.put('u:uid:' + key, { profile, ach, follow, works })
+      render()
+    }
+
+    function achHtml() {
+      if (!ach || !ach.ok || !Array.isArray(ach.items)) return ''
+      const cats = [{ id: 'all', name: '全部' }].concat(ach.categories || [])
+      const got = (ach.items || []).filter((a) => a.got)
+      const list = (ach.items || []).filter((a) => (achCat === 'all' ? a.got : (a.cat === achCat && a.got)))
+      const pct = ach.total ? Math.round((got.length / ach.total) * 100) : 0
+      const rows = list
+        .map(
+          (a) =>
+            '<div class="u-ach got">' +
+            '<span class="u-ach-ico">' + esc(a.ico) + '</span>' +
+            '<span class="u-ach-main">' +
+            '<span class="u-ach-name">' + esc(a.name) + '</span>' +
+            '<span class="u-ach-desc">' + esc(a.desc) + '</span>' +
+            '</span></div>'
+        )
+        .join('')
+      return (
+        '<div class="u-ach-bar"><i style="width:' + pct + '%"></i></div>' +
+        '<div class="u-cats">' +
+        cats
+          .map(
+            (c) =>
+              '<button class="u-cat' + (c.id === achCat ? ' on' : '') +
+              '" type="button" data-cat="' + esc(c.id) + '">' + esc(c.name) + '</button>'
+          )
+          .join('') +
+        '</div>' +
+        '<div class="u-ach-list">' + (rows || '<div class="u-empty">这个分类下还没有解锁的成就。</div>') + '</div>'
+      )
+    }
+
+    function render() {
+      if (!profile) return
+      const s = profile.stats || {}
+      const m = (ach && ach.metrics) || {}
+      const f = follow || {}
+      const isMe = !!f.isMe
+      const t = token()
+
+      $('uHint').textContent = isMe ? '这是你自己' : '画师主页'
+
+      const avBox = profile.avatar && window.LWAvatar
+        ? '<canvas id="uAvCanvas"></canvas>'
+        : '<span>' + esc(Array.from(profile.username || '?')[0]) + '</span>'
+      const joined = profile.createdAt
+        ? '加入于 ' + new Date(profile.createdAt).toLocaleDateString('zh-CN')
+        : ''
+
+      $('uBody').innerHTML =
+        '<div class="u-hero">' +
+        '<div class="u-av" id="uAv">' + avBox + '</div>' +
+        '<div class="u-id">' +
+        '<div class="u-name">' + esc(profile.username) + '</div>' +
+        (joined ? '<div class="u-joined">' + esc(joined) + '</div>' : '') +
+        (profile.bio ? '<div class="u-bio">' + esc(profile.bio) + '</div>' : '') +
+        (f.friend ? '<div class="u-friend-tip">🤝 你们是好友</div>' : '') +
+        '</div>' +
+        (isMe || !t
+          ? ''
+          : '<button class="u-follow' + (f.iFollow ? ' on' : '') + '" id="uFollowBtn" type="button">' +
+            (f.iFollow ? '已关注' : '关注') + '</button>') +
+        '</div>' +
+        '<div class="u-nums">' +
+        '<div class="u-num"><b>' + fmt(f.following) + '</b><span>关注</span></div>' +
+        '<div class="u-num"><b>' + fmt(f.followers) + '</b><span>粉丝</span></div>' +
+        '<div class="u-num"><b>' + fmt(s.likes) + '</b><span>收到光尘</span></div>' +
+        '<div class="u-num"><b>' + fmt(m.got || 0) + '</b><span>累计收到</span></div>' +
+        '</div>' +
+        '<div class="u-stats">' +
+        '<div class="u-stat"><b>' + fmt(s.works) + '</b><span>作品</span></div>' +
+        '<div class="u-stat"><b>' + fmt(s.cells) + '</b><span>绘制格数</span></div>' +
+        '<div class="u-stat"><b>' + fmt(m.days || 0) + '</b><span>创作天</span></div>' +
+        '<div class="u-stat"><b>' + fmt(m.signTotal || 0) + '</b><span>签到</span></div>' +
+        '</div>' +
+        '<div class="u-sec">🖼️ 作品<span>' + works.length + ' 件</span></div>' +
+        '<div class="u-grid" id="uWorks">' +
+        (works.length
+          ? works
+              .map(
+                (w) =>
+                  '<img alt="' + esc(w.workName || '未命名') + '" data-t="' + (w.time || 0) +
+                  '" src="' + pixelsToURL(w.pixels, w.size === 32 || w.size === 64 ? w.size : 16) + '">'
+              )
+              .join('')
+          : '<div class="u-empty">这位画师还没有公开作品。</div>') +
+        '</div>' +
+        '<div class="u-sec">🏅 成就<span>' +
+        (ach && ach.ok ? (ach.unlocked || 0) + '/' + (ach.total || 0) : '—') +
+        '</span></div>' +
+        achHtml()
+
+      // 头像
+      const cv = $('uAvCanvas')
+      if (cv && window.LWAvatar) {
+        if (profile.avatar) window.LWAvatar.put(profile.uid, profile.avatar)
+        window.LWAvatar.draw(cv, profile.uid, 62)
+      }
+      // 作品点开：复用社区的预览
+      $('uWorks') &&
+        [...$('uWorks').querySelectorAll('img[data-t]')].forEach((im) => {
+          im.addEventListener('click', () => {
+            const w = works.find((x) => (x.time || 0) === Number(im.getAttribute('data-t')))
+            if (w && window.LWOpenWork) window.LWOpenWork(w)
+          })
+        })
+      // 成就分类
+      ;[...document.querySelectorAll('.u-cat')].forEach((b) => {
+        b.addEventListener('click', () => {
+          achCat = b.getAttribute('data-cat')
+          if (window.sfx) window.sfx('tick')
+          render()
+        })
+      })
+      // 关注按钮
+      const fb = $('uFollowBtn')
+      if (fb) {
+        fb.addEventListener('click', async () => {
+          const tk = token()
+          if (!tk) {
+            showMsg('关注需要先登录。', true)
+            return
+          }
+          const on = fb.classList.contains('on')
+          fb.disabled = true
+          const old = fb.textContent
+          fb.textContent = on ? '取消中…' : '关注中…'
+          try {
+            const res = await fetch('/api/follow', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk },
+              body: JSON.stringify({ action: on ? 'unfollow' : 'follow', uid: profile.uid }),
+            })
+            const d = await res.json().catch(() => ({}))
+            if (!res.ok || !d || !d.ok) {
+              fb.textContent = old
+              fb.disabled = false
+              showMsg((d && d.error) || '操作失败', true)
+              return
+            }
+            follow = { ...f, iFollow: d.iFollow, friend: d.friend, following: d.following, followers: d.followers }
+            // 缓存里也要更新，不然切回来又变回旧状态
+            C.put('u:uid:' + profile.uid, { profile, ach, follow, works })
+            if (window.sfx) window.sfx(on ? 'close' : 'ding')
+            render()
+            showMsg(d.friend ? '关注成功，你们现在是好友了 🤝' : on ? '已取消关注' : '关注成功')
+          } catch (e) {
+            fb.textContent = old
+            fb.disabled = false
+            showMsg('操作失败：' + ((e && e.message) || '网络错误'), true)
+          }
+        })
+      }
+    }
+
+    // 像素数组 → 图片地址。和社区用的是同一套缩放规则
+    function pixelsToURL(px, size) {
+      if (!Array.isArray(px) || !px.length) return ''
+      const n = size === 32 || size === 64 ? size : 16
+      const c = document.createElement('canvas')
+      c.width = n
+      c.height = n
+      const x = c.getContext('2d')
+      for (let i = 0; i < n * n; i++) {
+        const p = px[i]
+        if (!p) continue
+        if (p[0] > 246 && p[1] > 246 && p[2] > 246) continue
+        x.fillStyle = 'rgb(' + p[0] + ',' + p[1] + ',' + p[2] + ')'
+        x.fillRect(i % n, Math.floor(i / n), 1, 1)
+      }
+      return c.toDataURL()
+    }
+
+    C.bindRefresh(
+      $('uRefresh'),
+      () => load(true),
+      () => {},
+      true
+    )
+
+    // 第一次进来才请求；切回来直接用缓存（省 Cloudflare 请求）
+    const key0 = wantUid || 'name:' + wantName
+    const cachedData = C.get('u:uid:' + wantUid) || C.get('u:name:' + wantName)
+    if (cachedData) {
+      profile = cachedData.profile
+      ach = cachedData.ach
+      follow = cachedData.follow
+      works = cachedData.works || []
+      render()
+    } else {
+      load(false)
+    }
+  },
+}

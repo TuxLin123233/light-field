@@ -32,6 +32,7 @@ const SHELL = [
   '/views/faq.js',
   '/views/tasks.js',
   '/views/rank.js',
+  '/views/user.js',
   '/views/mine.js',
   '/views/intro.js',
   '/views/avatar.js',
@@ -40,6 +41,7 @@ const SHELL = [
   '/lw-avatar.js',
   '/lw-spray.js',
   '/lw-thumb.js',
+  '/lw-cache.js',
 ]
 
 self.addEventListener('install', (event) => {

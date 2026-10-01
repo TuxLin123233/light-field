@@ -32,6 +32,48 @@
       /* hidden 属性兜底：避免类选择器里的 display 覆盖 UA 的 [hidden]{display:none} */
       [hidden] { display: none !important; }
 
+      /* ---------- 手动刷新 ----------
+         切页面时不再自动请求（每次切页都打接口会把 Cloudflare 的
+         免费额度很快耗光），改成数据留在内存里、切回来直接显示，
+         旁边给一个「刷新」按钮，想更新时自己点。
+         视图里统一用 .lw-refresh + LWRefresh 绑定。 */
+      .lw-refresh {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        flex: none;
+        border: 1px solid var(--border-input);
+        background: var(--surface-2);
+        color: var(--text-muted);
+        border-radius: 999px;
+        padding: 5px 11px;
+        font-size: 12px;
+        font-weight: 700;
+        font-family: inherit;
+        cursor: pointer;
+      }
+      .lw-refresh:active { background: var(--border); }
+      .lw-refresh[disabled] { opacity: 0.55; cursor: default; }
+      .lw-refresh .lr-ico { font-size: 13px; }
+      .lw-refresh.busy .lr-ico { animation: lrSpin 0.8s linear infinite; }
+      @keyframes lrSpin { to { transform: rotate(360deg); } }
+      @media (prefers-reduced-motion: reduce) {
+        .lw-refresh.busy .lr-ico { animation: none; }
+      }
+      /* 顶部一行：标题 + 刷新按钮 */
+      .lw-bar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 12px 0 4px;
+      }
+      .lw-bar > .lw-bar-main { flex: 1; min-width: 0; }
+      /* 数据是缓存的，给个淡淡的标记，让人知道看到的可能是旧的 */
+      .lw-stale {
+        font-size: 11px;
+        color: var(--text-faint);
+      }
+
       /* 加载动画：一个小方块在轨道里左右来回走。
          颜色只用 var(--accent)，主题一变它就跟着变，不用为每个主题单独写。 */
       @keyframes lwSlide {
@@ -714,6 +756,7 @@
     <script src="/lw-avatar.js"></script>
     <script src="/lw-spray.js"></script>
     <script src="/lw-thumb.js"></script>
+    <script src="/lw-cache.js"></script>
   </head>
   <body>
     <div id="app"></div>
