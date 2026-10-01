@@ -528,13 +528,14 @@ export default {
         if (!el) return
         el.hidden = id !== (MODE === 'works' ? 'mineCard' : 'likedCard')
       })
-      if (MODE === 'works') {
-        if (title) title.textContent = '我的作品'
-        if (sub) sub.textContent = '这里只显示你自己发布的作品'
-      } else {
-        if (title) title.textContent = '送出的光尘'
-        if (sub) sub.textContent = '你送过光尘的作品都在这里'
-      }
+      // 过滤页的标题挂在各自卡片上（头部已改为头像+账号名，不再有页面级标题）
+      const cardTitle = MODE === 'works' ? '我的作品' : '送出的光尘'
+      const cardSub =
+        MODE === 'works' ? '这里只显示你自己发布的作品' : '你送过光尘的作品都在这里'
+      const tip = $(MODE === 'works' ? 'mineTip' : 'likedTip')
+      if (tip) tip.textContent = cardSub
+      const name = $(MODE === 'works' ? 'mineTitle2' : 'likedTitle')
+      if (name) name.textContent = cardTitle
     }
     let toastTimer = null
     function toast(msg) {
@@ -833,23 +834,27 @@ export default {
 
     /* ---------- 我的作品 ---------- */
     function paintThumb(canvas, pixels, size) {
+      // 统一走 LWThumb：整数倍缩放，不会切出白条纹
+      if (window.LWThumb) {
+        window.LWThumb.draw(canvas, pixels, size)
+        return
+      }
       const dpr = Math.min(2, window.devicePixelRatio || 1)
       const n = size === 32 || size === 64 ? size : 16
       canvas.width = n * dpr
       canvas.height = n * dpr
       const c = canvas.getContext('2d')
       c.scale(dpr, dpr)
-        // 先铺白底：缺失的格子若留成透明，会在容器背景上显示成白条纹
-        c.fillStyle = '#ffffff'
-        c.fillRect(0, 0, n, n)
-        for (let y = 0; y < n; y++) {
-          for (let x = 0; x < n; x++) {
-            const p = pixels && pixels[y * n + x]
-            if (!Array.isArray(p) || p.length < 3) continue
-            c.fillStyle = 'rgb(' + p[0] + ',' + p[1] + ',' + p[2] + ')'
-            c.fillRect(x, y, 1, 1)
-          }
+      c.fillStyle = '#ffffff'
+      c.fillRect(0, 0, n, n)
+      for (let y = 0; y < n; y++) {
+        for (let x = 0; x < n; x++) {
+          const p = pixels && pixels[y * n + x]
+          if (!Array.isArray(p) || p.length < 3) continue
+          c.fillStyle = 'rgb(' + p[0] + ',' + p[1] + ',' + p[2] + ')'
+          c.fillRect(x, y, 1, 1)
         }
+      }
     }
     function escapeHtml(s) {
       return String(s == null ? '' : s).replace(/[&<>"']/g, (m) =>

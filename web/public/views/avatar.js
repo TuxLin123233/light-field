@@ -265,13 +265,17 @@ export default {
       if (!cv) return
       const box = Math.min(256, Math.floor(Math.min(window.innerWidth * 0.78, 360)))
       dpr = window.devicePixelRatio || 1
-      cv.width = SIZE * dpr
-      cv.height = SIZE * dpr
+      // 背板必须等于「CSS 显示尺寸 × dpr」，否则浏览器拉伸时
+      // 最后一行只覆盖了部分像素，露出的就是白色条纹。
+      // 逻辑坐标仍是 16×16，用 s 把一个像素映射到 box/s 个 CSS 像素。
+      cv.width = Math.round(box * dpr)
+      cv.height = Math.round(box * dpr)
       cv.style.width = box + 'px'
       cv.style.height = box + 'px'
       const ctx = cv.getContext('2d')
       ctx.imageSmoothingEnabled = false
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+      const s = box / SIZE
+      ctx.setTransform(s * dpr, 0, 0, s * dpr, 0, 0)
       // 棋盘底，方便看清白格
       for (let y = 0; y < SIZE; y++) {
         for (let x = 0; x < SIZE; x++) {

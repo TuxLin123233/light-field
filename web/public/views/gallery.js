@@ -109,7 +109,14 @@ export default {
         font-size: 18px;
         cursor: pointer;
         transition: border-color 0.2s, transform 0.12s;
+        /* 用 flex 居中而不是 line-height：emoji 字形基线偏低，
+           line-height:1 会让它看起来偏下 */
+        display: flex;
+        align-items: center;
+        justify-content: center;
         line-height: 1;
+        text-decoration: none;
+        padding: 0;
       }
 
       .theme-btn:active { transform: scale(0.9); }
@@ -2380,13 +2387,12 @@ export default {
       }
 
       function drawDiscoverThumb(cv, pixels, size) {
+        if (window.LWThumb) {
+          window.LWThumb.draw(cv, pixels, size, { css: 76 })
+          return
+        }
         const n = size === 32 || size === 64 ? size : 16
-        const dpr = Math.min(2, window.devicePixelRatio || 1)
-        cv.width = n * dpr
-        cv.height = n * dpr
         const c = cv.getContext('2d')
-        c.scale(dpr, dpr)
-        // 同样先铺白底，避免缺失格透出容器背景形成白条纹
         c.fillStyle = '#ffffff'
         c.fillRect(0, 0, n, n)
         for (let y = 0; y < n; y++) {

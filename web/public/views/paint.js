@@ -2580,8 +2580,18 @@ color: var(--text-muted);
       const ctx = canvas.getContext('2d')
 
       const dpr = window.devicePixelRatio || 1
-      canvas.width = canvas.height = 512 * dpr
-      ctx.scale(dpr, dpr)
+      /* 画板是 width:100% 的流式尺寸，背板不能固定 512*dpr ——
+         那和实际显示宽度不是整数倍，浏览器拉伸时最后一行只覆盖部分像素，
+         露出来的就是一条条白边。这里按实际显示宽度同步背板。 */
+      function syncBoardBacking() {
+        const cssW = canvas.getBoundingClientRect().width || 512
+        const px = Math.max(64, Math.round(cssW * dpr))
+        if (canvas.width !== px) {
+          canvas.width = px
+          canvas.height = px
+        }
+      }
+      syncBoardBacking()
       let CELL = 512 / size
 
       let zoom = 1
@@ -3381,7 +3391,18 @@ color: var(--text-muted);
       hueCanvas.addEventListener('pointerup', () => (hueDrag = false))
       hueCanvas.addEventListener('pointercancel', () => (hueDrag = false))
 
-      window.addEventListener('resize', resizePicker)
+      window.addEventListener('resize', () => {
+        resizePicker()
+        // 显示宽度变了要重设背板，否则又会出现白边
+        syncBoardBacking()
+        redraw()
+      })
+      window.addEventListener('orientationchange', () => {
+        setTimeout(() => {
+          syncBoardBacking()
+          redraw()
+        }, 260)
+      })
 
       /* ---------- 画板 ---------- */
       document.querySelectorAll('.tool[data-tool]').forEach((btn) => {
@@ -3539,8 +3560,13 @@ color: var(--text-muted);
 
       function redraw() {
         ensureFull()
+        syncBoardBacking()
         ctx.imageSmoothingEnabled = false
-        ctx.setTransform(zoom * dpr, 0, 0, zoom * dpr, -panX * zoom * dpr, -panY * zoom * dpr)
+        // 逻辑坐标固定 512×512；k 把逻辑像素映射到背板设备像素，
+        // 因为背板 = 显示宽度 × dpr，缩放比是精确的，不会切出白边。
+        const k = canvas.width / 512
+        const z = zoom * k
+        ctx.setTransform(z, 0, 0, z, -panX * z, -panY * z)
         ctx.clearRect(0, 0, 512, 512)
         ctx.drawImage(fullCanvas, 0, 0, 512, 512)
         drawGrid()
