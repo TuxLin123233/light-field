@@ -377,7 +377,7 @@ export default {
         '<div class="ach-stats">' +
         '<div class="ach-stat"><b>' + fmt(m.works) + '</b><span>作品</span></div>' +
         '<div class="ach-stat"><b>' + fmt(m.cells) + '</b><span>格数</span></div>' +
-        '<div class="ach-stat"><b>' + fmt(m.likes) + '</b><span>收到赞</span></div>' +
+        '<div class="ach-stat"><b>' + fmt(m.likes) + '</b><span>收到光尘</span></div>' +
         '<div class="ach-stat"><b>' + fmt(m.days) + '</b><span>创作天</span></div>' +
         '</div>' +
         '</div>' +

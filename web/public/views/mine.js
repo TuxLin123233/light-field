@@ -486,9 +486,9 @@ export default {
       <div id="mineEmpty"></div>
     </div>
 
-    <!-- 赞过的：页内列表 -->
+    <!-- 送过光尘的：页内列表 -->
     <div class="m-card" id="likedCard" hidden>
-      <div class="m-card-title">♥ 赞过的<span class="m-tip" id="likedTip"></span></div>
+      <div class="m-card-title">✨ 送过光尘的<span class="m-tip" id="likedTip"></span></div>
       <div class="mine-grid" id="likedGrid"></div>
       <div id="likedEmpty"></div>
     </div>
@@ -616,7 +616,14 @@ export default {
     if (bioEl) {
       bioEl.addEventListener('click', () => {
         if (window.sfx) window.sfx('tap')
-        location.href = '/intro'
+        /* 用路由跳转，不要 location.href。
+           整页刷新会把 Vue、全部视图脚本和 Service Worker 重新拉一遍，
+           点一下简介要等一两秒才出来；走 router 就是切个视图。 */
+        if (window.__lwRouter) {
+          window.__lwRouter.push('/intro')
+        } else {
+          location.href = '/intro'
+        }
       })
     }
 
@@ -840,7 +847,7 @@ export default {
       grid.innerHTML = ''
       const items = [
         { n: st.works, lab: '发布作品' },
-        { n: st.likes, lab: '收到的赞' },
+        { n: st.likes, lab: '收到的光尘' },
         { n: st.cells, lab: '绘制格数' },
         { n: st.days, lab: '创作天数' },
       ]
@@ -879,7 +886,7 @@ export default {
       if (st.best && st.best.workName) {
         best.hidden = false
         best.innerHTML =
-          '👑 最受欢迎：<b>' + escapeHtml(st.best.workName) + '</b> · ' + (st.best.likes || 0) + ' 个赞'
+          '👑 收到的光尘最多：<b>' + escapeHtml(st.best.workName) + '</b> · ' + (st.best.likes || 0) + ' 份光尘'
       }
     }
 
@@ -1054,7 +1061,7 @@ export default {
       return item
     }
 
-    /* ---------- 赞过的：页内列表 ---------- */
+    /* ---------- 送过光尘的：页内列表 ---------- */
     async function loadLiked() {
       const card = $('likedCard')
       const grid = $('likedGrid')
@@ -1090,7 +1097,7 @@ export default {
       got.forEach((w) => grid.appendChild(buildWorkItem(w)))
       $('likedEmpty').innerHTML = got.length
         ? ''
-        : '赞过的作品可能已被作者删除'
+        : '送过光尘的作品可能已被作者删除'
     }
 
     $('lnkWorksBtn') &&

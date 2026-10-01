@@ -162,6 +162,52 @@ color: var(--text-muted);
         gap: 12px;
         flex-wrap: wrap;
       }
+      /* 喷漆专用色板：9 列紧凑九宫格，和像素画共用 currentColor */
+      .spray-pal {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(9, 1fr);
+        gap: 5px;
+      }
+      .spray-sw {
+        aspect-ratio: 1;
+        border-radius: 6px;
+        border: 2px solid transparent;
+        padding: 0;
+        cursor: pointer;
+      }
+      .spray-sw.on {
+        border-color: var(--text);
+        transform: scale(1.08);
+      }
+      .spray-pal-foot {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+      .spray-tool.wide {
+        width: auto;
+        padding: 0 12px;
+        font-size: 13px;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+      }
+      .spray-cur {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: var(--text-muted2);
+      }
+      .spray-cur-sw {
+        width: 18px; height: 18px; border-radius: 5px;
+        border: 1px solid var(--border-input); flex: none;
+      }
+      .spray-cur-tx { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
       .spray-tools {
         display: flex;
         gap: 8px;
@@ -2104,6 +2150,17 @@ color: var(--text-muted);
 
     <!-- 喷漆工具条：只在像素喷漆模式下出现 -->
     <div class="spray-bar" id="sprayBar" hidden>
+      <!-- 喷漆也要能选颜色。原来调色板在 #pickWrap 里，只有像素画那排
+           「颜色」按钮能打开，而那排按钮在喷漆模式下被 display:none 藏了，
+           结果喷漆时完全没法换色，只能用进模式前的那一个颜色。 -->
+      <div class="spray-pal" id="sprayPal"></div>
+      <div class="spray-pal-foot">
+        <button class="spray-tool wide" type="button" id="sprayMoreColor" title="更多颜色">🎨 更多颜色</button>
+        <span class="spray-cur">
+          <span class="spray-cur-sw" id="sprayCurSw"></span>
+          <span class="spray-cur-tx" id="sprayCurTx">#e53935</span>
+        </span>
+      </div>
       <div class="spray-tools">
         <button class="spray-tool" type="button" id="sprayUndo" title="撤销">↩️</button>
         <button class="spray-tool" type="button" id="sprayClear" title="清空">🗑️</button>
@@ -2797,6 +2854,64 @@ color: var(--text-muted);
         setFromRgb(presets[i])
       }
 
+      /* 喷漆模式专用色板。
+         和像素画共用 currentColor，所以在任何地方换了颜色
+         （预设、色值输入、HSV、吸管）这里的高亮都会跟着走。 */
+      const sprayPal = document.getElementById('sprayPal')
+      const spraySwatches = []
+      if (sprayPal) {
+        PRESET_COLORS.forEach(([hex, name], i) => {
+          const sw = document.createElement('button')
+          sw.type = 'button'
+          sw.className = 'spray-sw'
+          sw.style.background = hex
+          sw.title = name || hex
+          sw.setAttribute('aria-label', name || hex)
+          sw.addEventListener('click', () => setFromPreset(i))
+          sprayPal.appendChild(sw)
+          spraySwatches.push(sw)
+        })
+      }
+      function syncSprayPalette() {
+        if (!spraySwatches.length) return
+        for (let i = 0; i < spraySwatches.length; i++) {
+          spraySwatches[i].classList.toggle('on', sameRgb(presets[i], currentColor))
+        }
+        const sw = document.getElementById('sprayCurSw')
+        const tx = document.getElementById('sprayCurTx')
+        const hex = '#' + currentColor.map((c) => c.toString(16).padStart(2, '0')).join('')
+        if (sw) sw.style.background = hex
+        if (tx) tx.textContent = hex
+      }
+      // 「更多颜色」复用像素画那套完整调色板（含 HSV 和色值输入）
+      const sprayMoreColor = document.getElementById('sprayMoreColor')
+      if (sprayMoreColor) {
+        sprayMoreColor.addEventListener('click', () => {
+          // 走和像素画「颜色」按钮同一套状态，别只改 hidden，
+          // 否则 pickOpen 还是 false，resizePicker 会直接 return，画布尺寸不对
+          if (pickOpen) {
+            pickOpen = false
+            pickWrap.hidden = true
+            toolColorBtn.classList.remove('active')
+          } else {
+            pickOpen = true
+            pickWrap.hidden = false
+            toolColorBtn.classList.add('active')
+            if (!hsvOpen) {
+              hsvOpen = true
+              hsvBody.hidden = false
+              customBtn.classList.add('active')
+            }
+            resizePicker()
+            renderSV()
+            drawSVMarker()
+            drawHueMarker()
+            syncSprayPalette()
+          }
+          if (window.sfx) window.sfx('tick')
+        })
+      }
+
       function setFromRgb(rgb) {
         currentColor = rgb.slice()
         const [h, s, v] = rgbToHsv(rgb)
@@ -2809,6 +2924,7 @@ color: var(--text-muted);
           drawHueMarker()
         }
         updateDisplay(currentColor)
+        syncSprayPalette()
       }
 
       curHex.addEventListener('input', () => {
@@ -4633,7 +4749,7 @@ color: var(--text-muted);
       refreshHint()
       fetchRecords()
 
-      /* ---------- 点赞 ---------- */
+      /* ---------- 送光尘 ---------- */
       const likedSet = loadLikedSet()
 
       function loadLikedSet() {
@@ -4654,7 +4770,7 @@ color: var(--text-muted);
       async function likeWork(rec, badge) {
         const key = String(rec.time)
         if (likedSet.has(key)) {
-          toast('你已经赞过这幅作品啦')
+          toast('你已经送过光尘给这幅作品啦')
           return
         }
         if (badge) badge.style.pointerEvents = 'none'
@@ -4673,12 +4789,12 @@ color: var(--text-muted);
               badge.textContent = '♥ ' + rec.likes
               badge.classList.add('liked')
             }
-            toast('点赞成功 ♥')
+            toast('光尘送到了 ✨')
           } else {
-            toast('点赞失败：' + (data.error || res.status))
+            toast('送光尘失败：' + (data.error || res.status))
           }
         } catch (err) {
-          toast('点赞失败：网络错误')
+          toast('送光尘失败：网络错误')
         } finally {
           if (badge) badge.style.pointerEvents = ''
         }

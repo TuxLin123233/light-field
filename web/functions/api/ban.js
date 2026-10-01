@@ -1,15 +1,18 @@
 // 封号管理（仅管理员）
 //
 //   GET  ?action=list            被封账号列表
-//   POST {action:'ban',   uid, reason}   封禁
-//   POST {action:'unban', uid}           解封
+//   GET  ?action=lookup&name=xx  按用户名查 uid
+//   POST {action:'ban',    uid, reason}  封禁
+//   POST {action:'unban',  uid}          解封
 //   POST {action:'lookup', name}         按用户名查 uid（封号前先确认目标）
+//   POST {action:'grant',  uid|name, amount, note}  管理员赠送/扣减光尘
 //
 // 为什么封禁要落到 KV 而不是只毁令牌：
 //   令牌是 HMAC 签名的无状态凭证，签发后 30 天内离线也能验过。
 //   只在前端清 localStorage 没用，换台设备带上令牌照样能写。
 //   所以用户记录里存 banned 字段，所有写接口每次都回 KV 查一次。
-import { readUser, readUserByName, setBanned, isBanned, userKey } from './_auth.js'
+import { readUser, readUserByName, setBanned, isBanned, userKey, nameKey } from './_auth.js'
+import { readBook, publicView, creditDust } from './_dust.js'
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -110,6 +113,32 @@ export async function onRequestPost(context) {
     const u = await readUserByName(env.LIGHTFIELD_KV, (body && body.name) || '')
     if (!u) return json({ error: '没有这个用户名' }, 404)
     return json({ ok: true, user: view(u) })
+  }
+
+  /* 管理员赠送 / 扣减光尘。
+     走 creditDust 而不是直接改账本，签到天数、累计收到这些派生字段才会同步。 */
+  if (action === 'grant') {
+    const amount = Math.trunc(Number(body && body.amount))
+    if (!Number.isFinite(amount) || amount === 0) {
+      return json({ error: 'amount 必须是正数（增加）或负数（扣减）' }, 400)
+    }
+    if (Math.abs(amount) > 100000) return json({ error: '单次最多 10 万' }, 400)
+    // uid 和 name 给一个就行
+    const target = uid
+      ? await readUser(env.LIGHTFIELD_KV, uid)
+      : await readUserByName(env.LIGHTFIELD_KV, (body && body.name) || '')
+    if (!target) return json({ error: '没有这个用户' }, 404)
+
+    const r = await creditDust(env.LIGHTFIELD_KV, target.uid, amount)
+    if (!r) return json({ error: '光尘调整失败' }, 500)
+    const book = await readBook(env.LIGHTFIELD_KV, target.uid)
+    return json({
+      ok: true,
+      user: view(target),
+      amount,
+      book: publicView(book),
+      note: String((body && body.note) || '').slice(0, 100),
+    })
   }
 
   if (action !== 'ban' && action !== 'unban') return json({ error: '未知操作' }, 400)

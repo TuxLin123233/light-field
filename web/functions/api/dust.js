@@ -75,7 +75,19 @@ export async function onRequestPost(context) {
     if (Number.isFinite(time) && time > 0) {
       const { entries } = await readAllHistory(env.LIGHTFIELD_KV)
       const target = entries.find((e) => e && e.time === time)
-      if (target && target.ownerUser) recipient = String(target.ownerUser)
+      if (target) {
+        // 像素相机转图的作品不参与光尘赠送。
+        // 相机作品是「导入」不是「一笔一笔画」，让它参与赠送等于开了一条
+        // 刷光尘的路：传张图 posted 出来，靠别人送就能稳定拿光尘。
+        // 想要光尘请手绘，手绘作品才是社区要鼓励的东西。
+        if (target.fromImage) {
+          return json({
+            error: '像素相机转出来的作品不支持送光尘，请给手绘作品点赞',
+            reason: 'fromImage',
+          }, 400)
+        }
+        if (target.ownerUser) recipient = String(target.ownerUser)
+      }
     }
 
     // 自己的作品：赞照给，但光尘既不扣也不转，否则能凭空刷出光尘

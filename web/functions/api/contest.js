@@ -28,6 +28,9 @@ function norm(e) {
     time: e.time || 0,
     likes: e.likes || 0,
     contestVotes: e.contestVotes || 0,
+    // 前端据此把相机作品的投票/送光尘按钮置灰
+    fromImage: e.fromImage ? true : undefined,
+    ownerUser: e.ownerUser || '',
     type: e.type,
     anim: e.anim ? { frames: e.anim.frames, delay: e.anim.delay || 10 } : undefined,
   }
@@ -124,6 +127,12 @@ export async function onRequestPost(context) {
   }
   if (hit.contest !== week) {
     return json({ error: '该作品不属于本周主题' }, 400)
+  }
+  // 像素相机转图的作品不参赛。
+  // 主题赛比的是「这一手画得好不好」，导入图片没有可比的笔触，
+  // 放进来只会挤掉真正一笔一笔画的人。
+  if (hit.fromImage) {
+    return json({ error: '像素相机转出来的作品不参加主题赛，请给手绘作品投票' }, 400)
   }
 
   const key = 'cvl:' + week + ':' + vid

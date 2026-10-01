@@ -797,7 +797,7 @@ export default {
             <div class="g-item">
               <span class="g-ico">🖼️</span>
               <b>发到社区</b>
-              <i>上传作品进社区广场，被人点赞、投票，还能生成朋友圈小卡片分享。</i>
+              <i>上传作品进社区广场，别人可以送你光尘、投你一票，还能生成朋友圈小卡片分享。</i>
             </div>
             <div class="g-item">
               <span class="g-ico">📷</span>

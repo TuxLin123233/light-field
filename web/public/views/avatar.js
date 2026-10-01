@@ -159,6 +159,8 @@ export default {
         display: flex;
         gap: 8px;
         width: 100%;
+        /* 和上面的画布/色板拉开距离。之前紧贴���色板，看着像同一块 */
+        margin-top: 12px;
       }
       .av-tool {
         flex: 1;
@@ -202,7 +204,14 @@ export default {
         border: 1px solid var(--border);
         flex: 0 0 96px;
       }
-      .av-btn[disabled] { opacity: 0.55; cursor: default; }
+      .av-btn[disabled] {
+        opacity: 0.5;
+        cursor: not-allowed;
+        background: var(--surface-2);
+        color: var(--text-faint);
+        box-shadow: none;
+      }
+      .av-btn.ghost[disabled] { background: var(--surface-2); }
 
       .av-note {
         font-size: 12px;
@@ -352,8 +361,21 @@ export default {
       // 预览：32px 和 16px 两个尺寸
       A.draw($('pv32'), null, 32, px)
       A.draw($('pv16'), null, 16, px)
+      syncSaveBtn()
+    }
+
+    /* 光尘不够时保存按钮置灰。
+       之前 draw() / drawPreview() 都无条件 disabled=false，
+       余额为 0 也照样能点，点了才被服务端拒绝。 */
+    function syncSaveBtn() {
       const b = $('avSave')
-      if (b) b.disabled = false
+      if (!b) return
+      const cost = COSTS[mode] || 20
+      const enough = balance >= cost
+      b.disabled = !enough
+      b.title = enough
+        ? '保存一次花 ' + cost + ' 个光尘'
+        : '光尘不够，还差 ' + (cost - balance) + ' 个，先去签到或做每日任务攒一攒'
     }
 
     function renderFrame() {
@@ -419,7 +441,21 @@ export default {
       mountSpray()
     }
 
+    // 笔刷大小：range 控件拖动时只发 input，不发 click。
+    // 之前这段逻辑挂在 click 上，结果怎么拖数值都不变、笔刷也不变粗细。
+    function applyBrush(n) {
+      const v = Math.min(8, Math.max(1, Number(n) || 1))
+      const el = $('sprayBrush')
+      if (el && Number(el.value) !== v) el.value = String(v)
+      const num = $('sprayBrushNum')
+      if (num) num.textContent = String(v)
+      if (spray) spray.setBrush(v)
+    }
+
     // 事件
+    $('avBody').addEventListener('input', (e) => {
+      if (e.target && e.target.id === 'sprayBrush') applyBrush(e.target.value)
+    })
     $('avBody').addEventListener('click', async (e) => {
       const md = e.target.closest('.av-mode')
       if (md) {
@@ -433,12 +469,9 @@ export default {
           return
         }
       }
-      // 笔刷滑块是 input 事件
+      // 笔刷滑块走 input 事件，见下面独立的监听器
       if (e.target.id === 'sprayBrush') {
-        const n = Number(e.target.value) || 1
-        const num = $('sprayBrushNum')
-        if (num) num.textContent = n
-        if (spray) spray.setBrush(n)
+        applyBrush(Number(e.target.value))
         return
       }
       if (e.target.id === 'sprayUndo') {
@@ -550,8 +583,7 @@ export default {
         A.draw($('pv32'), null, 32, pv)
         A.draw($('pv16'), null, 16, pv)
       }
-      const bt = $('avSave')
-      if (bt) bt.disabled = false
+      syncSaveBtn()
     }
 
     async function save() {

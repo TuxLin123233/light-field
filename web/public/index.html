@@ -771,7 +771,7 @@
                 inflight = false
               })
           },
-          /* 赠送：扣分与加赞在服务端一次完成 */
+          /* 赠送：扣分与记账在服务端一次完成 */
           giveRemote: function (time) {
             var t = token()
             if (!t) return Promise.resolve({ ok: false, needLogin: true })

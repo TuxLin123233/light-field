@@ -703,6 +703,12 @@ export default {
 
       .like-btn:active { transform: scale(0.9); }
       .like-btn.liked { background: var(--like); color: #fff; border-color: var(--like); }
+      /* 相机作品不能收光尘/投票：置灰但仍可读，不能完全藏起来让人以为没人送过 */
+      .like-btn.no-dust, .like-btn.no-dust.liked,
+      .vote-btn.no-vote, .vote-btn.no-vote.voted {
+        opacity: 0.42; cursor: not-allowed; filter: grayscale(1);
+      }
+      .like-btn.no-dust:active, .vote-btn.no-vote:active { transform: none; }
 
       .card-time {
         margin-top: 4px;
@@ -1494,8 +1500,8 @@ export default {
         <ul class="announce-list">
           <li><b>20 套配色主题</b>：新增 6 套夜间系（深海、墨林、玫瑰夜、森语、夜航、炭）和 7 套浅色系（奶茶、薰衣草、蜜桃、雾霭、抹茶、燕麦、复古），外加底部导航透明度可自由调节</li>
           <li><b>18 种提示音效</b>：保存、撤销、清空、投票、复制链接、开局、载入、答题……都能在设置里一键开关</li>
-          <li><b>「🌱 我的」上线</b>：每日签到攒连续天数和徽章，创作数据看得清清楚楚（作品数、获赞、绘制格数、创作天数）</li>
-          <li><b>「🔍 发现」</b>：随机翻出一件旧作品，点赞多的更容易被翻出来，让埋掉的好东西重见天日</li>
+          <li><b>「🌱 我的」上线</b>：每日签到攒连续天数和徽章，创作数据看得清清楚楚（作品数、收到的光尘、绘制格数、创作天数）</li>
+          <li><b>「🔍 发现」</b>：随机翻出一件旧作品，送光尘多的更容易被翻出来，让埋掉的好东西重见天日</li>
           <li><b>内容安全机制</b>：作品可举报，维护者后台能核实处理，审核全程有据可查</li>
           <li><b>导航栏全面自定义</b>：启动先打开哪一页、导航放顶部还是底部、四个入口的顺序，都能按你的习惯来</li>
           <li><b>像素相机</b>：照片一键转像素画；<b>新手教程</b>：设置页顶部两分钟看完所有功能</li>
@@ -1526,7 +1532,7 @@ export default {
             <button type="button" data-range="week">本周</button>
           </div>
         </div>
-        <div class="featured-sub" id="featuredSub">按赞数排名 Top 5</div>
+        <div class="featured-sub" id="featuredSub">按收到的光尘排名 Top 5</div>
         <div class="featured-row" id="featuredRow"></div>
       </section>
 
@@ -1665,7 +1671,11 @@ export default {
       const vid = getVoterId()
 
       function isCurrentContestEntry(rec) {
-        return !!contestCtx && contestCtx.week && contestCtx.open && rec.contest === contestCtx.week
+        if (!contestCtx || !contestCtx.week || !contestCtx.open) return false
+        if (rec.contest !== contestCtx.week) return false
+        // 像素相机作品不参赛，接口也会拒，这里先不给入口
+        if (rec.fromImage) return false
+        return true
       }
 
       function makeVoteButton(rec) {
@@ -1675,6 +1685,13 @@ export default {
         const span = document.createElement('span')
         span.textContent = '🏆 ' + (rec.contestVotes || 0)
         btn.appendChild(span)
+        // 相机作品不参赛，投票按钮置灰
+        if (rec.fromImage) {
+          btn.disabled = true
+          btn.classList.add('no-vote')
+          btn.title = '像素相机转出来的作品不参加主题赛'
+          return btn
+        }
         if (contestCtx.voted.map(String).includes(String(rec.time))) btn.classList.add('voted')
         btn.addEventListener('click', (e) => {
           e.stopPropagation()
@@ -2144,7 +2161,7 @@ export default {
         ctx.fillText(label, gx, META_Y)
         ctx.textAlign = 'center'
 
-        // 右侧点赞（有才画）
+        // 右侧收到的光尘（有才画）
         if (likes) {
           ctx.font = '700 22px ' + FONT
           const txt = '♥ ' + likes
@@ -2253,6 +2270,13 @@ export default {
         const count = document.createElement('span')
         count.textContent = rec.likes || 0
         btn.appendChild(count)
+        // 像素相机转图的作品不支持送光尘，按钮直接置灰并说明原因，
+        // 免得点了才弹一句看不懂的拒绝
+        if (rec.fromImage) {
+          btn.disabled = true
+          btn.classList.add('no-dust')
+          btn.title = '像素相机转出来的作品不支持收光尘，请给手绘作品送光尘'
+        }
         updateLikedState(btn, rec.time)
         btn.addEventListener('click', (e) => {
           e.stopPropagation()
@@ -2290,9 +2314,9 @@ export default {
       }
 
       /* 赠送光尘：同一作品只能送一次，且要有余额。
-         登录用户走服务端：扣分与加赞在同一次请求里完成，不会出现「扣了没赞」。 */
+         登录用户走服务端：扣分与记账在同一次请求里完成，不会出现「扣了没记上」。 */
       /* 赠送光尘：互动行为，必须登录。
-         扣分与加赞在服务端同一次请求内完成，不会出现「扣了没赞」。 */
+         扣分与记账在服务端同一次请求内完成，不会出现「扣了没记上」。 */
       async function like(rec, btn) {
         const key = String(rec.time)
         if (!window.dust) return
@@ -2346,7 +2370,7 @@ export default {
           syncLikeEverywhere(rec.time, rec.likes, true)
           window.dispatchEvent(new CustomEvent('lw-dust-changed'))
           if (d.self) {
-            toast('这是你自己的画，赞已收到，光尘就不转了')
+            toast('这是你自己的画，已记你一笔，光尘就不转了')
           } else if (d.credited) {
             toast('送出了 ' + window.dust.cost + ' 个光尘 ✨ 对方也收到了，余额 ' + window.dust.balance())
           } else {
@@ -2518,10 +2542,10 @@ export default {
           const works = data.works || []
           featuredSub.textContent =
             featuredRange === 'today'
-              ? '按今日点赞数排名 Top 5'
+              ? '按今日收到的光尘排名 Top 5'
               : featuredRange === 'week'
-                ? '按本周点赞数排名 Top 5'
-                : '按总点赞数排名 Top 5'
+                ? '按本周收到的光尘排名 Top 5'
+                : '按总收到的光尘排名 Top 5'
           if (!works.length) {
             featured.hidden = true
             featuredRow.innerHTML = ''
@@ -2889,7 +2913,7 @@ export default {
           const s = d.stats || {}
           const bits = []
           if (s.works) bits.push(s.works + ' 件作品')
-          if (s.likes) bits.push(s.likes + ' 个赞')
+          if (s.likes) bits.push(s.likes + ' 个光尘')
           if (s.cells) bits.push('绘制 ' + s.cells + ' 格')
           if (bits.length) authorCount.textContent = bits.join(' · ')
         } catch (e) { /* 资料拿不到就只显示名字，不报错 */ }
@@ -2916,7 +2940,7 @@ export default {
           const res = await fetch('/api/get?limit=60&author=' + encodeURIComponent(name))
           const data = await res.json()
           const list = data.history || []
-          // 资料接口会给更详细的统计（赞、绘制格数）；它先到就别被作品数盖掉
+          // 资料接口会给更详细的统计（收到的光尘、绘制格数）；它先到就别被作品数盖掉
           if (!authorCount.textContent) authorCount.textContent = list.length + ' 件作品'
           authorWorks.innerHTML = ''
           if (!list.length) {
@@ -3190,7 +3214,18 @@ export default {
         document.getElementById('previewAuthor').textContent = '作者：' + (rec.author || (rec.workName ? '匿名' : rec.name || '匿名')) + ' · ' + rs + '×' + rs
         document.getElementById('previewTime').textContent = formatTime(rec.time)
         document.getElementById('previewLikeCount').textContent = rec.likes || 0
-        updateLikedState(document.getElementById('previewLike'), rec.time)
+        const pvLike = document.getElementById('previewLike')
+        // 相机作品不给送光尘，预览里也要置灰
+        if (rec.fromImage === true) {
+          pvLike.disabled = true
+          pvLike.classList.add('no-dust')
+          pvLike.title = '像素相机转出来的作品不支持收光尘，请给手绘作品送光尘'
+        } else {
+          pvLike.disabled = false
+          pvLike.classList.remove('no-dust')
+          pvLike.title = '送光尘给这幅画'
+        }
+        updateLikedState(pvLike, rec.time)
         currentPreview = rec
         closePalette()
         /* 照片转来的作品颜色非常多，色板没意义，直接隐藏入口 */

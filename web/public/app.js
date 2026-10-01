@@ -226,4 +226,8 @@ document.addEventListener('pointerdown', (e) => {
   if (window.sfx) window.sfx('nav')
 }, true)
 
+// 暴露给视图用：视图里有些入口是 JS 动态挂的，没法直接写 <router-link>，
+// 让它们能走 SPA 路由跳转，而不是 location.href 整页刷新
+window.__lwRouter = router
+
 createApp(App).use(router).mount('#app')
