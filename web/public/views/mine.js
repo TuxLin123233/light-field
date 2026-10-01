@@ -328,7 +328,7 @@ export default {
 
     <!-- 签到 -->
     <div class="m-card" id="signCard">
-      <div class="m-card-title">📅 每日签到<span class="m-tip" id="signTip">存在本机</span></div>
+      <div class="m-card-title">📅 每日签到<span class="m-tip" id="signTip">存在本机 · 登录可同步</span></div>
       <div class="dust-bar" id="dustBar">
         <span class="dust-ico">✨</span>
         <span class="dust-label">我的光尘</span>
@@ -397,6 +397,21 @@ export default {
   mounted() {
     const $ = (id) => document.getElementById(id)
 
+    // 登录用户的账本来自服务端，进入页面先拉一次
+    if (window.dust && window.dust.refresh) {
+      window.dust.refresh().then(function () {
+        renderDustBalance()
+        renderSign()
+      })
+    }
+    // 社区赠送光尘后回到本页时，余额要跟着变
+    const onDust = function () {
+      renderDustBalance()
+      renderSign()
+    }
+    window.addEventListener('lw-dust-changed', onDust)
+    window.addEventListener('lw-auth-changed', onDust)
+
     /* ---------- 过滤页模式 ----------
        /mine          完整面板（签到 + 数据 + 快捷入口 + 作品预览）
        /mine/works    只显示「我的作品」的过滤页
@@ -447,7 +462,7 @@ export default {
       toastTimer = setTimeout(() => el.classList.remove('show'), 2200)
     }
 
-    /* ---------- 签到（存在本机） ---------- */
+    /* ---------- 签到：登录走服务端，未登录走本机 ---------- */
     const SIGN_KEY = 'lw-sign'
     // 达成里程碑时额外奖励「等于里程碑天数」的光尘
     const MEDALS = [
@@ -491,12 +506,20 @@ export default {
       if (sent) sent.textContent = window.dust.giftedCount()
     }
 
+    /* 登录用户的签到状态来自服务端账本 */
+    function serverSign() {
+      return window.dust ? window.dust.signState() : null
+    }
+
     function renderSign() {
       const s = loadSign()
       const today = todayKey()
-      const signed = s.days.includes(today)
-      $('signStreak').textContent = s.streak
-      $('signTotal').textContent = s.days.length
+      const sv = serverSign()
+      const signed = sv ? sv.signed : s.days.includes(today)
+      const streak = sv ? sv.streak : s.streak
+      const totalDays = sv ? sv.total : s.days.length
+      $('signStreak').textContent = streak
+      $('signTotal').textContent = totalDays
       const btn = $('signBtn')
       btn.textContent = signed ? '今日已签' : '签到'
       btn.classList.toggle('done', signed)
@@ -526,17 +549,45 @@ export default {
       const box = $('medals')
       box.innerHTML = ''
       MEDALS.forEach((m) => {
-        const got = s.best >= m.need
+        const got = (sv ? streak : s.best) >= m.need
         const el = document.createElement('span')
         el.className = 'medal' + (got ? ' got' : '')
         el.textContent = m.ico + ' ' + m.name
         box.appendChild(el)
       })
-      $('signTip').textContent = s.best > s.streak ? '最长 ' + s.best + ' 天' : '存在本机'
+      $('signTip').textContent = sv
+        ? '已同步到账号'
+        : s.best > s.streak
+          ? '最长 ' + s.best + ' 天'
+          : '存在本机 · 登录可同步'
       renderDustBalance()
     }
 
     $('signBtn').addEventListener('click', () => {
+      // 登录用户：签到与光尘发放全部由服务端裁决，换设备也一致
+      if (window.dust && window.dust.signState()) {
+        window.dust.sign().then((d) => {
+          if (!d) {
+            toast('签到失败，请稍后再试')
+            return
+          }
+          if (d.already) {
+            toast('今天已经签过啦')
+            return
+          }
+          renderDustBalance()
+          renderSign()
+          if (window.sfx) window.sfx(d.streak > 1 ? 'ok' : 'ding')
+          if (d.bonus) {
+            toast('达成连续 ' + d.streak + ' 天！额外获得 ' + d.bonus + ' 个光尘 ✨')
+            return
+          }
+          const hit = MEDALS.find((m) => m.need === d.streak)
+          toast(hit ? '获得徽章 ' + hit.ico + ' ' + hit.name + '！' : '签到成功，连续 ' + d.streak + ' 天')
+        })
+        return
+      }
+
       const s = loadSign()
       const today = todayKey()
       if (s.days.includes(today)) {

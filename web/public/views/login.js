@@ -241,12 +241,16 @@ export default {
         localStorage.setItem(TOKEN_KEY, token)
         localStorage.setItem(USER_KEY, username)
       } catch (e) {}
+      // 登录后光尘账本从本地切到服务端
+      if (window.dust) window.dust.refresh()
     }
     function clearSaved() {
       try {
         localStorage.removeItem(TOKEN_KEY)
         localStorage.removeItem(USER_KEY)
       } catch (e) {}
+      // 退出后光尘账本切回本地记录
+      if (window.dust) window.dust.refresh()
     }
     function readUser() {
       try {

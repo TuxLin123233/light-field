@@ -2201,7 +2201,8 @@ export default {
         }
       }
 
-      /* 赠送光尘：同一作品只能送一次，且要有余额 */
+      /* 赠送光尘：同一作品只能送一次，且要有余额。
+         登录用户走服务端：扣分与加赞在同一次请求里完成，不会出现「扣了没赞」。 */
       async function like(rec, btn) {
         const key = String(rec.time)
         if (!window.dust) return
@@ -2214,6 +2215,38 @@ export default {
           return
         }
         btn.disabled = true
+
+        if (window.dust.isServer && window.dust.isServer()) {
+          try {
+            const d = await window.dust.giveRemote(rec.time)
+            if (!d) {
+              toast('赠送失败：网络错误')
+              return
+            }
+            if (!d.ok) {
+              toast(d.error || '赠送失败')
+              return
+            }
+            likedMap.add(key)
+            saveLiked()
+            if (window.sfx) window.sfx('pop')
+            rec.likes = Math.max(0, Number(d.likes) || 0)
+            const sp = btn.querySelector('span')
+            if (sp) sp.textContent = rec.likes
+            updateLikedState(btn, rec.time)
+            const pv = document.getElementById('previewLikeCount')
+            if (pv) pv.textContent = rec.likes
+            syncLikeEverywhere(rec.time, rec.likes, true)
+            window.dispatchEvent(new CustomEvent('lw-dust-changed'))
+            toast('送出了 ' + window.dust.cost + ' 个光尘 ✨ 余额 ' + window.dust.balance())
+          } catch (err) {
+            toast('赠送失败：网络错误')
+          } finally {
+            btn.disabled = false
+          }
+          return
+        }
+
         try {
           const res = await fetch('/api/like', {
             method: 'POST',
