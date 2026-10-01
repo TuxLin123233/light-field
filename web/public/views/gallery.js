@@ -225,6 +225,20 @@ export default {
       }
       .author-name { font-size: 16px; font-weight: 800; color: var(--text); }
       .author-count { font-size: 12px; color: var(--text-faint); }
+      .author-id { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
+      .author-id-txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+      .author-av {
+        width: 40px; height: 40px; flex: 0 0 40px; border-radius: 10px; overflow: hidden;
+        background: var(--art-bg); border: 1px solid var(--border-strong);
+        display: flex; align-items: center; justify-content: center;
+      }
+      .author-av canvas { width: 100%; height: 100%; image-rendering: pixelated; display: block; }
+      .author-av-ph { font-size: 15px; font-weight: 800; color: var(--text-faint); }
+      .author-bio {
+        font-size: 12px; color: var(--text-muted); line-height: 1.5;
+        overflow: hidden; text-overflow: ellipsis; display: -webkit-box;
+        -webkit-line-clamp: 2; -webkit-box-orient: vertical; word-break: break-word;
+      }
       .author-works { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; }
       .author-works img { width: 100%; aspect-ratio: 1; image-rendering: pixelated; border-radius: 10px; background: var(--art-bg); border: 1px solid var(--border); display: block; }
 
@@ -1426,8 +1440,14 @@ export default {
       <section class="author-page" id="authorPage" hidden>
         <div class="author-head">
           <button class="author-back" id="authorBack" type="button">← 返回全部</button>
-          <span class="author-name" id="authorName"></span>
-          <span class="author-count" id="authorCount"></span>
+          <div class="author-id">
+            <div class="author-av" id="authorAv"><span class="author-av-ph">?</span></div>
+            <div class="author-id-txt">
+              <span class="author-name" id="authorName"></span>
+              <span class="author-bio" id="authorBio" hidden></span>
+              <span class="author-count" id="authorCount"></span>
+            </div>
+          </div>
         </div>
         <div class="author-works" id="authorWorks"></div>
       </section>
@@ -2726,6 +2746,8 @@ export default {
       const tagCloud = document.getElementById('tagCloud')
       const authorPage = document.getElementById('authorPage')
       const authorName = document.getElementById('authorName')
+      const authorAv = document.getElementById('authorAv')
+      const authorBio = document.getElementById('authorBio')
       const authorCount = document.getElementById('authorCount')
       const authorWorks = document.getElementById('authorWorks')
       const authorBack = document.getElementById('authorBack')
@@ -2823,6 +2845,39 @@ export default {
       })
 
       // 打开某位作者的主页
+      // 作者主页的头像和简介。走 /api/profile，不阻塞作品列表
+      async function loadAuthorProfile(name) {
+        try {
+          const res = await fetch('/api/profile?name=' + encodeURIComponent(name))
+          const d = await res.json()
+          if (!d.ok) return
+          if (Array.isArray(d.avatar) && d.avatar.length && window.LWAvatar) {
+            // 塞进头像缓存再画，和社区卡片同一套逻辑
+            window.LWAvatar.put(d.uid, d.avatar)
+            const c = document.createElement('canvas')
+            authorAv.innerHTML = ''
+            authorAv.appendChild(c)
+            window.LWAvatar.draw(c, d.uid, 40)
+          } else if (d.uid && window.LWAvatar) {
+            // 没设过头像也给默认头像，别留空白
+            const c = document.createElement('canvas')
+            authorAv.innerHTML = ''
+            authorAv.appendChild(c)
+            window.LWAvatar.draw(c, d.uid, 40)
+          }
+          if (d.bio) {
+            authorBio.textContent = d.bio
+            authorBio.hidden = false
+          }
+          const s = d.stats || {}
+          const bits = []
+          if (s.works) bits.push(s.works + ' 件作品')
+          if (s.likes) bits.push(s.likes + ' 个赞')
+          if (s.cells) bits.push('绘制 ' + s.cells + ' 格')
+          if (bits.length) authorCount.textContent = bits.join(' · ')
+        } catch (e) { /* 资料拿不到就只显示名字，不报错 */ }
+      }
+
       async function openAuthor(name) {
         searchAuthor = name
         searchQ = ''
@@ -2832,12 +2887,20 @@ export default {
         renderChips()
         authorPage.hidden = false
         authorName.textContent = name
+        authorCount.textContent = ''
+        authorBio.hidden = true
+        authorBio.textContent = ''
+        // 先摆一个占位字母，别让头像位置空着跳
+        authorAv.innerHTML = '<span class="author-av-ph">' + (Array.from(name)[0] || '?') + '</span>'
         authorWorks.innerHTML = '<div class="status">加载中…</div>'
+        // 头像和简介单独拉，失败也不影响作品列表
+        loadAuthorProfile(name)
         try {
           const res = await fetch('/api/get?limit=60&author=' + encodeURIComponent(name))
           const data = await res.json()
           const list = data.history || []
-          authorCount.textContent = list.length + ' 件作品'
+          // 资料接口会给更详细的统计（赞、绘制格数）；它先到就别被作品数盖掉
+          if (!authorCount.textContent) authorCount.textContent = list.length + ' 件作品'
           authorWorks.innerHTML = ''
           if (!list.length) {
             authorWorks.innerHTML = '<div class="status">这位作者还没有公开作品</div>'
