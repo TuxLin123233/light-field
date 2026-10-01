@@ -406,6 +406,17 @@ export default {
               <b>「🏆 投一票 · N」/「🏆 已投票 · N」</b>，
               以前只写「🏆 N」，光看一个数字不像能点，也不知道点完算不算投了。
               打开面板时也补上色相条重画</li>
+              <li><span class="li-tag tag-fix">修复</span><b>聊天页面在部分手机上「比例不对」</b>
+              （荣耀畅玩60 的用户反馈，该用户是在微信里打开的）。
+              微信内置浏览器用的是 X5 内核，<b>老版本不支持 flex 布局的 <code>gap</code></b>
+              （Chrome 84 才支持），一不支持所有间距就整个塌成 0 ——
+              <b>输入框贴着发送键、消息挤成一团</b>。
+              同一个微信在华为畅想70S 上是正常的，正是因为那台机器的 X5 内核较新。
+              私信页的 5 处 flex gap 全部改成子元素 <code>margin</code>，两边都稳妥。
+              顺便修了两处相关隐患：输入框缺 <code>min-width: 0</code>
+              （窄屏下会被发送键挤扁），以及上一条里的色相条漏画。
+              <b>注意：全站还有 200 多处 flex gap 没改</b>，
+              那台机器上别的页面也可能出现间距塌陷，正在一并处理</li>
               <li><span class="li-tag tag-fix">修复</span><b>取色器吸完颜色，HSV 上没有指示圆点</b>（用户反馈）。
               <code>syncPickerFromRgb</code> 的重画条件写的是
               <code>pickOpen &amp;&amp; hsvOpen</code>（两个面板都开着才重画），
