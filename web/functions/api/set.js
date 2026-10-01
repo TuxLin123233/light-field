@@ -3,6 +3,7 @@ import { contestInfo } from './_contest.js'
 import { hitWords } from './_lexicon.js'
 import { readActiveUser, pickToken, BANNED_ERROR } from './_auth.js'
 import { creditDust, dayStamp } from './_dust.js'
+import { inspectArtwork } from './_camera.js'
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -159,7 +160,6 @@ export async function onRequestPost(context) {
   if (animObj) entry.anim = animObj
   if (rawContest) entry.contest = rawContest
   if (body && body.room === true) entry.room = true
-  if (body && body.fromImage === true) entry.fromImage = true
 
   // 标签：最多 3 个，每个最多 6 字，只保留安全字符
   if (Array.isArray(body && body.tags)) {
@@ -205,6 +205,37 @@ export async function onRequestPost(context) {
   if (who) {
     entry.ownerUser = who.uid
     entry.ownerName = who.username
+  }
+  /* fromImage 以前完全由客户端声明（`if (body.fromImage === true)`），
+     只要不发这个字段就能冒充原创：拿发布奖励、算绘制格数成就、
+     收光尘收票全都通吃。改成服务端自己判断（_camera.js），
+     客户端说的只当参考。判为相机作品就把标记锁死，改几个格子也去不掉。 */
+  const art = inspectArtwork(pixels, size, body && body.fromImage)
+  if (art.verdict === 'camera') {
+    entry.fromImage = true
+    entry.cameraReason = art.reason
+  } else if (art.verdict === 'suspect') {
+    entry.suspect = true
+  }
+  // 判定结果单独留一份，给管理后台核对（不写进作品数据）
+  if (art.verdict !== 'normal') {
+    try {
+      await env.LIGHTFIELD_KV.put(
+        'flag:' + entry.time,
+        JSON.stringify({
+          time: entry.time,
+          uid: who ? who.uid : '',
+          verdict: art.verdict,
+          reason: art.reason,
+          grad: Math.round(art.grad * 1000) / 1000,
+          colors: art.colors,
+          size: size,
+        }),
+        { expirationTtl: 60 * 60 * 24 * 30 }
+      )
+    } catch (e) {
+      // 留痕失败不该拦住发布
+    }
   }
   const entryJson = JSON.stringify(entry)
   if (entryJson.length > 90000) {

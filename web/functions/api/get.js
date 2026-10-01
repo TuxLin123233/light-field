@@ -35,6 +35,8 @@ function normalizeEntry(e) {
     contestVotes: (e && e.contestVotes) || 0,
     room: e && e.room ? true : undefined,
     fromImage: e && e.fromImage ? true : undefined,
+    // 服务端判定的「疑似照片转图」：只提示，可以申诉，不做处罚
+    suspect: e && e.suspect ? true : undefined,
     tags: Array.isArray(e && e.tags) ? e.tags.slice(0, 6) : undefined,
   }
 }
