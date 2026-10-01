@@ -228,6 +228,12 @@ export default {
     const A = window.LWAvatar
     const WHITE = [255, 255, 255]
 
+    /** 两个颜色是否相同。色板高亮要靠它，之前漏了这个函数导致整页初始化崩掉 */
+    function sameColor(a, b) {
+      if (!a || !b) return false
+      return a[0] === b[0] && a[1] === b[1] && a[2] === b[2]
+    }
+
     // 画板用的 32 色调色板，和主画板一致
     const PALETTE = [
       [0, 0, 0], [60, 60, 60], [120, 120, 120], [200, 200, 200], [255, 255, 255], [240, 208, 160],
@@ -401,7 +407,7 @@ export default {
         PALETTE.forEach((c, i) => {
           const b = document.createElement('button')
           b.type = 'button'
-          b.className = (sprayMode ? 'av-swatch' : 'av-sw') + (sameRGB(c, color) ? ' on' : '')
+          b.className = (sprayMode ? 'av-swatch' : 'av-sw') + (sameColor(c, color) ? ' on' : '')
           b.style.background = 'rgb(' + c[0] + ',' + c[1] + ',' + c[2] + ')'
           b.setAttribute('data-i', String(i))
           b.setAttribute('aria-label', '颜色 ' + (i + 1))
