@@ -70,12 +70,19 @@ export default {
       .ch-msgs {
         display: flex; flex-direction: column; gap: 9px;
         margin: 12px 0; min-height: 90px;
+        max-width: 100%; min-width: 0;
       }
-      .ch-msg { display: flex; max-width: 82%; }
+      /* min-width: 0 不能省：flex 子项默认 min-width:auto，
+         不许缩到比内容还窄，里面再窄的容器也拦不住。
+         overflow-wrap:anywhere 比 word-break:break-word 兼容性好 ——
+         后者在老 Safari / WebView 上不被支持，会退化成 normal，
+         一条长网址就能把气泡顶出屏幕（用户反馈「消息框溢出到右边」）。 */
+      .ch-msg { display: flex; max-width: 82%; min-width: 0; }
       .ch-msg.mine { align-self: flex-end; flex-direction: row-reverse; }
       .ch-bubble {
         padding: 9px 12px; border-radius: 14px; font-size: 13px; line-height: 1.6;
-        word-break: break-word; white-space: pre-wrap;
+        max-width: 100%; min-width: 0;
+        overflow-wrap: anywhere; word-break: break-word; white-space: pre-wrap;
         background: var(--surface); border: 1px solid var(--border); color: var(--text);
       }
       .ch-msg.mine .ch-bubble {

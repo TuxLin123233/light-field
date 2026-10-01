@@ -359,6 +359,16 @@ export default {
               输入框被写在「有消息才渲染」那段分支里，所以新会话（一条都还没发过）
               页面写着「说点什么打个招呼吧」，底下却连输入框都没有，根本没法开口。
               现在输入栏永远渲染，空对话也能直接发第一条</li>
+              <li><span class="li-tag tag-fix">修复</span><b>私信消息框溢出到屏幕右边</b>（有用户反馈）。
+              两个原因叠在一起：<code>word-break: break-word</code> 在
+              <b>老 Safari / WebView 上不被支持</b>，会退化成 <code>normal</code>，
+              一条长网址、一个长串没有空格的内容就能把气泡顶出屏幕；
+              而且 <code>.ch-msg</code> 和气泡<b>都缺 <code>min-width: 0</code></b> ——
+              flex 子项默认不许缩得比内容还窄，再窄的容器也拦不住。
+              现在补上 <code>min-width: 0</code> 和兼容性更好的
+              <code>overflow-wrap: anywhere</code>。
+              320 / 360 / 390 / 414 / 768 五种屏宽都验过，
+              模拟「换行属性失效」的老浏览器也不溢出</li>
               <li><span class="li-tag tag-new">新功能</span><b>别人主页上多了「💬 与他聊天」</b>：
               在画师主页点它，直接进到和这个人的私信会话，<b>不用先去「我的」页找私信入口</b>。
               只有<b>互相关注的好友</b>才显示（私信本来就只允许好友，
