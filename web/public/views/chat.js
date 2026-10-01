@@ -250,6 +250,20 @@ export default {
       peerLastAt = Number(d.peerLastAt) || 0
       hasNew = !!(peerLastAt > myLastAt)
 
+      /* 输入栏元素：必须声明在函数开头。
+         放在后面会撞上 TDZ —— 空对话那条分支先执行，
+         赋值时 let 还没初始化，直接抛
+         「Cannot access 'inp' before initialization」，
+         结果输入框没渲染、消息也发不出去。
+         同时 doSend() 也要用它们，不能是 bindSend 的局部变量。 */
+      let inp = null
+      let send = null
+      /* 发送键的启用状态。doSend() 结束时也要调它把按钮恢复成禁用，
+         所以必须在外层 —— 之前声明在 bindSend 内部，doSend 里调不到。 */
+      const sync = () => {
+        if (send) send.disabled = !inp.value.trim()
+      }
+
       /* 输入框必须永远都在。
          以前它被写在「有消息才渲染」那段里，于是新会话（一条都还没发过）
          页面写着「说点什么打个招呼吧」，底下却连个输入框都没有，
@@ -301,12 +315,9 @@ export default {
       /* 输入栏的交互。抽成函数是因为空对话和有消息两条路径都要用它 ——
          以前只有「有消息」那条绑过，所以新会话连输入框都没有。 */
       function bindSend() {
-        const inp = $('chIn')
-        const send = $('chSend')
+        inp = $('chIn')
+        send = $('chSend')
         if (!inp || !send) return
-        const sync = () => {
-          send.disabled = !inp.value.trim()
-        }
         inp.addEventListener('input', sync)
         inp.addEventListener('keydown', (e) => {
           if (e.key === 'Enter' && !e.shiftKey) {
