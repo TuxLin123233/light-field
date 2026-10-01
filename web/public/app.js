@@ -100,6 +100,9 @@ const routes = [
   { path: '/paint', component: withAutoCleanup(paint) },
   { path: '/gallery', component: withAutoCleanup(gallery) },
   { path: '/mine', component: withAutoCleanup(mine) },
+  // 「我的」的两个过滤页：只显示自己的东西，不混进社区
+  { path: '/mine/works', component: withAutoCleanup(mine) },
+  { path: '/mine/gifted', component: withAutoCleanup(mine) },
   { path: '/settings', component: withAutoCleanup(settings) },
   { path: '/changelog', component: withAutoCleanup(changelog) },
   { path: '/admin', component: withAutoCleanup(admin) },
@@ -189,5 +192,16 @@ const App = {
     </nav>
   `,
 }
+
+/* 底部导航切页音效：点哪个页面都响，不限画板。
+   绑在容器上用事件委托，导航项是 v-for 渲染的，不需要逐个绑定。 */
+document.addEventListener('pointerdown', (e) => {
+  const link = e.target && e.target.closest ? e.target.closest('#appNav a') : null
+  if (!link) return
+  // 点当前页不响，避免原地点击也出声
+  const cur = document.querySelector('#appNav a.router-link-active')
+  if (cur && cur === link) return
+  if (window.sfx) window.sfx('nav')
+}, true)
 
 createApp(App).use(router).mount('#app')

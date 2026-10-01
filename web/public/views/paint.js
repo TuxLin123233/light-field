@@ -1308,7 +1308,9 @@ color: var(--text-muted);
         text-decoration: none;
         /* 导航越透明，文字反而越清晰、每个图标越自带底衬，保证任何内容上都能看清 */
         color: color-mix(in srgb, var(--text-faint) calc(var(--nav-op, 0.66) * 100%), var(--text));
-        background: rgba(var(--nav-base, 255, 253, 250), calc((1 - var(--nav-op, 0.66)) * 0.72));
+        background: transparent;
+        text-shadow: 0 0 calc((1 - var(--nav-op, 0.66)) * 5px)
+          rgba(var(--nav-halo, 255, 255, 255), calc((1 - var(--nav-op, 0.66)) * 0.95));
         font-size: 10px;
         font-weight: 700;
         transition: color 0.2s, background 0.2s;
@@ -1318,7 +1320,8 @@ color: var(--text-muted);
 
       .bottom-nav a.active {
         color: var(--accent);
-        background: color-mix(in srgb, rgb(var(--nav-base, 255, 253, 250)) 82%, var(--accent));
+        background: transparent;
+        box-shadow: inset 0 -2.5px 0 var(--accent);
       }
       .imgmode-overlay {
         position: fixed;
@@ -1954,11 +1957,6 @@ color: var(--text-muted);
           </div>
         </div>
       </div>
-    </div>
-
-    <div class="records">
-      <div class="records-title">我的绘画历史（最新 10 条）</div>
-      <div id="recordList" class="record-list"></div>
     </div>
 
     <router-link id="moreBtn" class="more-btn" to="/gallery" hidden>去社区看更多作品 →</router-link>
@@ -2741,7 +2739,6 @@ color: var(--text-muted);
         const map = {
           size: '.size-row',
           tools: '.tools',
-          history: '.records',
           join: '#joinCard',
           name: '.name-row',
           actions: '.actions',
@@ -3908,83 +3905,11 @@ color: var(--text-muted);
         }
       }
 
-      function renderRecords(records, total) {
+      // 「我的绘画历史」已移除，数据统一在「我的」页查看
+      function renderRecords() {
+        if (!recordList) return
         recordList.innerHTML = ''
-        moreBtn.hidden = !(total > records.length)
-        if (!records.length) {
-          const empty = document.createElement('div')
-          empty.className = 'record-empty'
-          empty.textContent =
-            total > 0
-              ? '还没有找到你的作品：填好作者名后就会显示在这里'
-              : '还没有你的作品：快去画一幅并上传吧，也可以去社区看看大家的作品'
-          recordList.appendChild(empty)
-          return
-        }
-        records.forEach((rec) => {
-          const tile = document.createElement('button')
-          tile.type = 'button'
-          tile.className = 'tile'
-          tile.title = '点击预览'
-
-          const rs = rec.size === 32 || rec.size === 64 ? rec.size : 16
-
-          const c = document.createElement('img')
-          c.className = 'thumb'
-          c.alt = rec.workName || rec.name || '未命名'
-          c.src = pixelsToURL(rec.pixels, rs)
-
-          const meta = document.createElement('div')
-          meta.className = 'tile-meta'
-          const nm = document.createElement('span')
-          nm.textContent = rec.workName || rec.name || '未命名'
-          const metaRow = document.createElement('span')
-          metaRow.className = 'tile-meta-row'
-          const au = document.createElement('span')
-          au.textContent = rec.author || rec.name || '匿名'
-          const tm = document.createElement('span')
-          tm.className = 'tile-time'
-          tm.textContent = formatTime(rec.time)
-
-          const likeBadge = document.createElement('span')
-          likeBadge.className = 'tile-like' + (likedSet.has(String(rec.time)) ? ' liked' : '')
-          likeBadge.textContent = '♥ ' + (rec.likes || 0)
-          likeBadge.addEventListener('click', (e) => {
-            e.stopPropagation()
-            likeWork(rec, likeBadge)
-          })
-
-          metaRow.append(au, tm, likeBadge)
-          meta.append(nm, metaRow)
-
-          if (mineSet.has(String(rec.time))) {
-            const loadBtn = document.createElement('span')
-            loadBtn.className = 'tile-load'
-            loadBtn.textContent = '载入编辑'
-            loadBtn.addEventListener('click', (e) => {
-              e.stopPropagation()
-              loadOwn(rec)
-            })
-            meta.appendChild(loadBtn)
-
-            // 只有认领码真正持有的作品才给删除入口
-            if (ownedSet.has(String(rec.time))) {
-              const delBtn = document.createElement('span')
-              delBtn.className = 'tile-del'
-              delBtn.textContent = '删除'
-              delBtn.title = '用认领码删除这件作品'
-              delBtn.addEventListener('click', (e) => {
-                e.stopPropagation()
-                deleteOwnWork(rec)
-              })
-              meta.appendChild(delBtn)
-            }
-          }
-
-          tile.append(c, meta)
-          tile.addEventListener('click', () => previewRecord(rec))
-          recordList.appendChild(tile)
-        })
+        if (moreBtn) moreBtn.hidden = true
       }
 
       function previewRecord(rec) {

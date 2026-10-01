@@ -81,7 +81,7 @@ export default {
           <h1>常见问题</h1>
           <div class="header-sub">一些你可能想问、但我还没做的事</div>
         </div>
-        <button class="theme-btn" id="themeBtn" type="button" title="切换主题">🌙</button>
+        <router-link class="theme-btn" to="/settings" title="设置" aria-label="设置">⚙️</router-link>
       </div>
 
       <div class="q-card">
@@ -139,21 +139,5 @@ export default {
       <div class="faq-note">还有疑问可以微信找我：Tux123233</div>
     </div>
   `,
-  mounted() {
-    const themeBtn = document.getElementById('themeBtn')
-    function syncThemeUI() {
-      themeBtn.textContent =
-        document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙'
-    }
-    themeBtn.addEventListener('click', () => {
-      const cur =
-        document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'
-      document.documentElement.setAttribute('data-theme', cur)
-      try {
-        localStorage.setItem('lw-theme', cur)
-      } catch (e) {}
-      syncThemeUI()
-    })
-    syncThemeUI()
-  },
+  mounted() {  },
 }

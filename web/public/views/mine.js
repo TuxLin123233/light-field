@@ -29,6 +29,27 @@ export default {
       }
 
       /* ---------- 签到 ---------- */
+      .dust-bar {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        margin-bottom: 13px;
+        padding: 10px 13px;
+        border-radius: 12px;
+        background: color-mix(in srgb, var(--accent) 10%, var(--surface-2));
+        border: 1px solid color-mix(in srgb, var(--accent) 32%, transparent);
+      }
+      .dust-ico { font-size: 15px; }
+      .dust-label { font-size: 13px; color: var(--text-muted); }
+      .dust-num {
+        margin-left: auto;
+        font-size: 20px;
+        font-weight: 800;
+        color: var(--accent);
+        font-variant-numeric: tabular-nums;
+      }
+      .dust-num small { font-size: 11px; font-weight: 600; color: var(--text-muted); margin-left: 3px; }
+
       .sign-top {
         display: flex;
         align-items: center;
@@ -157,7 +178,9 @@ export default {
         color: var(--text-muted);
       }
       .size-bar .sb-lab { width: 46px; flex-shrink: 0; }
+      /* span 默认是 inline，不加 display:block 的话高度/宽度都不生效，进度条会看不见 */
       .size-bar .sb-track {
+        display: block;
         flex: 1;
         height: 8px;
         border-radius: 999px;
@@ -165,9 +188,12 @@ export default {
         overflow: hidden;
       }
       .size-bar .sb-fill {
+        display: block;
         height: 100%;
+        min-width: 0;
         border-radius: 999px;
         background: var(--accent);
+        transition: width 0.3s ease;
       }
       .size-bar .sb-num { width: 26px; text-align: right; flex-shrink: 0; color: var(--text-faint); }
 
@@ -221,7 +247,58 @@ export default {
       }
       .m-empty a { color: var(--accent); }
 
+      .back-bar {
+        display: inline-flex;
+        align-items: center;
+        align-self: flex-start;
+        margin-bottom: 12px;
+        padding: 8px 15px;
+        border-radius: 999px;
+        border: 1px solid var(--border-input);
+        background: var(--surface-2);
+        color: var(--text-muted);
+        font-size: 13px;
+        text-decoration: none;
+      }
       .m-links { display: flex; gap: 9px; }
+      button.m-link { font-family: inherit; cursor: pointer; }
+
+      .mine-filter {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+      }
+      .mf-label { font-size: 12px; color: var(--text-faint); flex-shrink: 0; }
+      .mf-chips { display: flex; flex-wrap: wrap; gap: 7px; }
+      .mf-chip {
+        padding: 5px 12px;
+        border-radius: 999px;
+        border: 1px solid var(--border-input);
+        background: var(--surface-2);
+        color: var(--text-muted);
+        font-size: 12px;
+        cursor: pointer;
+      }
+      .mf-chip.on {
+        border-color: var(--accent);
+        color: var(--accent);
+        background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+        font-weight: 600;
+      }
+      .mine-load {
+        width: 100%;
+        margin-top: 12px;
+        padding: 11px;
+        border-radius: 12px;
+        border: 1px solid var(--border-input);
+        background: var(--surface-2);
+        color: var(--text-muted);
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+      }
       .m-link {
         flex: 1;
         display: flex;
@@ -242,14 +319,21 @@ export default {
   template: `<div class="container mine-wrap">
     <div class="header">
       <div class="header-text">
-        <h1>我的</h1>
-        <div class="header-sub">签到 · 创作数据 · 我的作品</div>
+        <h1 id="mineTitle">我的</h1>
+        <div class="header-sub" id="mineSub">签到 · 创作数据 · 我的作品</div>
       </div>
     </div>
 
+    <router-link class="back-bar" id="mineBack" to="/mine" hidden>← 返回我的</router-link>
+
     <!-- 签到 -->
-    <div class="m-card">
+    <div class="m-card" id="signCard">
       <div class="m-card-title">📅 每日签到<span class="m-tip" id="signTip">存在本机</span></div>
+      <div class="dust-bar" id="dustBar">
+        <span class="dust-ico">✨</span>
+        <span class="dust-label">我的光尘</span>
+        <span class="dust-num" id="dustNum">0</span>
+      </div>
       <div class="sign-top">
         <div class="sign-streak">
           <div class="sign-num"><span id="signStreak">0</span> <small>天连续</small></div>
@@ -262,7 +346,7 @@ export default {
     </div>
 
     <!-- 创作数据 -->
-    <div class="m-card">
+    <div class="m-card" id="statCard">
       <div class="m-card-title">📊 创作数据</div>
       <div class="stat-grid" id="statGrid">
         <div class="stat"><div class="stat-num">—</div><div class="stat-lab">加载中</div></div>
@@ -272,19 +356,19 @@ export default {
     </div>
 
     <!-- 快捷入口 -->
-    <div class="m-card">
+    <div class="m-card" id="linkCard">
       <div class="m-card-title">🔗 我的</div>
       <div class="m-links">
-        <a class="m-link" href="/gallery?mine=1">
+        <router-link class="m-link" to="/mine/works">
           <span class="ml-ico">🖼️</span>
           <span class="ml-num" id="lnkWorks">0</span>
           <span>我的作品</span>
-        </a>
-        <a class="m-link" href="/gallery?liked=1">
-          <span class="ml-ico">♥</span>
+        </router-link>
+        <router-link class="m-link" to="/mine/gifted">
+          <span class="ml-ico">✨</span>
           <span class="ml-num" id="lnkLiked">0</span>
-          <span>赞过的</span>
-        </a>
+          <span>送出的</span>
+        </router-link>
         <a class="m-link" href="/paint">
           <span class="ml-ico">🎨</span>
           <span>去画</span>
@@ -292,15 +376,67 @@ export default {
       </div>
     </div>
 
-    <!-- 我的作品 -->
-    <div class="m-card">
+    <!-- 我的作品：页内完整列表，只显示自己的 -->
+    <div class="m-card" id="mineCard">
       <div class="m-card-title">🎨 我的作品<span class="m-tip" id="mineTip"></span></div>
+      <div class="mine-filter" id="mineFilter" hidden>
+        <span class="mf-label">筛选</span>
+        <div class="mf-chips" id="mineChips"></div>
+      </div>
       <div class="mine-grid" id="mineGrid"></div>
       <div id="mineEmpty"></div>
+    </div>
+
+    <!-- 赞过的：页内列表 -->
+    <div class="m-card" id="likedCard" hidden>
+      <div class="m-card-title">♥ 赞过的<span class="m-tip" id="likedTip"></span></div>
+      <div class="mine-grid" id="likedGrid"></div>
+      <div id="likedEmpty"></div>
     </div>
   </div>`,
   mounted() {
     const $ = (id) => document.getElementById(id)
+
+    /* ---------- 过滤页模式 ----------
+       /mine          完整面板（签到 + 数据 + 快捷入口 + 作品预览）
+       /mine/works    只显示「我的作品」的过滤页
+       /mine/gifted   只显示「我送出的光尘」的过滤页 */
+    const path = location.pathname.replace(/\/+$/, '')
+    const MODE = path.endsWith('/works')
+      ? 'works'
+      : path.endsWith('/gifted')
+        ? 'gifted'
+        : 'home'
+    const CARDS = ['signCard', 'statCard', 'linkCard', 'mineCard', 'likedCard']
+    function applyMode() {
+      const title = $('mineTitle')
+      const sub = $('mineSub')
+      const back = $('mineBack')
+      if (MODE === 'home') {
+        if (title) title.textContent = '我的'
+        if (sub) sub.textContent = '签到 · 创作数据 · 我的作品'
+        if (back) back.hidden = true
+        CARDS.forEach((id) => {
+          const el = $(id)
+          if (el) el.hidden = false
+        })
+        return
+      }
+      // 过滤页：只留对应的一块，并显示返回入口
+      if (back) back.hidden = false
+      CARDS.forEach((id) => {
+        const el = $(id)
+        if (!el) return
+        el.hidden = id !== (MODE === 'works' ? 'mineCard' : 'likedCard')
+      })
+      if (MODE === 'works') {
+        if (title) title.textContent = '我的作品'
+        if (sub) sub.textContent = '这里只显示你自己发布的作品'
+      } else {
+        if (title) title.textContent = '送出的光尘'
+        if (sub) sub.textContent = '你送过光尘的作品都在这里'
+      }
+    }
     let toastTimer = null
     function toast(msg) {
       const el = $('toast')
@@ -313,6 +449,7 @@ export default {
 
     /* ---------- 签到（存在本机） ---------- */
     const SIGN_KEY = 'lw-sign'
+    // 达成里程碑时额外奖励「等于里程碑天数」的光尘
     const MEDALS = [
       { need: 1, ico: '🌱', name: '启程' },
       { need: 3, ico: '🔥', name: '连续 3 天' },
@@ -331,9 +468,11 @@ export default {
           days: Array.isArray(o.days) ? o.days : [],
           streak: Number(o.streak) || 0,
           best: Number(o.best) || 0,
+          // 已经发过奖励的里程碑，避免断签重连后重复领
+          awarded: Array.isArray(o.awarded) ? o.awarded : [],
         }
       } catch (e) {
-        return { days: [], streak: 0, best: 0 }
+        return { days: [], streak: 0, best: 0, awarded: [] }
       }
     }
     function saveSign(s) {
@@ -341,6 +480,15 @@ export default {
         // 只保留最近 400 天，避免无限增长
         localStorage.setItem(SIGN_KEY, JSON.stringify({ ...s, days: s.days.slice(-400) }))
       } catch (e) {}
+    }
+
+    /* 光尘余额：签到、送出后都要刷新 */
+    function renderDustBalance() {
+      const el = $('dustNum')
+      if (!el || !window.dust) return
+      el.innerHTML = window.dust.balance() + '<small>个</small>'
+      const sent = $('lnkLiked')
+      if (sent) sent.textContent = window.dust.giftedCount()
     }
 
     function renderSign() {
@@ -385,6 +533,7 @@ export default {
         box.appendChild(el)
       })
       $('signTip').textContent = s.best > s.streak ? '最长 ' + s.best + ' 天' : '存在本机'
+      renderDustBalance()
     }
 
     $('signBtn').addEventListener('click', () => {
@@ -403,6 +552,27 @@ export default {
       s.best = Math.max(s.best || 0, s.streak)
       s.days.push(today)
       saveSign(s)
+      // 每次签到的固定赠送
+      const per = window.dust ? window.dust.perSignin : 5
+      if (window.dust) window.dust.add(per)
+      // 达成里程碑额外奖励：奖励数额 = 里程碑天数
+      let bonus = 0
+      let bonusName = ''
+      MEDALS.forEach((m) => {
+        if (s.streak === m.need && s.awarded.indexOf(m.need) < 0) {
+          s.awarded.push(m.need)
+          bonus += m.need
+          bonusName = m.name
+        }
+      })
+      if (bonus && window.dust) window.dust.add(bonus)
+      saveSign(s)
+      renderDustBalance()
+      renderSign()
+      if (bonus) {
+        toast('达成「' + bonusName + '」！额外获得 ' + bonus + ' 个光尘 ✨')
+        return
+      }
       if (window.sfx) window.sfx(s.streak > 1 ? 'ok' : 'ding')
       renderSign()
       const hit = MEDALS.find((m) => m.need === s.streak)
@@ -522,42 +692,162 @@ export default {
           body: JSON.stringify({ code, action: 'list' }),
         })
         const d2 = await res2.json().catch(() => ({}))
-        const works = (d2 && d2.works) || []
-        $('lnkWorks').textContent = works.length
-        $('mineTip').textContent = works.length ? works.length + ' 件' : ''
-        const grid = $('mineGrid')
-        grid.innerHTML = ''
-        if (!works.length) {
-          $('mineEmpty').innerHTML = '还没有发布过作品，<a href="/paint">去画一幅</a>'
-          return
-        }
-        works.slice(0, 24).forEach((w) => {
-          const item = document.createElement('div')
-          item.className = 'mine-item'
-          const cv = document.createElement('canvas')
-          paintThumb(cv, w.pixels, w.size)
-          const cap = document.createElement('div')
-          cap.className = 'mine-cap'
-          cap.textContent = (w.workName || '未命名') + (w.likes ? ' ♥' + w.likes : '')
-          item.append(cv, cap)
-          item.addEventListener('click', () => {
-            location.href = '/gallery?t=' + w.time
-          })
-          grid.appendChild(item)
-        })
-        $('mineEmpty').innerHTML =
-          works.length > 24 ? '<div class="m-empty">只显示最近 24 件，<a href="/gallery?mine=1">查看全部</a></div>' : ''
+        allWorks = (d2 && d2.works) || []
+        $('lnkWorks').textContent = allWorks.length
+        $('mineTip').textContent = allWorks.length ? allWorks.length + ' 件' : ''
+        renderMineFilter()
+        renderMineWorks(true)
       } catch (e) {
         renderStatError('加载失败，请检查网络')
       }
     }
 
-    /* ---------- 赞过的数量 ---------- */
-    try {
-      const liked = JSON.parse(localStorage.getItem('lw-liked') || '[]')
-      $('lnkLiked').textContent = Array.isArray(liked) ? liked.length : 0
-    } catch (e) {}
+    /* ---------- 我的作品：完整列表 + 尺寸筛选 + 分页 ---------- */
+    let allWorks = []
+    let mineSizeFilter = 'all'
+    const PAGE = 24
+    let shownCount = PAGE
 
+    function renderMineFilter() {
+      const box = $('mineFilter')
+      const chips = $('mineChips')
+      if (!box || !chips) return
+      if (!allWorks.length) {
+        box.hidden = true
+        return
+      }
+      box.hidden = false
+      const counts = { all: allWorks.length, 16: 0, 32: 0, 64: 0 }
+      allWorks.forEach((w) => {
+        const s = w.size === 32 || w.size === 64 ? w.size : 16
+        counts[s] = (counts[s] || 0) + 1
+      })
+      chips.innerHTML = ''
+      const opts = [
+        ['all', '全部'],
+        ['16', '16×16'],
+        ['32', '32×32'],
+        ['64', '64×64'],
+      ]
+      opts.forEach(([v, label]) => {
+        if (v !== 'all' && !counts[v]) return
+        const b = document.createElement('button')
+        b.type = 'button'
+        b.className = 'mf-chip' + (mineSizeFilter === v ? ' on' : '')
+        b.textContent = label + ' ' + counts[v]
+        b.addEventListener('click', () => {
+          mineSizeFilter = v
+          shownCount = PAGE
+          renderMineFilter()
+          renderMineWorks(true)
+          if (window.sfx) window.sfx('tick')
+        })
+        chips.appendChild(b)
+      })
+    }
+
+    function filteredWorks() {
+      if (mineSizeFilter === 'all') return allWorks
+      return allWorks.filter((w) => String(w.size) === mineSizeFilter)
+    }
+
+    function renderMineWorks(reset) {
+      const grid = $('mineGrid')
+      if (!grid) return
+      const list = filteredWorks()
+      if (!list.length) {
+        grid.innerHTML = ''
+        $('mineEmpty').innerHTML = '还没有发布过作品，<a href="/paint">去画一幅</a>'
+        return
+      }
+      if (reset) {
+        grid.innerHTML = ''
+        shownCount = PAGE
+      }
+      const slice = list.slice(0, shownCount)
+      // 重建（筛选或分页变化时保证顺序正确）
+      grid.innerHTML = ''
+      slice.forEach((w) => grid.appendChild(buildWorkItem(w)))
+      const more = list.length - slice.length
+      $('mineEmpty').innerHTML =
+        more > 0
+          ? '<button class="mine-load" id="mineMore" type="button">还有 ' + more + ' 件，点此加载更多</button>'
+          : ''
+      const btn = $('mineMore')
+      if (btn) {
+        btn.addEventListener('click', () => {
+          shownCount += PAGE
+          renderMineWorks(false)
+          if (window.sfx) window.sfx('tick')
+        })
+      }
+    }
+
+    function buildWorkItem(w) {
+      const item = document.createElement('div')
+      item.className = 'mine-item'
+      const cv = document.createElement('canvas')
+      paintThumb(cv, w.pixels, w.size)
+      const cap = document.createElement('div')
+      cap.className = 'mine-cap'
+      cap.textContent = (w.workName || '未命名') + (w.likes ? ' ♥' + w.likes : '')
+      item.append(cv, cap)
+      item.addEventListener('click', () => {
+        location.href = '/gallery?t=' + w.time
+      })
+      return item
+    }
+
+    /* ---------- 赞过的：页内列表 ---------- */
+    async function loadLiked() {
+      const card = $('likedCard')
+      const grid = $('likedGrid')
+      if (!card || !grid) return
+      card.hidden = false
+      // 数据源是光尘账本里「已赠送」的作品
+      const times = window.dust
+        ? window.dust.giftedList().map(Number).filter((t) => Number.isFinite(t))
+        : []
+      $('likedTip').textContent = times.length ? times.length + ' 件' : ''
+      grid.innerHTML = ''
+      if (!times.length) {
+        $('likedEmpty').innerHTML =
+          '还没有送出过光尘。<br />去社区看看，<b>✨ 送光尘</b>给喜欢的作品'
+        return
+      }
+      // 逐个取作品；失败的不影响其余
+      const got = []
+      for (const t of times) {
+        try {
+          const r = await fetch('/api/get?single=1&locate=' + t, { cache: 'no-store' })
+          if (!r.ok) continue
+          const d = await r.json()
+          const w = d.work || d.entry || (Array.isArray(d.history) ? d.history[0] : null)
+          if (w && w.pixels) got.push(w)
+        } catch (e) {}
+      }
+      got.forEach((w) => grid.appendChild(buildWorkItem(w)))
+      $('likedEmpty').innerHTML = got.length
+        ? ''
+        : '赞过的作品可能已被作者删除'
+    }
+
+    $('lnkWorksBtn') &&
+      $('lnkWorksBtn').addEventListener('click', () => {
+        $('mineCard').scrollIntoView({ behavior: 'smooth', block: 'start' })
+        if (window.sfx) window.sfx('tick')
+      })
+    $('lnkLikedBtn') &&
+      $('lnkLikedBtn').addEventListener('click', async () => {
+        if (window.sfx) window.sfx('tick')
+        await loadLiked()
+        $('likedCard').scrollIntoView({ behavior: 'smooth', block: 'start' })
+      })
+
+    /* ---------- 送出的光尘数量 ---------- */
+    $('lnkLiked').textContent = window.dust ? window.dust.giftedCount() : 0
+
+    applyMode()
     renderSign()
     loadMine()
   },

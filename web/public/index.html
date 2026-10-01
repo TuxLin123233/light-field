@@ -55,8 +55,9 @@
         --like: #e5574b;
         --like-bg: #fff1ee;
         --like-border: #eec9c2;
-        /* 导航条底色：图标底衬必须用同一个色，否则深色下会浮出方块 */
         --nav-base: 255, 253, 250;
+        /* 文字光晕色：浅色主题用白光，深色主题用黑光 */
+        --nav-halo: 255, 255, 255;
       }
       [data-theme="dark"] {
         --bg: linear-gradient(160deg, #211c17 0%, #18140f 100%);
@@ -88,6 +89,7 @@
         --like-bg: #3d231f;
         --like-border: #5e352c;
         --nav-base: 42, 38, 33;
+        --nav-halo: 0, 0, 0;
       }
 
       /* ---------- 5 套特色主题 ---------- */
@@ -110,6 +112,7 @@
         --like: #e0576a;
         --like-bg: #fdeef1;
         --like-border: #f0c9d3;
+        --nav-halo: 255, 255, 255;
       }
       html[data-theme="sea"] {
         --bg: linear-gradient(160deg, #f0f8fa 0%, #ddeef2 100%);
@@ -194,6 +197,7 @@
         --like: #ff8f9c;
         --like-bg: #3a2436;
         --like-border: #553044;
+        --nav-halo: 0, 0, 0;
       }
 
       /* ---------- PWA 安装提示条 ---------- */
@@ -241,295 +245,7 @@
         cursor: pointer;
       }
 
-      /* ---------- 夜间系主题的共同基底 ----------
-         一次写好，6 个夜间主题共用，避免 6 份重复的深色变量 */
-      html[data-theme="ocean-night"],
-      html[data-theme="ink"],
-      html[data-theme="rose-night"],
-      html[data-theme="forest-night"],
-      html[data-theme="night-flight"],
-      html[data-theme="charcoal"] {
-        --surface: #21242e;
-        --surface-2: #2a2e3a;
-        --surface-3: #232733;
-        --art-bg: #f2f0ec;
-        --text: #e8eaf0;
-        --text-muted: #b3b8c6;
-        --text-muted2: #8d93a3;
-        --text-faint: #6b7180;
-        --text-report: #8b90a0;
-        --border: #2c303d;
-        --border-strong: #3b4050;
-        --border-input: #383d4c;
-        --ring: #21242e;
-        --shadow1: rgba(0, 0, 0, 0.34);
-        --shadow2: rgba(0, 0, 0, 0.26);
-        --shadow3: rgba(0, 0, 0, 0.18);
-        --shadow-hover: rgba(0, 0, 0, 0.58);
-        --toast-bg: #2f3444;
-        --tip-text: #d8b483;
-        --tip-btn-border: #4a3a24;
-        --blacktip-bg: #262a20;
-        --blacktip-border: #4a3a24;
-        --blacktip-text: #e0bd85;
-        --like: #ff8f9c;
-        --like-bg: #3a2436;
-        --like-border: #553044;
-      }
-
-      /* ---------- 夜间系：深海 ---------- */
-      html[data-theme="ocean-night"] {
-        --bg: linear-gradient(160deg, #0e1a26 0%, #0a121c 100%);
-        --text: #dceaf5;
-        --text-muted: #9fb6c9;
-        --text-muted2: #7b95a9;
-        --text-faint: #5c7386;
-        --border: #1c2c3a;
-        --border-strong: #2a3f52;
-        --border-input: #26394a;
-        --surface: #16232f;
-        --surface-2: #1d2d3b;
-        --surface-3: #182634;
-        --ring: #16232f;
-        --accent: #4cc2e0;
-        --nav-base: 22, 35, 47;
-      }
-
-      /* ---------- 夜间系：墨林 ---------- */
-      html[data-theme="ink"] {
-        --bg: linear-gradient(160deg, #121714 0%, #0c100e 100%);
-        --text: #e2ece5;
-        --text-muted: #a8b8ad;
-        --text-muted2: #869689;
-        --text-faint: #64756a;
-        --border: #1d2822;
-        --border-strong: #2b3a31;
-        --border-input: #26332c;
-        --surface: #17201b;
-        --surface-2: #1f2a24;
-        --surface-3: #1a231e;
-        --ring: #17201b;
-        --accent: #5fc98d;
-        --nav-base: 23, 32, 27;
-      }
-
-      /* ---------- 夜间系：玫瑰夜 ---------- */
-      html[data-theme="rose-night"] {
-        --bg: linear-gradient(160deg, #241419 0%, #190d11 100%);
-        --text: #f4dfe4;
-        --text-muted: #c8a8b1;
-        --text-muted2: #a48791;
-        --text-faint: #7d646d;
-        --border: #33191f;
-        --border-strong: #45242c;
-        --border-input: #3b1f26;
-        --surface: #26161b;
-        --surface-2: #301c22;
-        --surface-3: #2a181d;
-        --ring: #26161b;
-        --accent: #e8778f;
-        --nav-base: 38, 22, 27;
-      }
-
-      /* ---------- 夜间系：森语 ---------- */
-      html[data-theme="forest-night"] {
-        --bg: linear-gradient(160deg, #131c16 0%, #0b120e 100%);
-        --text: #e0ecdf;
-        --text-muted: #a6b8a8;
-        --text-muted2: #86988a;
-        --text-faint: #667a6b;
-        --border: #1e2a20;
-        --border-strong: #2c3b2f;
-        --border-input: #26332a;
-        --surface: #1a241d;
-        --surface-2: #223026;
-        --surface-3: #1d2822;
-        --ring: #1a241d;
-        --accent: #9bd167;
-        --nav-base: 26, 36, 29;
-      }
-
-      /* ---------- 夜间系：夜航 ---------- */
-      html[data-theme="night-flight"] {
-        --bg: linear-gradient(160deg, #161a2e 0%, #0f1220 100%);
-        --text: #e4e6f5;
-        --text-muted: #aeb2cd;
-        --text-muted2: #8f93b0;
-        --text-faint: #6d7190;
-        --border: #20243a;
-        --border-strong: #2e3350;
-        --border-input: #282d46;
-        --surface: #1b1f33;
-        --surface-2: #232840;
-        --surface-3: #1f2338;
-        --ring: #1b1f33;
-        --accent: #f0b45c;
-        --nav-base: 27, 31, 51;
-      }
-
-      /* ---------- 夜间系：炭 ---------- */
-      html[data-theme="charcoal"] {
-        --bg: linear-gradient(160deg, #1c1c1e 0%, #131314 100%);
-        --text: #ececec;
-        --text-muted: #b4b4b6;
-        --text-muted2: #929294;
-        --text-faint: #717173;
-        --border: #2a2a2d;
-        --border-strong: #3a3a3e;
-        --border-input: #333336;
-        --surface: #232326;
-        --surface-2: #2b2b2f;
-        --surface-3: #26262a;
-        --ring: #232326;
-        --accent: #f08a4b;
-        --nav-base: 35, 35, 38;
-      }
-
-      /* ---------- 夜间系：夜阑（原有，补 nav-base） ---------- */
-      html[data-theme="midnight"] {
-        --nav-base: 33, 34, 58;
-      }
-
-      /* ---------- 浅色系：奶茶 ---------- */
-      html[data-theme="milktea"] {
-        --bg: linear-gradient(160deg, #faf4ec 0%, #f0e4d5 100%);
-        --surface: #fffdfa;
-        --surface-2: #f3e9dc;
-        --surface-3: #ece0d0;
-        --art-bg: #fff;
-        --text: #4a3d31;
-        --text-muted: #7d6d5c;
-        --text-muted2: #a08e7b;
-        --text-faint: #bda896;
-        --border: #eee0cf;
-        --border-strong: #e0cbb2;
-        --border-input: #dcc5aa;
-        --ring: #fffdfa;
-        --accent: #b3805a;
-        --nav-base: 255, 253, 250;
-      }
-
-      /* ---------- 浅色系：薰衣草 ---------- */
-      html[data-theme="lavender"] {
-        --bg: linear-gradient(160deg, #f7f5fc 0%, #ebe6f7 100%);
-        --surface: #fdfcff;
-        --surface-2: #f0ecf9;
-        --surface-3: #e8e2f5;
-        --art-bg: #fff;
-        --text: #3f3852;
-        --text-muted: #6f6688;
-        --text-muted2: #918aa6;
-        --text-faint: #afa8c0;
-        --border: #e6e0f3;
-        --border-strong: #d5cce9;
-        --border-input: #d0c6e6;
-        --ring: #fdfcff;
-        --accent: #8b72d8;
-        --nav-base: 253, 252, 255;
-      }
-
-      /* ---------- 浅色系：蜜桃 ---------- */
-      html[data-theme="peach"] {
-        --bg: linear-gradient(160deg, #fff5f1 0%, #ffe8de 100%);
-        --surface: #fffcfa;
-        --surface-2: #ffede4;
-        --surface-3: #ffe4d7;
-        --art-bg: #fff;
-        --text: #4d3830;
-        --text-muted: #836257;
-        --text-muted2: #a88a7c;
-        --text-faint: #c6a99b;
-        --border: #ffe3d6;
-        --border-strong: #f8cdb9;
-        --border-input: #f5c8b2;
-        --ring: #fffcfa;
-        --accent: #ef7a52;
-        --nav-base: 255, 252, 250;
-      }
-
-      /* ---------- 浅色系：雾霭 ---------- */
-      html[data-theme="mist"] {
-        --bg: linear-gradient(160deg, #f4f6f7 0%, #e6eaed 100%);
-        --surface: #fbfcfd;
-        --surface-2: #eef1f4;
-        --surface-3: #e6eaee;
-        --art-bg: #fff;
-        --text: #363d44;
-        --text-muted: #626b74;
-        --text-muted2: #8b939c;
-        --text-faint: #a9b0b7;
-        --border: #e3e7eb;
-        --border-strong: #d0d6dc;
-        --border-input: #ccd3d9;
-        --ring: #fbfcfd;
-        --accent: #5b7c99;
-        --nav-base: 251, 252, 253;
-      }
-
-      /* ---------- 浅色系：抹茶 ---------- */
-      html[data-theme="matcha"] {
-        --bg: linear-gradient(160deg, #f6f8ee 0%, #e9efdb 100%);
-        --surface: #fdfef9;
-        --surface-2: #eff3e4;
-        --surface-3: #e7ecd9;
-        --art-bg: #fff;
-        --text: #3c4433;
-        --text-muted: #6a7460;
-        --text-muted2: #909a86;
-        --text-faint: #aeb7a5;
-        --border: #e6ebd8;
-        --border-strong: #d3dcbe;
-        --border-input: #ced8b8;
-        --ring: #fdfef9;
-        --accent: #7a9c4a;
-        --nav-base: 253, 254, 249;
-      }
-
-      /* ---------- 浅色系：燕麦 ---------- */
-      html[data-theme="oat"] {
-        --bg: linear-gradient(160deg, #faf7f0 0%, #efe9dd 100%);
-        --surface: #fefdf9;
-        --surface-2: #f3eee3;
-        --surface-3: #ece6d8;
-        --art-bg: #fff;
-        --text: #45413a;
-        --text-muted: #756f64;
-        --text-muted2: #9a9488;
-        --text-faint: #b8b2a6;
-        --border: #ece5d6;
-        --border-strong: #dcd2bd;
-        --border-input: #d6cbb4;
-        --ring: #fefdf9;
-        --accent: #8a7a55;
-        --nav-base: 254, 253, 249;
-      }
-
-      /* ---------- 浅色系：复古 ---------- */
-      html[data-theme="sepia"] {
-        --bg: linear-gradient(160deg, #f6efe2 0%, #e9dcc4 100%);
-        --surface: #fdf8ec;
-        --surface-2: #f0e6d2;
-        --surface-3: #e8dcc4;
-        --art-bg: #fffaf0;
-        --text: #43382a;
-        --text-muted: #75634a;
-        --text-muted2: #9a886d;
-        --text-faint: #b8a68a;
-        --border: #e6d8bd;
-        --border-strong: #d4c19f;
-        --border-input: #cdb890;
-        --ring: #fdf8ec;
-        --accent: #a2703c;
-        --nav-base: 253, 248, 236;
-      }
-
-      /* 原有 5 套特色主题补 nav-base */
-      html[data-theme="sakura"] { --nav-base: 255, 250, 251; }
-      html[data-theme="sea"] { --nav-base: 251, 254, 255; }
-      html[data-theme="mint"] { --nav-base: 252, 255, 252; }
-      html[data-theme="sunset"] { --nav-base: 255, 252, 248; }
-
-      * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+            * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
       html { background: var(--bg); overflow-x: clip; }
 
@@ -571,7 +287,9 @@
 
       /* 兜底：极老浏览器不支持 display:contents 时，用 block+100% 保持同样宽度 */
       @supports not (display: contents) {
-        #siteRoot { display: block; width: 100%; }
+        #siteRoot { display: block; width: 100%;
+        --nav-halo: 0, 0, 0;
+      }
       }
 
       /* ---------- 底部导航（全局壳，四个页面共用） ---------- */
@@ -650,8 +368,11 @@
         text-decoration: none;
         /* 导航越透明，文字反而越清晰、每个图标越自带底衬，保证任何内容上都能看清 */
         color: color-mix(in srgb, var(--text-faint) calc(var(--nav-op, 0.66) * 100%), var(--text));
-        /* 底衬与导航条同色，只是更实一点，所以看不出是两块拼的 */
-        background: rgba(var(--nav-base, 255, 253, 250), calc((1 - var(--nav-op, 0.66)) * 0.72));
+        /* 不用背景色块（叠在导航条上会显出一块亮斑），改用文字光晕：
+           导航越透明光晕越强，任何内容上文字都清晰，且永远不会出现方块 */
+        background: transparent;
+        text-shadow: 0 0 calc((1 - var(--nav-op, 0.66)) * 5px)
+          rgba(var(--nav-halo, 255, 255, 255), calc((1 - var(--nav-op, 0.66)) * 0.95));
         font-size: 10px;
         font-weight: 700;
         transition: color 0.2s, background 0.2s;
@@ -661,7 +382,8 @@
          改用同底色的淡强调色，透不透明都协调 */
       .bottom-nav a.active {
         color: var(--accent);
-        background: color-mix(in srgb, rgb(var(--nav-base, 255, 253, 250)) 82%, var(--accent));
+        background: transparent;
+        box-shadow: inset 0 -2.5px 0 var(--accent);
       }
 
       /* ---------- 全局提示 ---------- */
@@ -816,6 +538,11 @@
           select: function () {
             note(1174, 0, 0.06, 0.05, 'sine')
           },
+          /* 导航切页：柔和的一记，谁都能听见但不吵 */
+          nav: function () {
+            note(1046, 0, 0.05, 0.04, 'sine')
+            note(1318, 0.035, 0.09, 0.035, 'sine')
+          },
           /* 心跳：低低一记，联机时有人动笔 */
           heartbeat: function () {
             note(196, 0, 0.16, 0.035, 'sine')
@@ -853,12 +580,83 @@
     <script src="/vue-router.global.prod.js"></script>
     <script src="/omggif.js"></script>
     <script src="/qrcode.js"></script>
+    <script src="/themes.js"></script>
   </head>
   <body>
     <div id="app"></div>
     <div id="toast"></div>
     <script type="module" src="/app.js"></script>
     <script>
+      /* ---------- 光尘账本 ----------
+         签到得光尘，赠给作品换认可。存在本机，等账号系统接好后改存服务端。
+         DUST_PER_SIGNIN：每次签到赠送的数量
+         DUST_COST：送一次光尘的消耗                    */
+      ;(function () {
+        var KEY_BAL = 'lw-dust'
+        var KEY_GIFTED = 'lw-dust-gifted'
+        var DUST_PER_SIGNIN = 5
+        var DUST_COST = 1
+        function readNum(k) {
+          try {
+            var v = Number(localStorage.getItem(k))
+            return isFinite(v) ? v : 0
+          } catch (e) {
+            return 0
+          }
+        }
+        function readList(k) {
+          try {
+            var a = JSON.parse(localStorage.getItem(k) || '[]')
+            return Array.isArray(a) ? a : []
+          } catch (e) {
+            return []
+          }
+        }
+        window.dust = {
+          perSignin: DUST_PER_SIGNIN,
+          cost: DUST_COST,
+          balance: function () {
+            return Math.max(0, readNum(KEY_BAL))
+          },
+          add: function (n) {
+            var next = window.dust.balance() + (Number(n) || 0)
+            try {
+              localStorage.setItem(KEY_BAL, String(Math.max(0, next)))
+            } catch (e) {}
+            return window.dust.balance()
+          },
+          /* 够不够再送一次 */
+          canGive: function (time) {
+            if (readList(KEY_GIFTED).indexOf(String(time)) >= 0) return false
+            return window.dust.balance() >= DUST_COST
+          },
+          gave: function (time) {
+            return readList(KEY_GIFTED).indexOf(String(time)) >= 0
+          },
+          /* 返回是否成功；余额不足或已送过都返回 false */
+          give: function (time) {
+            var k = String(time)
+            if (readList(KEY_GIFTED).indexOf(k) >= 0) return false
+            if (window.dust.balance() < DUST_COST) return false
+            try {
+              localStorage.setItem(KEY_BAL, String(window.dust.balance() - DUST_COST))
+              var list = readList(KEY_GIFTED)
+              list.push(k)
+              localStorage.setItem(KEY_GIFTED, JSON.stringify(list.slice(-2000)))
+            } catch (e) {
+              return false
+            }
+            return true
+          },
+          giftedList: function () {
+            return readList(KEY_GIFTED)
+          },
+          giftedCount: function () {
+            return readList(KEY_GIFTED).length
+          },
+        }
+      })()
+
       /* ---------- 导航栏位置：尽早应用，避免刷新后闪一下默认底部 ---------- */
       ;(function () {
         try {

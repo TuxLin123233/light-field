@@ -1379,7 +1379,7 @@ export default {
           <h1>全部作品</h1>
           <div id="count">加载中…</div>
         </div>
-        <button class="theme-btn" id="themeBtn" type="button" title="切换主题">🌙</button>
+        <router-link class="theme-btn" to="/settings" title="设置" aria-label="设置">⚙️</router-link>
       </div>
 
       <section class="finder" id="finder">
@@ -1509,7 +1509,7 @@ export default {
           <span id="previewTime" class="preview-time"></span>
         </div>
         <div class="preview-like">
-          <button class="like-btn" id="previewLike" type="button" title="再点一次可取消点赞">♥ <span id="previewLikeCount">0</span></button>
+          <button class="like-btn" id="previewLike" type="button" title="送光尘给这幅画">✨ <span id="previewLikeCount">0</span></button>
           <button class="vote-btn" id="previewVoteBtn" type="button" hidden>🏆 投一票</button>
           <button class="share-btn" id="previewShare" type="button">🔗 复制链接</button>
           <button class="share-btn" id="previewCard" type="button">🃏 生成朋友圈卡片</button>
@@ -2186,45 +2186,61 @@ export default {
       }
 
       function updateLikedState(btn, time) {
-        btn.classList.toggle('liked', likedMap.has(String(time)))
+        const gave = window.dust ? window.dust.gave(time) : likedMap.has(String(time))
+        btn.classList.toggle('liked', gave)
+        // 已赠送就把前缀换成「已送」，计数保持不变
+        const countEl = btn.querySelector('span')
+        if (!countEl) return
+        if (gave) {
+          btn.dataset.count = countEl.textContent
+          countEl.textContent = '已送 ' + countEl.textContent
+        } else if (btn.dataset.count) {
+          countEl.textContent = btn.dataset.count
+        }
       }
 
-      /* 再点一次就是取消点赞 */
+      /* 赠送光尘：同一作品只能送一次，且要有余额 */
       async function like(rec, btn) {
         const key = String(rec.time)
-        const undo = likedMap.has(key)
+        if (!window.dust) return
+        if (window.dust.gave(key)) {
+          toast('你已经送过光尘给这幅画了')
+          return
+        }
+        if (window.dust.balance() < window.dust.cost) {
+          toast('光尘不够了，去「我的」签到领一些吧')
+          return
+        }
         btn.disabled = true
         try {
           const res = await fetch('/api/like', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ time: rec.time, unlike: undo ? 1 : 0 }),
+            body: JSON.stringify({ time: rec.time }),
           })
           const data = await res.json().catch(() => ({}))
           if (res.ok) {
-            if (undo) {
-              likedMap.delete(key)
-              if (window.sfx) window.sfx('close')
-              toast('已取消点赞')
-            } else {
-              likedMap.add(key)
-              if (window.sfx) window.sfx('pop')
-              toast('点赞成功 ♥')
+            // 服务端计数成功后才真正扣光尘，避免白扣
+            if (!window.dust.give(key)) {
+              toast('光尘不足，赠送未完成')
+              return
             }
+            likedMap.add(key)
             saveLiked()
+            if (window.sfx) window.sfx('pop')
             rec.likes = Math.max(0, Number(data.likes) || 0)
             const span = btn.querySelector('span')
             if (span) span.textContent = rec.likes
             updateLikedState(btn, rec.time)
             const pv = document.getElementById('previewLikeCount')
             if (pv) pv.textContent = rec.likes
-            // 同步刷新列表与佳作区里同一作品的显示
-            syncLikeEverywhere(rec.time, rec.likes, !undo)
+            syncLikeEverywhere(rec.time, rec.likes, true)
+            toast('送出了 ' + window.dust.cost + ' 个光尘 ✨ 余额 ' + window.dust.balance())
           } else {
-            toast((undo ? '取消点赞失败：' : '点赞失败：') + (data.error || res.status))
+            toast('赠送失败：' + (data.error || res.status))
           }
         } catch (err) {
-          toast((undo ? '取消点赞失败：' : '点赞失败：') + '网络错误')
+          toast('赠送失败：网络错误')
         } finally {
           btn.disabled = false
         }
@@ -3188,23 +3204,5 @@ export default {
           done()
         }
       })
-
-      /* ---------- 主题切换 ---------- */
-      const themeBtn = document.getElementById('themeBtn')
-
-      function applyThemeIcon() {
-        themeBtn.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙'
-      }
-
-      themeBtn.addEventListener('click', () => {
-        const cur = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'
-        document.documentElement.setAttribute('data-theme', cur)
-        try {
-          localStorage.setItem('lw-theme', cur)
-        } catch (e) {}
-        applyThemeIcon()
-      })
-
-      applyThemeIcon()
   },
 }

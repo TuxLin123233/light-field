@@ -250,7 +250,7 @@ export default {
           <h1>更新日志</h1>
           <div class="header-sub">像素小镇 · 每次更新都有迹可循</div>
         </div>
-        <button class="theme-btn" id="themeBtn" type="button" title="切换主题">🌙</button>
+        <router-link class="theme-btn" to="/settings" title="设置" aria-label="设置">⚙️</router-link>
       </div>
 
       <section class="group">
@@ -272,6 +272,13 @@ export default {
               <li><span class="li-tag tag-fix">修复</span>设置页「画板布局」「进阶功能」点不开：分组绑定曾被写进其它回调里，且引用了还没初始化的数据</li>
               <li><span class="li-tag tag-fix">修复</span>维护者页面顶部标题区是一段裸文字，现在与下方卡片一样有底色、边框和阴影</li>
               <li><span class="li-tag tag-announce">移除</span><b>联机功能已下掉</b>：它的多人同步依赖强一致存储，而现有 KV 是最终一致的，两人同时落笔会互相覆盖（房主看不到别人加入、笔迹不同步、两人在线却提示不足 2 人）。修好需要换 Durable Object，但那会让整站自动部署失败、线上卡在旧版本，所以选择下掉而不是留一个时好时坏的功能。详见常见问题</li>
+              <li><span class="li-tag tag-new">新功能</span>「✨ 光尘」：每日签到得 5 个（连续里程碑额外奖励，数额等于里程碑天数，如连续 7 天再送 7 个）；给作品赠送光尘代替点赞，同一幅只能送一次，余额不足送不出；光尘可累积，攒着送给最喜欢的那幅</li>
+              <li><span class="li-tag tag-new">新功能</span>「我的」新增两个过滤页：/mine/works 只显示自己发布的作品，/mine/gifted 只显示自己送过光尘的作品，不再跳进社区</li>
+              <li><span class="li-tag tag-update">更新</span>配色主题选择器分为「浅色系 12 套」与「夜间系 8 套」两组，每格显示色条与名字，底部提示当前主题；主题数据与 CSS 统一由 themes.js 生成，避免多处手写冲突</li>
+              <li><span class="li-tag tag-update">更新</span>导航切页新增音效，四个入口都响；社区/日志/常见问题右上角的月亮按钮改为设置入口</li>
+              <li><span class="li-tag tag-fix">修复</span>导航图标在深色主题下浮出亮色方块：改用文字光晕而非背景色块，高亮项改用下划线指示</li>
+              <li><span class="li-tag tag-fix">修复</span>创作数据的尺寸比例条不显示：span 默认 inline 导致宽高失效，补 display:block</li>
+              <li><span class="li-tag tag-update">更新</span>移除设置页「历史记录」与画板页「我的绘画历史」，统一在「我的」查看</li>
               <li><span class="li-tag tag-announce">公告</span>国庆节快乐！本次更新汇总：20 套配色主题、18 种提示音效、我的（签到+创作数据）、社区发现、内容举报与审核、导航栏全面自定义、像素相机、新手教程、可装到桌面离线使用，以及联机同步、手型工具误画、小地图遮挡、深色模式对比度等一系列修复</li>
               <li><span class="li-tag tag-fix">修复</span>作品缩略图在像素数据缺失时会出现白色条纹：现在缺失的格子按白底填充，而不是留成透明</li>
               <li><span class="li-tag tag-update">更新</span>设置页底部把「维护社区稳定」与「问题反馈」合并为一张不透明的联系卡</li>
@@ -441,24 +448,5 @@ export default {
 
       <div class="copyright">© 2026 像素小镇 · 版权所有 · 作者 Lin Sifan</div>
     </div>`,
-  mounted() {
-      const themeBtn = document.getElementById('themeBtn')
-
-      function syncThemeUI() {
-        themeBtn.textContent =
-          document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙'
-      }
-
-      themeBtn.addEventListener('click', () => {
-        const cur =
-          document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'
-        document.documentElement.setAttribute('data-theme', cur)
-        try {
-          localStorage.setItem('lw-theme', cur)
-        } catch (e) {}
-        syncThemeUI()
-      })
-
-      syncThemeUI()
-  },
+  mounted() {  },
 }

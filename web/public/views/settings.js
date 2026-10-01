@@ -294,6 +294,23 @@ export default {
 
       /* ---------- 单选组（启动页 / 导航位置） ---------- */
       .radio-row { display: flex; flex-wrap: wrap; gap: 8px; }
+      /* 「启动时打开」固定四个一排，等宽对齐，不再 3+1 折行 */
+      #entranceRow {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 6px;
+      }
+      #entranceRow .radio-chip {
+        flex-direction: column;
+        gap: 2px;
+        padding: 8px 2px;
+        min-width: 0;
+      }
+      #entranceRow .radio-chip .rc-ico { font-size: 16px; }
+      #entranceRow .radio-chip .rc-txt {
+        font-size: 12px;
+        white-space: nowrap;
+      }
       .radio-chip {
         display: flex;
         align-items: center;
@@ -751,7 +768,6 @@ export default {
           <h1>设置</h1>
           <div class="header-sub">调整外观、了解像素小镇</div>
         </div>
-        <button class="theme-btn" id="themeBtn" type="button" title="切换主题">🌙</button>
       </div>
 
       <section class="group fold">
@@ -886,17 +902,6 @@ export default {
       </section>
 
       <section class="group">
-        <div class="group-title">我的数据</div>
-        <div class="row">
-          <div>
-            <div class="row-label">历史记录</div>
-            <div class="row-desc">画板页展示你的绘画历史，社区按时间排序可一直往回翻</div>
-          </div>
-          <router-link class="entry-arrow" to="/paint" style="text-decoration:none;color:var(--accent);font-weight:700">去画板 →</router-link>
-        </div>
-      </section>
-
-      <section class="group">
         <div class="group-title">更多</div>
         <router-link class="entry" to="/terms">
           <span class="entry-ico">📄</span>
@@ -963,7 +968,6 @@ export default {
     </div>`,
   mounted() {
       const darkSwitch = document.getElementById('darkSwitch')
-      const themeBtn = document.getElementById('themeBtn')
       /* ---------- 导航项定义（与 app.js 的导航保持一致） ---------- */
       const NAV_ITEMS = [
         { path: '/paint', ico: '🎨', name: '画板' },
@@ -1002,7 +1006,8 @@ export default {
           b.type = 'button'
           b.className = 'radio-chip'
           b.dataset.path = it.path
-          b.innerHTML = '<span class="rc-ico">' + it.ico + '</span>' + it.name
+          b.innerHTML =
+            '<span class="rc-ico">' + it.ico + '</span><span class="rc-txt">' + it.name + '</span>'
           b.addEventListener('click', () => {
             cur = it.path
             writeLS(ENTRANCE_KEY, cur)
@@ -1108,9 +1113,7 @@ export default {
       }
 
       function syncThemeUI() {
-        const dark = document.documentElement.getAttribute('data-theme') === 'dark'
-        darkSwitch.checked = dark
-        themeBtn.textContent = dark ? '☀️' : '🌙'
+        darkSwitch.checked = document.documentElement.getAttribute('data-theme') === 'dark'
       }
 
       const glassSwitch = document.getElementById('glassSwitch')
@@ -1508,7 +1511,6 @@ export default {
       }
 
       darkSwitch.addEventListener('change', () => setTheme(darkSwitch.checked))
-      themeBtn.addEventListener('click', () => setTheme(document.documentElement.getAttribute('data-theme') !== 'dark'))
 
       syncThemeUI()
   },
