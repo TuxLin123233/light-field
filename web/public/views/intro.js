@@ -306,7 +306,11 @@ export default {
         balance = dd && dd.book ? Number(dd.book.bal) || 0 : 0
         render()
       } catch (e) {
-        $('inBody').innerHTML = '<div class="in-card"><div class="in-cost warn">读取失败：网络错误</div></div>'
+        // 以前一律写「网络错误」，真实异常被吞掉了
+        console.error('[intro] 读取失败', e)
+        const why = (e && (e.message || e.name)) || '未知错误'
+        $('inBody').innerHTML =
+          '<div class="in-card"><div class="in-cost warn">读取失败：' + esc(why) + '</div></div>'
       }
     })()
   },

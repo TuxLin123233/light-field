@@ -429,7 +429,10 @@ export default {
           $('achBody').innerHTML = '<div class="ach-empty">读取失败：' + esc((d && d.error) || res.status) + '</div>'
         }
       } catch (e) {
-        $('achBody').innerHTML = '<div class="ach-empty">读取失败：网络错误</div>'
+        // 这里以前只写「网络错误」，真实异常被吞掉了
+        console.error('[achieve] 读取失败', e)
+        const why = (e && (e.message || e.name)) || '未知错误'
+        $('achBody').innerHTML = '<div class="ach-empty">读取失败：' + esc(why) + '</div>'
       }
     }
 

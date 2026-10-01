@@ -240,7 +240,9 @@ export default {
         if (d && d.ok) render(d)
         else $('mailSum').textContent = '读取失败：' + ((d && d.error) || res.status)
       } catch (e) {
-        $('mailSum').textContent = '读取失败：网络错误'
+        // 以前一律写「网络错误」，真实异常被吞掉了
+        console.error('[mail] 读取失败', e)
+        $('mailSum').textContent = '读取失败：' + ((e && e.message) || '未知错误')
       }
     }
 
