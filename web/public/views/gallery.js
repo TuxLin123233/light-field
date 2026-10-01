@@ -1935,7 +1935,7 @@ export default {
         ctx.closePath()
       }
 
-      function buildMomentsCard(pixels, n, title, author, likes, tags) {
+      function buildMomentsCard(pixels, n, title, author, likes, tags, ownerUid) {
         const W = 1080
         const H = 1520
         const PAD = 72
@@ -2059,11 +2059,46 @@ export default {
         ctx.fillStyle = ink
         ctx.fillText(tTitle, W / 2, TITLE_Y)
 
-        // 作者
+        // 作者：头像 + 「画师 xxx」居中成一组
         const tAuthor = author && author.trim() ? author.trim() : '匿名'
+        const AV = 44 // 头像边长
+        const label = '画师 ' + tAuthor
         ctx.font = '400 25px ' + FONT
+        const labelW = ctx.measureText(label).width
+        const gapAv = 12
+        // 有头像时整组宽度 = 头像 + 间距 + 文字
+        const avPx = ownerUid && window.LWAvatar ? window.LWAvatar.pixelsOf(ownerUid) : null
+        const groupW = avPx ? AV + gapAv + labelW : labelW
+        let gx = (W - groupW) / 2
+        if (avPx) {
+          const av = document.createElement('canvas')
+          av.width = AV
+          av.height = AV
+          const actx = av.getContext('2d')
+          actx.imageSmoothingEnabled = false
+          for (let y = 0; y < 16; y++) {
+            for (let x = 0; x < 16; x++) {
+              const q = avPx[y * 16 + x]
+              actx.fillStyle = 'rgb(' + q[0] + ',' + q[1] + ',' + q[2] + ')'
+              actx.fillRect((x * AV) / 16, (y * AV) / 16, AV / 16 + 0.6, AV / 16 + 0.6)
+            }
+          }
+          const ay = META_Y - 30
+          ctx.save()
+          roundRect(ctx, gx, ay, AV, AV, 12)
+          ctx.clip()
+          ctx.drawImage(av, gx, ay, AV, AV)
+          ctx.restore()
+          ctx.strokeStyle = 'rgba(43,38,32,.14)'
+          ctx.lineWidth = 2
+          roundRect(ctx, gx, ay, AV, AV, 12)
+          ctx.stroke()
+          gx += AV + gapAv
+        }
+        ctx.textAlign = 'left'
         ctx.fillStyle = muted
-        ctx.fillText('画师 ' + tAuthor, W / 2, META_Y)
+        ctx.fillText(label, gx, META_Y)
+        ctx.textAlign = 'center'
 
         // 右侧点赞（有才画）
         if (likes) {
@@ -2149,8 +2184,8 @@ export default {
         return cv
       }
 
-      function openCard(pixels, n, title, author, likes, tags) {
-        const dataURL = buildMomentsCard(pixels, n, title, author, likes, tags).toDataURL('image/png')
+      function openCard(pixels, n, title, author, likes, tags, ownerUid) {
+        const dataURL = buildMomentsCard(pixels, n, title, author, likes, tags, ownerUid).toDataURL('image/png')
         cardImg.src = dataURL
         const dl = document.getElementById('cardDownload')
         dl.href = dataURL
@@ -3232,7 +3267,8 @@ export default {
           currentPreview.workName || currentPreview.name || '未命名',
           currentPreview.author || '匿名',
           currentPreview.likes || 0,
-          currentPreview.tags
+          currentPreview.tags,
+          currentPreview.ownerUser || ''
         )
       })
 

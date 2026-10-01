@@ -715,6 +715,31 @@ color: var(--text-muted);
         gap: 8px;
       }
 
+      /* 作者名：不可编辑，只显示账号名 */
+      .author-tag {
+        flex: 0 0 auto;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        height: 46px;
+        padding: 0 14px;
+        max-width: 46%;
+        border-radius: 14px;
+        border: 1px dashed var(--border-input);
+        background: var(--surface-2);
+        color: var(--text-muted);
+        font-size: 13px;
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .author-tag.need {
+        color: #d9534f;
+        border-color: #d9534f;
+        border-style: solid;
+      }
+
       .name-row input {
         flex: 1;
         min-width: 0;
@@ -2012,7 +2037,7 @@ color: var(--text-muted);
 
     <div class="name-row">
       <input id="titleInput" type="text" placeholder="作品名" maxlength="20">
-      <input id="nameInput" type="text" placeholder="作者名" maxlength="20">
+      <span class="author-tag" id="authorTag" title="作者名取自你的账号">未登录</span>
     </div>
 
     <div class="actions">
@@ -3679,7 +3704,6 @@ color: var(--text-muted);
 
       /* ---------- 作品名与作者名 ---------- */
       const titleInput = document.getElementById('titleInput')
-      const nameInput = document.getElementById('nameInput')
 
       /* ---------- 每日挑战 ---------- */
       async function joinDaily(time) {
@@ -3797,30 +3821,47 @@ color: var(--text-muted);
       }
 
       function initName() {
-        const saved = localStorage.getItem('paintName')
-        const cookieUser = readCookie('username')
-        nameInput.value = saved || cookieUser || ''
-        nameInput.addEventListener('input', () => {
-          localStorage.setItem('paintName', nameInput.value.trim())
-        })
-        nameInput.addEventListener('change', () => {
-          if (typeof fetchRecords === 'function') fetchRecords()
-        })
+        paintAuthorTag()
+        // 登录状态在别的页面可能刚变过，这里同步一下显示
+        window.addEventListener('focus', paintAuthorTag)
+        window.addEventListener('pageshow', paintAuthorTag)
       }
 
-      function resolveAuthor() {
-        let name = nameInput.value.trim()
-        if (!name) {
-          const typed = window.prompt('未填写作者名：输入你的名字后确定；直接确定或取消将匿名上传。')
-          if (typed !== null) {
-            name = typed.trim()
-            if (name) {
-              nameInput.value = name
-              localStorage.setItem('paintName', name)
-            }
-          }
+      /* 作者名不再手填：一律取登录账号的用户名。
+         填了也能被伪造，改成账号名后作品归属才是真的。 */
+      function accountName() {
+        try {
+          return localStorage.getItem('lw-user') || ''
+        } catch (e) {
+          return ''
         }
-        return name
+      }
+      function authToken() {
+        try {
+          return localStorage.getItem('lw-token') || ''
+        } catch (e) {
+          return ''
+        }
+      }
+      function resolveAuthor() {
+        return accountName()
+      }
+      /* 发布是贡献行为，必须登录 */
+      function requireLogin() {
+        if (authToken() && accountName()) return true
+        toast('发布作品需要先登录')
+        if (window.sfx) window.sfx('close')
+        setTimeout(() => {
+          location.href = '/login'
+        }, 800)
+        return false
+      }
+      function paintAuthorTag() {
+        const el = document.getElementById('authorTag')
+        if (!el) return
+        const n = accountName()
+        el.textContent = n ? '作者 ' + n : '未登录'
+        el.classList.toggle('need', !n)
       }
 
       function formatTime(ts) {
@@ -3905,7 +3946,7 @@ color: var(--text-muted);
 
       async function fetchRecords() {
         await loadOwned()
-        const myName = nameInput ? nameInput.value.trim() : ''
+        const myName = accountName()
         if (myName) {
           try {
             const res = await fetch('/api/get?limit=10&mine=' + encodeURIComponent(myName))
@@ -4272,11 +4313,12 @@ color: var(--text-muted);
       }
 
       uploadBtn.addEventListener('click', async () => {
+        if (!requireLogin()) return
         const author = resolveAuthor()
 
         const flat = []
         for (const row of pixels) for (const px of row) flat.push(normalizePixel(px))
-        const payload = { pixels: flat, size }
+        const payload = { pixels: flat, size, token: authToken() }
         if (author) payload.author = author
         const workName = (contestCheck.checked && contestTheme) ? '《' + contestTheme + '》' : titleInput.value.trim()
         if (workName) payload.workName = workName
@@ -4298,9 +4340,11 @@ color: var(--text-muted);
         const frames = animFrames.map((f) =>
           f.map((r) => r.map((px) => [px[0], px[1], px[2]]))
         )
+        if (!requireLogin()) return
         const payload = {
           size: 16,
           anim: { frames, delay: animDelay },
+          token: authToken(),
         }
         const author = resolveAuthor()
         if (author) payload.author = author
