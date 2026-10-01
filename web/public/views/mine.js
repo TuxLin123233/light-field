@@ -858,31 +858,36 @@ export default {
     }
 
     async function loadMine() {
+      // 优先用登录账号；没有账号才回退认领码（老作品）
       let code = ''
+      let token = ''
       try {
         code = localStorage.getItem('paintClaim') || ''
+        token = localStorage.getItem('lw-token') || ''
       } catch (e) {}
-      if (!code) {
+      if (!code && !token) {
         $('mineEmpty').innerHTML =
-          '还没有认领码，所以看不到「我的作品」。<br /><a href="/settings">去设置页生成</a>，之后换设备也能用同一份数据。'
-        $('mineTip').textContent = '需要认领码'
-        renderStatError('还没有认领码')
+          '登录后就能看到你发布的作品。<br /><a href="/login">去登录 / 注册</a>'
+        $('mineTip').textContent = '需要登录'
+        renderStatError('需要登录')
         $('mineGrid').innerHTML = ''
         return
       }
+      const headers = { 'Content-Type': 'application/json' }
+      if (token) headers.Authorization = 'Bearer ' + token
       try {
         const res = await fetch('/api/mine', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code, action: 'stats' }),
+          headers,
+          body: JSON.stringify({ code, token, action: 'stats' }),
         })
         const d1 = await res.json().catch(() => ({}))
         if (d1.stats) renderStats(d1.stats)
 
         const res2 = await fetch('/api/mine', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code, action: 'list' }),
+          headers,
+          body: JSON.stringify({ code, token, action: 'list' }),
         })
         const d2 = await res2.json().catch(() => ({}))
         allWorks = (d2 && d2.works) || []

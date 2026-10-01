@@ -1,12 +1,16 @@
-// 用认领码管理「我自己的作品」：列出 / 删除。
-// 认领码是持有者凭证，KV 里只存哈希；owner 字段绝不对外暴露。
+// 「我自己的作品」：列出 / 统计 / 删除。
+// 归属有两种（过渡期并存）：
+//   1. 登录账号 —— 优先。作品发布时按账号记 ownerUser
+//   2. 认领码   —— 老作品没有账号时的兜底，KV 里只存哈希
+// owner / ownerUser 字段都绝不对外暴露。
 import { readAllHistory, removeByTime } from './_history.js'
 import { claimHash, bumpWorks } from './claim.js'
+import { readActiveUser, pickToken, BANNED_ERROR } from './_auth.js'
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 }
 
 const json = (body, status = 200) =>
@@ -30,15 +34,22 @@ export async function onRequestPost(context) {
     return json({ error: 'Invalid JSON body' }, 400)
   }
 
-  const hash = await claimHash(body && body.code)
-  if (!hash) return json({ error: '认领码无效' }, 400)
-
   const action = (body && body.action) || 'list'
+
+  // 登录用户按账号取；没登录才回退认领码
+  const who = await readActiveUser(env, pickToken(request, body), request.headers.get('authorization'))
+  if (who && who.banned) return json(BANNED_ERROR, 403)
+  let hash = ''
+  if (!who) {
+    hash = await claimHash(body && body.code)
+    if (!hash) return json({ error: '认领码无效', code: 'nocred' }, 401)
+  }
+  const isMine = (e) => (who ? e && e.ownerUser === who.uid : e && e.owner === hash)
 
   if (action === 'list') {
     const { entries } = await readAllHistory(env.LIGHTFIELD_KV)
     const mine = entries
-      .filter((e) => e && e.owner === hash)
+      .filter(isMine)
       .map((e) => ({
         time: e.time,
         workName: e.workName || '',
@@ -55,7 +66,7 @@ export async function onRequestPost(context) {
 
   if (action === 'stats') {
     const { entries } = await readAllHistory(env.LIGHTFIELD_KV)
-    const mine = entries.filter((e) => e && e.owner === hash)
+    const mine = entries.filter(isMine)
 
     // 统计真正「画了东西」的格子：与画布默认白底不同的都算
     let cells = 0
@@ -114,12 +125,13 @@ export async function onRequestPost(context) {
     const { entries } = await readAllHistory(env.LIGHTFIELD_KV)
     const target = entries.find((e) => e && e.time === time)
     if (!target) return json({ error: '作品不存在或已被删除' }, 404)
-    if (target.owner !== hash) {
-      return json({ error: '只能用认领码删除自己的作品' }, 403)
+    if (!isMine(target)) {
+      return json({ error: '只能删除自己的作品' }, 403)
     }
 
     await removeByTime(env.LIGHTFIELD_KV, time)
-    await bumpWorks(env.LIGHTFIELD_KV, hash, -1)
+    // 认领码时代有计数要一起减；账号作品没有这个计数
+    if (!who && hash) await bumpWorks(env.LIGHTFIELD_KV, hash, -1)
     return json({ ok: true, time })
   }
 
