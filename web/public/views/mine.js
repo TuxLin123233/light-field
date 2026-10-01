@@ -322,51 +322,79 @@ export default {
       .m-link .ml-ico { font-size: 19px; }
       .m-link .ml-num { font-size: 15px; font-weight: 800; color: var(--accent); }
 
-      /* 头部头像，点一下去画 */
+      /* 头部：头像 + 用户名，整体水平居中 */
+      .me-hero {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+        padding: 6px 0 16px;
+      }
       .me-av {
         position: relative;
         flex: none;
         display: block;
-        width: 46px;
-        height: 46px;
-        border-radius: 14px;
-        overflow: visible;
+        width: 72px;
+        height: 72px;
         text-decoration: none;
       }
       .me-av canvas {
         display: block;
-        width: 46px;
-        height: 46px;
-        border-radius: 14px;
-        border: 1px solid var(--border);
+        width: 72px;
+        height: 72px;
+        border-radius: 20px;
+        border: 2px solid var(--border);
         image-rendering: pixelated;
         background: var(--surface-2);
+        box-shadow: 0 3px 12px var(--shadow2, rgba(0, 0, 0, 0.08));
       }
-      .me-av-badge {
+      .me-av-edit {
         position: absolute;
-        right: -4px;
-        bottom: -4px;
-        width: 19px;
-        height: 19px;
+        right: -5px;
+        bottom: -5px;
+        width: 24px;
+        height: 24px;
         border-radius: 50%;
         background: var(--accent, #5b8def);
-        color: #fff;
-        font-size: 10px;
-        line-height: 19px;
+        font-size: 12px;
+        line-height: 24px;
         text-align: center;
-        border: 2px solid var(--surface);
+        border: 2.5px solid var(--surface);
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+      }
+      .me-hero-txt {
+        min-width: 0;
+        text-align: left;
+      }
+      .me-hero-name {
+        font-size: 20px;
+        font-weight: 800;
+        color: var(--text);
+        line-height: 1.3;
+        margin: 0;
+        max-width: 46vw;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .me-hero-name.guest { color: var(--text-muted2); font-weight: 700; }
+      .me-hero-sub {
+        font-size: 12px;
+        color: var(--text-faint);
+        line-height: 1.5;
+        margin-top: 3px;
       }
   `,
   template: `<div class="container mine-wrap">
-    <div class="header">
-      <div class="header-text">
-        <h1 id="mineTitle">我的</h1>
-        <div class="header-sub" id="mineSub" hidden></div>
-      </div>
+    <div class="me-hero">
       <router-link class="me-av" to="/avatar" id="meAv" title="画头像">
         <canvas id="meAvCanvas"></canvas>
-        <span class="me-av-badge">✏️</span>
+        <span class="me-av-edit">✏️</span>
       </router-link>
+      <div class="me-hero-txt">
+        <h1 class="me-hero-name" id="meName">未登录</h1>
+        <div class="me-hero-sub" id="meHeroSub">登录后同步光尘与成就</div>
+      </div>
     </div>
 
     <router-link class="back-bar" id="mineBack" to="/mine" hidden>← 返回我的</router-link>
@@ -484,11 +512,8 @@ export default {
         : 'home'
     const CARDS = ['signCard', 'statCard', 'linkCard', 'mineCard', 'likedCard']
     function applyMode() {
-      const title = $('mineTitle')
-      const sub = $('mineSub')
       const back = $('mineBack')
       if (MODE === 'home') {
-        if (title) title.textContent = '我的'
         if (back) back.hidden = true
         CARDS.forEach((id) => {
           const el = $(id)
@@ -521,7 +546,24 @@ export default {
       toastTimer = setTimeout(() => el.classList.remove('show'), 2200)
     }
 
-    /* ---------- 头部头像 ----------
+    /* ---------- 头部：头像 + 用户名 ---------- */
+    function renderHeroName() {
+      const el = $('meName')
+      const sub = $('meHeroSub')
+      if (!el) return
+      let name = ''
+      try {
+        name = localStorage.getItem('lw-user') || ''
+      } catch (e) {}
+      el.textContent = name || '未登录'
+      el.classList.toggle('guest', !name)
+      if (sub) {
+        sub.textContent = name ? '点击头像可以重新画' : '登录后同步光尘与成就'
+      }
+    }
+    window.addEventListener('lw-auth-changed', renderHeroName)
+
+    /* ---------- 头像渲染 ----------
        头像按 uid 索引，而本机只存了用户名（令牌是签名串，解不出 uid），
        所以直接问服务端要「我的 uid + 我的像素」，顺带把 uid 记进缓存，
        之后社区列表里看到自己的作品也能对上号。 */
@@ -534,16 +576,16 @@ export default {
         t = localStorage.getItem('lw-token') || ''
       } catch (e) {}
       if (!t) {
-        A.draw(cv, 'anon', 46)
+        A.draw(cv, 'anon', 72)
         return
       }
-      A.draw(cv, 'anon', 46)
+      A.draw(cv, 'anon', 72)
       fetch('/api/avatar', { headers: { Authorization: 'Bearer ' + t }, cache: 'no-store' })
         .then((r) => (r.ok ? r.json() : null))
         .then((d) => {
           if (!d || !d.ok) return
           if (d.uid) A.put(d.uid, d.pixels || null)
-          A.draw(cv, d.uid || 'anon', 46)
+          A.draw(cv, d.uid || 'anon', 72)
         })
         .catch(() => {})
     }
@@ -1006,6 +1048,7 @@ export default {
     loadAchBadge()
 
     applyMode()
+    renderHeroName()
     renderMyAvatar()
     renderSign()
     loadMine()
