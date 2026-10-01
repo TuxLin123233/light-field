@@ -374,6 +374,11 @@ export default {
           <span class="ml-num" id="lnkMail">0</span>
           <span>信箱</span>
         </router-link>
+        <router-link class="m-link" to="/achieve">
+          <span class="ml-ico">🏅</span>
+          <span class="ml-num" id="lnkAch">0</span>
+          <span>成就</span>
+        </router-link>
         <a class="m-link" href="/paint">
           <span class="ml-ico">🎨</span>
           <span>去画</span>
@@ -635,6 +640,33 @@ export default {
       const hit = MEDALS.find((m) => m.need === s.streak)
       toast(hit ? '获得徽章 ' + hit.ico + ' ' + hit.name + '！' : '签到成功，连续 ' + s.streak + ' 天')
     })
+
+    /* 成就解锁数：只对登录用户请求 */
+    function loadAchBadge() {
+      const el = $('lnkAch')
+      if (!el) return
+      let t = ''
+      try {
+        t = localStorage.getItem('lw-token') || ''
+      } catch (e) {}
+      if (!t) {
+        el.textContent = ''
+        return
+      }
+      fetch('/api/achieve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t },
+        body: JSON.stringify({ action: 'sync' }),
+        cache: 'no-store',
+      })
+        .then((r) => (r.status === 401 ? null : r.json()))
+        .then((d) => {
+          if (!d || !d.ok) return
+          el.textContent = d.total ? d.unlocked + '/' + d.total : ''
+          if (d.reward) renderDustBalance()
+        })
+        .catch(() => {})
+    }
 
     /* 信箱待领附件数：只对登录用户请求 */
     function loadMailBadge() {
@@ -925,6 +957,7 @@ export default {
     /* ---------- 送出的光尘数量 ---------- */
     $('lnkLiked').textContent = window.dust ? window.dust.giftedCount() : 0
     loadMailBadge()
+    loadAchBadge()
 
     applyMode()
     renderSign()

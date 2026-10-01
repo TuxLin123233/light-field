@@ -10,6 +10,7 @@ import faq from './views/faq.js'
 import mine from './views/mine.js'
 import login from './views/login.js'
 import mail from './views/mail.js'
+import achieve from './views/achieve.js'
 
 const { createApp } = window.Vue
 const { createRouter, createWebHistory } = window.VueRouter
@@ -108,6 +109,7 @@ const routes = [
   // 登录 / 注册（独立页面，不占底部导航位）
   { path: '/login', component: withAutoCleanup(login) },
   { path: '/mail', component: withAutoCleanup(mail) },
+  { path: '/achieve', component: withAutoCleanup(achieve) },
   { path: '/settings', component: withAutoCleanup(settings) },
   { path: '/changelog', component: withAutoCleanup(changelog) },
   { path: '/admin', component: withAutoCleanup(admin) },
