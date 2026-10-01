@@ -221,18 +221,23 @@ export function computeMetrics(entries, book, user) {
       if (hr >= 23 || hr < 5) night = true
     }
 
-    // 纯白视为画布底色，不计入绘制量
-    const px = Array.isArray(e.pixels) ? e.pixels : []
-    const seen = new Set()
-    for (const p of px) {
-      if (!Array.isArray(p) || p.length < 3) continue
-      if (p[0] > 246 && p[1] > 246 && p[2] > 246) continue
-      cells += 1
-      const key = (p[0] >> 3) + ',' + (p[1] >> 3) + ',' + (p[2] >> 3)
-      seen.add(key)
-      allColors.add(key)
+    // 纯白视为画布底色，不计入绘制量。
+    // 像素相机（fromImage）转出来的作品不算「一笔一笔画的」——
+    // 一张 64×64 的照片就是 4096 格，不排除的话传几十张就能刷满
+    // 「十万格之境」这类成就。作品数照算，只有绘制量不算。
+    if (!e.fromImage) {
+      const px = Array.isArray(e.pixels) ? e.pixels : []
+      const seen = new Set()
+      for (const p of px) {
+        if (!Array.isArray(p) || p.length < 3) continue
+        if (p[0] > 246 && p[1] > 246 && p[2] > 246) continue
+        cells += 1
+        const key = (p[0] >> 3) + ',' + (p[1] >> 3) + ',' + (p[2] >> 3)
+        seen.add(key)
+        allColors.add(key)
+      }
+      if (seen.size > maxColorsOne) maxColorsOne = seen.size
     }
-    if (seen.size > maxColorsOne) maxColorsOne = seen.size
   }
 
   if (sizes[32]) badges.size32 = true

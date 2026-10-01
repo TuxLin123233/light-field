@@ -13,8 +13,19 @@ const SIZE = 16
 const CELLS = SIZE * SIZE
 const KEY = (uid) => 'av:' + uid
 
-/** 解锁自定义头像的花费（光尘），只收一次 */
-export const AVATAR_COST = 30
+/* 两种画法，价格不同。
+   注意：不再是「首次解锁只收一次」，而是每保存一次收一次 ——
+   改头像是要花光尘的，这样余额才有意义。 */
+export const MODES = ['pixel', 'spray']
+/** 像素画：16×16 格子逐格涂 */
+export const COST_PIXEL = 20
+/** 像素喷漆：在 64×64 上自由涂，保存时降采样到 16×16 */
+export const COST_SPRAY = 30
+export const AVATAR_COST = { pixel: COST_PIXEL, spray: COST_SPRAY }
+
+export function costOf(mode) {
+  return mode === 'spray' ? COST_SPRAY : COST_PIXEL
+}
 
 /** 校验像素数据；合法返回规整后的数组，不合法返回 null */
 export function sanitizePixels(px) {
@@ -48,21 +59,22 @@ export async function readAvatar(kv, uid) {
     const o = JSON.parse(raw)
     const px = sanitizePixels(o && o.px)
     if (!px || isBlank(px)) return null
-    return { px, at: Number(o.at) || 0, paid: o.paid !== false }
+    return { px, at: Number(o.at) || 0, paid: o.paid !== false, mode: o.mode === 'spray' ? 'spray' : 'pixel' }
   } catch (e) {
     return null
   }
 }
 
-export async function writeAvatar(kv, uid, px, paid) {
+export async function writeAvatar(kv, uid, px, paid, mode) {
   const clean = sanitizePixels(px)
   if (!clean) return null
-  const rec = { px: clean, at: Date.now(), paid: paid !== false }
+  const rec = { px: clean, at: Date.now(), paid: paid !== false, mode: mode === 'spray' ? 'spray' : 'pixel' }
   await kv.put(KEY(uid), JSON.stringify(rec))
   return rec
 }
 
-/** 是否已付过解锁费用 */
+/* 早期版本是「首次解锁收一次费」，这个标记只用于兼容老数据，
+   现在计价改成每次保存都收，这里不再参与价格判断。 */
 export async function hasPaid(kv, uid) {
   if (!kv || !uid) return false
   const raw = await kv.get(KEY(uid))
@@ -150,3 +162,6 @@ export function defaultPixels(seed) {
 }
 
 export { SIZE, CELLS }
+
+/** 喷漆模式的落笔分辨率，保存时降采样到 16×16 */
+export const SPRAY_SIZE = 64

@@ -16,7 +16,7 @@ const json = (body, status = 200) =>
     headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
   })
 
-const UPLOAD_WINDOW_MS = 5 * 60 * 1000
+const UPLOAD_WINDOW_MS = 30 * 1000
 
 function entryPixels(e) {
   return Array.isArray(e) ? e : e && e.pixels
@@ -130,8 +130,9 @@ export async function onRequestPost(context) {
     const last = Number(await env.LIGHTFIELD_KV.get(rateKey))
     const nowRl = Date.now()
     if (Number.isFinite(last) && last > 0 && nowRl - last < UPLOAD_WINDOW_MS) {
-      const waitMin = Math.ceil((UPLOAD_WINDOW_MS - (nowRl - last)) / 60000)
-      return json({ error: '上传太频繁，请 ' + waitMin + ' 分钟后再试' }, 429)
+      // 30 秒的窗口，按秒提示比按分钟清楚
+      const waitSec = Math.ceil((UPLOAD_WINDOW_MS - (nowRl - last)) / 1000)
+      return json({ error: '发布太频繁，请 ' + waitSec + ' 秒后再试', waitSec }, 429)
     }
     await env.LIGHTFIELD_KV.put(rateKey, String(nowRl), { expirationTtl: Math.ceil(UPLOAD_WINDOW_MS / 1000) })
   }
@@ -168,7 +169,12 @@ export async function onRequestPost(context) {
   // 词库只在服务端使用，不下发到浏览器，改前端也绕不过。
   const risky = hitWords(workName).concat(hitWords(author)).concat(hitWords((entry.tags || []).join(' ')))
   if (risky.length) {
-    return json({ error: '作品名或标签含有不合适的内容，请修改后再发布', hit: risky.slice(0, 3) }, 400)
+    // 把命中的词一起返回：用户能看到到底哪个词被判了，
+    // 否则只能猜「为什么我的标题不行」。
+    return json(
+      { error: '作品名或标签含有不合适的内容，请修改后再发布', hit: risky.slice(0, 3) },
+      400
+    )
   }
 
   // 归属：优先用登录账号；没登录才回退到认领码（过渡期保留）

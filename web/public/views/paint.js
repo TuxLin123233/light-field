@@ -140,6 +140,81 @@ color: var(--text-muted);
 
       .theme-btn:active { transform: scale(0.9); }
 
+      /* ---------- 像素喷漆（与像素画完全独立） ---------- */
+      #sprayBoard {
+        display: block;
+        width: 100%;
+        max-width: 512px;
+        margin: 0 auto;
+        aspect-ratio: 1;
+        image-rendering: pixelated;
+        touch-action: none;
+        border-radius: 12px;
+        cursor: crosshair;
+        background: #fff;
+      }
+      .spray-bar {
+        width: 100%;
+        max-width: 460px;
+        margin: 12px auto 0;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .spray-tools {
+        display: flex;
+        gap: 8px;
+      }
+      .spray-tool {
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        border: 1px solid var(--border-input);
+        background: var(--surface-2);
+        color: var(--text);
+        font-size: 17px;
+        cursor: pointer;
+        font-family: inherit;
+      }
+      .spray-tool:active { transform: scale(0.95); }
+      .spray-tool[aria-pressed='true'] {
+        background: var(--accent, #5b8def);
+        color: #fff;
+        border-color: var(--accent, #5b8def);
+      }
+      .spray-size {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 1;
+        min-width: 160px;
+      }
+      .spray-size-label {
+        font-size: 13px;
+        color: var(--text-muted2);
+        flex: none;
+      }
+      .spray-size input[type='range'] {
+        flex: 1;
+        min-width: 70px;
+        accent-color: var(--accent, #5b8def);
+      }
+      .spray-size-num {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text);
+        width: 18px;
+        text-align: right;
+        flex: none;
+      }
+      /* 喷漆模式下把像素画专属的行藏起来 */
+      body.spray-on .size-row,
+      body.spray-on .tools,
+      body.spray-on .hint,
+      body.spray-on #miniWrap,
+      body.spray-on .anim-wrap { display: none; }
+
       .board-wrap {
         width: 100%;
         max-width: 460px;
@@ -1449,6 +1524,47 @@ color: var(--text-muted);
 
       .start-tip { font-weight: 400; color: var(--text-faint); opacity: 0.8; }
 
+      .start-dirs {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .start-dir {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        padding: 12px 13px;
+        border-radius: 13px;
+        border: 1.5px solid var(--border-input);
+        background: var(--surface-2);
+        font-family: inherit;
+        text-align: left;
+        cursor: pointer;
+      }
+      .start-dir.on {
+        border-color: var(--accent, #5b8def);
+        background: color-mix(in srgb, var(--accent, #5b8def) 10%, var(--surface));
+      }
+      .start-dir .start-ico { font-size: 21px; flex: none; }
+      .start-dir .start-body { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+      .start-dir b { font-size: 15px; font-weight: 700; color: var(--text); }
+      .start-dir i { font-size: 12px; font-style: normal; color: var(--text-muted2); line-height: 1.5; }
+      .start-spray {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 4px 2px 10px;
+      }
+      .start-spray input[type='range'] { flex: 1; accent-color: var(--accent, #5b8def); }
+      .start-spray-num {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text);
+        width: 18px;
+        text-align: right;
+      }
+
       .start-sizes, .start-modes, .start-joins {
         display: flex;
         flex-direction: column;
@@ -1861,9 +1977,23 @@ color: var(--text-muted);
     <div class="mode-overlay" id="modeOverlay" hidden>
       <div class="mode-box start-box">
         <h2>🎨 像素小镇 · 画板</h2>
-        <div class="mode-sub">选好这次的创作方式，再开始画</div>
+        <div class="mode-sub">先选方向，再选这次的具体参数</div>
 
         <div class="start-sec">
+          <div class="start-label">创作方向</div>
+          <div class="start-dirs" id="startDirs">
+            <button type="button" class="start-dir on" data-dir="pixel">
+              <span class="start-ico">🖌️</span>
+              <span class="start-body"><b>像素画</b><i>逐格上色，可选题目与帧动画</i></span>
+            </button>
+            <button type="button" class="start-dir" data-dir="spray">
+              <span class="start-ico">💨</span>
+              <span class="start-body"><b>像素喷漆</b><i>按住拖着喷，64×64 出图</i></span>
+            </button>
+          </div>
+        </div>
+
+        <div class="start-sec" data-for="pixel">
           <div class="start-label">画布尺寸</div>
           <div class="start-sizes" id="startSizes">
             <button type="button" class="start-size" data-size="16">16×16<em>默认</em></button>
@@ -1872,8 +2002,8 @@ color: var(--text-muted);
           </div>
         </div>
 
-        <div class="start-sec">
-          <div class="start-label">创作模式</div>
+        <div class="start-sec" data-for="pixel">
+          <div class="start-label">创作方式</div>
           <div class="start-modes" id="startModes">
             <button type="button" class="start-mode" data-mode="free">
               <span class="start-ico">🖌️</span>
@@ -1890,7 +2020,7 @@ color: var(--text-muted);
           </div>
         </div>
 
-        <div class="start-sec" id="startJoinSec">
+        <div class="start-sec" id="startJoinSec" data-for="pixel">
           <div class="start-label">参加活动<span class="start-tip">可不选</span></div>
           <div class="start-joins" id="startJoins">
             <button type="button" class="start-join" data-join="none">
@@ -1907,11 +2037,23 @@ color: var(--text-muted);
           </div>
         </div>
 
-        <div class="start-sec" id="startToolSec" hidden>
+        <div class="start-sec" id="startToolSec" data-for="pixel" hidden>
           <div class="start-label">辅助工具</div>
           <label class="start-toggle">
             <input type="checkbox" id="startImage">
             <span class="start-body"><b>📷 像素相机</b><i>把照片变成像素画再手改</i></span>
+          </label>
+        </div>
+
+        <div class="start-sec" data-for="spray">
+          <div class="start-label">笔刷<span class="start-tip">画的时候也能调</span></div>
+          <div class="start-spray">
+            <input type="range" id="startSprayBrush" min="1" max="8" step="1" value="3" aria-label="笔刷大小">
+            <span class="start-spray-num" id="startSprayNum">3</span>
+          </div>
+          <label class="start-toggle">
+            <input type="checkbox" id="startSprayMirror">
+            <span class="start-body"><b>🦋 左右镜像</b><i>只喷一半，另一边自动对称</i></span>
           </label>
         </div>
 
@@ -1949,6 +2091,22 @@ color: var(--text-muted);
     <div class="board-wrap">
       <canvas id="board" width="512" height="512"
               title="也可以直接把照片拖到这里"></canvas>
+      <canvas id="sprayBoard" hidden
+              title="按住鼠标或手指拖着喷"></canvas>
+    </div>
+
+    <!-- 喷漆工具条：只在像素喷漆模式下出现 -->
+    <div class="spray-bar" id="sprayBar" hidden>
+      <div class="spray-tools">
+        <button class="spray-tool" type="button" id="sprayUndo" title="撤销">↩️</button>
+        <button class="spray-tool" type="button" id="sprayClear" title="清空">🗑️</button>
+        <button class="spray-tool" type="button" id="sprayMirror" title="左右镜像" aria-pressed="false">🦋</button>
+      </div>
+      <div class="spray-size">
+        <span class="spray-size-label">笔刷</span>
+        <input id="sprayBrush" type="range" min="1" max="8" step="1" value="3" aria-label="笔刷大小">
+        <span class="spray-size-num" id="sprayBrushNum">3</span>
+      </div>
     </div>
 
     <div class="size-row">
@@ -2046,7 +2204,9 @@ color: var(--text-muted);
       <button id="imgBtn" type="button" title="把照片变成像素画" class="abtn">
         <span class="abtn-ico">📷</span><span class="abtn-tx">像素相机</span>
       </button>
-      <button id="mirrorBtn" type="button" title="左右镜像绘制（M）" aria-pressed="false">🦋</button>
+      <button id="mirrorBtn" type="button" title="左右镜像绘制（M）" aria-pressed="false" class="abtn">
+        <span class="abtn-ico">🦋</span><span class="abtn-tx">镜像</span>
+      </button>
       <input id="imgInput" type="file" accept="image/*" hidden>
 
     <div class="imgmode-overlay" id="imgModeOverlay" hidden>
@@ -2998,6 +3158,21 @@ color: var(--text-muted);
       const savePngBtn = document.getElementById('savePngBtn')
       if (savePngBtn) savePngBtn.addEventListener('click', () => window.sfx && window.sfx('save'))
       function exportPng(scale) {
+        // 喷漆模式下导出喷漆结果，与发布口径一致(64×64)
+        if (sprayOn && spray) {
+          const buf = spray.full()
+          const k = scale || 8
+          const cv = document.createElement('canvas')
+          cv.width = 64 * k
+          cv.height = 64 * k
+          const sctx = cv.getContext('2d')
+          for (let i = 0; i < buf.length; i++) {
+            const p = buf[i]
+            sctx.fillStyle = 'rgb(' + p[0] + ',' + p[1] + ',' + p[2] + ')'
+            sctx.fillRect((i % 64) * k, Math.floor(i / 64) * k, k, k)
+          }
+          return cv.toDataURL('image/png')
+        }
         const n = size
         const k = scale || 8
         const cv = document.createElement('canvas')
@@ -4303,22 +4478,61 @@ color: var(--text-muted);
             fetchRecords()
             return true
           }
-          toast('上传失败：' + (data.error || res.status))
+          if (res.status === 429) {
+            // 发布间隔 30 秒，按秒倒计时让用户知道还要等多久
+            startPublishCooldown(btn, Number(data.waitSec) || 30)
+            toast('发布太频繁，' + (data.waitSec || 30) + ' 秒后再试')
+            return false
+          }
+          toast('发布失败：' + (data.error || res.status))
         } catch (err) {
-          toast('上传失败：网络错误')
+          toast('发布失败：网络错误')
         } finally {
           btn.disabled = false
         }
         return false
       }
 
+      /* 发布冷却：按钮上直接倒数，用完才恢复 */
+      let coolTimer = null
+      function startPublishCooldown(btn, sec) {
+        if (coolTimer) clearInterval(coolTimer)
+        const base = btn.textContent
+        let left = Math.max(1, Math.round(sec))
+        btn.disabled = true
+        btn.textContent = left + 's'
+        coolTimer = setInterval(() => {
+          left -= 1
+          if (left <= 0) {
+            clearInterval(coolTimer)
+            coolTimer = null
+            btn.disabled = false
+            btn.textContent = base
+            return
+          }
+          btn.textContent = left + 's'
+        }, 1000)
+      }
+
       uploadBtn.addEventListener('click', async () => {
         if (!requireLogin()) return
         const author = resolveAuthor()
 
-        const flat = []
-        for (const row of pixels) for (const px of row) flat.push(normalizePixel(px))
-        const payload = { pixels: flat, size, token: authToken() }
+        let flat
+        let pubSize = size
+        if (sprayOn) {
+          // 喷漆固定 64×64，直接取喷漆缓冲
+          if (!spray || spray.isEmpty()) {
+            toast('还什么都没喷呢')
+            return
+          }
+          flat = spray.full().map(normalizePixel)
+          pubSize = 64
+        } else {
+          flat = []
+          for (const row of pixels) for (const px of row) flat.push(normalizePixel(px))
+        }
+        const payload = { pixels: flat, size: pubSize, token: authToken() }
         if (author) payload.author = author
         const workName = (contestCheck.checked && contestTheme) ? '《' + contestTheme + '》' : titleInput.value.trim()
         if (workName) payload.workName = workName
@@ -4535,10 +4749,66 @@ color: var(--text-muted);
         syncJoinHighlight()
       }
 
+      /* ---------- 像素喷漆（与像素画完全独立） ---------- */
+      let spray = null
+      let sprayOn = false
+      function initSpray() {
+        if (spray || !window.LWSpray) return
+        const cv = document.getElementById('sprayBoard')
+        if (!cv) return
+        spray = window.LWSpray.create(cv, {
+          size: 64,
+          getColor: () => currentColor,
+          onChange: () => {
+            if (window.sfx && sprayOn) {
+              // 喷的时候不每次都响，节流一下
+              const now = Date.now()
+              if (now - (initSpray._t || 0) > 90) {
+                initSpray._t = now
+                try { window.sfx('tick') } catch (e) {}
+              }
+            }
+          },
+        })
+      }
+      function setSprayMode(on) {
+        sprayOn = !!on
+        document.body.classList.toggle('spray-on', sprayOn)
+        const board = document.getElementById('board')
+        const sc = document.getElementById('sprayBoard')
+        const bar = document.getElementById('sprayBar')
+        if (board) board.hidden = sprayOn
+        if (sc) sc.hidden = !sprayOn
+        if (bar) bar.hidden = !sprayOn
+        if (sprayOn) {
+          initSpray()
+          if (spray) {
+            const b = document.getElementById('startSprayBrush')
+            if (b) spray.setBrush(Number(b.value) || 3)
+            const m = document.getElementById('startSprayMirror')
+            if (m) spray.setMirror(!!m.checked)
+            spray.render()
+          }
+        }
+      }
+
+      let startDir = 'pixel'
+
+      /** 按方向显示/隐藏对应参数组 */
+      function applyDir() {
+        document.querySelectorAll('#modeOverlay [data-for]').forEach((el) => {
+          el.hidden = el.getAttribute('data-for') !== startDir
+        })
+        document.querySelectorAll('#startDirs .start-dir').forEach((b) => {
+          b.classList.toggle('on', b.getAttribute('data-dir') === startDir)
+        })
+      }
+
       function openStartMenu() {
         startSize = size
         startMode = 'free'
         startJoin = 'none'
+        applyDir()
         const startImg = document.getElementById('startImage')
         if (startImg) startImg.checked = false
         const pBtn = document.querySelector('[data-mode="prompt"]')
@@ -4554,6 +4824,20 @@ color: var(--text-muted);
         modeOverlay.hidden = false
       }
 
+      document.getElementById('startDirs').addEventListener('click', (e) => {
+        const b = e.target.closest('.start-dir')
+        if (!b) return
+        startDir = b.getAttribute('data-dir') || 'pixel'
+        if (window.sfx) window.sfx('tick')
+        applyDir()
+      })
+      const startSprayBrush = document.getElementById('startSprayBrush')
+      if (startSprayBrush) {
+        startSprayBrush.addEventListener('input', () => {
+          document.getElementById('startSprayNum').textContent = startSprayBrush.value
+        })
+      }
+
       bindSinglePick('#startSizes', 'data-size', (v) => {
         startSize = v ? Number(v) : startSize
       })
@@ -4563,8 +4847,51 @@ color: var(--text-muted);
       bindSinglePick('#startJoins', 'data-join', (v) => {
         startJoin = v || 'none'
       })
+      /* 喷漆工具条 */
+      const sprayBrush = document.getElementById('sprayBrush')
+      if (sprayBrush) {
+        sprayBrush.addEventListener('input', () => {
+          const n = sprayBrush.value
+          const num = document.getElementById('sprayBrushNum')
+          if (num) num.textContent = n
+          if (spray) spray.setBrush(Number(n) || 1)
+        })
+      }
+      const sprayUndo = document.getElementById('sprayUndo')
+      if (sprayUndo) {
+        sprayUndo.addEventListener('click', () => {
+          if (spray && spray.undo() && window.sfx) window.sfx('tick')
+        })
+      }
+      const sprayClear = document.getElementById('sprayClear')
+      if (sprayClear) {
+        sprayClear.addEventListener('click', () => {
+          if (!spray) return
+          spray.clear()
+          if (window.sfx) window.sfx('close')
+        })
+      }
+      const sprayMirror = document.getElementById('sprayMirror')
+      if (sprayMirror) {
+        sprayMirror.addEventListener('click', () => {
+          const on = sprayMirror.getAttribute('aria-pressed') !== 'true'
+          sprayMirror.setAttribute('aria-pressed', String(on))
+          if (spray) spray.setMirror(on)
+          if (window.sfx) window.sfx('tap')
+        })
+      }
+
       document.getElementById('startGo').addEventListener('click', () => {
         applyStartChoices()
+        if (startDir === 'spray') {
+          setSprayMode(true)
+          enterMode('free')
+          if (modeChip) modeChip.textContent = '当前：像素喷漆'
+          modeOverlay.hidden = true
+          applyLayout()
+          return
+        }
+        setSprayMode(false)
         enterMode(startMode)
         applyLayout()
         modeOverlay.hidden = true
