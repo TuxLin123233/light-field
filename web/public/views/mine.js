@@ -310,6 +310,10 @@ export default {
       }
       button.m-link { font-family: inherit; cursor: pointer; }
 
+      .mine-del-tip {
+        font-size: 11px; color: var(--text-faint);
+        margin: -2px 0 8px;
+      }
       .mine-filter {
         display: flex;
         align-items: center;
@@ -562,6 +566,7 @@ export default {
     <!-- 我的作品：页内完整列表，只显示自己的 -->
     <div class="m-card" id="mineCard">
       <div class="m-card-title">🎨 我的作品<span class="m-tip" id="mineTip"></span><button class="lw-refresh" id="mineRefresh" type="button" data-label="刷新"></button></div>
+      <div class="mine-del-tip">长按任意一幅可以删掉它（删了找不回来）</div>
       <div class="mine-filter" id="mineFilter" hidden>
         <span class="mf-label">筛选</span>
         <div class="mf-chips" id="mineChips"></div>
@@ -1361,6 +1366,59 @@ export default {
       }
     }
 
+    /* 删除自己的一幅画。
+       以前这段逻辑只写在 views/paint.js 里，而且从来没有被任何按钮调用过 ——
+       后端 /api/mine 的 delete 早就实现了，前端却没有入口，
+       所以「删掉自己不想再挂着的画」这件事实际上做不到。
+       这里把它接到「我的作品」上：长按 1.2 秒 → 二次确认 → 删。 */
+    async function deleteOwnWork(w, item) {
+      let t = ''
+      try {
+        t = localStorage.getItem('lw-token') || ''
+      } catch (e) {}
+      if (!t) {
+        toast('删除作品需要先登录')
+        setTimeout(() => {
+          location.href = '/login'
+        }, 800)
+        return
+      }
+      const name = w.workName || '未命名'
+      if (!window.confirm('确定删除「' + name + '」吗？删除后无法恢复。')) return
+      item.dataset.deleting = '1'
+      try {
+        const res = await fetch('/api/mine', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t },
+          body: JSON.stringify({ action: 'delete', token: t, time: w.time }),
+        })
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok || !data || !data.ok) {
+          toast('删除失败：' + ((data && data.error) || res.status))
+          delete item.dataset.deleting
+          return
+        }
+        if (window.sfx) window.sfx('close')
+        toast('已删除「' + name + '」')
+        // 本地那份「我发布过哪些作品」的记录也要同步去掉
+        try {
+          const ids = JSON.parse(localStorage.getItem('paintMyTimes') || '[]')
+          localStorage.setItem(
+            'paintMyTimes',
+            JSON.stringify(ids.filter((x) => String(x) !== String(w.time)))
+          )
+        } catch (e) {}
+        // 统计、作品列表、聊天角标里的数字都可能变了，一起作废重画
+        const C2 = window.LWCache || {}
+        C2.drop('mine')
+        C2.drop('chatBadge')
+        await loadMine()
+      } catch (e) {
+        delete item.dataset.deleting
+        toast('删除失败：' + ((e && e.message) || '网络错误'))
+      }
+    }
+
     function buildWorkItem(w) {
       const item = document.createElement('div')
       item.className = 'mine-item'
@@ -1380,8 +1438,41 @@ export default {
         cap.appendChild(n)
       }
       item.append(cv, cap)
+      item.dataset.time = String(w.time)
       item.addEventListener('click', () => {
-        location.href = '/gallery?t=' + w.time
+        // 长按删除刚触发完，别顺手又跳到社区去
+        if (item.dataset.deleting === '1') {
+          delete item.dataset.deleting
+          return
+        }
+        /* 用 router 跳转，不要 location.href。
+           整页刷新会把 Vue、全部视图脚本和 Service Worker 重新拉一遍，
+           点一下自己的画要等一两秒；而且没有 SPA 回退的部署环境会直接 404。 */
+        const target = '/gallery?t=' + w.time
+        if (window.__lwRouter) window.__lwRouter.push(target)
+        else location.href = target
+      })
+      /* 长按 1.2 秒删掉自己这幅画。
+         为什么用长按：单击是「去社区看这幅」，两个操作挨在一起，
+         误触就删了不可恢复。跟举报的交互保持一致。 */
+      let holdTimer = null
+      const startHold = (e) => {
+        if (e.target.closest('button, a')) return
+        clearTimeout(holdTimer)
+        holdTimer = setTimeout(() => {
+          holdTimer = null
+          if (window.sfx) window.sfx('tap')
+          deleteOwnWork(w, item)
+        }, 1200)
+      }
+      const cancelHold = () => clearTimeout(holdTimer)
+      item.addEventListener('pointerdown', startHold)
+      item.addEventListener('pointerup', cancelHold)
+      item.addEventListener('pointerleave', cancelHold)
+      item.addEventListener('pointercancel', cancelHold)
+      item.addEventListener('contextmenu', (e) => {
+        // 自己的画不给举报，长按菜单直接拦掉
+        if (!item.dataset.own) e.preventDefault()
       })
       return item
     }
