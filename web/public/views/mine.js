@@ -570,12 +570,10 @@ export default {
       <div id="mineEmpty"></div>
     </div>
 
-    <!-- 送过光尘的：页内列表 -->
-    <div class="m-card" id="likedCard" hidden>
-      <div class="m-card-title">✨ 送过光尘的<span class="m-tip" id="likedTip"></span></div>
-      <div class="mine-grid" id="likedGrid"></div>
-      <div id="likedEmpty"></div>
-    </div>
+    <!-- 「送过光尘的」不再在主页底部占一块了（用户要求删掉）。
+         要看的话走「我的」里「送出的」那个入口，或者直接开 /mine/gifted，
+         那条路由还在，loadLiked 也没动。 -->
+    <div id="likedSlot"></div>
   </div>`,
   mounted() {
     const $ = (id) => document.getElementById(id)
@@ -659,6 +657,18 @@ export default {
         if (!el) return
         el.hidden = id !== (MODE === 'works' ? 'mineCard' : 'likedCard')
       })
+      // 过滤页需要这一块，主页不需要
+      if (MODE === 'gifted' && !document.getElementById('likedCard')) {
+        const slot = $('likedSlot')
+        if (slot) {
+          slot.innerHTML =
+            '<div class="m-card" id="likedCard">\n' +
+            '      <div class="m-card-title">✨ 送过光尘的<span class="m-tip" id="likedTip"></span></div>\n' +
+            '      <div class="mine-grid" id="likedGrid"></div>\n' +
+            '      <div id="likedEmpty"></div>\n' +
+            '    </div>'
+        }
+      }
       // 过滤页的标题挂在各自卡片上（头部已改为头像+账号名，不再有页面级标题）
       const cardTitle = MODE === 'works' ? '我的作品' : '送出的光尘'
       const cardSub =
@@ -1380,7 +1390,7 @@ export default {
     async function loadLiked() {
       const card = $('likedCard')
       const grid = $('likedGrid')
-      if (!card || !grid) return
+      if (!card || !grid) return // 主页已经没有这张卡片了
       card.hidden = false
       // 数据源是服务端账本里「已赠送」的作品，未登录没有记录
       const times =
@@ -1428,11 +1438,13 @@ export default {
         $('mineCard').scrollIntoView({ behavior: 'smooth', block: 'start' })
         if (window.sfx) window.sfx('tick')
       })
+    /* 底部那张「送过光尘的」卡片已经删了，所以这个入口改成直接跳到
+       /mine/gifted 过滤页 —— 以前是「加载完再滚到卡片」，卡片没了会直接报错。 */
     $('lnkLikedBtn') &&
-      $('lnkLikedBtn').addEventListener('click', async () => {
+      $('lnkLikedBtn').addEventListener('click', () => {
         if (window.sfx) window.sfx('tick')
-        await loadLiked()
-        $('likedCard').scrollIntoView({ behavior: 'smooth', block: 'start' })
+        if (window.__lwRouter) window.__lwRouter.push('/mine/gifted')
+        else location.hash = '#/mine/gifted'
       })
 
     /* ---------- 送出的光尘数量 ---------- */
