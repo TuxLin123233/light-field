@@ -1,11 +1,13 @@
 // 像素小镇 · Service Worker
 // 目标：装到桌面后，没网也能打开画板继续画。
 // 策略：
-//   - 应用外壳（HTML/JS/CSS/图标）安装时预缓存，之后走「缓存优先 + 后台更新」
-//   - /api/ 一律走网络，绝不缓存（作品、房间、投票这类数据必须实时）
-//   - 其它图片等静态资源走缓存优先
+//   - /api/ 一律走网络，绝不缓存（作品、投票这类数据必须实时）
+//   - 页面导航、JS/CSS/清单：网络优先 + 缓存兜底。
+//     这一条很关键：之前用「缓存优先」，导致 push 之后用户仍拿到旧版代码，
+//     表现为「改了但没变化」。代码正确性比离线速度重要。
+//   - 图标、图片：缓存优先（体积大、变动少）
 
-const VERSION = 'lw-v1.3.1'
+const VERSION = 'lw-v1.4.0'
 const SHELL_CACHE = 'lw-shell-' + VERSION
 
 const SHELL = [
@@ -85,7 +87,24 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
-  // 静态资源：缓存优先，同时后台悄悄更新
+  // 代码与样式：网络优先，拿到新的就顺手更新缓存；断网才用旧缓存
+  const CODE = /\.(?:js|css|mjs|webmanifest|json)$/i
+  if (CODE.test(url.pathname)) {
+    event.respondWith(
+      fetch(req)
+        .then((res) => {
+          if (res && res.status === 200 && res.type === 'basic') {
+            const copy = res.clone()
+            caches.open(SHELL_CACHE).then((c) => c.put(req, copy))
+          }
+          return res
+        })
+        .catch(() => caches.match(req).then((r) => r || caches.match('/index.html')))
+    )
+    return
+  }
+
+  // 图片等体积大、变动少的资源：缓存优先 + 后台更新
   event.respondWith(
     caches.match(req).then((cached) => {
       const network = fetch(req)
