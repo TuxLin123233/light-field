@@ -25,7 +25,7 @@ export function dayStamp(ms = Date.now()) {
 }
 
 function emptyBook() {
-  return { bal: 0, streak: 0, total: 0, last: 0, gifted: [] }
+  return { bal: 0, streak: 0, total: 0, last: 0, gifted: [], got: 0 }
 }
 
 function sanitize(raw) {
@@ -38,6 +38,7 @@ function sanitize(raw) {
     b.streak = Math.max(0, Math.floor(Number(o.streak) || 0))
     b.total = Math.max(0, Math.floor(Number(o.total) || 0))
     b.last = Math.max(0, Math.floor(Number(o.last) || 0))
+    b.got = Math.max(0, Math.floor(Number(o.got) || 0))
     b.gifted = Array.isArray(o.gifted) ? o.gifted.map(String).slice(-MAX_GIFTED) : []
     return b
   } catch (e) {
@@ -87,10 +88,28 @@ export async function signIn(kv, uid) {
 }
 
 /**
+ * 给某个账号加光尘（别人送光尘到他的作品、信箱附件发放都走这里）。
+ * amount 为负数表示扣除，但不会让余额变负。
+ */
+export async function creditDust(kv, uid, amount) {
+  const n = Math.floor(Number(amount) || 0)
+  if (!uid || n === 0) return null
+  const book = await readBook(kv, uid)
+  if (n > 0) {
+    book.bal += n
+    book.got += n
+  } else {
+    book.bal = Math.max(0, book.bal + n)
+  }
+  return writeBook(kv, uid, book)
+}
+
+/**
  * 送光尘。余额不足、同一作品重复送都返回 false，不扣分。
+ * recipientUid 是作品作者的账号；给了就把这份光尘转给他。
  * 调用方负责随后给作品加赞。
  */
-export async function giveDust(kv, uid, time) {
+export async function giveDust(kv, uid, time, recipientUid) {
   const key = String(time || '')
   if (!/^\d+$/.test(key) || key === '0') return { ok: false, reason: 'bad_time' }
 
@@ -101,7 +120,16 @@ export async function giveDust(kv, uid, time) {
   book.bal -= DUST_COST
   book.gifted.push(key)
   const saved = await writeBook(kv, uid, book)
-  return { ok: true, book: saved }
+
+  // 转给作品作者。自己给自己的作品送不算，否则可以凭空刷光尘。
+  let credited = 0
+  const to = String(recipientUid || '')
+  if (to && to !== uid) {
+    const got = await creditDust(kv, to, DUST_COST)
+    if (got) credited = DUST_COST
+  }
+
+  return { ok: true, book: saved, credited }
 }
 
 export function publicView(book) {
@@ -109,6 +137,7 @@ export function publicView(book) {
     bal: book.bal,
     streak: book.streak,
     total: book.total,
+    got: book.got || 0,
     signedToday: book.last === dayStamp(),
     gifted: book.gifted,
     giftedCount: book.gifted.length,

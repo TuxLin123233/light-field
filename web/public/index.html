@@ -677,14 +677,13 @@
     <div id="toast"></div>
     <script type="module" src="/app.js"></script>
     <script>
-      /* ---------- 光尘账本 ----------
-         签到得光尘，赠给作品换认可。
-         登录用户存服务端（换设备同步，余额不可伪造）；未登录退回本机记账。
+      /* ---------- 光尘账本（只走服务端） ----------
+         签到和送光尘都是互动行为，一律要求登录。
+         早期版本未登录时也存在本机记账，那样换个设备就清零，
+         改 localStorage 还能凭空造余额，所以本机账本已整体移除。
          DUST_PER_SIGNIN：每次签到赠送的数量
          DUST_COST：送一次光尘的消耗                    */
       ;(function () {
-        var KEY_BAL = 'lw-dust'
-        var KEY_GIFTED = 'lw-dust-gifted'
         var KEY_TOKEN = 'lw-token'
         var DUST_PER_SIGNIN = 5
         var DUST_COST = 1
@@ -693,22 +692,6 @@
         var server = null
         var inflight = false
 
-        function readNum(k) {
-          try {
-            var v = Number(localStorage.getItem(k))
-            return isFinite(v) ? v : 0
-          } catch (e) {
-            return 0
-          }
-        }
-        function readList(k) {
-          try {
-            var a = JSON.parse(localStorage.getItem(k) || '[]')
-            return Array.isArray(a) ? a : []
-          } catch (e) {
-            return []
-          }
-        }
         function token() {
           try {
             return localStorage.getItem(KEY_TOKEN) || ''
@@ -716,33 +699,27 @@
             return ''
           }
         }
-        function localBalance() {
-          return Math.max(0, readNum(KEY_BAL))
-        }
-        function localGifted() {
-          return readList(KEY_GIFTED)
-        }
-        function applyServer(book) {
+        function applyBook(book) {
           server = book && typeof book.bal === 'number' ? book : null
         }
 
-        /* 拉取服务端账本；未登录时把 server 置空，自动退回本地模式 */
+        /* 拉取服务端账本；未登录或令牌失效时把 server 置空 */
         function sync() {
           var t = token()
           if (!t) {
-            applyServer(null)
+            applyBook(null)
             return Promise.resolve(null)
           }
-          return fetch('/api/dust', { headers: { Authorization: 'Bearer ' + t } })
+          return fetch('/api/dust', { headers: { Authorization: 'Bearer ' + t }, cache: 'no-store' })
             .then(function (r) {
               if (r.status === 401) {
-                applyServer(null)
+                applyBook(null)
                 return null
               }
               return r.json()
             })
             .then(function (d) {
-              if (d && d.ok && d.book) applyServer(d.book)
+              if (d && d.ok && d.book) applyBook(d.book)
               return server
             })
             .catch(function () {
@@ -753,16 +730,20 @@
         window.dust = {
           perSignin: DUST_PER_SIGNIN,
           cost: DUST_COST,
-          /* 是否走服务端账本 */
+          /* 是否已登录（账本是否来自服务端） */
           isServer: function () {
             return server !== null
           },
-          /* 登录/退出后调用，重新确定账本来源 */
+          /* 是否已登录：光尘的一切都以登录为前提 */
+          logged: function () {
+            return !!token()
+          },
+          /* 登录/退出后调用 */
           refresh: sync,
-          /* 签到：登录用户由服务端裁决发放，未登录走本地 */
+          /* 签到：完全由服务端裁决发放 */
           sign: function () {
             var t = token()
-            if (!t) return Promise.resolve(null)
+            if (!t) return Promise.resolve({ ok: false, needLogin: true })
             if (inflight) return Promise.resolve(null)
             inflight = true
             return fetch('/api/dust', {
@@ -776,7 +757,8 @@
                 })
               })
               .then(function (d) {
-                if (d && d.ok && d.book) applyServer(d.book)
+                if (d && d.ok && d.book) applyBook(d.book)
+                if (d && d.code === 'noauth') applyBook(null)
                 return d
               })
               .catch(function () {
@@ -786,10 +768,10 @@
                 inflight = false
               })
           },
-          /* 服务端赠送：扣分与加赞都在服务端完成 */
+          /* 赠送：扣分与加赞在服务端一次完成 */
           giveRemote: function (time) {
             var t = token()
-            if (!t) return Promise.resolve(null)
+            if (!t) return Promise.resolve({ ok: false, needLogin: true })
             return fetch('/api/dust', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t },
@@ -801,7 +783,8 @@
                 })
               })
               .then(function (d) {
-                if (d && d.book) applyServer(d.book)
+                if (d && d.book) applyBook(d.book)
+                if (d && d.code === 'noauth') applyBook(null)
                 return d
               })
               .catch(function () {
@@ -809,50 +792,23 @@
               })
           },
           balance: function () {
-            if (server) return Math.max(0, server.bal)
-            return localBalance()
+            return server ? Math.max(0, server.bal) : 0
           },
-          add: function (n) {
-            if (server) return server.bal
-            var next = localBalance() + (Number(n) || 0)
-            try {
-              localStorage.setItem(KEY_BAL, String(Math.max(0, next)))
-            } catch (e) {}
-            return localBalance()
+          /* 累计收到的光尘（别人送到自己作品上的） */
+          received: function () {
+            return server ? Number(server.got) || 0 : 0
           },
-          /* 够不够再送一次 */
-          canGive: function (time) {
-            if (window.dust.gave(time)) return false
-            return window.dust.balance() >= DUST_COST
-          },
+          /* 未登录一律视为没送过，避免误显示「已送」 */
           gave: function (time) {
+            if (!server) return false
             var k = String(time)
-            if (server && Array.isArray(server.gifted)) return server.gifted.indexOf(k) >= 0
-            return localGifted().indexOf(k) >= 0
-          },
-          /* 本地赠送；登录用户请改用 giveRemote */
-          give: function (time) {
-            if (server) return false
-            var k = String(time)
-            if (localGifted().indexOf(k) >= 0) return false
-            if (localBalance() < DUST_COST) return false
-            try {
-              localStorage.setItem(KEY_BAL, String(localBalance() - DUST_COST))
-              var list = localGifted()
-              list.push(k)
-              localStorage.setItem(KEY_GIFTED, JSON.stringify(list.slice(-2000)))
-            } catch (e) {
-              return false
-            }
-            return true
+            return Array.isArray(server.gifted) && server.gifted.indexOf(k) >= 0
           },
           giftedList: function () {
-            if (server && Array.isArray(server.gifted)) return server.gifted
-            return localGifted()
+            return server && Array.isArray(server.gifted) ? server.gifted : []
           },
           giftedCount: function () {
-            if (server) return Number(server.giftedCount) || 0
-            return localGifted().length
+            return server ? Number(server.giftedCount) || 0 : 0
           },
           /* 服务端账本里的签到状态，供「我的」页渲染 */
           signState: function () {

@@ -29,6 +29,12 @@ export default {
       }
 
       /* ---------- 签到 ---------- */
+      .dust-got {
+        margin-left: auto;
+        font-size: 11px;
+        color: var(--text-faint);
+        flex: none;
+      }
       .dust-bar {
         display: flex;
         align-items: center;
@@ -333,6 +339,7 @@ export default {
         <span class="dust-ico">✨</span>
         <span class="dust-label">我的光尘</span>
         <span class="dust-num" id="dustNum">0</span>
+        <span class="dust-got" id="dustGot" hidden></span>
       </div>
       <div class="sign-top">
         <div class="sign-streak">
@@ -473,8 +480,7 @@ export default {
       toastTimer = setTimeout(() => el.classList.remove('show'), 2200)
     }
 
-    /* ---------- 签到：登录走服务端，未登录走本机 ---------- */
-    const SIGN_KEY = 'lw-sign'
+    /* ---------- 签到（只走服务端，必须登录） ---------- */
     // 达成里程碑时额外奖励「等于里程碑天数」的光尘
     const MEDALS = [
       { need: 1, ico: '🌱', name: '启程' },
@@ -483,31 +489,6 @@ export default {
       { need: 30, ico: '💎', name: '连续 30 天' },
       { need: 100, ico: '👑', name: '连续 100 天' },
     ]
-    const todayKey = () => {
-      const d = new Date()
-      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
-    }
-    function loadSign() {
-      try {
-        const o = JSON.parse(localStorage.getItem(SIGN_KEY) || '{}')
-        return {
-          days: Array.isArray(o.days) ? o.days : [],
-          streak: Number(o.streak) || 0,
-          best: Number(o.best) || 0,
-          // 已经发过奖励的里程碑，避免断签重连后重复领
-          awarded: Array.isArray(o.awarded) ? o.awarded : [],
-        }
-      } catch (e) {
-        return { days: [], streak: 0, best: 0, awarded: [] }
-      }
-    }
-    function saveSign(s) {
-      try {
-        // 只保留最近 400 天，避免无限增长
-        localStorage.setItem(SIGN_KEY, JSON.stringify({ ...s, days: s.days.slice(-400) }))
-      } catch (e) {}
-    }
-
     /* 光尘余额：签到、送出后都要刷新 */
     function renderDustBalance() {
       const el = $('dustNum')
@@ -515,6 +496,13 @@ export default {
       el.innerHTML = window.dust.balance() + '<small>个</small>'
       const sent = $('lnkLiked')
       if (sent) sent.textContent = window.dust.giftedCount()
+      // 别人送光尘到自己的画上会进账，这里显示累计收到多少
+      const gotEl = $('dustGot')
+      if (gotEl) {
+        const got = window.dust.received ? window.dust.received() : 0
+        gotEl.hidden = !got
+        gotEl.textContent = got ? '累计收到 ' + got : ''
+      }
     }
 
     /* 登录用户的签到状态来自服务端账本 */
@@ -523,32 +511,43 @@ export default {
     }
 
     function renderSign() {
-      const s = loadSign()
-      const today = todayKey()
       const sv = serverSign()
-      const signed = sv ? sv.signed : s.days.includes(today)
-      const streak = sv ? sv.streak : s.streak
-      const totalDays = sv ? sv.total : s.days.length
+      if (!sv) {
+        // 未登录：签到入口直接引导登录
+        $('signStreak').textContent = '—'
+        $('signTotal').textContent = '—'
+        const b0 = $('signBtn')
+        b0.textContent = '登录后签到'
+        b0.classList.remove('done')
+        $('signWeek').innerHTML = ''
+        $('medals').innerHTML = ''
+        $('signTip').textContent = '需要登录'
+        return
+      }
+      const signed = sv.signed
+      const streak = sv.streak
+      const totalDays = sv.total
       $('signStreak').textContent = streak
       $('signTotal').textContent = totalDays
       const btn = $('signBtn')
       btn.textContent = signed ? '今日已签' : '签到'
       btn.classList.toggle('done', signed)
 
-      // 最近 7 天
+      // 最近 7 天：服务端账本只存累计天数与连续天数，不存逐日明细，
+      // 所以这里用连续天数画一条进度带，不伪造逐日打点。
       const week = $('signWeek')
       week.innerHTML = ''
       const names = ['日', '一', '二', '三', '四', '五', '六']
       for (let i = 6; i >= 0; i--) {
         const d = new Date()
         d.setDate(d.getDate() - i)
-        const key =
-          d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
         const cell = document.createElement('div')
         cell.className = 'sign-day'
         const dot = document.createElement('div')
-        dot.className = 'sign-dot' + (s.days.includes(key) ? ' on' : '') + (i === 0 ? ' today' : '')
-        dot.textContent = s.days.includes(key) ? '✓' : ''
+        // 今天已签、或处于当前连续区间内的日子才算亮
+        const inStreak = i < streak
+        dot.className = 'sign-dot' + (inStreak ? ' on' : '') + (i === 0 ? ' today' : '')
+        dot.textContent = inStreak ? '✓' : ''
         const lab = document.createElement('div')
         lab.className = 'sign-lab'
         lab.textContent = i === 0 ? '今天' : names[d.getDay()]
@@ -560,85 +559,53 @@ export default {
       const box = $('medals')
       box.innerHTML = ''
       MEDALS.forEach((m) => {
-        const got = (sv ? streak : s.best) >= m.need
+        const got = streak >= m.need
         const el = document.createElement('span')
         el.className = 'medal' + (got ? ' got' : '')
         el.textContent = m.ico + ' ' + m.name
         box.appendChild(el)
       })
-      $('signTip').textContent = sv
-        ? '已同步到账号'
-        : s.best > s.streak
-          ? '最长 ' + s.best + ' 天'
-          : '存在本机 · 登录可同步'
+      $('signTip').textContent = '已同步到账号'
       renderDustBalance()
     }
 
     $('signBtn').addEventListener('click', () => {
-      // 登录用户：签到与光尘发放全部由服务端裁决，换设备也一致
-      if (window.dust && window.dust.signState()) {
-        window.dust.sign().then((d) => {
-          if (!d) {
-            toast('签到失败，请稍后再试')
-            return
-          }
-          if (d.already) {
-            toast('今天已经签过啦')
-            return
-          }
-          renderDustBalance()
-          renderSign()
-          if (window.sfx) window.sfx(d.streak > 1 ? 'ok' : 'ding')
-          if (d.bonus) {
-            toast('达成连续 ' + d.streak + ' 天！额外获得 ' + d.bonus + ' 个光尘 ✨')
-            return
-          }
-          const hit = MEDALS.find((m) => m.need === d.streak)
-          toast(hit ? '获得徽章 ' + hit.ico + ' ' + hit.name + '！' : '签到成功，连续 ' + d.streak + ' 天')
-        })
+      // 签到是互动行为，必须登录；未登录直接跳登录页
+      if (!window.dust || !window.dust.logged()) {
+        toast('签到需要先登录')
+        if (window.sfx) window.sfx('close')
+        setTimeout(() => {
+          location.href = '/login'
+        }, 700)
         return
       }
 
-      const s = loadSign()
-      const today = todayKey()
-      if (s.days.includes(today)) {
-        toast('今天已经签过啦')
-        return
-      }
-      // 判断是否连续：昨天有没有签
-      const y = new Date()
-      y.setDate(y.getDate() - 1)
-      const yKey =
-        y.getFullYear() + '-' + String(y.getMonth() + 1).padStart(2, '0') + '-' + String(y.getDate()).padStart(2, '0')
-      s.streak = s.days.includes(yKey) ? s.streak + 1 : 1
-      s.best = Math.max(s.best || 0, s.streak)
-      s.days.push(today)
-      saveSign(s)
-      // 每次签到的固定赠送
-      const per = window.dust ? window.dust.perSignin : 5
-      if (window.dust) window.dust.add(per)
-      // 达成里程碑额外奖励：奖励数额 = 里程碑天数
-      let bonus = 0
-      let bonusName = ''
-      MEDALS.forEach((m) => {
-        if (s.streak === m.need && s.awarded.indexOf(m.need) < 0) {
-          s.awarded.push(m.need)
-          bonus += m.need
-          bonusName = m.name
+      window.dust.sign().then((d) => {
+        if (!d) {
+          toast('签到失败，请稍后再试')
+          return
         }
+        if (d.needLogin) {
+          toast('登录状态已失效，请重新登录')
+          setTimeout(() => {
+            location.href = '/login'
+          }, 700)
+          return
+        }
+        if (d.already) {
+          toast('今天已经签过啦')
+          return
+        }
+        renderDustBalance()
+        renderSign()
+        if (window.sfx) window.sfx(d.streak > 1 ? 'ok' : 'ding')
+        if (d.bonus) {
+          toast('达成连续 ' + d.streak + ' 天！额外获得 ' + d.bonus + ' 个光尘 ✨')
+          return
+        }
+        const hit = MEDALS.find((m) => m.need === d.streak)
+        toast(hit ? '获得徽章 ' + hit.ico + ' ' + hit.name + '！' : '签到成功，连续 ' + d.streak + ' 天')
       })
-      if (bonus && window.dust) window.dust.add(bonus)
-      saveSign(s)
-      renderDustBalance()
-      renderSign()
-      if (bonus) {
-        toast('达成「' + bonusName + '」！额外获得 ' + bonus + ' 个光尘 ✨')
-        return
-      }
-      if (window.sfx) window.sfx(s.streak > 1 ? 'ok' : 'ding')
-      renderSign()
-      const hit = MEDALS.find((m) => m.need === s.streak)
-      toast(hit ? '获得徽章 ' + hit.ico + ' ' + hit.name + '！' : '签到成功，连续 ' + s.streak + ' 天')
     })
 
     /* 成就解锁数：只对登录用户请求 */
@@ -914,12 +881,17 @@ export default {
       const grid = $('likedGrid')
       if (!card || !grid) return
       card.hidden = false
-      // 数据源是光尘账本里「已赠送」的作品
-      const times = window.dust
-        ? window.dust.giftedList().map(Number).filter((t) => Number.isFinite(t))
-        : []
-      $('likedTip').textContent = times.length ? times.length + ' 件' : ''
+      // 数据源是服务端账本里「已赠送」的作品，未登录没有记录
+      const times =
+        window.dust && window.dust.logged()
+          ? window.dust.giftedList().map(Number).filter((t) => Number.isFinite(t))
+          : []
+      $('likedTip').textContent = window.dust && window.dust.logged() && times.length ? times.length + ' 件' : ''
       grid.innerHTML = ''
+      if (!window.dust || !window.dust.logged()) {
+        $('likedEmpty').innerHTML = '送光尘需要登录。<br /><a href="/login">去登录 / 注册</a>'
+        return
+      }
       if (!times.length) {
         $('likedEmpty').innerHTML =
           '还没有送出过光尘。<br />去社区看看，<b>✨ 送光尘</b>给喜欢的作品'
@@ -962,5 +934,7 @@ export default {
     applyMode()
     renderSign()
     loadMine()
+    // 直接进 /mine/gifted 时也要加载列表，不依赖点入口
+    if (MODE === 'gifted') loadLiked()
   },
 }

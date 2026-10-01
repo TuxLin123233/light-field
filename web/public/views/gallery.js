@@ -2203,9 +2203,22 @@ export default {
 
       /* 赠送光尘：同一作品只能送一次，且要有余额。
          登录用户走服务端：扣分与加赞在同一次请求里完成，不会出现「扣了没赞」。 */
+      /* 赠送光尘：互动行为，必须登录。
+         扣分与加赞在服务端同一次请求内完成，不会出现「扣了没赞」。 */
       async function like(rec, btn) {
         const key = String(rec.time)
         if (!window.dust) return
+
+        // 未登录：先引导登录，不做任何本地记账
+        if (!window.dust.logged()) {
+          toast('登录后才能送光尘')
+          if (window.sfx) window.sfx('close')
+          setTimeout(() => {
+            location.href = '/login'
+          }, 800)
+          return
+        }
+
         if (window.dust.gave(key)) {
           toast('你已经送过光尘给这幅画了')
           return
@@ -2214,65 +2227,42 @@ export default {
           toast('光尘不够了，去「我的」签到领一些吧')
           return
         }
+
         btn.disabled = true
-
-        if (window.dust.isServer && window.dust.isServer()) {
-          try {
-            const d = await window.dust.giveRemote(rec.time)
-            if (!d) {
-              toast('赠送失败：网络错误')
-              return
-            }
-            if (!d.ok) {
-              toast(d.error || '赠送失败')
-              return
-            }
-            likedMap.add(key)
-            saveLiked()
-            if (window.sfx) window.sfx('pop')
-            rec.likes = Math.max(0, Number(d.likes) || 0)
-            const sp = btn.querySelector('span')
-            if (sp) sp.textContent = rec.likes
-            updateLikedState(btn, rec.time)
-            const pv = document.getElementById('previewLikeCount')
-            if (pv) pv.textContent = rec.likes
-            syncLikeEverywhere(rec.time, rec.likes, true)
-            window.dispatchEvent(new CustomEvent('lw-dust-changed'))
-            toast('送出了 ' + window.dust.cost + ' 个光尘 ✨ 余额 ' + window.dust.balance())
-          } catch (err) {
-            toast('赠送失败：网络错误')
-          } finally {
-            btn.disabled = false
-          }
-          return
-        }
-
         try {
-          const res = await fetch('/api/like', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ time: rec.time }),
-          })
-          const data = await res.json().catch(() => ({}))
-          if (res.ok) {
-            // 服务端计数成功后才真正扣光尘，避免白扣
-            if (!window.dust.give(key)) {
-              toast('光尘不足，赠送未完成')
-              return
-            }
-            likedMap.add(key)
-            saveLiked()
-            if (window.sfx) window.sfx('pop')
-            rec.likes = Math.max(0, Number(data.likes) || 0)
-            const span = btn.querySelector('span')
-            if (span) span.textContent = rec.likes
-            updateLikedState(btn, rec.time)
-            const pv = document.getElementById('previewLikeCount')
-            if (pv) pv.textContent = rec.likes
-            syncLikeEverywhere(rec.time, rec.likes, true)
-            toast('送出了 ' + window.dust.cost + ' 个光尘 ✨ 余额 ' + window.dust.balance())
+          const d = await window.dust.giveRemote(rec.time)
+          if (!d) {
+            toast('赠送失败：网络错误')
+            return
+          }
+          if (d.needLogin || d.code === 'noauth') {
+            toast('登录状态已失效，请重新登录')
+            setTimeout(() => {
+              location.href = '/login'
+            }, 800)
+            return
+          }
+          if (!d.ok) {
+            toast(d.error || '赠送失败')
+            return
+          }
+          likedMap.add(key)
+          saveLiked()
+          if (window.sfx) window.sfx('pop')
+          rec.likes = Math.max(0, Number(d.likes) || 0)
+          const sp = btn.querySelector('span')
+          if (sp) sp.textContent = rec.likes
+          updateLikedState(btn, rec.time)
+          const pv = document.getElementById('previewLikeCount')
+          if (pv) pv.textContent = rec.likes
+          syncLikeEverywhere(rec.time, rec.likes, true)
+          window.dispatchEvent(new CustomEvent('lw-dust-changed'))
+          if (d.self) {
+            toast('这是你自己的画，赞已收到，光尘就不转了')
+          } else if (d.credited) {
+            toast('送出了 ' + window.dust.cost + ' 个光尘 ✨ 对方也收到了，余额 ' + window.dust.balance())
           } else {
-            toast('赠送失败：' + (data.error || res.status))
+            toast('送出了 ' + window.dust.cost + ' 个光尘 ✨ 余额 ' + window.dust.balance())
           }
         } catch (err) {
           toast('赠送失败：网络错误')

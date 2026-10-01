@@ -7,7 +7,7 @@
 // 未登录返回 401，前端继续使用本地账本。
 import { readActiveUser, pickToken, BANNED_ERROR } from './_auth.js'
 import { readBook, signIn, giveDust, publicView, DUST_PER_SIGNIN, DUST_COST } from './_dust.js'
-import { incrementLikes } from './_history.js'
+import { incrementLikes, readAllHistory } from './_history.js'
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -69,7 +69,30 @@ export async function onRequestPost(context) {
   }
 
   if (action === 'give') {
-    const r = await giveDust(env.LIGHTFIELD_KV, who.uid, body && body.time)
+    // 查出作品作者，好把这份光尘转给他
+    const time = Number(body && body.time)
+    let recipient = ''
+    if (Number.isFinite(time) && time > 0) {
+      const { entries } = await readAllHistory(env.LIGHTFIELD_KV)
+      const target = entries.find((e) => e && e.time === time)
+      if (target && target.ownerUser) recipient = String(target.ownerUser)
+    }
+
+    // 自己的作品：赞照给，但光尘既不扣也不转，否则能凭空刷出光尘
+    if (recipient && recipient === who.uid) {
+      const likedSelf = await incrementLikes(env.LIGHTFIELD_KV, time)
+      if (!likedSelf.found) return json({ error: '作品不存在' }, 404)
+      return json({
+        ok: true,
+        self: true,
+        found: true,
+        likes: likedSelf.likes,
+        credited: 0,
+        book: publicView(await readBook(env.LIGHTFIELD_KV, who.uid)),
+      })
+    }
+
+    const r = await giveDust(env.LIGHTFIELD_KV, who.uid, body && body.time, recipient)
     if (!r.ok) {
       const msg =
         r.reason === 'already' ? '这幅作品已经送过光尘了' :
@@ -84,6 +107,8 @@ export async function onRequestPost(context) {
       ok: true,
       found: liked.found,
       likes: liked.likes,
+      // credited 为 1 表示这份光尘已转到作品作者账上
+      credited: r.credited || 0,
       book: publicView(r.book),
     })
   }
