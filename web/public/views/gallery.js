@@ -814,38 +814,64 @@ export default {
 
       .preview-overlay[hidden] { display: none; }
 
+      /* 弹窗整体不能超过屏幕：以前没限高，评论一多内容就撑到视口外面，
+         而遮罩是 fixed + overflow:visible，超出去的部分既滑不到也点不到
+         （实测 47 条评论时「下拉加载更多」按钮 top=857、视口只有 844，
+         elementFromPoint 直接是 null）。
+         改成：头部固定在弹窗顶端，下面 .preview-body 自己滚动。 */
       .preview-box {
         width: 100%;
         max-width: 380px;
+        max-height: calc(100vh - 32px);
+        max-height: calc(100dvh - 32px);
+        display: flex;
+        flex-direction: column;
         background: var(--surface);
         border-radius: 18px;
         padding: 20px;
         box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
         text-align: center;
       }
+      .preview-body {
+        flex: 1 1 auto;
+        min-height: 0; /* flex 子项默认 min-height:auto，不写这行就不会收缩、不会滚 */
+        overflow-y: auto;
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+        scrollbar-width: thin;
+      }
+      .preview-body::-webkit-scrollbar { width: 4px; }
+      .preview-body::-webkit-scrollbar-thumb {
+        background: var(--border-strong); border-radius: 4px;
+      }
 
       /* 头部吸顶：评论一多内容变长，头部跟着滚出去就够不着「关闭」了
          （反馈是「评论 3 个就关不掉作品」）。吸顶后按钮永远在。 */
+      /* 头部在 .preview-body 外面，本身就永远可见，不需要 sticky 了 */
       .preview-head {
         display: flex;
         justify-content: space-between;
         align-items: center;
         gap: 10px;
         margin-bottom: 14px;
-        position: sticky;
-        top: 0;
-        z-index: 3;
+        flex: none;
         padding: 8px 0;
         margin-top: -8px;
-        background: var(--surface);
-        border-radius: 12px 12px 0 0;
       }
-      /* 下滑关闭：按住预览往下一拖，松手就关。手指按住的地方会跟手。 */
-      .preview-card {
-        touch-action: pan-y;
+      /* 下滑关闭：按住预览往下一拖，松手就关。手指按住的地方会跟手。
+         注意：JS 里是给 #previewBox 加 .swiping，类名必须对上 ——
+         之前这两条写的是 .preview-card，markup 里根本没有这个元素，
+         于是拖动时 transition 一直生效，手感是飘的而不是跟手的。 */
+      #previewBox {
         transition: transform 0.18s ease-out;
       }
-      .preview-card.swiping { transition: none; }
+      #previewBox.swiping { transition: none; }
+      .preview-art {
+        touch-action: none; /* 这块由手势处理，别让浏览器拿去滚 */
+        cursor: grab;
+      }
+      #previewBox.swiping .preview-art { cursor: grabbing; }
       .preview-grab {
         width: 38px; height: 4px; border-radius: 999px;
         background: var(--border-strong);
@@ -1162,7 +1188,47 @@ export default {
         background: var(--surface-2); color: var(--text-faint);
         cursor: default; box-shadow: none;
       }
-      .cmt-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+      /* 展开后评论区自己可以滑动，不用拖动整个弹窗。
+         高度卡住，评论再多也只占这么大一块。
+         「下拉加载更多」放在这个滚动区里面，滑到底才碰得到。 */
+      .cmt-scroll {
+        margin-top: 10px;
+        max-height: min(46vh, 320px);
+        overflow-y: auto; overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain; /* 滑到头了不要把滚动传给弹窗 */
+        scrollbar-width: thin;
+      }
+      .cmt-scroll[hidden] { display: none; }
+      .cmt-scroll::-webkit-scrollbar { width: 4px; }
+      .cmt-scroll::-webkit-scrollbar-thumb {
+        background: var(--border-strong); border-radius: 4px;
+      }
+      .cmt-list { display: flex; flex-direction: column; gap: 8px; }
+      /* 评论区下拉：默认收起成一行，评论再多也不会把作品弹窗撑到关不掉。
+         展开后如果还没显示完，底部给一个「下拉加载更多」。 */
+      .cmt-fold {
+        display: flex; align-items: center; gap: 7px; width: 100%;
+        margin-top: 10px; padding: 9px 11px;
+        border: 1px solid var(--border); background: var(--surface-2);
+        border-radius: 11px; cursor: pointer;
+        font-family: inherit; font-size: 12px; font-weight: 700; color: var(--text-muted);
+        text-align: left;
+      }
+      .cmt-fold:active { background: var(--surface); }
+      .cmt-fold-ico {
+        font-size: 9px; line-height: 1; color: var(--text-faint);
+        transition: transform .18s ease;
+      }
+      .cmt-fold[aria-expanded='true'] .cmt-fold-ico { transform: rotate(180deg); }
+      .cmt-fold-num { margin-left: auto; font-size: 11px; font-weight: 400; color: var(--text-faint); }
+      .cmt-more {
+        display: block; width: 100%; margin-top: 2px; padding: 9px;
+        border: 1px dashed var(--border-strong); background: transparent;
+        border-radius: 11px; color: var(--text-faint);
+        font-family: inherit; font-size: 12px; cursor: pointer;
+      }
+      .cmt-more:active { background: var(--surface-2); }
       .cmt-item {
         display: flex; gap: 8px; background: var(--surface-2);
         border-radius: 11px; padding: 8px 10px;
@@ -1558,8 +1624,15 @@ export default {
           <span class="preview-title" id="previewTitle">作品预览</span>
           <button class="preview-close" id="previewClose" type="button">关闭</button>
         </div>
+        <div class="preview-body" id="previewBody">
+        <!-- 画布单独包一层：这块要归「往下一拖关闭」的手势管。
+             touch-action:none 是必须的 —— 评论区展开后弹窗本身可滚，
+             浏览器会把纵向拖动当成原生滚动，抢走指针并发 pointercancel，
+             结果就是按下去立刻被取消、怎么拖都关不掉。 -->
+        <div class="preview-art" id="previewArt">
         <canvas id="previewCanvas" width="16" height="16" hidden></canvas>
-        <img id="previewImg" alt="作品预览">
+        <img id="previewImg" alt="作品预览" draggable="false">
+        </div>
         <div class="preview-info">
           <div class="preview-who">
             <span class="preview-av" id="previewAv"></span>
@@ -1588,7 +1661,15 @@ export default {
             <span class="cmt-count" id="cmtCount"></span>
             <button class="cmt-send" id="cmtSend" type="button" disabled>发表</button>
           </div>
-          <div class="cmt-list" id="cmtList"></div>
+          <button class="cmt-fold" id="cmtFold" type="button" aria-expanded="false">
+            <span class="cmt-fold-ico">▼</span>
+            <span id="cmtFoldTx">展开评论</span>
+            <span class="cmt-fold-num" id="cmtFoldNum"></span>
+          </button>
+          <div class="cmt-scroll" id="cmtScroll" hidden>
+            <div class="cmt-list" id="cmtList"></div>
+            <button class="cmt-more" id="cmtMore" type="button" hidden></button>
+          </div>
         </div>
         <div class="report-progress" id="reportProgress" hidden><i></i></div>
         <div class="pal-box" id="previewPalette" hidden>
@@ -1600,6 +1681,7 @@ export default {
           <div class="pal-tip">点任意色块即可复制它的色号</div>
         </div>
         <div class="preview-note">仅支持预览，不可载入作画。请勿抄袭或直接提交他人的作品。长按图片可保存到相册。</div>
+        </div>
       </div>
     </div>
 
@@ -3328,6 +3410,15 @@ export default {
       let cmtMyUid = '' // 服务端在读评论时顺便带回我的 uid，用来把「我说的」镜像到右边
       let cmtWorkOwner = '' // 当前这幅作品的作品作者 uid
       let cmtIMayDelete = false // 我是不是这幅作品的作品作者
+      const cmtFold = document.getElementById('cmtFold')
+      const cmtFoldTx = document.getElementById('cmtFoldTx')
+      const cmtFoldNum = document.getElementById('cmtFoldNum')
+      const cmtMore = document.getElementById('cmtMore')
+      const cmtScroll = document.getElementById('cmtScroll')
+      let cmtAll = [] // 这幅作品的全部评论
+      let cmtOpen = false // 评论区是否已展开
+      let cmtShown = 20 // 展开后先显示多少条（往下拉还能加载更多）
+      const CMT_PAGE = 20
 
       /* 这条评论是不是我发的。
          uid 对得上最准；但如果读评论时还没登录 / 拿到的缓存里没有 myUid，
@@ -3374,15 +3465,41 @@ export default {
         })()
         cmtIMayDelete = !!(cmtWorkOwner && myName && cmtWorkOwner === myName)
         const items = d.items || []
-        cmtCount.textContent = items.length ? items.length + ' 条评论' : ''
-        if (!items.length) {
-          cmtList.innerHTML = '<div class="cmt-tip">还没有人评论，来说第一句吧</div>'
+        cmtAll = items
+        paintCmtList()
+      }
+
+      /* 画评论区。分两件事：
+         · 下拉展开/收起：默认收起成一行，评论再多也不会把弹窗撑到关不掉
+         · 展开后内部可以滑动，一次只铺 CMT_PAGE 条，底部还有「下拉加载更多」 */
+      function paintCmtList() {
+        const n = cmtAll.length
+        cmtCount.textContent = n ? n + ' 条评论' : ''
+        cmtFoldNum.textContent = n ? n + ' 条' : ''
+        cmtFoldTx.textContent = cmtOpen ? '收起评论' : n ? '展开评论' : '还没有评论'
+        cmtFold.setAttribute('aria-expanded', cmtOpen ? 'true' : 'false')
+        cmtScroll.hidden = !cmtOpen
+        if (!n) {
+          cmtMore.hidden = true
+          if (cmtOpen) cmtList.innerHTML = '<div class="cmt-tip">还没有人评论，来说第一句吧</div>'
           return
         }
+        // 取最新的一段：评论按时间正序存的，新的在最后
+        const from = Math.max(0, n - cmtShown)
+        const page = cmtAll.slice(from)
+        const left = from
+        cmtMore.hidden = left <= 0
+        cmtMore.textContent = '↓ 下拉加载更多（还有 ' + left + ' 条）'
+        cmtMore.dataset.left = String(left)
+        paintOne(page)
+      }
+
+      /* 把给定的一批评论画进列表（只管画，不发请求、不管分页）。 */
+      function paintOne(list) {
         // 包一层 try：渲染评论用的是拼 HTML 的写法，一个字段对不上就会抛，
-        // 而这里在 Promise 里，抛了也不会冒到页面上，只会出现「评论区空白」
+        // 而这里在 Promise 里，抛了也不会冒到页面上，只出现「评论区空白」
         try {
-        cmtList.innerHTML = items
+        cmtList.innerHTML = list
           .map((c) => {
             const isMine = isMyComment(c)
             /* 「（作者）」标签同样按事实算：这幅作品现在的作者是谁，
@@ -3422,7 +3539,7 @@ export default {
         })
         // 预取所有评论者的头像，回来时重绘一次
         if (window.LWAvatar && window.LWAvatar.load) {
-          const uids = [...new Set(items.map((c) => c.uid).filter(Boolean))]
+          const uids = [...new Set(list.map((c) => c.uid).filter(Boolean))]
           if (uids.length) {
             window.LWAvatar.load(uids).then(() => {
               cmtList.querySelectorAll('.cmt-av[data-uid]').forEach((el) => {
@@ -3463,6 +3580,27 @@ export default {
               b.disabled = false
             }
           })
+        })
+      } // paintOne
+
+      /* 下拉展开/收起 */
+      if (cmtFold) {
+        cmtFold.addEventListener('click', () => {
+          cmtOpen = !cmtOpen
+          if (cmtOpen && window.sfx) window.sfx('tap')
+          paintCmtList()
+          if (cmtOpen) {
+            // 展开后把最新的评论露出来，别让人以为没加载
+            cmtScroll.scrollTop = cmtScroll.scrollHeight
+          }
+        })
+      }
+      /* 下拉加载更多：一次再铺 CMT_PAGE 条 */
+      if (cmtMore) {
+        cmtMore.addEventListener('click', () => {
+          cmtShown += CMT_PAGE
+          paintCmtList()
+          if (window.sfx) window.sfx('tap')
         })
       }
 
@@ -3538,8 +3676,22 @@ export default {
           }
           cmtInput.value = ''
           if (window.sfx) window.sfx('ding')
+          /* 自己刚发的那条一定要看得见：把评论区展开，
+             并把显示条数拉到足够包含最新一条，否则新评论留在「还没加载」里。 */
+          cmtOpen = true
+          cmtShown = Math.max(cmtShown, cmtAll.length + 1)
           C.drop('cmt:' + cmtWork)
-          loadComments(cmtWork, true)
+          await loadComments(cmtWork, true)
+          /* 自己刚发的那条要真的看得见。
+             光把评论列表滚到底不够 —— 评论区本身在弹窗里可能也在屏幕下面，
+             内外两层都得滚，否则发完还是「不知道发出去了没有」。 */
+          try {
+            cmtScroll.scrollTop = cmtScroll.scrollHeight
+            const body = document.getElementById('previewBody')
+            if (body) body.scrollTop = body.scrollHeight
+            const last = cmtList.lastElementChild
+            if (last && last.scrollIntoView) last.scrollIntoView({ block: 'nearest' })
+          } catch (e) {}
         } catch (e) {
           toast('发表失败：' + ((e && e.message) || '网络错误'))
         } finally {
@@ -3594,14 +3746,34 @@ export default {
             if (e.isPrimary === false) return
             // 从输入框/按钮起手的交给它们自己处理
             const t = e.target
-            if (t && t.closest && t.closest('input, textarea, button, .cmt-list, .pal-box')) return
+            /* 这几块上的按下要阻止默认行为：
+               <img> 默认可以被按住拖动，浏览器会启动原生拖放，
+               随即发 pointercancel 把我们的手势掐掉（表现为怎么拖都关不掉）。
+               必须在非 passive 监听里 preventDefault 才有效。
+               .preview-body 背景不能拦 —— 那里要留着正常滚动。 */
+            if (t && t.closest && t.closest('#previewArt, .preview-grab, .preview-head')) {
+              if (e.cancelable) e.preventDefault()
+            }
+            /* 从这些地方起手的拖动不算「下滑关闭」：
+           输入框要能选字、评论和色板要能上下滑动。
+           .cmt-scroll 是评论的滚动容器，必须一起排掉 ——
+           少了它，在评论区里往下滑会直接把作品弹窗关掉。 */
+        /* 注意别把 .preview-body 整个排掉：画布（.preview-card）在它里面，
+           排掉以后从画布往下一拖就关不掉了。
+           只排真正需要自己滑动的地方：评论区滚动区和色板。 */
+        if (t && t.closest && t.closest('input, textarea, button, .cmt-list, .cmt-scroll, .pal-box')) return
             startY = e.clientY
             startX = e.clientX
             dy = 0
             tracking = true
             box.classList.add('swiping')
+            /* 把指针抓在自己身上：不然浏览器一旦开始原生滚动就会发
+               pointercancel，end() 立刻把状态清掉，拖动等于没发生。 */
+            try {
+              if (box.setPointerCapture && e.pointerId != null) box.setPointerCapture(e.pointerId)
+            } catch (err) {}
           },
-          { passive: true }
+          { passive: false }
         )
         box.addEventListener(
           'pointermove',
@@ -3621,8 +3793,11 @@ export default {
           },
           { passive: true }
         )
-        const end = () => {
+        const end = (e) => {
           if (!tracking) return
+          try {
+            if (e && e.pointerId != null && box.releasePointerCapture) box.releasePointerCapture(e.pointerId)
+          } catch (err) {}
           const h = box.getBoundingClientRect().height || 1
           // 拖过 1/4 高度，或者速度够快（dy 已经很大）就关
           if (dy > h * 0.25 || dy > 160) {
@@ -3637,7 +3812,11 @@ export default {
         }
         box.addEventListener('pointerup', end)
         box.addEventListener('pointercancel', end)
-        box.addEventListener('pointerleave', end)
+        /* 故意不监听 pointerleave：
+           拖动时弹窗跟着手指往下移，指针会立刻「离开」自己所在的元素，
+           一旦在这里 end()，状态就被清掉、transform 复位，
+           表现为「怎么拖都关不掉、还会自己弹回去」。
+           有了 setPointerCapture，pointerup 一定会送到 box 上，够用了。 */
       })()
 
       document.getElementById('previewClose').addEventListener('click', closePreview)
