@@ -19,7 +19,7 @@ export default {
         --accent: #5b8def;
         --overlay: rgba(20, 15, 10, 0.8);
       }
-      [data-theme="dark"] {
+      [data-mood="dark"] {
         --bg: #181512;
         --surface: #262220;
         --surface-2: #332e29;
@@ -233,13 +233,13 @@ export default {
         border-color: rgba(180, 168, 150, 0.30) !important;
         box-shadow: 0 14px 40px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.35);
       }
-      [data-theme="dark"] .bottom-nav {
+      [data-mood="dark"] .bottom-nav {
         background: rgba(var(--nav-base, 42, 38, 33), var(--nav-op, 0.62)) !important;
         border-color: rgba(255, 255, 255, 0.10) !important;
         box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
       }
       html.glass-off .bottom-nav,
-      html.glass-off [data-theme="dark"] .bottom-nav {
+      html.glass-off [data-mood="dark"] .bottom-nav {
         background: var(--surface) !important;
         border-color: var(--border) !important;
         -webkit-backdrop-filter: none;
@@ -293,6 +293,12 @@ export default {
               <li><span class="li-tag tag-new">新功能</span><b>可以举报用户了</b>：在作品预览里，作者名字旁边多了头像和简介（点名字直接进他的主页），右边一个「🚩 举报该用户」。举报作品的长按入口照旧，两件事分开。维护面板里用户举报会单独标出来，处理时能一键封禁该账号并把举报理由记进封禁原因</li>
               <li><span class="li-tag tag-new">新功能</span>维护面板新增「赠送光尘」：按用户名直接加减，正数增加、负数扣减，单次上限 10 万，正数同时计入对方「累计收到」</li>
               <li><span class="li-tag tag-new">新功能</span><b>每日任务</b>：每天派 5 个任务，达成后手动领光尘（共 100 个，20 天走完一遍，每组 5 个的指标互不重复）。任务涵盖作品数、绘制格数、收到/送出的光尘、签到与连续天数、尺寸、动画、参赛、活跃时段、时段作息、画头像、写简介等，进度直接按你已有的创作数据算，达成后按钮才亮。<b>「我的」页入口上的角标显示今天还有几个能领</b></li>
+              <li><span class="li-tag tag-fix">修复</span><b>暗色模式下每周主题比赛那块看不清</b>：比赛卡片的背景是写死的浅色渐变（米白→粉），而暗色适配只写了 <code>[data-theme="dark"]</code> —— 暗色主题一共 8 个，只有 id 叫 dark 的那个被命中，夜阑/深海/墨林/玫瑰夜/森语/夜航/炭这 7 个仍是浅底配浅色文字。现在 html 上额外打一个 <code>data-mood="dark|light"</code>，视图里凡是暗色适配一律用 <code>[data-mood="dark"]</code>（共 27 处），新增暗色主题自动生效。8 个暗色主题逐一量过对比度，正文 11~12、强调色 4.3~10、角标 14.5，全部达标</li>
+              <li><span class="li-tag tag-fix">修复</span><b>头像页和画板的喷漆都有白色条纹</b>：喷漆画布的背板一直固定成 64×dpr，但画布实际显示宽度最大 512px，两边不是整数倍时浏览器就得拉伸位图，最后一行/一列只盖住部分像素，露出来的就是白线（和之前像素画板上是同一个毛病）。改成按实测显示宽度建背板，并加了 ResizeObserver，窗口缩放或转屏后会自动重建</li>
+              <li><span class="li-tag tag-fix">修复</span><b>「我的」页快捷入口挤在一行溢出</b>：入口已经有 7 个，手机宽度下每个只剩 40px 出头、标签被压得换行。改成 4 列 × 2 行网格，正好两行，字号跟着收一档</li>
+              <li><span class="li-tag tag-fix">修复</span>「我的」页作品卡片的标题左对齐，长短不一的标题排在一起参差不齐；已改成居中</li>
+              <li><span class="li-tag tag-fix">修复</span>尺寸筛选片上的「16×16 1」里末尾那个件数紧跟在 16 后面，很容易看成尺寸的一部分。件数已拆成独立的小圆角徽标（带底色、比正文小一号），尺寸和数量一眼能分开</li>
+              <li><span class="li-tag tag-update">更新</span>加载动画换成一个小方块在轨道里左右来回走，方块颜色取 <code>var(--accent)</code>，换主题自动跟着变；也尊重系统的「减少动态效果」设置</li>
               <li><span class="li-tag tag-fix">修复</span><b>能靠刷自己作品的白拿每日榜冠军奖</b>，这是个能无限套利的漏洞：<br />① 送自己作品时，接口每点一次就给计数 +1，既不扣光尘也没有次数上限；<b>而这个计数正是每日榜的排序依据</b>，等于可以对着自己的画狂点，把自己顶到榜首每天领 10 个光尘。现在送自己的画什么都不做——不扣、不转、计数也不加，并明确提示「不能自己送光尘给自己」<br />② <code>POST /api/like</code> 是个<b>没有鉴权、没有去重、没有限流</b>的接口，传个作品时间戳就能把任意作品的计数改成任意值。它原本只有一个调用方，而那个调用方（画板页的 <code>likeWork</code>）是死代码、从来没被调用过。已把 POST 整个删掉，只留 GET（佳作展示的 Top 榜），死代码一并清除</li>
               <li><span class="li-tag tag-new">新功能</span><b>发布作品也有光尘了</b>：每发一幅得 1 个光尘，<b>每天靠发布最多拿 10 个</b>（第 11 幅起照样能发，只是不再给光尘）。发布成功的提示里会写清「得到 1 个光尘（今天靠发布已得 3/10）」，拿满了也会说明。<b>像素相机转出来的作品不给这个奖励</b>——导入图片不算创作</li>
               <li><span class="li-tag tag-fix">修复</span><b>四个页面的报错都写死成「网络错误」</b>：画头像、简介、成就墙、信箱的 catch 无论抛什么都显示同一句话，把真实原因全吞了——头像页就因为这个，接口 200 正常却一直显示「读取失败：网络错误」，排查时完全看不出是代码里少了函数。现在都改成打印并显示真实的错误信息，以后这类问题一眼就能看到</li>

@@ -406,8 +406,8 @@ export default {
       button:active { transform: scale(0.97); }
 
       /* 深色模式补充：危险色在暗背景上需提亮，否则红底红字糊成一片 */
-      [data-theme="dark"] .del { background: #3a1f1d; color: #ff8577; }
-      [data-theme="dark"] .clear { background: #b03a2e; color: #fff; }
+      [data-mood="dark"] .del { background: #3a1f1d; color: #ff8577; }
+      [data-mood="dark"] .clear { background: #b03a2e; color: #fff; }
 `,
   template: `<div class="page-head">
       <router-link class="back" to="/settings">← 返回设置</router-link>

@@ -25,7 +25,7 @@ export default {
         --art-bg: #ffffff;
         --overlay: rgba(20, 15, 10, 0.8);
       }
-      [data-theme="dark"] {
+      [data-mood="dark"] {
         --bg: #181512;
         --surface: #262220;
         --surface-2: #332e29;
@@ -263,7 +263,7 @@ export default {
         margin-bottom: 18px;
       }
 
-      [data-theme="dark"] .contest {
+      [data-mood="dark"] .contest {
         background: linear-gradient(135deg, #2b2620, #34261f);
       }
 
@@ -574,9 +574,9 @@ export default {
       .card.t-contest { border-color: rgba(91, 141, 239, 0.55); }
       .card.t-anim { border-color: rgba(146, 122, 255, 0.55); }
       .card.t-room { border-color: rgba(56, 196, 160, 0.55); }
-      [data-theme="dark"] .card.t-contest { border-color: rgba(118, 163, 255, 0.6); }
-      [data-theme="dark"] .card.t-anim { border-color: rgba(166, 145, 255, 0.6); }
-      [data-theme="dark"] .card.t-room { border-color: rgba(72, 214, 178, 0.6); }
+      [data-mood="dark"] .card.t-contest { border-color: rgba(118, 163, 255, 0.6); }
+      [data-mood="dark"] .card.t-anim { border-color: rgba(166, 145, 255, 0.6); }
+      [data-mood="dark"] .card.t-room { border-color: rgba(72, 214, 178, 0.6); }
 
       .card.hl {
         box-shadow: 0 0 0 3px var(--accent), 0 8px 22px var(--shadow-hover);
@@ -1421,13 +1421,13 @@ export default {
         border-color: rgba(180, 168, 150, 0.30) !important;
         box-shadow: 0 14px 40px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.35);
       }
-      [data-theme="dark"] .bottom-nav {
+      [data-mood="dark"] .bottom-nav {
         background: rgba(var(--nav-base, 42, 38, 33), var(--nav-op, 0.62)) !important;
         border-color: rgba(255, 255, 255, 0.10) !important;
         box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
       }
       html.glass-off .bottom-nav,
-      html.glass-off [data-theme="dark"] .bottom-nav {
+      html.glass-off [data-mood="dark"] .bottom-nav {
         background: var(--surface) !important;
         border-color: var(--border) !important;
         -webkit-backdrop-filter: none;
@@ -2830,7 +2830,7 @@ export default {
         gallery.innerHTML = ''
         countEl.textContent = msg
         sentinel.hidden = false
-        sentinel.textContent = '加载中…'
+        sentinel.innerHTML = '<span class="lw-load"></span>加载中…'
         loadMore()
       }
 
@@ -2899,7 +2899,7 @@ export default {
         searchClear.hidden = true
         searchQ = ''
         renderChips()
-        resetGallery('加载中…')
+        resetGallery('<span class="lw-load"></span>加载中…')
       })
 
       // 打开某位作者的主页
@@ -2950,7 +2950,7 @@ export default {
         authorBio.textContent = ''
         // 先摆一个占位字母，别让头像位置空着跳
         authorAv.innerHTML = '<span class="author-av-ph">' + (Array.from(name)[0] || '?') + '</span>'
-        authorWorks.innerHTML = '<div class="status">加载中…</div>'
+        authorWorks.innerHTML = '<div class="status"><span class="lw-load"></span>加载中…</div>'
         // 头像和简介单独拉，失败也不影响作品列表
         loadAuthorProfile(name)
         try {
@@ -2982,13 +2982,13 @@ export default {
         searchAuthor = ''
         authorPage.hidden = true
         renderChips()
-        resetGallery('加载中…')
+        resetGallery('<span class="lw-load"></span>加载中…')
       })
 
       async function loadMore() {
         if (loading || done) return
         loading = true
-        sentinel.textContent = '加载中…'
+        sentinel.innerHTML = '<span class="lw-load"></span>加载中…'
         try {
           const res = await fetch('/api/get?' + searchQuery())
           if (!res.ok) throw new Error('HTTP ' + res.status)

@@ -45,15 +45,55 @@ window.LWSpray = (function () {
     }
     ensureBuf()
 
+    /* 背板尺寸。
+       之前固定成 64 × dpr，但画布的 CSS 宽度是 100%（最大 512px），
+       512 / 64 恰好整除时看着还行，一旦容器宽度不是 64 的整数倍
+       （分屏、字号变化、padding 改动都会导致），
+       浏览器就得把位图拉伸到 CSS 尺寸，最后一行/一列只覆盖了部分像素，
+       露出来的就是一条白线 —— 也就是之前在像素画板上修过的同一个毛病。
+       这里改成：背板 = 实际显示宽度 × dpr，绘制时用 canvas.width / N 缩放，
+       保证每个逻辑像素都落在整数个设备像素上。 */
+    var lastBacking = 0
+    var ro = null
+    var resizeTimer = 0
+    // 显示尺寸变了要重建背板并重画，否则窗口缩放 / 旋转屏幕后
+    // 位图又被拉伸，白条纹会回来
+    function watchSize() {
+      if (typeof ResizeObserver === 'function') {
+        ro = new ResizeObserver(function () {
+          if (resizeTimer) clearTimeout(resizeTimer)
+          resizeTimer = setTimeout(function () {
+            resizeTimer = 0
+            if (syncBacking()) render()
+          }, 120)
+        })
+        ro.observe(canvas)
+      }
+    }
+    function syncBacking() {
+      var rect = canvas.getBoundingClientRect()
+      var cssW = Math.round(rect.width) || N
+      var want = Math.max(N, Math.round(cssW * dpr))
+      // 只在真的变了才改：改 canvas.width 会清空画布，
+      // 每次落笔都重设会把正在画的笔触擦掉
+      if (want !== lastBacking || canvas.width !== want) {
+        canvas.width = want
+        canvas.height = want
+        lastBacking = want
+        return true
+      }
+      return false
+    }
+
     /* 画棋盘底 + 已画内容 */
     function render() {
       var c = ctx()
       if (!c) return
       dpr = window.devicePixelRatio || 1
-      canvas.width = N * dpr
-      canvas.height = N * dpr
+      syncBacking()
       c.imageSmoothingEnabled = false
-      c.setTransform(dpr, 0, 0, dpr, 0, 0)
+      var s = canvas.width / N
+      c.setTransform(s, 0, 0, s, 0, 0)
       // 底
       if (bg) {
         c.fillStyle = bg
@@ -152,6 +192,8 @@ window.LWSpray = (function () {
     canvas.addEventListener('pointercancel', onUp)
     canvas.addEventListener('pointerleave', onUp)
 
+    // 挂上尺寸监听，再画第一帧（背板尺寸要按实测的 CSS 宽度算）
+    watchSize()
     render()
 
     return {
@@ -236,6 +278,14 @@ window.LWSpray = (function () {
         canvas.removeEventListener('pointerup', onUp)
         canvas.removeEventListener('pointercancel', onUp)
         canvas.removeEventListener('pointerleave', onUp)
+        if (ro) {
+          ro.disconnect()
+          ro = null
+        }
+        if (resizeTimer) {
+          clearTimeout(resizeTimer)
+          resizeTimer = 0
+        }
       },
     }
   }

@@ -35,7 +35,7 @@ export default {
         --like-bg: #fff1ee;
         --like-border: #eec9c2;
       }
-      [data-theme="dark"] {
+      [data-mood="dark"] {
         --bg: linear-gradient(160deg, #211c17 0%, #18140f 100%);
         --surface: #2a251f;
         --surface-2: #38312a;
@@ -65,14 +65,14 @@ export default {
         --like-border: #5e352c;
       }
 
-      [data-theme="dark"] .board-wrap,
-      [data-theme="dark"] .prompt-card,
-      [data-theme="dark"] .pick-wrap {
+      [data-mood="dark"] .board-wrap,
+      [data-mood="dark"] .prompt-card,
+      [data-mood="dark"] .pick-wrap {
         border: 1px solid rgba(255, 255, 255, 0.07);
         box-shadow: 0 8px 22px rgba(0, 0, 0, 0.30);
       }
 
-      [data-theme="dark"] .mini-wrap {
+      [data-mood="dark"] .mini-wrap {
         border: 1px solid rgba(255, 255, 255, 0.07);
         box-shadow: 0 4px 14px rgba(0, 0, 0, 0.30);
       }
@@ -2000,13 +2000,13 @@ color: var(--text-muted);
         border-color: rgba(180, 168, 150, 0.30) !important;
         box-shadow: 0 14px 40px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.35);
       }
-      [data-theme="dark"] .bottom-nav {
+      [data-mood="dark"] .bottom-nav {
         background: rgba(var(--nav-base, 42, 38, 33), var(--nav-op, 0.62)) !important;
         border-color: rgba(255, 255, 255, 0.10) !important;
         box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
       }
       html.glass-off .bottom-nav,
-      html.glass-off [data-theme="dark"] .bottom-nav {
+      html.glass-off [data-mood="dark"] .bottom-nav {
         background: var(--surface) !important;
         border-color: var(--border) !important;
         -webkit-backdrop-filter: none;

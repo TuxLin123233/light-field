@@ -242,6 +242,8 @@ export default {
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        /* 标题左对齐的话，长短不同的作品排在一起会参差不齐，很乱 */
+        text-align: center;
       }
 
       .m-empty {
@@ -266,7 +268,14 @@ export default {
         font-size: 13px;
         text-decoration: none;
       }
-      .m-links { display: flex; gap: 9px; }
+      /* 入口从 7 个挤成一行会溢出（作品/送出/信箱/排行榜/每日任务/成就），
+         手机宽度下每个只剩 40px 出头，文字被压得换行。
+         改成 4 列 × 2 行的网格，格子宽度固定，正好两行，不再溢出。 */
+      .m-links {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+      }
       button.m-link { font-family: inherit; cursor: pointer; }
 
       .mine-filter {
@@ -293,6 +302,31 @@ export default {
         background: color-mix(in srgb, var(--accent) 12%, var(--surface));
         font-weight: 600;
       }
+      /* 件数徽标：跟尺寸文字用不同字重和底色，避免和「16」混在一起看 */
+      .mf-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-family: inherit;
+      }
+      .mf-lab { font-weight: 600; }
+      .mf-n {
+        min-width: 20px;
+        padding: 1px 6px;
+        border-radius: 999px;
+        background: var(--surface);
+        border: 1px solid var(--border-input);
+        color: var(--text-faint);
+        font-size: 11px;
+        font-weight: 700;
+        line-height: 1.5;
+        text-align: center;
+      }
+      .mf-chip.on .mf-n {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+      }
       .mine-load {
         width: 100%;
         margin-top: 12px;
@@ -306,12 +340,13 @@ export default {
         cursor: pointer;
       }
       .m-link {
-        flex: 1;
         display: flex;
         flex-direction: column;
         align-items: center;
+        justify-content: center;
         gap: 4px;
-        padding: 13px 8px;
+        padding: 13px 6px;
+        min-width: 0;
         border-radius: 13px;
         background: var(--surface-2);
         border: 1px solid var(--border);
@@ -319,8 +354,10 @@ export default {
         color: var(--text);
         font-size: 12px;
       }
-      .m-link .ml-ico { font-size: 19px; }
-      .m-link .ml-num { font-size: 15px; font-weight: 800; color: var(--accent); }
+      .m-link .ml-ico { font-size: 18px; }
+      .m-link .ml-num { font-size: 14px; font-weight: 800; color: var(--accent); line-height: 1.3; }
+      /* 4 列时格子更窄，字号跟着收一档，避免「每日任务」这类四字标签换行 */
+      .m-link span:not(.ml-ico):not(.ml-num) { font-size: 11px; white-space: nowrap; }
 
       /* 头部：头像 + 用户名，整体水平居中 */
       .me-hero {
@@ -1032,7 +1069,15 @@ export default {
         const b = document.createElement('button')
         b.type = 'button'
         b.className = 'mf-chip' + (mineSizeFilter === v ? ' on' : '')
-        b.textContent = label + ' ' + counts[v]
+        /* 「16×16 1」里末尾那个 1 是件数，紧跟在 16 后面很容易看成尺寸的一部分。
+           改成带底色的小圆角徽标，一眼能分出「尺寸」和「多少件」。 */
+        const lab = document.createElement('span')
+        lab.className = 'mf-lab'
+        lab.textContent = label
+        const num = document.createElement('span')
+        num.className = 'mf-n'
+        num.textContent = String(counts[v])
+        b.append(lab, num)
         b.addEventListener('click', () => {
           mineSizeFilter = v
           shownCount = PAGE

@@ -19,7 +19,7 @@ export default {
         --accent: #5b8def;
         --overlay: rgba(20, 15, 10, 0.8);
       }
-      [data-theme="dark"] {
+      [data-mood="dark"] {
         --bg: #181512;
         --surface: #262220;
         --surface-2: #332e29;
@@ -745,13 +745,13 @@ export default {
         border-color: rgba(180, 168, 150, 0.30) !important;
         box-shadow: 0 14px 40px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.35);
       }
-      [data-theme="dark"] .bottom-nav {
+      [data-mood="dark"] .bottom-nav {
         background: rgba(var(--nav-base, 42, 38, 33), var(--nav-op, 0.62)) !important;
         border-color: rgba(255, 255, 255, 0.10) !important;
         box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
       }
       html.glass-off .bottom-nav,
-      html.glass-off [data-theme="dark"] .bottom-nav {
+      html.glass-off [data-mood="dark"] .bottom-nav {
         background: var(--surface) !important;
         border-color: var(--border) !important;
         -webkit-backdrop-filter: none;
@@ -1524,6 +1524,8 @@ export default {
         const hit = THEMES.find((x) => x.id === id)
         const t = hit ? id : 'light'
         document.documentElement.setAttribute('data-theme', t)
+        // 视图里的暗色适配一律看 data-mood，理由见 index.html 里的注释
+        document.documentElement.setAttribute('data-mood', (hit && hit.group === 'dark') ? 'dark' : 'light')
         try {
           localStorage.setItem('lw-theme', t)
         } catch (e) {}

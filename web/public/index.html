@@ -18,6 +18,12 @@
           var t = localStorage.getItem('lw-theme')
           if (!t) t = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
           document.documentElement.setAttribute('data-theme', t)
+          /* data-mood 只分「明 / 暗」两类。视图里凡是「暗色下要换个背景」的地方
+             一律用 [data-mood="dark"]，别用 [data-mood="dark"] ——
+             暗色主题有 8 个，只有 id 叫 dark 的那个会被前者命中，
+             其余 7 个（夜阑/深海/墨林/玫瑰夜/森语/夜航/炭）会保持浅色背景
+             配浅色文字，基本看不清。 */
+          document.documentElement.setAttribute('data-mood', /night|midnight|ink|charcoal|rose|forest|dark/.test(t) ? 'dark' : 'light')
           if (localStorage.getItem('lw-glass') === '0') document.documentElement.classList.add('glass-off')
         } catch (e) {}
       })()
@@ -25,6 +31,40 @@
     <style>
       /* hidden 属性兜底：避免类选择器里的 display 覆盖 UA 的 [hidden]{display:none} */
       [hidden] { display: none !important; }
+
+      /* 加载动画：一个小方块在轨道里左右来回走。
+         颜色只用 var(--accent)，主题一变它就跟着变，不用为每个主题单独写。 */
+      @keyframes lwSlide {
+        0%   { transform: translateX(0); }
+        50%  { transform: translateX(calc(var(--lw-run, 44px) - 10px)); }
+        100% { transform: translateX(0); }
+      }
+      .lw-load {
+        --lw-run: 44px;
+        display: inline-block;
+        vertical-align: -2px;
+        width: 46px;
+        height: 10px;
+        margin-right: 7px;
+        position: relative;
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--accent) 16%, transparent);
+      }
+      .lw-load::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 10px;
+        height: 10px;
+        border-radius: 3px;
+        background: var(--accent);
+        animation: lwSlide 1.15s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+      }
+      /* 尊重「减少动态效果」的系统设置 */
+      @media (prefers-reduced-motion: reduce) {
+        .lw-load::before { animation: none; }
+      }
 
       :root {
         --bg: linear-gradient(160deg, #fdf8f2 0%, #f2ece2 100%);
@@ -59,7 +99,7 @@
         /* 文字光晕色：浅色主题用白光，深色主题用黑光 */
         --nav-halo: 255, 255, 255;
       }
-      [data-theme="dark"] {
+      [data-mood="dark"] {
         --bg: linear-gradient(160deg, #211c17 0%, #18140f 100%);
         --surface: #2a251f;
         --surface-2: #38312a;
@@ -263,7 +303,7 @@
 
       /* 让表单控件、滚动条也跟着主题走 */
       :root { color-scheme: light; }
-      html[data-theme="dark"] { color-scheme: dark; }
+      html[data-mood="dark"] { color-scheme: dark; }
       html[data-theme="midnight"] { color-scheme: dark; }
 
       /* 路由出口用 display:contents 彻底"透明"：
@@ -312,13 +352,13 @@
         border-radius: 999px;
         box-shadow: 0 14px 40px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.35);
       }
-      [data-theme="dark"] .bottom-nav {
+      [data-mood="dark"] .bottom-nav {
         background: rgba(var(--nav-base, 42, 38, 33), var(--nav-op, 0.62)) !important;
         border-color: rgba(255, 255, 255, 0.10) !important;
         box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
       }
       html.glass-off .bottom-nav,
-      html.glass-off [data-theme="dark"] .bottom-nav {
+      html.glass-off [data-mood="dark"] .bottom-nav {
         /* 关掉毛玻璃：仍按同一个不透明度混色，滑块依然有效 */
         background: color-mix(in srgb, var(--surface) calc(var(--nav-op, 0.66) * 100%), transparent) !important;
         border-color: var(--border) !important;
