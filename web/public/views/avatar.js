@@ -652,7 +652,12 @@ export default {
         }
         renderFrame()
       } catch (e) {
-        $('avBody').innerHTML = '<div class="av-cost">读取失败：网络错误</div>'
+        // 这里以前只写「网络错误」，把真实异常全吞了：接口 200 正常也显示网络错误，
+        // 排查时完全看不出是哪一行炸的。把真实信息带上。
+        console.error('[avatar] 初始化失败', e)
+        const why = (e && (e.message || e.name)) || '未知错误'
+        $('avBody').innerHTML =
+          '<div class="av-cost"><span class="av-cost-warn">读取失败：' + esc(why) + '</span></div>'
       }
     })()
   },

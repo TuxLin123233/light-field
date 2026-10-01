@@ -877,6 +877,23 @@ export default {
         flex-direction: column;
         gap: 4px;
       }
+      /* 作者行：头像 + 名字，点名字进作者主页 */
+      .preview-who { display: flex; align-items: center; gap: 8px; }
+      .preview-av {
+        width: 30px; height: 30px; flex: 0 0 30px; border-radius: 9px; overflow: hidden;
+        background: var(--art-bg); border: 1px solid var(--border-strong);
+      }
+      .preview-av canvas { width: 100%; height: 100%; image-rendering: pixelated; display: block; }
+      .preview-author-btn {
+        background: none; border: 0; padding: 0; cursor: pointer;
+        font: inherit; color: inherit; text-align: left;
+      }
+      .preview-author-btn:hover { text-decoration: underline; }
+      .preview-bio {
+        font-size: 12px; font-weight: 500; color: var(--text-muted); line-height: 1.5;
+        padding: 6px 10px; border-radius: 10px; background: var(--surface-2);
+        white-space: pre-wrap; word-break: break-word;
+      }
 
       .preview-time {
         font-size: 12px;
