@@ -13,6 +13,7 @@ import mail from './views/mail.js'
 import achieve from './views/achieve.js'
 import avatar from './views/avatar.js'
 import intro from './views/intro.js'
+import tasks from './views/tasks.js'
 
 const { createApp } = window.Vue
 const { createRouter, createWebHistory } = window.VueRouter
@@ -112,6 +113,7 @@ const routes = [
   { path: '/login', component: withAutoCleanup(login) },
   { path: '/mail', component: withAutoCleanup(mail) },
   { path: '/achieve', component: withAutoCleanup(achieve) },
+  { path: '/tasks', component: withAutoCleanup(tasks) },
   { path: '/avatar', component: withAutoCleanup(avatar) },
   { path: '/intro', component: withAutoCleanup(intro) },
   { path: '/settings', component: withAutoCleanup(settings) },

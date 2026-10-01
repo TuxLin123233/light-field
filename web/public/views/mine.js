@@ -463,6 +463,11 @@ export default {
           <span class="ml-num" id="lnkMail">0</span>
           <span>信箱</span>
         </router-link>
+        <router-link class="m-link" to="/tasks">
+          <span class="ml-ico">📋</span>
+          <span class="ml-num" id="lnkTask">0</span>
+          <span>每日任务</span>
+        </router-link>
         <router-link class="m-link" to="/achieve">
           <span class="ml-ico">🏅</span>
           <span class="ml-num" id="lnkAch">0</span>
@@ -511,6 +516,10 @@ export default {
     window.addEventListener('lw-mail-claimed', onDust)
     window.addEventListener('lw-achieve-changed', function () {
       loadAchBadge()
+    })
+    // 领完每日任务，光尘变了，角标也跟着清
+    window.addEventListener('lw-dust-changed', function () {
+      loadTaskBadge()
     })
     window.addEventListener('lw-dust-changed', onDust)
     window.addEventListener('lw-auth-changed', onDust)
@@ -784,6 +793,27 @@ export default {
         toast(hit ? '获得徽章 ' + hit.ico + ' ' + hit.name + '！' : '签到成功，连续 ' + d.streak + ' 天')
       })
     })
+
+    /* 每日任务角标：显示「还有几个能领」。静默同步，不弹提示。 */
+    function loadTaskBadge() {
+      const el = $('lnkTask')
+      if (!el) return
+      let t = ''
+      try {
+        t = localStorage.getItem('lw-token') || ''
+      } catch (e) {}
+      if (!t) {
+        el.textContent = ''
+        return
+      }
+      fetch('/api/dailytask', { headers: { Authorization: 'Bearer ' + t }, cache: 'no-store' })
+        .then((r) => (r.status === 401 ? null : r.json()))
+        .then((d) => {
+          if (!d || !d.ok) return
+          el.textContent = d.claimable > 0 ? String(d.claimable) : ''
+        })
+        .catch(() => {})
+    }
 
     /* 成就解锁数：只对登录用户请求 */
     function loadAchBadge() {
@@ -1116,6 +1146,7 @@ export default {
     $('lnkLiked').textContent = window.dust ? window.dust.giftedCount() : 0
     loadMailBadge()
     loadAchBadge()
+    loadTaskBadge()
 
     applyMode()
     renderHeroName()
