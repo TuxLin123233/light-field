@@ -398,6 +398,20 @@ export default {
               <b>从最老往后数</b>的。代码里却拿这个 index 去反查，
               等于把整个序列镜像了一遍 —— 实测查第 0 件会返回第 699 件，<b>8 个样本全错</b>。
               现在让 <code>findIndexByTime</code> 直接把作品本身带回来，不再靠下标反查</li>
+              <li><span class="li-tag tag-fix">修复</span><b>主题比赛面板里没有「投一票」按钮</b>（用户反馈）。
+              参赛作品卡下面只有一行「🏆 N 票」的<b>纯文字</b>，点不了 ——
+              <code>makeVoteButton</code> / <code>voteContest</code> 早就写好了
+              （作品列表和预览弹窗都在用），唯独比赛面板这张卡没接上。
+              现在把投票按钮挂上去；另外把按钮文案统一成
+              <b>「🏆 投一票 · N」/「🏆 已投票 · N」</b>，
+              以前只写「🏆 N」，光看一个数字不像能点，也不知道点完算不算投了。
+              打开面板时也补上色相条重画</li>
+              <li><span class="li-tag tag-fix">修复</span><b>取色器吸完颜色，HSV 上没有指示圆点</b>（用户反馈）。
+              <code>syncPickerFromRgb</code> 的重画条件写的是
+              <code>pickOpen &amp;&amp; hsvOpen</code>（两个面板都开着才重画），
+              可在画布上用取色器的时候这两个面板通常都是关着的 ——
+              于是 S/V 变了、界面没跟着重画，圆点停在旧位置甚至看不见。
+              改成<b>有一个开着就重画</b></li>
               <li><span class="li-tag tag-fix">修复</span><b>长按能弹删除别人的作品</b>（用户反馈「太危险了」）。
               「我的作品」和「送过光尘的」两个列表<b>共用同一个 <code>buildWorkItem</code></b>，
               于是后者的卡片也绑上了长按删除 —— 那里面全是**别人画的**。

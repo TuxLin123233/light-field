@@ -2826,7 +2826,12 @@ color: var(--text-muted);
         H = hsv[1] < 0.02 ? H : hsv[0]
         S = hsv[1]
         V = hsv[2]
-        if (pickOpen && hsvOpen) {
+        /* 原来写的是 `pickOpen && hsvOpen`（两个都开着才重画）。
+           在画布上用取色器的时候，这两个面板通常都是关着的 ——
+           于是 S/V 变了、界面却没跟着重画，指示圆点留在旧位置
+           甚至看不见（用户反馈「取色后 HSV 没有指示圆点」）。
+           只要有任何一个开着就该重画。 */
+        if (pickOpen || hsvOpen) {
           renderSV()
           renderHue()
           drawSVMarker()
@@ -2904,6 +2909,7 @@ color: var(--text-muted);
             }
             resizePicker()
             renderSV()
+            renderHue()
             drawSVMarker()
             drawHueMarker()
             syncSprayPalette()

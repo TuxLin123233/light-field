@@ -1773,12 +1773,18 @@ export default {
         return true
       }
 
+      /* 投票按钮的文案统一走这里。
+         以前写的是 '🏆 ' + 票数，光看一个数字不像能点，
+         也不知道点完算不算投了（用户反馈「没有投一票按钮」）。 */
+      function voteLabel(rec, voted) {
+        return (voted ? '🏆 已投票 · ' : '🏆 投一票 · ') + (Number(rec.contestVotes) || 0)
+      }
       function makeVoteButton(rec) {
         const btn = document.createElement('button')
         btn.type = 'button'
         btn.className = 'vote-btn'
         const span = document.createElement('span')
-        span.textContent = '🏆 ' + (rec.contestVotes || 0)
+        span.textContent = voteLabel(rec, contestCtx.voted.map(String).includes(String(rec.time)))
         btn.appendChild(span)
         // 相机作品不参赛，投票按钮置灰
         if (rec.fromImage) {
@@ -1814,11 +1820,11 @@ export default {
             rec.contestVotes = data.votes
             contestCtx.voted.push(key)
             const span = btn.querySelector('span') || btn
-            span.textContent = '🏆 ' + (rec.contestVotes || 0)
+            span.textContent = voteLabel(rec, true)
             btn.classList.add('voted')
             const pvBtn = document.getElementById('previewVoteBtn')
             if (currentPreview && String(currentPreview.time) === key && pvBtn) {
-              pvBtn.textContent = '🏆 已投票 · ' + (rec.contestVotes || 0)
+              pvBtn.textContent = voteLabel(rec, true)
               pvBtn.classList.add('voted')
             }
             loadContest(true)
@@ -1889,9 +1895,16 @@ export default {
             nm.className = 'ct-name'
             nm.textContent = (w.type === 'anim' ? '🎞️ ' : '') + (w.workName || w.name || '未命名')
 
+            /* 这里原来只有一行「🏆 N 票」的纯文字，根本没法投票 ——
+               makeVoteButton / voteContest 早就写好了（作品卡片和预览弹窗都在用），
+               唯独比赛面板这张卡没接上（用户反馈「没有投一票按钮」）。
+               现在把按钮挂上，并把 __rec 记上，refreshVoteChips 才认得它。 */
             const votes = document.createElement('div')
             votes.className = 'ct-votes'
-            votes.textContent = '🏆 ' + (w.contestVotes || 0) + ' 票' + (w.anim ? '' : '')
+            const vb = makeVoteButton(w)
+            vb.__rec = w
+            vb.hidden = !isCurrentContestEntry(w)
+            votes.appendChild(vb)
 
             card.append(rank, img, nm, votes)
             card.addEventListener('click', () => preview(w))
@@ -1902,11 +1915,14 @@ export default {
       }
 
       function refreshVoteChips() {
-        document.querySelectorAll('.card .vote-btn').forEach((b) => {
+        document.querySelectorAll('.vote-btn').forEach((b) => {
           const rec = b.__rec
           if (rec && isCurrentContestEntry(rec)) {
             b.hidden = false
-            b.classList.toggle('voted', contestCtx.voted.map(String).includes(String(rec.time)))
+            const voted = contestCtx.voted.map(String).includes(String(rec.time))
+            b.classList.toggle('voted', voted)
+            const sp = b.querySelector('span')
+            if (sp) sp.textContent = voteLabel(rec, voted)
           }
         })
       }
@@ -3377,9 +3393,7 @@ export default {
         if (isCurrentContestEntry(rec)) {
           const voted = contestCtx.voted.map(String).includes(String(rec.time))
           pv.hidden = false
-          pv.textContent = voted
-            ? '🏆 已投票 · ' + (rec.contestVotes || 0)
-            : '🏆 投一票 · ' + (rec.contestVotes || 0)
+          pv.textContent = voteLabel(rec, voted)
           pv.classList.toggle('voted', voted)
           pv.disabled = false
           pv.onclick = (e) => {
