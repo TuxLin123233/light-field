@@ -8,6 +8,7 @@ import admin from './views/admin.js'
 import terms from './views/terms.js'
 import faq from './views/faq.js'
 import mine from './views/mine.js'
+import login from './views/login.js'
 
 const { createApp } = window.Vue
 const { createRouter, createWebHistory } = window.VueRouter
@@ -103,6 +104,8 @@ const routes = [
   // 「我的」的两个过滤页：只显示自己的东西，不混进社区
   { path: '/mine/works', component: withAutoCleanup(mine) },
   { path: '/mine/gifted', component: withAutoCleanup(mine) },
+  // 登录 / 注册（独立页面，不占底部导航位）
+  { path: '/login', component: withAutoCleanup(login) },
   { path: '/settings', component: withAutoCleanup(settings) },
   { path: '/changelog', component: withAutoCleanup(changelog) },
   { path: '/admin', component: withAutoCleanup(admin) },
@@ -171,7 +174,13 @@ function applyNavPosition() {
 
 const App = {
   data() {
-    return { navItems: navOrder() }
+    // 登录页是专注的单页，不显示底部导航
+    return { navItems: navOrder(), showNav: this.$route.path !== '/login' }
+  },
+  watch: {
+    $route(to) {
+      this.showNav = to.path !== '/login'
+    },
   },
   mounted() {
     applyNavPosition()
@@ -185,7 +194,7 @@ const App = {
     <div id="siteRoot">
       <router-view :key="$route.fullPath" />
     </div>
-    <nav class="bottom-nav" id="appNav">
+    <nav class="bottom-nav" id="appNav" v-show="showNav">
       <router-link v-for="it in navItems" :key="it.path" :to="it.path">
         <span class="nav-icon">{{ it.ico }}</span>{{ it.name }}
       </router-link>

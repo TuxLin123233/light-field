@@ -210,7 +210,9 @@ export default {
         text-decoration: none;
         /* 导航越透明，文字反而越清晰、每个图标越自带底衬，保证任何内容上都能看清 */
         color: color-mix(in srgb, var(--text-faint) calc(var(--nav-op, 0.66) * 100%), var(--text));
-        background: rgba(var(--nav-base, 255, 253, 250), calc((1 - var(--nav-op, 0.66)) * 0.72));
+        background: transparent;
+        text-shadow: 0 0 calc((1 - var(--nav-op, 0.66)) * 5px)
+          rgba(var(--nav-halo, 255, 255, 255), calc((1 - var(--nav-op, 0.66)) * 0.95));
         font-size: 10px;
         font-weight: 700;
         transition: color 0.2s, background 0.2s;
@@ -272,6 +274,7 @@ export default {
               <li><span class="li-tag tag-fix">修复</span>设置页「画板布局」「进阶功能」点不开：分组绑定曾被写进其它回调里，且引用了还没初始化的数据</li>
               <li><span class="li-tag tag-fix">修复</span>维护者页面顶部标题区是一段裸文字，现在与下方卡片一样有底色、边框和阴影</li>
               <li><span class="li-tag tag-announce">移除</span><b>联机功能已下掉</b>：它的多人同步依赖强一致存储，而现有 KV 是最终一致的，两人同时落笔会互相覆盖（房主看不到别人加入、笔迹不同步、两人在线却提示不足 2 人）。修好需要换 Durable Object，但那会让整站自动部署失败、线上卡在旧版本，所以选择下掉而不是留一个时好时坏的功能。详见常见问题</li>
+              <li><span class="li-tag tag-new">新功能</span>新增登录页 /login：白底居中单卡，登录与注册在同一张卡内切换；密码用 PBKDF2 加盐哈希存储，登录凭证由服务端密钥签名、客户端本地保存，换设备用同一账号密码登录即可同步</li>
               <li><span class="li-tag tag-new">新功能</span>「✨ 光尘」：每日签到得 5 个（连续里程碑额外奖励，数额等于里程碑天数，如连续 7 天再送 7 个）；给作品赠送光尘代替点赞，同一幅只能送一次，余额不足送不出；光尘可累积，攒着送给最喜欢的那幅</li>
               <li><span class="li-tag tag-new">新功能</span>「我的」新增两个过滤页：/mine/works 只显示自己发布的作品，/mine/gifted 只显示自己送过光尘的作品，不再跳进社区</li>
               <li><span class="li-tag tag-update">更新</span>配色主题选择器分为「浅色系 12 套」与「夜间系 8 套」两组，每格显示色条与名字，底部提示当前主题；主题数据与 CSS 统一由 themes.js 生成，避免多处手写冲突</li>

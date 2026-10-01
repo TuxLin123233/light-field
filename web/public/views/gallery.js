@@ -1265,7 +1265,9 @@ export default {
         text-decoration: none;
         /* 导航越透明，文字反而越清晰、每个图标越自带底衬，保证任何内容上都能看清 */
         color: color-mix(in srgb, var(--text-faint) calc(var(--nav-op, 0.66) * 100%), var(--text));
-        background: rgba(var(--nav-base, 255, 253, 250), calc((1 - var(--nav-op, 0.66)) * 0.72));
+        background: transparent;
+        text-shadow: 0 0 calc((1 - var(--nav-op, 0.66)) * 5px)
+          rgba(var(--nav-halo, 255, 255, 255), calc((1 - var(--nav-op, 0.66)) * 0.95));
         font-size: 10px;
         font-weight: 700;
         transition: color 0.2s, background 0.2s;

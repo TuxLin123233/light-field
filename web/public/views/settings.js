@@ -464,20 +464,39 @@ export default {
       .np-dot:first-child { background: var(--accent); opacity: 0.85; }
       .np-note { font-size: 11px; color: var(--text-faint); }
 
+      .theme-groups { display: flex; flex-direction: column; gap: 12px; }
+      .theme-group-label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--text-muted);
+        margin-bottom: 7px;
+      }
+      .theme-group-label .tgl-ico { font-size: 13px; }
       .theme-picks { display: flex; flex-wrap: wrap; gap: 8px; }
 
       .theme-pick {
         display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 3px;
         border: 2px solid transparent;
-        border-radius: 999px;
-        overflow: hidden;
-        padding: 2px;
+        border-radius: 12px;
+        padding: 4px 6px 5px;
         background: var(--surface-2);
         cursor: pointer;
+        transition: border-color 0.15s, transform 0.12s;
       }
+      .theme-pick:active { transform: scale(0.93); }
       .theme-pick.on { border-color: var(--accent); }
-
-      .tp-dot { width: 16px; height: 16px; display: block; }
+      .tp-bar { display: flex; border-radius: 999px; overflow: hidden; }
+      .tp-dot { width: 15px; height: 15px; display: block; }
+      .tp-name { font-size: 10px; color: var(--text-muted2); line-height: 1.3; white-space: nowrap; }
+      .theme-pick.on .tp-name { color: var(--accent); font-weight: 600; }
+      .theme-hint { font-size: 12px; color: var(--text-faint); text-align: center; padding-top: 2px; }
+      .theme-hint b { color: var(--accent); }
 
       .row {
         display: flex;
@@ -602,7 +621,9 @@ export default {
         text-decoration: none;
         /* 导航越透明，文字反而越清晰、每个图标越自带底衬，保证任何内容上都能看清 */
         color: color-mix(in srgb, var(--text-faint) calc(var(--nav-op, 0.66) * 100%), var(--text));
-        background: rgba(var(--nav-base, 255, 253, 250), calc((1 - var(--nav-op, 0.66)) * 0.72));
+        background: transparent;
+        text-shadow: 0 0 calc((1 - var(--nav-op, 0.66)) * 5px)
+          rgba(var(--nav-halo, 255, 255, 255), calc((1 - var(--nav-op, 0.66)) * 0.95));
         font-size: 10px;
         font-weight: 700;
         transition: color 0.2s, background 0.2s;
@@ -847,7 +868,8 @@ export default {
             <div class="row-label">配色主题</div>
             <div class="row-desc">换一套画板的整体色调</div>
           </div>
-          <div class="theme-picks" id="themePicks"></div>
+          <div class="theme-groups" id="themePicks"></div>
+          <div class="theme-hint" id="themeNameHint">点一下即可切换</div>
         </div>
         <div class="row">
           <div>
@@ -1352,38 +1374,27 @@ export default {
       paintClaimUI()
 
       /* ---------- 配色主题 ---------- */
-      const THEMES = [
-        { id: 'light', name: '暖白', c1: '#fdf8f2', c2: '#f2ece2', c3: '#5b8def' },
-        { id: 'dark', name: '夜间', c1: '#211c17', c2: '#18140f', c3: '#76a3ff' },
-        { id: 'sakura', name: '樱粉', c1: '#fdf2f5', c2: '#f0b9c9', c3: '#e0698a' },
-        { id: 'sea', name: '海盐', c1: '#f0f8fa', c2: '#a8d5e0', c3: '#2f93a8' },
-        { id: 'mint', name: '薄荷', c1: '#f2f9f1', c2: '#a9d9b2', c3: '#3f9c5c' },
-        { id: 'sunset', name: '暖阳', c1: '#fff6ec', c2: '#f6c896', c3: '#d9823e' },
-        { id: 'midnight', name: '夜阑', c1: '#21223a', c2: '#4a4a80', c3: '#8b7cf0' },
-        // 夜间系
-        { id: 'ocean-night', name: '深海', c1: '#0e1a26', c2: '#2a3f52', c3: '#4cc2e0' },
-        { id: 'ink', name: '墨林', c1: '#121714', c2: '#2b3a31', c3: '#5fc98d' },
-        { id: 'rose-night', name: '玫瑰夜', c1: '#241419', c2: '#45242c', c3: '#e8778f' },
-        { id: 'forest-night', name: '森语', c1: '#131c16', c2: '#2c3b2f', c3: '#9bd167' },
-        { id: 'night-flight', name: '夜航', c1: '#161a2e', c2: '#2e3350', c3: '#f0b45c' },
-        { id: 'charcoal', name: '炭', c1: '#1c1c1e', c2: '#3a3a3e', c3: '#f08a4b' },
-        // 浅色系
-        { id: 'milktea', name: '奶茶', c1: '#faf4ec', c2: '#e0cbb2', c3: '#b3805a' },
-        { id: 'lavender', name: '薰衣草', c1: '#f7f5fc', c2: '#d5cce9', c3: '#8b72d8' },
-        { id: 'peach', name: '蜜桃', c1: '#fff5f1', c2: '#f8cdb9', c3: '#ef7a52' },
-        { id: 'mist', name: '雾霭', c1: '#f4f6f7', c2: '#d0d6dc', c3: '#5b7c99' },
-        { id: 'matcha', name: '抹茶', c1: '#f6f8ee', c2: '#d3dcbe', c3: '#7a9c4a' },
-        { id: 'oat', name: '燕麦', c1: '#faf7f0', c2: '#dcd2bd', c3: '#8a7a55' },
-        { id: 'sepia', name: '复古', c1: '#f6efe2', c2: '#d4c19f', c3: '#a2703c' },
-      ]
+      // 主题数据来自 /themes.js（唯一数据源，CSS 也由它生成）
+      const THEMES = (window.LW_THEMES || []).map(function (t) {
+        return { id: t.id, name: t.name, group: t.group, sw: t.sw || [] }
+      })
       function applyTheme(id) {
-        const t = THEMES.find((x) => x.id === id) ? id : 'light'
+        const hit = THEMES.find((x) => x.id === id)
+        const t = hit ? id : 'light'
         document.documentElement.setAttribute('data-theme', t)
         try {
           localStorage.setItem('lw-theme', t)
         } catch (e) {}
         syncThemePicks()
         if (typeof syncThemeUI === 'function') syncThemeUI()
+        return hit
+      }
+      function showThemeName(theme, quiet) {
+        const hint = document.getElementById('themeNameHint')
+        if (!hint || !theme) return
+        hint.innerHTML =
+          '当前：<b>' + theme.name + '</b> · ' + (theme.group === 'dark' ? '夜间系' : '浅色系')
+        if (!quiet && window.sfx) window.sfx('tick')
       }
       function syncThemePicks() {
         const cur = document.documentElement.getAttribute('data-theme') || 'light'
@@ -1393,21 +1404,40 @@ export default {
       }
       const themePicks = document.getElementById('themePicks')
       if (themePicks) {
-        THEMES.forEach((t) => {
-          const b = document.createElement('button')
-          b.type = 'button'
-          b.className = 'theme-pick'
-          b.dataset.theme = t.id
-          b.title = t.name
-          b.setAttribute('aria-label', t.name)
-          b.innerHTML =
-            '<span class="tp-dot" style="background:' + t.c1 + '"></span>' +
-            '<span class="tp-dot" style="background:' + t.c2 + '"></span>' +
-            '<span class="tp-dot" style="background:' + t.c3 + '"></span>'
-          b.addEventListener('click', () => applyTheme(t.id))
-          themePicks.appendChild(b)
+        // 上：浅色系　下：夜间系
+        const GROUPS = [
+          { key: 'light', label: '浅色系', ico: '☀️' },
+          { key: 'dark', label: '夜间系', ico: '🌙' },
+        ]
+        GROUPS.forEach((g) => {
+          const list = THEMES.filter((t) => t.group === g.key)
+          if (!list.length) return
+          const wrap = document.createElement('div')
+          const lab = document.createElement('div')
+          lab.className = 'theme-group-label'
+          lab.innerHTML = '<span class="tgl-ico">' + g.ico + '</span>' + g.label
+          const row = document.createElement('div')
+          row.className = 'theme-picks'
+          list.forEach((t) => {
+            const b = document.createElement('button')
+            b.type = 'button'
+            b.className = 'theme-pick'
+            b.dataset.theme = t.id
+            b.title = t.name
+            b.setAttribute('aria-label', t.name)
+            b.innerHTML =
+              '<span class="tp-bar">' +
+              (t.sw || []).slice(0, 3).map((c) => '<span class="tp-dot" style="background:' + c + '"></span>').join('') +
+              '</span><span class="tp-name">' + t.name + '</span>'
+            b.addEventListener('click', () => showThemeName(applyTheme(t.id)))
+            row.appendChild(b)
+          })
+          wrap.append(lab, row)
+          themePicks.appendChild(wrap)
         })
         syncThemePicks()
+        const curId = document.documentElement.getAttribute('data-theme') || 'light'
+        showThemeName(THEMES.find((t) => t.id === curId), true)
       }
 
       /* 教程：首次自动展开，看过之后记住选择 */
