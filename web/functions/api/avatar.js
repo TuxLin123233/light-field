@@ -1,9 +1,9 @@
 // 头像接口
 //
 //   GET  ?uids=a,b,c   批量取头像（画社区列表时一次拿完，避免 N 次请求）
-//       不带 uids 时取自己的，并附上解锁状态
-//   POST {action:'save',   pixels}  保存自绘头像（首次扣 30 光尘）
-//   POST {action:'reset'}          恢复默认头像（不退光尘）
+//       不带 uids 时取自己的，并附上当前头像与两种画法的价格
+//   POST {action:'save', pixels, mode}  保存自绘头像（每次都扣费：像素画 20 / 喷漆 30）
+//   POST {action:'reset'}               恢复默认头像（不退还已花的光尘）
 import { readActiveUser, BANNED_ERROR } from './_auth.js'
 import { readBook, writeBook, publicView } from './_dust.js'
 import {
@@ -11,9 +11,11 @@ import {
   writeAvatar,
   sanitizePixels,
   isBlank,
-  hasPaid,
   defaultPixels,
-  AVATAR_COST,
+  costOf,
+  COST_PIXEL,
+  COST_SPRAY,
+  MODES,
   SIZE,
 } from './_avatar.js'
 
@@ -62,14 +64,16 @@ export async function onRequestGet(context) {
   if (who.gone) return json({ error: '账号不存在', code: 'gone' }, 401)
 
   const av = await readAvatar(kv, who.uid)
-  const paid = (await hasPaid(kv, who.uid)) || !!(av && av.paid)
   const book = await readBook(kv, who.uid)
   return json({
     ok: true,
     uid: who.uid,
     size: SIZE,
-    cost: AVATAR_COST,
-    paid,
+    // 两种画法各自的价格，前端按 mode 取
+    cost: { pixel: COST_PIXEL, spray: COST_SPRAY },
+    modes: MODES,
+    has: !!av,
+    currentMode: av ? av.mode : '',
     pixels: av ? av.px : null,
     default: defaultPixels(who.uid),
     book: publicView(book),
@@ -96,10 +100,9 @@ export async function onRequestPost(context) {
   const action = (body && body.action) || ''
 
   if (action === 'reset') {
-    // 只清像素，保留 paid 标记 —— 否则恢复默认后重画会被再扣一次 30 光尘
-    const paid = await hasPaid(kv, who.uid)
-    await kv.put('av:' + who.uid, JSON.stringify({ px: null, at: Date.now(), paid }))
-    return json({ ok: true, pixels: null, paid, default: defaultPixels(who.uid) })
+    // 恢复默认头像。光尘不退还 —— 已经画过一次了，返还等于变相白拿一次创作。
+    await kv.put('av:' + who.uid, JSON.stringify({ px: null, at: Date.now(), mode: '' }))
+    return json({ ok: true, pixels: null, default: defaultPixels(who.uid) })
   }
 
   if (action !== 'save') return json({ error: '未知操作' }, 400)
@@ -112,32 +115,36 @@ export async function onRequestPost(context) {
     return json({ error: '还没画呢，至少涂几格再保存' }, 400)
   }
 
-  // 首次保存才扣费，之后随便改
-  let book = await readBook(kv, who.uid)
-  const already = await hasPaid(kv, who.uid)
-  if (!already) {
-    if (book.bal < AVATAR_COST) {
-      return json(
-        {
-          error: `绘制头像需要 ${AVATAR_COST} 个光尘，你只有 ${book.bal} 个`,
-          need: AVATAR_COST,
-          book: publicView(book),
-        },
-        400
-      )
-    }
-    book.bal -= AVATAR_COST
-    book = await writeBook(kv, who.uid, book)
-  }
+  // 每次保存都扣费，价格按画法区分。
+  // costOf 返回的一定是数字；之前这里拿整个价格表对象去比较，
+  // 26 < {…} 恒为 false 直接放行，扣费又算出 NaN 被兜成 0 ——
+  // 表现就是「余额不够也能存，存完余额变 0」。
+  const mode = MODES.indexOf(body.mode) >= 0 ? body.mode : 'pixel'
+  const cost = costOf(mode)
 
-  const rec = await writeAvatar(kv, who.uid, px, true)
+  const book = await readBook(kv, who.uid)
+  if (book.bal < cost) {
+    return json(
+      {
+        error: `${mode === 'spray' ? '像素喷漆' : '像素画'}需要 ${cost} 个光尘，你只有 ${book.bal} 个`,
+        need: cost,
+        short: cost - book.bal,
+        book: publicView(book),
+      },
+      400
+    )
+  }
+  const charged = await writeBook(kv, who.uid, { ...book, bal: book.bal - cost })
+
+  const rec = await writeAvatar(kv, who.uid, px, true, mode)
   return json({
     ok: true,
-    cost: already ? 0 : AVATAR_COST,
-    charged: already ? 0 : AVATAR_COST,
+    mode,
+    cost,
+    charged: cost,
     pixels: rec.px,
-    book: publicView(book),
+    book: publicView(charged),
   })
 }
 
-export { AVATAR_COST }
+export { COST_PIXEL, COST_SPRAY }

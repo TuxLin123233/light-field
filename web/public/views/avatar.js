@@ -90,6 +90,34 @@ export default {
         display: block;
       }
 
+      /* 两种画法切换 */
+      .av-modes { display: flex; gap: 8px; margin-bottom: 12px; }
+      .av-mode {
+        flex: 1;
+        border: 1.5px solid var(--border-input);
+        background: var(--surface-2);
+        border-radius: 13px;
+        padding: 10px 8px;
+        font-family: inherit;
+        cursor: pointer;
+        text-align: center;
+        color: var(--text);
+      }
+      .av-mode.on {
+        border-color: var(--accent, #5b8def);
+        background: color-mix(in srgb, var(--accent, #5b8def) 10%, var(--surface));
+      }
+      .av-mode b { display: block; font-size: 14px; font-weight: 700; }
+      .av-mode i { display: block; font-size: 11px; font-style: normal; color: var(--text-faint); margin-top: 2px; }
+      .av-mode.on i { color: var(--accent, #5b8def); }
+      .av-brush {
+        display: flex; align-items: center; gap: 9px;
+        width: 100%; margin-top: 12px;
+      }
+      .av-brush-l { font-size: 13px; color: var(--text-muted2); flex: none; }
+      .av-brush input[type='range'] { flex: 1; accent-color: var(--accent, #5b8def); }
+      .av-brush-n { font-size: 13px; font-weight: 700; width: 18px; text-align: right; flex: none; }
+
       .av-pal {
         display: grid;
         grid-template-columns: repeat(8, 1fr);
@@ -193,10 +221,14 @@ export default {
     ]
 
     let px = new Array(CELLS).fill(null).map(() => WHITE.slice())
+    // 喷漆用 64×64 缓冲，保存时降采样到 16×16
+    let spray = null
+    let sprayMirror = false
     let color = PALETTE[0]
     let tool = 'pen' // pen | eraser | mirror
-    let paid = false
-    let cost = 30
+    let mode = 'pixel' // pixel | spray：两套完全独立的画法
+    let hasAvatar = false
+    let COSTS = { pixel: 20, spray: 30 }
     let balance = 0
     let dirty = false
     let drawing = false
@@ -299,49 +331,90 @@ export default {
     }
 
     function renderFrame() {
-      const enough = balance >= (paid ? 0 : cost)
-      const costHtml = paid
-        ? '<span class="av-cost-ok">你已经解锁过头像，<b>以后随便改</b>都不再扣光尘。</span>'
-        : enough
-          ? '首次保存要花 <b>' + cost + ' 个光尘</b>，你现在有 <b>' + balance + '</b> 个，够用。解锁后再改就不扣了。'
-          : '<span class="av-cost-warn">首次保存要 ' + cost + ' 个光尘，你只有 ' + balance + ' 个，还差 ' + (cost - balance) + ' 个。</span> 去「我的」签到攒一攒吧。'
-
+      const cost = COSTS[mode] || 20
+      const enough = balance >= cost
+      const costHtml = enough
+        ? '保存一次花 <b>' + cost + '</b> 个光尘，你现在有 <b>' + balance + '</b> 个。<b>每改一次都要再花</b>，画坏了重来也得付。'
+        : '<span class="av-cost-warn">' + (mode === 'spray' ? '像素喷漆' : '像素画') + '要 ' + cost +
+          ' 个光尘，你只有 ' + balance + ' 个，还差 ' + (cost - balance) + ' 个。</span> 去「我的」签到攒一攒吧。'
       $('avBody').innerHTML =
         '<div class="av-cost">' + costHtml + '</div>' +
+        '<div class="av-modes" id="avModes">' +
+        '<button class="av-mode' + (mode === 'pixel' ? ' on' : '') + '" type="button" data-mode="pixel">' +
+        '<b>🖌️ 像素画</b><i>16×16 逐格涂 · ' + COSTS.pixel + ' ✨</i></button>' +
+        '<button class="av-mode' + (mode === 'spray' ? ' on' : '') + '" type="button" data-mode="spray">' +
+        '<b>💨 像素喷漆</b><i>64×64 自由喷 · ' + COSTS.spray + ' ✨</i></button>' +
+        '</div>' +
         '<div class="av-stage">' +
-        '<canvas class="av-canvas" id="avCanvas"></canvas>' +
+        '<canvas class="av-canvas" id="avCanvas"' + (mode === 'spray' ? ' hidden' : '') + '></canvas>' +
+        '<canvas class="av-canvas" id="sprayCanvas"' + (mode === 'spray' ? '' : ' hidden') + '></canvas>' +
         '<div class="av-preview">' +
         '<span class="av-pv-label">效果</span>' +
         '<span class="av-pv"><canvas id="pv32"></canvas><canvas id="pv16"></canvas></span>' +
         '</div></div>' +
-        '<div class="av-pal" id="avPal"></div>' +
-        '<div class="av-tools">' +
-        '<button class="av-tool' + (tool === 'pen' ? ' on' : '') + '" type="button" data-tool="pen">✏️ 画笔</button>' +
-        '<button class="av-tool' + (tool === 'eraser' ? ' on' : '') + '" type="button" data-tool="eraser">🩹 橡皮</button>' +
-        '<button class="av-tool' + (tool === 'mirror' ? ' on' : '') + '" type="button" data-tool="mirror">🦋 镜像</button>' +
-        '</div>' +
+        (mode === 'spray'
+          ? '<div class="av-tools">' +
+            '<button class="av-tool" type="button" id="sprayUndo">↩️ 撤销</button>' +
+            '<button class="av-tool' + (sprayMirror ? ' on' : '') + '" type="button" id="sprayMirror">🦋 镜像</button>' +
+            '</div>' +
+            '<div class="av-brush"><span class="av-brush-l">笔刷</span>' +
+            '<input id="sprayBrush" type="range" min="1" max="8" step="1" value="' + (spray ? spray.getBrush() : 3) + '" aria-label="笔刷大小">' +
+            '<span class="av-brush-n" id="sprayBrushNum">' + (spray ? spray.getBrush() : 3) + '</span></div>'
+          : '<div class="av-pal" id="avPal"></div>' +
+            '<div class="av-tools">' +
+            '<button class="av-tool' + (tool === 'pen' ? ' on' : '') + '" type="button" data-tool="pen">✏️ 画笔</button>' +
+            '<button class="av-tool' + (tool === 'eraser' ? ' on' : '') + '" type="button" data-tool="eraser">🩹 橡皮</button>' +
+            '<button class="av-tool' + (tool === 'mirror' ? ' on' : '') + '" type="button" data-tool="mirror">🦋 镜像</button>' +
+            '</div>') +
         '<div class="av-act">' +
         '<button class="av-btn ghost" type="button" id="avClear">清空</button>' +
         '<button class="av-btn" type="button" id="avSave">保存头像</button>' +
         '</div>' +
         '<p class="av-note">用手指或鼠标在格子上涂。16×16 很小，画不出细节，建议只做几块色块。<br />头像会显示在社区里你发布的每幅作品上。</p>'
 
+      // 喷漆模式下没有调色板元素（用的是笔刷条），这里必须判空，
+      // 否则会在这里抛错，导致后面的 draw() / mountSpray() 都不执行
       const pal = $('avPal')
-      PALETTE.forEach((c, i) => {
-        const b = document.createElement('button')
-        b.type = 'button'
-        b.className = 'av-sw' + (i === 0 ? ' on' : '')
-        b.style.background = 'rgb(' + c[0] + ',' + c[1] + ',' + c[2] + ')'
-        b.setAttribute('data-i', String(i))
-        b.setAttribute('aria-label', '颜色 ' + (i + 1))
-        pal.appendChild(b)
-      })
+      if (pal)
+        PALETTE.forEach((c, i) => {
+          const b = document.createElement('button')
+          b.type = 'button'
+          b.className = 'av-sw' + (i === 0 ? ' on' : '')
+          b.style.background = 'rgb(' + c[0] + ',' + c[1] + ',' + c[2] + ')'
+          b.setAttribute('data-i', String(i))
+          b.setAttribute('aria-label', '颜色 ' + (i + 1))
+          pal.appendChild(b)
+        })
 
       draw()
+      mountSpray()
     }
 
     // 事件
     $('avBody').addEventListener('click', async (e) => {
+      const md = e.target.closest('.av-mode')
+      if (md) {
+        const m2 = md.getAttribute('data-mode')
+        if (m2 !== mode) {
+          if (dirty && !window.confirm('切换画法后，之前画的内容不会保留，确定吗？')) return
+          mode = m2
+          dirty = false
+          if (window.sfx) window.sfx('tap')
+          renderFrame() // 末尾会 mountSpray()
+          return
+        }
+      }
+      if (e.target.id === 'sprayUndo') {
+        if (spray && spray.undo() && window.sfx) window.sfx('tick')
+        return
+      }
+      if (e.target.id === 'sprayMirror') {
+        sprayMirror = !sprayMirror
+        if (spray) spray.setMirror(sprayMirror)
+        if (window.sfx) window.sfx('tap')
+        renderFrame()
+        return
+      }
       const sw = e.target.closest('.av-sw')
       if (sw) {
         color = PALETTE[Number(sw.getAttribute('data-i'))] || PALETTE[0]
@@ -358,9 +431,11 @@ export default {
         return
       }
       if (e.target.id === 'avClear') {
-        px = blank()
+        if (mode === 'spray' && spray) spray.clear()
+        else px = blank()
         dirty = true
-        draw()
+        if (mode === 'spray') drawPreview()
+        else draw()
         return
       }
       if (e.target.id === 'avSave') await save()
@@ -392,15 +467,78 @@ export default {
     host.addEventListener('pointercancel', stop)
     host.addEventListener('pointerleave', stop)
 
+    /* 喷漆引擎：与像素画完全独立。
+       注意：renderFrame 会重建 innerHTML，旧的 canvas 连同它上面的
+       事件监听一起被丢弃，所以每次渲染后都必须重新挂载，
+       并把缓冲区还原回去 —— 否则画布看着在，笔却落不下去。 */
+    let sprayBuf = null
+    function mountSpray() {
+      if (mode !== 'spray' || !window.LWSpray) return
+      const cv = $('sprayCanvas')
+      if (!cv) return
+      if (spray) {
+        try {
+          spray.destroy()
+        } catch (e) {}
+        spray = null
+      }
+      spray = window.LWSpray.create(cv, {
+        size: 64,
+        getColor: () => color,
+        onChange: () => {
+          if (spray) {
+            sprayBuf = spray.getBuffer().map((q) => (q ? q.slice() : null))
+          }
+          drawPreview()
+        },
+      })
+      if (sprayBuf) spray.load(sprayBuf)
+      if (spray) spray.setMirror(sprayMirror)
+    }
+
+    /* 当前模式下的 16×16 像素；喷漆模式做降采样 */
+    function currentPixels() {
+      if (mode !== 'spray') return px
+      if (!spray) return null
+      return spray.downsample(SIZE)
+    }
+
+    function drawPreview() {
+      const pv = currentPixels()
+      if (pv) {
+        A.draw($('pv32'), null, 32, pv)
+        A.draw($('pv16'), null, 16, pv)
+      }
+      const bt = $('avSave')
+      if (bt) bt.disabled = false
+    }
+
     async function save() {
       const t = token()
       if (!t) {
         toast('请先登录')
         return
       }
-      if (isEmpty()) {
+      const cost = COSTS[mode] || 20
+      const payload = currentPixels()
+      if (!payload) {
+        toast('画布还没准备好，稍等一下')
+        return
+      }
+      if (mode === 'spray' && spray && spray.isEmpty()) {
+        toast('还没喷呢，先画几笔')
+        return
+      }
+      if (mode === 'pixel' && isEmpty()) {
         toast('还没画呢，至少涂几格')
         return
+      }
+      // 已经有头像了还改，等于重新花一次钱，先说清楚
+      if (hasAvatar) {
+        const again = !window.confirm(
+          '修改头像会再花 ' + cost + ' 个光尘（现在有 ' + balance + ' 个）。\n\n确定要改吗？'
+        )
+        if (!again) return
       }
       const btn = $('avSave')
       btn.disabled = true
@@ -409,7 +547,7 @@ export default {
         const res = await fetch('/api/avatar', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t },
-          body: JSON.stringify({ action: 'save', pixels: px }),
+          body: JSON.stringify({ action: 'save', pixels: payload, mode: mode }),
         })
         const d = await res.json().catch(() => ({}))
         if (!res.ok || !d.ok) {
@@ -420,8 +558,7 @@ export default {
           renderFrame()
           return
         }
-        paid = true
-        cost = 30
+        hasAvatar = true
         if (d.book) balance = d.book.bal
         dirty = false
         // 让别处立刻用上新头像
@@ -456,11 +593,28 @@ export default {
           $('avBody').innerHTML = '<div class="av-cost">读取失败：' + esc((d && d.error) || res.status) + '</div>'
           return
         }
-        paid = !!d.paid
-        cost = Number(d.cost) || 30
+        // cost 现在是两个画法各自的价格
+        if (d.cost && typeof d.cost === 'object') {
+          COSTS = {
+            pixel: Number(d.cost.pixel) || 20,
+            spray: Number(d.cost.spray) || 30,
+          }
+        }
+        hasAvatar = !!d.has
+        mode = d.currentMode === 'spray' ? 'spray' : 'pixel'
         balance = d.book ? Number(d.book.bal) || 0 : 0
         px = Array.isArray(d.pixels) && d.pixels.length === CELLS ? d.pixels.map((p) => [p[0], p[1], p[2]]) : blank()
-        // 载入后先画一帧，这样能拿到 canvas 引用
+        if (mode === 'spray') {
+          // 把已有 16×16 放大成 64×64 存进缓冲，renderFrame 之后会挂载并载入
+          const up = []
+          for (let y = 0; y < 64; y++) {
+            for (let x = 0; x < 64; x++) {
+              const q = px[Math.floor(y / 4) * SIZE + Math.floor(x / 4)]
+              up.push(q[0] > 246 && q[1] > 246 && q[2] > 246 ? null : [q[0], q[1], q[2]])
+            }
+          }
+          sprayBuf = up
+        }
         renderFrame()
       } catch (e) {
         $('avBody').innerHTML = '<div class="av-cost">读取失败：网络错误</div>'
