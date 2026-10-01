@@ -770,6 +770,29 @@ color: var(--text-muted);
         box-shadow: none;
       }
 
+      /* 像素相机 / 下载：emoji 在上、小字在下 */
+      .actions button.abtn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1px;
+        line-height: 1.1;
+        padding: 4px 6px;
+      }
+      .actions .abtn-ico {
+        font-size: 18px;
+        line-height: 1.1;
+      }
+      .actions .abtn-tx {
+        font-size: 10px;
+        font-weight: 600;
+        color: var(--text-muted2);
+        letter-spacing: 0.2px;
+        white-space: nowrap;
+      }
+      .actions button.abtn.active .abtn-tx { color: #fff; }
+
       #undoBtn, #clearBtn {
         flex: 0 0 52px;
         background: var(--surface-2);
@@ -1995,7 +2018,9 @@ color: var(--text-muted);
     <div class="actions">
       <button id="undoBtn" type="button" title="撤销（Z）" disabled>↩️</button>
       <button id="clearBtn" type="button" title="清空">🗑️</button>
-      <button id="imgBtn" type="button" title="把照片变成像素画">🖼️</button>
+      <button id="imgBtn" type="button" title="把照片变成像素画" class="abtn">
+        <span class="abtn-ico">📷</span><span class="abtn-tx">像素相机</span>
+      </button>
       <button id="mirrorBtn" type="button" title="左右镜像绘制（M）" aria-pressed="false">🦋</button>
       <input id="imgInput" type="file" accept="image/*" hidden>
 
@@ -2013,7 +2038,9 @@ color: var(--text-muted);
         <button class="imgmode-cancel" id="imgModeCancel" type="button">取消</button>
       </div>
     </div>
-      <button id="savePngBtn" type="button" title="导出 PNG">⬇️</button>
+      <button id="savePngBtn" type="button" title="导出 PNG" class="abtn">
+        <span class="abtn-ico">⬇️</span><span class="abtn-tx">下载</span>
+      </button>
       <button id="uploadBtn" type="button">上传</button>
     </div>
 

@@ -1314,14 +1314,14 @@ export default {
 
       /* ---------- 画板布局（母/子） ---------- */
       const LAYOUTS = [
-        { key: 'size', label: '画布尺寸栏', desc: '切换 16/32/64 的按钮' },
-        { key: 'tools', label: '工具栏', desc: '画笔、橡皮、颜料桶等' },
-        { key: 'history', label: '我的绘画历史', desc: '画板下方的历史作品区' },
-        { key: 'join', label: '参赛卡片', desc: '每日挑战 / 本周主题的勾选卡' },
-        { key: 'name', label: '作品名与作者名', desc: '上传前的两个输入框' },
-        { key: 'actions', label: '操作按钮', desc: '撤销、清空、导出、上传' },
-        { key: 'hint', label: '操作提示', desc: '画布下方那行说明文字' },
-        { key: 'disclaimer', label: '使用须知与版权', desc: '底部说明与赞赏支持' },
+        { key: 'size', ico: '🔢', label: '画布尺寸栏', desc: '切换 16/32/64 的按钮' },
+        { key: 'tools', ico: '🖌️', label: '工具栏', desc: '画笔、橡皮、颜料桶等' },
+        { key: 'history', ico: '🗂️', label: '我的绘画历史', desc: '画板下方的历史作品区' },
+        { key: 'join', ico: '🏆', label: '参赛卡片', desc: '每日挑战 / 本周主题的勾选卡' },
+        { key: 'name', ico: '✏️', label: '作品名与作者名', desc: '上传前的两个输入框' },
+        { key: 'actions', ico: '🎛️', label: '操作按钮', desc: '撤销、清空、导出、上传' },
+        { key: 'hint', ico: '💡', label: '操作提示', desc: '画布下方那行说明文字' },
+        { key: 'disclaimer', ico: '📜', label: '使用须知与版权', desc: '底部说明与赞赏支持' },
       ]
       const layKey = (k) => 'lw-lay-' + k
       function isLayOn(k) {
@@ -1349,7 +1349,8 @@ export default {
           const body = document.createElement('span')
           body.className = 'lay-body'
           const b = document.createElement('b')
-          b.textContent = L.label
+          b.className = 'lay-title'
+          b.textContent = (L.ico || '') + ' ' + L.label
           const i = document.createElement('i')
           i.textContent = L.desc
           body.append(b, i)
@@ -1399,14 +1400,14 @@ export default {
 
       /* ---------- 进阶功能开关（默认全关） ---------- */
       const FEATURES = [
-        { key: 'prompt', label: '题目模式', desc: '按主题出题创作，顶部有换题按钮' },
-        { key: 'anim', label: '帧动画', desc: '逐帧作画并导出循环 GIF' },
-        { key: 'daily', label: '每日挑战', desc: '每天一个题目，作品进当日榜' },
-        { key: 'contest', label: '本周主题比赛', desc: '每周一个主题，社区投票选最佳' },
-        { key: 'image', label: '📷 像素相机', desc: '把照片变成像素画再继续手改' },
-        { key: 'mirror', label: '镜像绘制', desc: '落笔自动左右对称' },
-        { key: 'drafts', label: '多草稿槽', desc: '同时保存 3 幅草稿，随时切换' },
-        { key: 'tags', label: '作品标签', desc: '给作品加标签，方便别人搜到' },
+        { key: 'prompt', ico: '🎲', label: '题目模式', desc: '按主题出题创作，顶部有换题按钮' },
+        { key: 'anim', ico: '🎞️', label: '帧动画', desc: '逐帧作画并导出循环 GIF' },
+        { key: 'daily', ico: '📅', label: '每日挑战', desc: '每天一个题目，作品进当日榜' },
+        { key: 'contest', ico: '🏆', label: '本周主题比赛', desc: '每周一个主题，社区投票选最佳' },
+        { key: 'image', ico: '📷', label: '像素相机', desc: '把照片变成像素画再继续手改' },
+        { key: 'mirror', ico: '🦋', label: '镜像绘制', desc: '落笔自动左右对称' },
+        { key: 'drafts', ico: '📑', label: '多草稿槽', desc: '同时保存 3 幅草稿，随时切换' },
+        { key: 'tags', ico: '🏷️', label: '作品标签', desc: '给作品加标签，方便别人搜到' },
       ]
       const featKey = (k) => 'lw-feat-' + k
       function isFeatOn(k) {
@@ -1429,7 +1430,7 @@ export default {
           const left = document.createElement('div')
           const lb = document.createElement('div')
           lb.className = 'row-label'
-          lb.textContent = f.label
+          lb.textContent = (f.ico || '') + ' ' + f.label
           const ds = document.createElement('div')
           ds.className = 'row-desc'
           ds.textContent = f.desc

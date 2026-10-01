@@ -821,6 +821,139 @@
         sync()
       })()
 
+      /* ---------- 成就提示 ----------
+         成就要在「做完事之后」就通知，而不是等用户特意去成就页才发现。
+         所以发布作品、送出光尘、签到之后都调 window.achSync()，
+         它去服务端重新统计，有新解锁就弹提示。 */
+      ;(function () {
+        var KEY_TOKEN = 'lw-token'
+        var busy = false
+        var STYLE_ID = 'lw-ach-style'
+        var BOX_ID = 'lw-ach-box'
+
+        function token() {
+          try {
+            return localStorage.getItem(KEY_TOKEN) || ''
+          } catch (e) {
+            return ''
+          }
+        }
+
+        function ensureStyle() {
+          if (document.getElementById(STYLE_ID)) return
+          var st = document.createElement('style')
+          st.id = STYLE_ID
+          st.textContent =
+            '#' + BOX_ID + '{position:fixed;left:50%;top:calc(12px + env(safe-area-inset-top,0px));' +
+            'transform:translateX(-50%);z-index:200;display:flex;flex-direction:column;gap:8px;' +
+            'width:min(320px,88vw);pointer-events:none}' +
+            '.lw-ach{background:var(--surface,#fff);border:1px solid var(--accent,#5b8def);' +
+            'border-radius:14px;padding:11px 13px;box-shadow:0 8px 26px rgba(0,0,0,.18);' +
+            'display:flex;gap:10px;align-items:flex-start;' +
+            'animation:lwAchIn .3s ease;transition:opacity .3s,transform .3s}' +
+            '.lw-ach.out{opacity:0;transform:translateY(-8px)}' +
+            '@keyframes lwAchIn{from{opacity:0;transform:translateY(-14px)}to{opacity:1;transform:none}}' +
+            '.lw-ach-ico{font-size:24px;line-height:1.2;flex:none}' +
+            '.lw-ach-b{flex:1;min-width:0}' +
+            '.lw-ach-t{font-size:12px;font-weight:800;color:var(--accent,#5b8def);letter-spacing:.4px}' +
+            '.lw-ach-n{font-size:14px;font-weight:800;color:var(--text,#222);margin-top:2px;line-height:1.4}' +
+            '.lw-ach-d{font-size:12px;color:var(--text-muted,#888);margin-top:2px;line-height:1.5}' +
+            '.lw-ach-r{display:inline-block;margin-top:5px;font-size:11px;font-weight:800;color:#b8860b}'
+          document.head.appendChild(st)
+        }
+
+        function box() {
+          ensureStyle()
+          var b = document.getElementById(BOX_ID)
+          if (!b) {
+            b = document.createElement('div')
+            b.id = BOX_ID
+            document.body.appendChild(b)
+          }
+          return b
+        }
+
+        function esc(t) {
+          return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+          })
+        }
+
+        /* 弹一条成就提示；同一批多个会依次堆叠 */
+        function show(list, reward) {
+          if (!list || !list.length) return
+          var host = box()
+          list.slice(0, 4).forEach(function (a, i) {
+            var el = document.createElement('div')
+            el.className = 'lw-ach'
+            el.innerHTML =
+              '<div class="lw-ach-ico">' + esc(a.ico || '🏅') + '</div>' +
+              '<div class="lw-ach-b">' +
+              '<div class="lw-ach-t">成就达成</div>' +
+              '<div class="lw-ach-n">' + esc(a.name) + '</div>' +
+              '<div class="lw-ach-d">' + esc(a.desc || '') + '</div>' +
+              (a.reward ? '<div class="lw-ach-r">+' + a.reward + ' ✨ 光尘</div>' : '') +
+              '</div>'
+            host.appendChild(el)
+            setTimeout(function () {
+              el.classList.add('out')
+              setTimeout(function () {
+                if (el.parentNode) el.parentNode.removeChild(el)
+              }, 320)
+            }, 3200 + i * 180)
+          })
+          if (window.sfx) {
+            try {
+              window.sfx('ok')
+            } catch (e) {}
+          }
+          // 奖励光尘已由服务端加到账本上，通知余额刷新
+          if (reward) window.dispatchEvent(new CustomEvent('lw-dust-changed'))
+          window.dispatchEvent(new CustomEvent('lw-achieve-changed', { detail: list }))
+        }
+
+        /**
+         * 重新统计成就并提示。
+         * opts.silent 为 true 时只静默同步（例如角标刷新），不弹提示。
+         * opts.then 回调拿到完整结果。
+         */
+        window.achSync = function (opts) {
+          var o = opts || {}
+          var t = token()
+          if (!t) return Promise.resolve(null)
+          if (busy) {
+            return o.then ? Promise.resolve(null) : Promise.resolve(null)
+          }
+          busy = true
+          return fetch('/api/achieve', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t },
+            body: JSON.stringify({ action: 'sync' }),
+            cache: 'no-store',
+          })
+            .then(function (r) {
+              if (r.status === 401) return null
+              return r.json().catch(function () {
+                return null
+              })
+            })
+            .then(function (d) {
+              if (d && d.ok && !o.silent && d.fresh && d.fresh.length) show(d.fresh, d.reward)
+              if (o.then && d) o.then(d)
+              return d
+            })
+            .catch(function () {
+              return null
+            })
+            .finally(function () {
+              busy = false
+            })
+        }
+
+        // 成就页在别处被打开过时，角标要跟着变
+        window.addEventListener('lw-achieve-changed', function () {})
+      })()
+
       /* ---------- 导航栏样式/位置：尽早应用，避免刷新后闪一下默认值 ---------- */
       ;(function () {
         try {

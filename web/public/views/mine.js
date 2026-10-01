@@ -427,6 +427,9 @@ export default {
       renderSign()
     }
     window.addEventListener('lw-mail-claimed', onDust)
+    window.addEventListener('lw-achieve-changed', function () {
+      loadAchBadge()
+    })
     window.addEventListener('lw-dust-changed', onDust)
     window.addEventListener('lw-auth-changed', onDust)
 
@@ -597,6 +600,8 @@ export default {
         }
         renderDustBalance()
         renderSign()
+        // 签到也会解锁「签到常客」这类成就
+        if (window.achSync) window.achSync()
         if (window.sfx) window.sfx(d.streak > 1 ? 'ok' : 'ding')
         if (d.bonus) {
           toast('达成连续 ' + d.streak + ' 天！额外获得 ' + d.bonus + ' 个光尘 ✨')
@@ -619,19 +624,22 @@ export default {
         el.textContent = ''
         return
       }
-      fetch('/api/achieve', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t },
-        body: JSON.stringify({ action: 'sync' }),
-        cache: 'no-store',
-      })
-        .then((r) => (r.status === 401 ? null : r.json()))
-        .then((d) => {
-          if (!d || !d.ok) return
-          el.textContent = d.total ? d.unlocked + '/' + d.total : ''
-          if (d.reward) renderDustBalance()
+      // 静默同步：只更新角标，不在这里弹提示
+      const show = (d) => {
+        if (!d || !d.ok) return
+        el.textContent = d.total ? d.unlocked + '/' + d.total : ''
+      }
+      if (window.achSync) window.achSync({ silent: true, then: show })
+      else
+        fetch('/api/achieve', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t },
+          body: JSON.stringify({ action: 'sync' }),
+          cache: 'no-store',
         })
-        .catch(() => {})
+          .then((r) => (r.status === 401 ? null : r.json()))
+          .then(show)
+          .catch(() => {})
     }
 
     /* 信箱待领附件数：只对登录用户请求 */
