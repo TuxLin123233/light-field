@@ -1114,10 +1114,6 @@ export default {
       }
 
       /* ---------- 评论 ---------- */
-      // 这个视图一直没有 esc（别的视图有），评论渲染要拼 HTML，先补上
-      const esc = (s) =>
-        String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
- */
       .cmt-box {
         margin-top: 14px; padding-top: 12px;
         border-top: 1px solid var(--border);
@@ -3282,6 +3278,10 @@ export default {
       /* ---------- 评论 ----------
          拉取和发表都走 /api/comment。和其他页一致：切作品时才加载一次，
          同一幅画再打开直接用内存缓存，刷新靠「刷新」按钮。 */
+      /* 这个视图一直没有 esc（别的视图才有），评论要拼 HTML，先补一个。
+         注意别再插到 css 字符串里去 —— 那里也有一段同名注释。 */
+      const esc = (s) =>
+        String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
       const cmtBox = document.getElementById('cmtBox')
       const cmtList = document.getElementById('cmtList')
       const cmtInput = document.getElementById('cmtInput')
@@ -3317,6 +3317,9 @@ export default {
           cmtList.innerHTML = '<div class="cmt-tip">还没有人评论，来说第一句吧</div>'
           return
         }
+        // 包一层 try：渲染评论用的是拼 HTML 的写法，一个字段对不上就会抛，
+        // 而这里在 Promise 里，抛了也不会冒到页面上，只会出现「评论区空白」
+        try {
         cmtList.innerHTML = items
           .map((c) => {
             const mineUid = window.LWMe && window.LWMe.uid
@@ -3335,6 +3338,10 @@ export default {
             )
           })
           .join('')
+        } catch (e) {
+          console.error('[comment] 渲染失败', e)
+          cmtList.innerHTML = '<div class="cmt-tip">评论显示不出来，请刷新试试</div>'
+        }
         // 头像
         cmtList.querySelectorAll('.cmt-av[data-uid]').forEach((el) => {
           const uid = el.getAttribute('data-uid')
@@ -3423,7 +3430,9 @@ export default {
         const has = !!t
         cmtInput.disabled = !has
         cmtInput.placeholder = has ? '说点什么…' : '说点什么…（登录后才能评论）'
-        cmtSend.disabled = !has
+        // 没登录、或者还没打字，发送按钮都该是灰的。
+        // 之前只判了「有没有登录」，登录后空着框也能点，点了才被服务端拒。
+        cmtSend.disabled = !has || !cmtInput.value.trim()
       }
 
       // 有字才能点
