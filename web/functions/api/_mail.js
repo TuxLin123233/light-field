@@ -96,6 +96,35 @@ export async function pending(kv, uid) {
 }
 
 /**
+ * 清空信箱，但**未领取的附件必须留着**。
+ *
+ * 为什么不能一股脑清掉：附件是发出去的真实光尘（国庆礼包、活动奖励），
+ * 用户没来得及点「领取」就消失，等于白送的东西没了。所以这里只清
+ * 「纯通知」和「已经领过的附件」，剩下的原样保留，并在返回值里
+ * 告诉前端留了几封、为什么留。
+ */
+export async function clearBox(kv, uid) {
+  const box = await readBox(kv, uid)
+  if (!box.length) return { removed: 0, kept: [], total: 0 }
+  const done = await readDone(kv, uid)
+  const kept = []
+  const dropped = []
+  for (const m of box) {
+    const claimed = m.claimId ? done.indexOf('c:' + m.id) >= 0 : false
+    const hasReward = m.kind === 'attach' && m.dust > 0
+    // 还没领的附件 → 留着
+    if (hasReward && !claimed) kept.push(m)
+    else dropped.push(m)
+  }
+  if (dropped.length) await writeBox(kv, uid, kept)
+  return {
+    removed: dropped.length,
+    total: box.length,
+    kept: kept.map((m) => ({ id: m.id, title: m.title, dust: m.dust })),
+  }
+}
+
+/**
  * 领取附件。返回 { ok, dust } 或 { ok:false, reason }。
  * 领取记录与发奖由调用方在同一流程里完成。
  */

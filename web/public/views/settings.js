@@ -267,7 +267,6 @@ export default {
         cursor: pointer;
       }
 
-      .row-col { flex-direction: column; align-items: stretch; gap: 10px; }
 
       /* ---------- 联系与社区：不透明的一张卡 ---------- */
       .contact-card {
@@ -605,6 +604,17 @@ export default {
         justify-content: space-between;
         gap: 12px;
         padding: 10px 0;
+      }
+
+      /* 竖排分组。必须写在 .row 之后：两者优先级相同（同为单类选择器），
+         后写的赢。之前这条写在 .row 前面，被 .row 的 align-items:center
+         覆盖掉，父级就变成「按内容收缩」，
+         里面的 grid 用 1fr 分宽度却分不到（容器缩成 68px、每格只剩 30px），
+         表现就是「启动页四个按钮太窄」「导航样式六个按钮太窄」。 */
+      .row-col {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
       }
 
       .row + .row { border-top: 1px solid var(--border); }

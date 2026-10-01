@@ -3,7 +3,7 @@
 //   GET                    取信箱列表与可领附件统计
 //   POST {action:'claim', id}  领取附件（光尘直接进账本）
 import { readActiveUser, pickToken, BANNED_ERROR } from './_auth.js'
-import { readBox, claim, stats, ensureOffers, ATTACH_DUST } from './_mail.js'
+import { readBox, claim, clearBox, stats, ensureOffers, ATTACH_DUST } from './_mail.js'
 import { readBook, writeBook, publicView } from './_dust.js'
 
 const CORS_HEADERS = {
@@ -58,9 +58,16 @@ export async function onRequestPost(context) {
   if (who.gone) return json({ error: '账号不存在', code: 'gone' }, 401)
 
   const action = (body && body.action) || ''
+  const kv = env.LIGHTFIELD_KV
+
+  // 清空信箱：未领取的附件会被保留
+  if (action === 'clear') {
+    const r = await clearBox(kv, who.uid)
+    return json({ ok: true, ...r })
+  }
+
   if (action !== 'claim') return json({ error: '未知操作' }, 400)
 
-  const kv = env.LIGHTFIELD_KV
   const r = await claim(kv, who.uid, body.id)
   if (!r.ok) {
     const msg =

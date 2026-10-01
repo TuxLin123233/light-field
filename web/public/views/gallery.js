@@ -976,87 +976,6 @@ export default {
         overflow-y: auto;
       }
       .pal-grid::-webkit-scrollbar { display: none; }
-      /* ---------- 公告 ---------- */
-      .announce {
-        position: relative;
-        width: 100%;
-        background: var(--surface);
-        border: 1px solid var(--border-strong);
-        border-radius: 16px;
-        padding: 16px 15px 14px;
-        margin-bottom: 16px;
-        overflow: hidden;
-      }
-      .announce::before {
-        content: '';
-        position: absolute;
-        left: 0;
-        top: 0;
-        bottom: 0;
-        width: 4px;
-        background: linear-gradient(180deg, #e5484d 0%, #f0a13a 55%, #5b8def 100%);
-      }
-      .announce-close {
-        position: absolute;
-        top: 8px;
-        right: 8px;
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
-        border: none;
-        background: var(--surface-2);
-        color: var(--text-muted);
-        font-size: 17px;
-        line-height: 1;
-        cursor: pointer;
-      }
-      .announce-head {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 7px;
-        padding-right: 32px;
-      }
-      .announce-head b { font-size: 17px; color: var(--text); }
-      .announce-badge {
-        padding: 2px 9px;
-        border-radius: 999px;
-        background: color-mix(in srgb, #e5484d 16%, var(--surface));
-        border: 1px solid color-mix(in srgb, #e5484d 45%, transparent);
-        color: #e5484d;
-        font-size: 11px;
-        font-weight: 700;
-        flex-shrink: 0;
-      }
-      .announce-sub { margin: 0 0 9px; font-size: 13px; color: var(--text-muted); }
-      .announce-list { margin: 0; padding-left: 0; list-style: none; }
-      .announce-list li {
-        position: relative;
-        padding-left: 15px;
-        margin-bottom: 7px;
-        font-size: 13px;
-        line-height: 1.75;
-        color: var(--text-muted);
-      }
-      .announce-list li::before {
-        content: '';
-        position: absolute;
-        left: 2px;
-        top: 9px;
-        width: 5px;
-        height: 5px;
-        border-radius: 50%;
-        background: var(--accent);
-      }
-      .announce-list b { color: var(--text); }
-      .announce-foot {
-        margin: 11px 0 0;
-        padding-top: 10px;
-        border-top: 1px solid var(--border);
-        font-size: 12px;
-        color: var(--text-faint);
-        line-height: 1.7;
-      }
 
       /* ---------- 发现 ---------- */
       .discover {
@@ -1497,25 +1416,6 @@ export default {
         <div class="contest-top" id="contestTop"></div>
       </section>
 
-      <section class="announce" id="announce" hidden>
-        <button class="announce-close" id="announceClose" type="button" aria-label="关闭公告">×</button>
-        <div class="announce-head">
-          <span class="announce-badge">公告</span>
-          <b>国庆节快乐！</b>
-        </div>
-        <p class="announce-sub">这次国庆攒了不少东西，一次性交代清楚：</p>
-        <ul class="announce-list">
-          <li><b>20 套配色主题</b>：新增 6 套夜间系（深海、墨林、玫瑰夜、森语、夜航、炭）和 7 套浅色系（奶茶、薰衣草、蜜桃、雾霭、抹茶、燕麦、复古），外加底部导航透明度可自由调节</li>
-          <li><b>18 种提示音效</b>：保存、撤销、清空、投票、复制链接、开局、载入、答题……都能在设置里一键开关</li>
-          <li><b>「🌱 我的」上线</b>：每日签到攒连续天数和徽章，创作数据看得清清楚楚（作品数、收到的光尘、绘制格数、创作天数）</li>
-          <li><b>「🔍 发现」</b>：随机翻出一件旧作品，送光尘多的更容易被翻出来，让埋掉的好东西重见天日</li>
-          <li><b>内容安全机制</b>：作品可举报，维护者后台能核实处理，审核全程有据可查</li>
-          <li><b>导航栏全面自定义</b>：启动先打开哪一页、导航放顶部还是底部、四个入口的顺序，都能按你的习惯来</li>
-          <li><b>像素相机</b>：照片一键转像素画；<b>新手教程</b>：设置页顶部两分钟看完所有功能</li>
-          <li><b>可装到桌面</b>：加为应用后断网也能打开画板继续画</li>
-        </ul>
-        <p class="announce-foot">另外还修了不少问题：联机同步的坑、手型工具误画、小地图挡住画布、深色模式文字看不清等等。细节都写在更新日志里了。</p>
-      </section>
 
       <section class="discover" id="discover">
         <div class="discover-head">
@@ -2425,27 +2325,6 @@ export default {
       /* ---------- 佳作展示 ---------- */
       const featured = document.getElementById('featured')
       const featuredRow = document.getElementById('featuredRow')
-      /* ---------- 公告 ---------- */
-      const ANNOUNCE_ID = '2026-national-day'
-      const ANNOUNCE_KEY = 'lw-announce-' + ANNOUNCE_ID
-      const announce = document.getElementById('announce')
-      const announceClose = document.getElementById('announceClose')
-      if (announce) {
-        let seen = false
-        try {
-          seen = localStorage.getItem(ANNOUNCE_KEY) === '1'
-        } catch (e) {}
-        if (!seen) announce.hidden = false
-        if (announceClose) {
-          announceClose.addEventListener('click', () => {
-            announce.hidden = true
-            try {
-              localStorage.setItem(ANNOUNCE_KEY, '1')
-            } catch (e) {}
-            if (window.sfx) window.sfx('tick')
-          })
-        }
-      }
 
       /* ---------- 发现：随机翻出旧作品 ---------- */
       const discoverBtn = document.getElementById('discoverBtn')
