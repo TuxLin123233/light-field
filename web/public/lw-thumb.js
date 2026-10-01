@@ -14,16 +14,37 @@ window.LWThumb = (function () {
     const n = size === 32 || size === 64 ? size : 16
 
     /* 目标 CSS 宽度：优先取传入值，否则量当前元素。
-       量不到（元素还没布局，宽度为 0）时不要瞎猜一个值写进 style ——
-       之前这里回退成 76，再被 floor(76/16)=4 算成 64px 写死在内联样式上，
-       卡片后来变宽了图也不会跟着变，右边空出一大块，看着就是「图没居中」。
-       量不到就干脆不动内联样式，交给 CSS，下一次 draw 就会量到真值。 */
+       量不到（元素还没进布局，宽度 0）时：
+         不能直接 return —— 那 canvas 就一直是空的，什么都不显示；
+         也不能随便定一个值写死 —— 之前回退成 76，被 floor(76/16)=4
+         算成 64px 钉在内联样式上，卡片后来变宽了图也不变。
+       所以：先用一个兜底值把这一帧画出来（保证不空白），
+       再在下一帧自动重量一次，那时就能拿到真实宽度了。 */
     let css = Number(o.css) || 0
+    let guessed = false
     if (!css) {
       const r = canvas.getBoundingClientRect()
       css = Math.round(r.width) || 0
+      if (!css) {
+        css = 96 // 兜底，仅用于这一帧
+        guessed = true
+      }
     }
-    if (!css) return // 还没布局好，等下次
+    if (guessed) {
+      /* 下一帧元素通常已经布局好，那时画出来的才是真尺寸。
+         限次重试：这个元素要是一直没宽度（比如所在页面被隐藏），
+         不加限制就会每帧重画一次，白烧 CPU。 */
+      const tries = (o.__retry = (o.__retry || 0) + 1)
+      if (tries <= 3 && typeof requestAnimationFrame === 'function') {
+        requestAnimationFrame(() => {
+          try {
+            draw(canvas, pixels, size, o)
+          } catch (e) {}
+        })
+      }
+    } else {
+      o.__retry = 0
+    }
 
     if (css < n) css = n
 

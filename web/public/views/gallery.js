@@ -3270,6 +3270,7 @@ export default {
         }
         syncPreviewVoteBtn()
         // 打开作品时顺带加载评论（同一幅画有缓存就不重复请求）
+        cmtWorkOwner = (rec && rec.ownerUser) || ''
         if (rec && rec.time) loadComments(Number(rec.time), false)
         previewOverlay.hidden = false
       }
@@ -3325,6 +3326,21 @@ export default {
       const C = window.LWCache || {}
       let cmtWork = 0
       let cmtMyUid = '' // 服务端在读评论时顺便带回我的 uid，用来把「我说的」镜像到右边
+      let cmtWorkOwner = '' // 当前这幅作品的作品作者 uid
+      let cmtIMayDelete = false // 我是不是这幅作品的作品作者
+
+      /* 这条评论是不是我发的。
+         uid 对得上最准；但如果读评论时还没登录 / 拿到的缓存里没有 myUid，
+         就退回按用户名比 —— localStorage 里有登录名，一样能认出来。 */
+      function isMyComment(c) {
+        if (!c) return false
+        if (cmtMyUid && c.uid && c.uid === cmtMyUid) return true
+        let name = ''
+        try {
+          name = localStorage.getItem('lw-user') || ''
+        } catch (e) {}
+        return !!(name && c.name === name)
+      }
 
       function cmtToken() {
         try {
@@ -3348,6 +3364,15 @@ export default {
           return
         }
         if (d.myUid) cmtMyUid = d.myUid
+        // 我是不是这幅作品的作品作者：是的话，别人留的评论我也能删
+        const myName = (function () {
+          try {
+            return localStorage.getItem('lw-user') || ''
+          } catch (e) {
+            return ''
+          }
+        })()
+        cmtIMayDelete = !!(cmtWorkOwner && myName && cmtWorkOwner === myName)
         const items = d.items || []
         cmtCount.textContent = items.length ? items.length + ' 条评论' : ''
         if (!items.length) {
@@ -3359,14 +3384,22 @@ export default {
         try {
         cmtList.innerHTML = items
           .map((c) => {
-            const isMine = !!(cmtMyUid && c.uid === cmtMyUid)
-            const canDel = c.owner || isMine
+            const isMine = isMyComment(c)
+            /* 「（作者）」标签同样按事实算：这幅作品现在的作者是谁，
+               而不是评论里那个可能过时的快照。 */
+            const isAuthor = !!(cmtWorkOwner && c.uid && c.uid === cmtWorkOwner)
+            /* 能不能删，按「现在的身份」算，不看评论上那个 owner 标记 ——
+               那个标记是发评论那一刻的快照：作品作者后来才关注/回关的话，
+               他在别人评论上也该有删除键；反过来我给别人当作者的旧评论
+               也该能删。现在的问题是两边都算错：删别人的点了没反应，
+               删自己的又根本没按钮。 */
+            const canDel = isMine || cmtIMayDelete
             return (
-              '<div class="cmt-item' + (c.owner ? ' owner' : '') + (isMine ? ' mine' : '') + '">' +
+              '<div class="cmt-item' + (isAuthor ? ' owner' : '') + (isMine ? ' mine' : '') + '">' +
               '<span class="cmt-av" data-uid="' + esc(c.uid) + '"></span>' +
               '<span class="cmt-main">' +
               '<span class="cmt-row">' +
-              '<span class="cmt-name">' + esc(c.name) + (c.owner ? '（作者）' : '') + '</span>' +
+              '<span class="cmt-name">' + esc(c.name) + (isAuthor ? '（作者）' : '') + '</span>' +
               '<span class="cmt-time">' + esc(cmtFmt(c.at)) + '</span>' +
               (canDel ? '<button class="cmt-del" data-del="' + esc(c.id) + '" type="button">删除</button>' : '') +
               '</span>' +

@@ -47,14 +47,16 @@ async function writeComments(kv, work, list) {
   await kv.put(KEY(work), JSON.stringify(list))
 }
 
-/** 补上用户名和头像 uid。只保留最近 200 条。 */
-async function decorate(kv, list) {
+/* 补上用户名和头像 uid。
+   owner（是不是作品作者本人）在这里按「当前这幅作品是谁的」实时算，
+   不读评论里存的 owner 字段 —— 那个是发评论那一刻的快照，
+   作品作者的身份变了以后就再也对不上了。 */
+async function decorate(kv, list, workOwnerUid) {
   const out = []
-  const seen = new Set()
   for (const c of list) {
     if (!c || typeof c.id !== 'string') continue
     let name = '已注销'
-    let uid = c.uid || ''
+    const uid = c.uid || ''
     if (uid) {
       const u = await readUser(kv, uid)
       if (u) name = u.username
@@ -65,9 +67,8 @@ async function decorate(kv, list) {
       name,
       text: String(c.text || '').slice(0, MAX_LEN),
       at: Number(c.at) || 0,
-      owner: !!c.owner, // 是作品作者本人
+      owner: !!(workOwnerUid && uid && uid === workOwnerUid),
     })
-    seen.add(c.id)
   }
   return out
 }
@@ -90,13 +91,16 @@ export async function onRequestGet(context) {
   // 顺便把「我的 uid」带回去：前端要靠它区分自己的评论（镜像到右边），
   // 为此单独再请求一次接口不值得。
   const myUid = await readActiveUser(env, '', request.headers.get('authorization'))
+  const owner = await workOwner(kv, work)
   const list = await readComments(kv, work)
   return json({
     ok: true,
     work,
     total: list.length,
-    items: await decorate(kv, list),
+    items: await decorate(kv, list, owner),
     myUid: myUid ? myUid.uid : '',
+    // 作品作者是谁，前端据此判断「我能不能删别人留的评论」
+    workOwner: owner,
   })
 }
 
@@ -160,7 +164,7 @@ export async function onRequestPost(context) {
     }
     list.push(item)
     await writeComments(kv, work, list)
-    const [view] = await decorate(kv, [item])
+    const [view] = await decorate(kv, [item], owner)
     return json({ ok: true, item: view, total: list.length })
   }
 
