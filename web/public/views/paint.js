@@ -4629,7 +4629,24 @@ color: var(--text-muted);
           const data = await res.json().catch(() => ({}))
           if (res.ok) {
             if (data.time) addMine(data.time)
-            toast('发布「' + (data.workName || '未命名') + '」成功')
+            // 发布有光尘奖励，把「得了几个」和「今天还剩几个额度」一起说清楚，
+            // 不然用户不知道到底给没给
+            let msg = '发布「' + (data.workName || '未命名') + '」成功'
+            if (typeof data.dust === 'number') {
+              if (data.dust > 0) {
+                msg += '，得到 ' + data.dust + ' 个光尘'
+                if (typeof data.dustCapToday === 'number') {
+                  msg += '（今天靠发布已得 ' + data.dustTotalToday + '/' + data.dustCapToday + '）'
+                }
+                // 光尘到账了，让「我的」页的余额和角标跟上
+                try {
+                  window.dispatchEvent(new CustomEvent('lw-dust-changed', { detail: null }))
+                } catch (e) {}
+              } else if (data.dustCapped) {
+                msg += '。今天靠发布的光尘已经拿满 ' + data.dustCapToday + ' 个了，明天再来～'
+              }
+            }
+            toast(msg)
             fetchRecords()
             return true
           }

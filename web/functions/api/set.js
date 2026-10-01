@@ -2,6 +2,7 @@ import { appendEntry, recentHistory, HISTORY_MAX } from './_history.js'
 import { contestInfo } from './_contest.js'
 import { hitWords } from './_lexicon.js'
 import { readActiveUser, pickToken, BANNED_ERROR } from './_auth.js'
+import { creditDust, dayStamp } from './_dust.js'
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -224,5 +225,48 @@ export async function onRequestPost(context) {
     return json({ error: 'KV write failed: ' + err.message }, 500)
   }
 
-  return json({ ok: true, count: pixels.length, name, workName, author, size, time: entry.time })
+  /* 发布奖励：每发一幅得 1 个光尘，每天最多靠发布拿 10 个。
+     计数存在 pub:<uid>:<东八区天序号>，天然按天分开，过期自动清掉。
+     上限 10 是防刷：一幅画 1 个，10 幅封顶，多发也不加。 */
+  let dust = 0
+  let dustCapped = false
+  let dustTotal = 0
+  // 像素相机转图的作品不给发布奖励：导入图片不算创作，
+  // 每天白拿 10 个光尘不是我们想鼓励的行为
+  if (who && entry.ownerUser && !entry.fromImage) {
+    const kv = env.LIGHTFIELD_KV
+    const period = 'D' + dayStamp()
+    const key = 'pub:' + entry.ownerUser + ':' + period
+    const used = Number(await kv.get(key)) || 0
+    if (used < PUBLISH_DUST_DAILY_CAP) {
+      dust = PUBLISH_DUST_PER_WORK
+      // 先加额度再加钱：并发发布时最坏结果是这一笔多加 1 个，
+      // 不会变成「记了额度但没发钱」或反之
+      await kv.put(key, String(used + dust))
+      await creditDust(kv, entry.ownerUser, dust)
+      dustTotal = used + dust
+    } else {
+      dustCapped = true
+      dustTotal = used
+    }
+  }
+
+  return json({
+    ok: true,
+    count: pixels.length,
+    name,
+    workName,
+    author,
+    size,
+    time: entry.time,
+    dust,
+    dustCapped,
+    dustTotalToday: dustTotal,
+    dustCapToday: PUBLISH_DUST_DAILY_CAP,
+  })
 }
+
+/** 发布一幅作品给多少光尘 */
+export const PUBLISH_DUST_PER_WORK = 1
+/** 每天靠发布最多能拿多少光尘 */
+export const PUBLISH_DUST_DAILY_CAP = 10
