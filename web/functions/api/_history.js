@@ -108,18 +108,25 @@ export async function recentHistory(
   return { entries, total: meta.count }
 }
 
-// 在最新→最旧序列中定位某条作品的下标
+/* 在最新→最旧序列中定位某条作品的下标。
+   注意：index 是**从最新往回数**的（0 = 最新那一件）。
+   同时把作品本身一起返回 —— 调用方要是拿这个 index 去
+   readAllHistory() 的结果里反查，一定会取错：
+   那个数组是从最老往后数的，方向正好相反
+   （「送过光尘的」列表因此显示成别的作品，就是这么来的）。 */
 export async function findIndexByTime(kv, time) {
   const meta = await ensureIndexed(kv)
   let idx = 0
   for (let i = meta.chunks.length - 1; i >= 0; i--) {
     const arr = await readChunk(kv, meta.chunks[i])
     for (let j = arr.length - 1; j >= 0; j--) {
-      if (arr[j] && (arr[j].time || 0) === time) return { index: idx, total: meta.count }
+      if (arr[j] && (arr[j].time || 0) === time) {
+        return { index: idx, total: meta.count, entry: arr[j] }
+      }
       idx++
     }
   }
-  return { index: -1, total: meta.count }
+  return { index: -1, total: meta.count, entry: null }
 }
 
 async function lastEntry(kv, meta) {

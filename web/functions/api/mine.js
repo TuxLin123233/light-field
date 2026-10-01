@@ -39,7 +39,9 @@ export async function onRequestPost(context) {
   if (!who) return json({ error: '未登录', code: 'noauth' }, 401)
   if (who.banned) return json(BANNED_ERROR, 403)
   if (who.gone) return json({ error: '账号不存在', code: 'gone' }, 401)
-  const isMine = (e) => e && e.ownerUser === who.uid
+  // uid 为空的话，`e.ownerUser === who.uid` 会把「没有归属的旧作品」也判成自己的。
+  // 正常路径上 who.uid 一定有值，这里再挡一道，删别人作品这种事不能有第二种可能。
+  const isMine = (e) => e && !!who.uid && e.ownerUser === who.uid
 
   /* 一次性迁移：把认领码时代的老作品归到当前账号。
      浏览器里那把钥匙（localStorage.paintClaim）还在的话，

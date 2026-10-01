@@ -163,8 +163,11 @@ export async function onRequestGet(context) {
        作品其实都还在，那句提示是假的。
        顺带修好了「分享链接定位」以外的所有按时间取单件的用法。 */
     if (loc.index === -1) return json({ found: false, index: -1, total: loc.total, work: null })
-    const { entries } = await readAllHistory(env.LIGHTFIELD_KV)
-    const e = entries[loc.index]
+    // 用 findIndexByTime 直接带回来的那条。
+    // 以前写的是 readAllHistory(...).entries[loc.index] —— 方向搞反了，
+    // 那个数组从最老往后数，loc.index 从最新往前数，取到的是另一幅画，
+    // 于是「送过光尘的」列表显示的全是别的作品。
+    const e = loc.entry
     return json({
       found: true,
       index: loc.index,

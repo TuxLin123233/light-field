@@ -1399,7 +1399,7 @@ export default {
       const slice = list.slice(0, shownCount)
       // 重建（筛选或分页变化时保证顺序正确）
       grid.innerHTML = ''
-      slice.forEach((w) => grid.appendChild(buildWorkItem(w)))
+      slice.forEach((w) => grid.appendChild(buildWorkItem(w, true)))
       const more = list.length - slice.length
       $('mineEmpty').innerHTML =
         more > 0
@@ -1468,9 +1468,14 @@ export default {
       }
     }
 
-    function buildWorkItem(w) {
+    /* own：这张画是不是我自己发布的。
+       「送过光尘的」列表里是**别人的作品**，绝不能给删除入口 ——
+       之前两个列表共用 buildWorkItem，长按会弹出删除确认框
+       （用户反馈「长按可以删除别人的作品」）。后端会 403 挡下来，
+       但让人以为能删别人的画本身就不对。 */
+    function buildWorkItem(w, own) {
       const item = document.createElement('div')
-      item.className = 'mine-item'
+      item.className = 'mine-item' + (own ? ' own' : '')
       const cv = document.createElement('canvas')
       paintThumb(cv, w.pixels, w.size)
       const cap = document.createElement('div')
@@ -1534,6 +1539,8 @@ export default {
       }
       const startHold = (e) => {
         if (e.target.closest('button, a')) return
+        // 不是我的画：只准看，不准删
+        if (!own) return
         cancelHold()
         try {
           if (item.setPointerCapture && e.pointerId != null) item.setPointerCapture(e.pointerId)
@@ -1602,7 +1609,7 @@ export default {
           if (w && w.pixels) got.push(w)
         } catch (e) {}
       }
-      got.forEach((w) => grid.appendChild(buildWorkItem(w)))
+      got.forEach((w) => grid.appendChild(buildWorkItem(w, false)))
       /* 原来这里一律写「可能已被作者删除」，但取不到作品的原因多了去了
          （接口没返回、没网络、对方注销），直接这么说会让人以为自己的记录没了。
          说清楚实际情况。 */
