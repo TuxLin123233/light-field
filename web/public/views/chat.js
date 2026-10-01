@@ -250,8 +250,19 @@ export default {
       peerLastAt = Number(d.peerLastAt) || 0
       hasNew = !!(peerLastAt > myLastAt)
 
+      /* 输入框必须永远都在。
+         以前它被写在「有消息才渲染」那段里，于是新会话（一条都还没发过）
+         页面写着「说点什么打个招呼吧」，底下却连个输入框都没有，
+         根本没法开口（用户反馈）。空对话只清空消息区，输入栏照常渲染。 */
+      const sendbar =
+        '<div class="ch-sendbar">' +
+        '<input class="ch-in" id="chIn" maxlength="300" placeholder="说点什么…">' +
+        '<button class="ch-send" id="chSend" type="button" disabled>发送</button>' +
+        '</div>'
       if (!items.length) {
-        $('chBody').innerHTML = '<div class="ch-empty">还没有聊过。<br />说点什么打个招呼吧</div>'
+        $('chBody').innerHTML =
+          '<div class="ch-empty">还没有聊过。<br />说点什么打个招呼吧</div>' + sendbar
+        bindSend()
         return
       }
       // 第一条不是我发的、且我现在看到的最后一条不是我发的 → 中间可能有新的
@@ -272,11 +283,9 @@ export default {
       $('chBody').innerHTML =
         '<div class="ch-msgs" id="chMsgs">' + rows + '</div>' +
         '<button class="ch-del" id="chDel" type="button">🗑️ 清空这段对话</button>' +
-        '<div class="ch-sendbar">' +
-        '<input class="ch-in" id="chIn" maxlength="300" placeholder="说点什么…">' +
-        '<button class="ch-send" id="chSend" type="button" disabled>发送</button>' +
-        '</div>'
+        sendbar
       $('chMsgs').scrollTop = $('chMsgs').scrollHeight
+      bindSend()
 
       // 看过就标已读
       if (hasNew) {
@@ -289,19 +298,25 @@ export default {
         C.drop('chatlist')
       }
 
-      const inp = $('chIn')
-      const send = $('chSend')
-      const sync = () => {
-        send.disabled = !inp.value.trim()
-      }
-      inp.addEventListener('input', sync)
-      inp.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-          e.preventDefault()
-          doSend()
+      /* 输入栏的交互。抽成函数是因为空对话和有消息两条路径都要用它 ——
+         以前只有「有消息」那条绑过，所以新会话连输入框都没有。 */
+      function bindSend() {
+        const inp = $('chIn')
+        const send = $('chSend')
+        if (!inp || !send) return
+        const sync = () => {
+          send.disabled = !inp.value.trim()
         }
-      })
-      send.addEventListener('click', doSend)
+        inp.addEventListener('input', sync)
+        inp.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault()
+            doSend()
+          }
+        })
+        send.addEventListener('click', doSend)
+        sync()
+      }
 
       $('chDel').addEventListener('click', async () => {
         if (!window.confirm('确定清空和 ' + peerName + ' 的这段对话吗？此操作不可恢复。')) return

@@ -69,6 +69,13 @@ export default {
         background: var(--accent); color: #fff;
       }
       .u-follow.on { background: var(--surface-2); color: var(--text-muted); border: 1px solid var(--border-strong); }
+      .u-acts { display: flex; align-items: center; gap: 8px; flex: none; }
+      .u-chat {
+        border: 0; border-radius: 999px; padding: 7px 14px;
+        font-size: 13px; font-weight: 700; font-family: inherit;
+        background: var(--accent); color: #fff; cursor: pointer; white-space: nowrap;
+      }
+      .u-chat:active { opacity: 0.85; }
       .u-follow[disabled] { opacity: 0.55; cursor: default; }
       .u-friend-tip {
         font-size: 11px; color: var(--ok); font-weight: 700; margin-top: 6px;
@@ -292,8 +299,15 @@ export default {
         '</div>' +
         (isMe || !t
           ? ''
-          : '<button class="u-follow' + (f.iFollow ? ' on' : '') + '" id="uFollowBtn" type="button">' +
-            (f.iFollow ? '已关注' : '关注') + '</button>') +
+          : '<div class="u-acts">' +
+            /* 互相关注才能私信（后端只放好友过去），所以只在好友时给这个入口。
+               不然点了也会被后端挡回来，不如不给。 */
+            (f.friend
+              ? '<button class="u-chat" id="uChatBtn" type="button">💬 与他聊天</button>'
+              : '') +
+            '<button class="u-follow' + (f.iFollow ? ' on' : '') + '" id="uFollowBtn" type="button">' +
+            (f.iFollow ? '已关注' : '关注') + '</button>' +
+            '</div>') +
         '</div>' +
         '<div class="u-nums">' +
         '<div class="u-num"><b>' + fmt(f.following) + '</b><span>关注</span></div>' +
@@ -348,6 +362,45 @@ export default {
           render()
         })
       })
+      /* 「与他聊天」：私信页要知道跟谁聊，所以把 uid 一起带过去。
+         顺便先把会话建出来（后端 add 会拒绝非好友，这里已经是好友了），
+         这样过去就是现成的对话，不用再发一次消息才建起来。 */
+      const cb = $('uChatBtn')
+      if (cb) {
+        cb.addEventListener('click', async () => {
+          if (window.sfx) window.sfx('tap')
+          const tk = token()
+          if (!tk) {
+            showMsg('私信需要先登录。', true)
+            return
+          }
+          const uid = (profile && profile.uid) || wantUid || ''
+          if (!uid) return
+          cb.disabled = true
+          const old = cb.textContent
+          cb.textContent = '打开中…'
+          try {
+            await fetch('/api/chat', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk },
+              body: JSON.stringify({ action: 'add', uid, text: '' }),
+            })
+          } catch (e) {
+            /* 建会话失败不拦着：私信页照样能打开，里面也能发 */
+          }
+          try {
+            const C2 = window.LWCache || {}
+            C2.drop('chatlist')
+            C2.drop('chat:' + uid)
+            C2.drop('chatBadge')
+          } catch (e) {}
+          if (window.__lwRouter) window.__lwRouter.push('/chat?to=' + encodeURIComponent(uid))
+          else location.href = '/chat?to=' + encodeURIComponent(uid)
+          cb.disabled = false
+          cb.textContent = old
+        })
+      }
+
       // 关注按钮
       const fb = $('uFollowBtn')
       if (fb) {
