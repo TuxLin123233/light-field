@@ -235,15 +235,44 @@ export default {
         image-rendering: pixelated;
         background: var(--art-bg);
       }
+      /* 作品卡片标题。
+         之前是 white-space:nowrap + overflow:hidden：文字比卡片宽时
+         text-align:center 会从两边同时裁掉，看上去就是「贴着左边」，
+         其实并没居中。改成最多两行 + 省略号，长短都能真正居中。 */
+      /* 作品卡片标题：竖排两段 —— 标题最多两行，光尘徽标单独一行。
+         之前徽标跟在标题后面，长标题被两行截断时正好把徽标切一半。 */
       .mine-cap {
-        padding: 6px 8px;
+        padding: 6px 7px;
         font-size: 11px;
+        line-height: 1.45;
         color: var(--text-muted);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        /* 标题左对齐的话，长短不同的作品排在一起会参差不齐，很乱 */
         text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 3px;
+        min-height: 34px;
+      }
+      .mc-title {
+        max-width: 100%;
+        overflow: hidden;
+        word-break: break-word;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+      }
+      /* 收到的光尘单独一个徽标，粘在标题后面会让整行的重心看着偏 */
+      .mc-dust {
+        flex: none;
+        padding: 0 6px;
+        border-radius: 999px;
+        background: var(--surface);
+        border: 1px solid var(--border-input);
+        color: var(--text-faint);
+        font-size: 10px;
+        font-weight: 700;
+        line-height: 16px;
+        white-space: nowrap;
       }
 
       .m-empty {
@@ -1191,7 +1220,17 @@ export default {
       paintThumb(cv, w.pixels, w.size)
       const cap = document.createElement('div')
       cap.className = 'mine-cap'
-      cap.textContent = (w.workName || '未命名') + (w.likes ? ' ♥' + w.likes : '')
+      const t = document.createElement('span')
+      t.className = 'mc-title'
+      t.textContent = w.workName || '未命名'
+      cap.appendChild(t)
+      if (w.likes) {
+        const n = document.createElement('span')
+        n.className = 'mc-dust'
+        n.textContent = '光尘 ' + w.likes
+        n.title = '这幅作品收到了 ' + w.likes + ' 份光尘'
+        cap.appendChild(n)
+      }
       item.append(cv, cap)
       item.addEventListener('click', () => {
         location.href = '/gallery?t=' + w.time

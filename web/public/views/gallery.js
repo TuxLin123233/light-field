@@ -1113,6 +1113,63 @@ export default {
         resize: vertical;
       }
 
+      /* ---------- 评论 ---------- */
+      // 这个视图一直没有 esc（别的视图有），评论渲染要拼 HTML，先补上
+      const esc = (s) =>
+        String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
+ */
+      .cmt-box {
+        margin-top: 14px; padding-top: 12px;
+        border-top: 1px solid var(--border);
+      }
+      .cmt-head {
+        display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+      }
+      .cmt-title { font-size: 13px; font-weight: 800; color: var(--text); flex: 1; }
+      .cmt-in {
+        width: 100%; border: 1px solid var(--border-input); background: var(--surface-2);
+        color: var(--text); border-radius: 11px; padding: 9px 11px;
+        font-size: 13px; font-family: inherit; resize: none; min-height: 40px;
+        line-height: 1.5;
+      }
+      .cmt-in:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+      .cmt-act { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+      .cmt-count { flex: 1; font-size: 11px; color: var(--text-faint); }
+      .cmt-send {
+        border: 0; border-radius: 10px; padding: 8px 15px;
+        font-size: 12px; font-weight: 800; font-family: inherit;
+        background: var(--accent); color: #fff; cursor: pointer;
+      }
+      .cmt-send[disabled] {
+        background: var(--surface-2); color: var(--text-faint);
+        cursor: default; box-shadow: none;
+      }
+      .cmt-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+      .cmt-item {
+        display: flex; gap: 8px; background: var(--surface-2);
+        border-radius: 11px; padding: 8px 10px;
+      }
+      .cmt-item.owner { background: color-mix(in srgb, var(--accent) 10%, var(--surface-2)); }
+      .cmt-av {
+        width: 24px; height: 24px; flex: 0 0 24px; border-radius: 7px; overflow: hidden;
+        background: var(--surface); border: 1px solid var(--border-strong);
+      }
+      .cmt-av canvas { width: 100%; height: 100%; image-rendering: pixelated; display: block; }
+      .cmt-main { flex: 1; min-width: 0; }
+      .cmt-row { display: flex; align-items: baseline; gap: 6px; }
+      .cmt-name { font-size: 12px; font-weight: 800; color: var(--text); }
+      .cmt-item.owner .cmt-name { color: var(--accent); }
+      .cmt-time { font-size: 10px; color: var(--text-faint); }
+      .cmt-del {
+        margin-left: auto; border: 0; background: none; padding: 0;
+        font-size: 11px; font-family: inherit; color: var(--text-faint); cursor: pointer;
+      }
+      .cmt-text {
+        font-size: 13px; color: var(--text); line-height: 1.6;
+        margin-top: 2px; word-break: break-word; white-space: pre-wrap;
+      }
+      .cmt-tip { font-size: 12px; color: var(--text-faint); text-align: center; padding: 14px 0; }
+
       .preview-like {
         display: flex;
         justify-content: center;
@@ -1488,6 +1545,19 @@ export default {
           <button class="share-btn" id="previewCard" type="button">🃏 生成朋友圈卡片</button>
           <button class="share-btn" id="previewPaletteBtn" type="button" aria-expanded="false">🎨 用色</button>
           <button class="report-hold" id="previewReport" type="button">🚩 长按举报</button>
+        </div>
+        <div class="cmt-box" id="cmtBox">
+          <div class="cmt-head">
+            <span class="cmt-title">💬 评论</span>
+            <button class="lw-refresh" id="cmtRefresh" type="button" data-label="刷新"></button>
+          </div>
+          <textarea class="cmt-in" id="cmtInput" maxlength="200" rows="2"
+                    placeholder="说点什么…（登录后才能评论）"></textarea>
+          <div class="cmt-act">
+            <span class="cmt-count" id="cmtCount"></span>
+            <button class="cmt-send" id="cmtSend" type="button" disabled>发表</button>
+          </div>
+          <div class="cmt-list" id="cmtList"></div>
         </div>
         <div class="report-progress" id="reportProgress" hidden><i></i></div>
         <div class="pal-box" id="previewPalette" hidden>
@@ -3168,6 +3238,8 @@ export default {
           if (hidePal && palBox) palBox.hidden = true
         }
         syncPreviewVoteBtn()
+        // 打开作品时顺带加载评论（同一幅画有缓存就不重复请求）
+        if (rec && rec.time) loadComments(Number(rec.time), false)
         previewOverlay.hidden = false
       }
 
@@ -3207,8 +3279,207 @@ export default {
           .catch(() => {})
       }
 
+      /* ---------- 评论 ----------
+         拉取和发表都走 /api/comment。和其他页一致：切作品时才加载一次，
+         同一幅画再打开直接用内存缓存，刷新靠「刷新」按钮。 */
+      const cmtBox = document.getElementById('cmtBox')
+      const cmtList = document.getElementById('cmtList')
+      const cmtInput = document.getElementById('cmtInput')
+      const cmtSend = document.getElementById('cmtSend')
+      const cmtCount = document.getElementById('cmtCount')
+      const C = window.LWCache || {}
+      let cmtWork = 0
+
+      function cmtToken() {
+        try {
+          return localStorage.getItem('lw-token') || ''
+        } catch (e) {
+          return ''
+        }
+      }
+      const cmtFmt = (t) => {
+        const d = Date.now() - (Number(t) || 0)
+        if (d < 60000) return '刚刚'
+        if (d < 3600000) return Math.floor(d / 60000) + ' 分钟前'
+        if (d < 86400000) return Math.floor(d / 3600000) + ' 小时前'
+        if (d < 86400000 * 30) return Math.floor(d / 86400000) + ' 天前'
+        return new Date(Number(t)).toLocaleDateString('zh-CN')
+      }
+
+      function renderComments(d) {
+        if (!d || !d.ok) {
+          cmtList.innerHTML = '<div class="cmt-tip">评论读取失败</div>'
+          return
+        }
+        const items = d.items || []
+        cmtCount.textContent = items.length ? items.length + ' 条评论' : ''
+        if (!items.length) {
+          cmtList.innerHTML = '<div class="cmt-tip">还没有人评论，来说第一句吧</div>'
+          return
+        }
+        cmtList.innerHTML = items
+          .map((c) => {
+            const mineUid = window.LWMe && window.LWMe.uid
+            const canDel = c.owner || (mineUid && c.uid === mineUid)
+            return (
+              '<div class="cmt-item' + (c.owner ? ' owner' : '') + '">' +
+              '<span class="cmt-av" data-uid="' + esc(c.uid) + '"></span>' +
+              '<span class="cmt-main">' +
+              '<span class="cmt-row">' +
+              '<span class="cmt-name">' + esc(c.name) + (c.owner ? '（作者）' : '') + '</span>' +
+              '<span class="cmt-time">' + esc(cmtFmt(c.at)) + '</span>' +
+              (canDel ? '<button class="cmt-del" data-del="' + esc(c.id) + '" type="button">删除</button>' : '') +
+              '</span>' +
+              '<span class="cmt-text">' + esc(c.text) + '</span>' +
+              '</span></div>'
+            )
+          })
+          .join('')
+        // 头像
+        cmtList.querySelectorAll('.cmt-av[data-uid]').forEach((el) => {
+          const uid = el.getAttribute('data-uid')
+          if (!uid || !window.LWAvatar) return
+          const c = document.createElement('canvas')
+          el.appendChild(c)
+          window.LWAvatar.draw(c, uid, 24)
+        })
+        // 预取所有评论者的头像，回来时重绘一次
+        if (window.LWAvatar && window.LWAvatar.load) {
+          const uids = [...new Set(items.map((c) => c.uid).filter(Boolean))]
+          if (uids.length) {
+            window.LWAvatar.load(uids).then(() => {
+              cmtList.querySelectorAll('.cmt-av[data-uid]').forEach((el) => {
+                const c = el.querySelector('canvas')
+                if (c) window.LWAvatar.draw(c, el.getAttribute('data-uid'), 24)
+              })
+            }).catch(() => {})
+          }
+        }
+        // 删除
+        cmtList.querySelectorAll('[data-del]').forEach((b) => {
+          b.addEventListener('click', async () => {
+            const id = b.getAttribute('data-del')
+            if (!window.confirm('确定删掉这条评论吗？')) return
+            const t = cmtToken()
+            if (!t) {
+              toast('请先登录')
+              return
+            }
+            b.disabled = true
+            try {
+              const res = await fetch('/api/comment', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t },
+                body: JSON.stringify({ action: 'del', id, work: cmtWork }),
+              })
+              const d2 = await res.json().catch(() => ({}))
+              if (!res.ok || !d2 || !d2.ok) {
+                toast((d2 && d2.error) || '删除失败')
+                b.disabled = false
+                return
+              }
+              if (window.sfx) window.sfx('close')
+              C.drop('cmt:' + cmtWork)
+              loadComments(cmtWork, true)
+            } catch (e) {
+              toast('删除失败：' + ((e && e.message) || '网络错误'))
+              b.disabled = false
+            }
+          })
+        })
+      }
+
+      async function loadComments(work, force) {
+        cmtWork = work
+        const key = 'cmt:' + work
+        if (force) C.drop(key)
+        const t = cmtToken()
+        const head = t ? { Authorization: 'Bearer ' + t } : {}
+        if (!force) {
+          const hit = C.cached(key, () => {
+            fetch('/api/comment?work=' + work, { headers: head, cache: 'no-store' })
+              .then((r) => r.json())
+              .then((d) => {
+                C.put(key, d)
+                if (cmtWork === work) renderComments(d)
+              })
+              .catch(() => {})
+          })
+          if (!hit) {
+            const d = C.get(key)
+            if (d) renderComments(d)
+          }
+        } else {
+          try {
+            const r = await fetch('/api/comment?work=' + work, { headers: head, cache: 'no-store' })
+            const d = await r.json()
+            C.put(key, d)
+            if (cmtWork === work) renderComments(d)
+          } catch (e) {
+            cmtList.innerHTML = '<div class="cmt-tip">读取失败：' + esc((e && e.message) || '网络错误') + '</div>'
+          }
+        }
+        // 输入框状态
+        const has = !!t
+        cmtInput.disabled = !has
+        cmtInput.placeholder = has ? '说点什么…' : '说点什么…（登录后才能评论）'
+        cmtSend.disabled = !has
+      }
+
+      // 有字才能点
+      if (cmtInput) {
+        cmtInput.addEventListener('input', () => {
+          cmtSend.disabled = !cmtInput.value.trim() || !cmtToken()
+        })
+        cmtInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) sendComment()
+        })
+      }
+      async function sendComment() {
+        const t = cmtToken()
+        if (!t) {
+          toast('登录后才能评论')
+          return
+        }
+        const text = cmtInput.value.trim()
+        if (!text) return
+        cmtSend.disabled = true
+        cmtSend.textContent = '发送中…'
+        try {
+          const res = await fetch('/api/comment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t },
+            body: JSON.stringify({ action: 'add', work: cmtWork, text }),
+          })
+          const d = await res.json().catch(() => ({}))
+          if (!res.ok || !d || !d.ok) {
+            toast((d && d.error) || '发表失败')
+            return
+          }
+          cmtInput.value = ''
+          if (window.sfx) window.sfx('ding')
+          C.drop('cmt:' + cmtWork)
+          loadComments(cmtWork, true)
+        } catch (e) {
+          toast('发表失败：' + ((e && e.message) || '网络错误'))
+        } finally {
+          cmtSend.textContent = '发表'
+          cmtSend.disabled = !cmtInput.value.trim() || !t
+        }
+      }
+      if (cmtSend) cmtSend.addEventListener('click', sendComment)
+      if (cmtBox) {
+        C.bindRefresh(
+          document.getElementById('cmtRefresh'),
+          () => loadComments(cmtWork, true),
+          () => {},
+          true
+        )
+      }
+
       function closePreview() {
         if (window.sfx) window.sfx('close')
+        if (cmtInput) cmtInput.value = ''
         stopAnimPlay()
         previewOverlay.hidden = true
         currentPreview = null
