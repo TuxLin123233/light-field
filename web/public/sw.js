@@ -7,7 +7,7 @@
 //     表现为「改了但没变化」。代码正确性比离线速度重要。
 //   - 图标、图片：缓存优先（体积大、变动少）
 
-const VERSION = 'lw-v1.9.0'
+const VERSION = 'lw-v1.10.0'
 const SHELL_CACHE = 'lw-shell-' + VERSION
 
 const SHELL = [

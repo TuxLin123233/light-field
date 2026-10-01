@@ -303,7 +303,9 @@ export default {
         '</div>' +
         '<div class="u-stats">' +
         '<div class="u-stat"><b>' + fmt(s.works) + '</b><span>作品</span></div>' +
-        '<div class="u-stat"><b>' + fmt(s.cells) + '</b><span>绘制格数</span></div>' +
+        /* 这里看的是别人的累计创作量，所以还是累计数；
+           自己的「今日绘制格子数」在「我的」页。标签加「累计」区分开。 */
+        '<div class="u-stat"><b>' + fmt(s.cells) + '</b><span>累计绘制格数</span></div>' +
         '<div class="u-stat"><b>' + fmt(m.days || 0) + '</b><span>创作天</span></div>' +
         '<div class="u-stat"><b>' + fmt(m.signTotal || 0) + '</b><span>签到</span></div>' +
         '</div>' +

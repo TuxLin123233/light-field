@@ -72,8 +72,13 @@ export async function onRequestPost(context) {
     const { entries } = await readAllHistory(env.LIGHTFIELD_KV)
     const mine = entries.filter(isMine)
 
-    // 统计真正「画了东西」的格子：与画布默认白底不同的都算
+    /* 统计真正「画了东西」的格子：与画布默认白底不同的都算。
+       cellsToday 只算「今天发布」的作品 —— 用户看到的是「我今天画了多少」，
+       不是历史累计（累计值以前叫「绘制格数」，数字只涨不掉，没法当进度看）。 */
     let cells = 0
+    let cellsToday = 0
+    const todayKey = new Date().toDateString()
+    let worksToday = 0
     const days = new Set()
     let likes = 0
     let best = null
@@ -83,11 +88,14 @@ export async function onRequestPost(context) {
 
     for (const e of mine) {
       const t = Number(e.time) || 0
+      let isToday = false
       if (t) {
+        isToday = new Date(t).toDateString() === todayKey
         days.add(new Date(t).toDateString())
         if (!first || t < first) first = t
         if (t > last) last = t
       }
+      if (isToday) worksToday += 1
       likes += Number(e.likes) || 0
       const s = e.size === 32 || e.size === 64 ? e.size : 16
       sizeCount[s] = (sizeCount[s] || 0) + 1
@@ -97,6 +105,7 @@ export async function onRequestPost(context) {
         // 接近纯白视为底色，不计入
         if (p[0] > 246 && p[1] > 246 && p[2] > 246) continue
         cells += 1
+        if (isToday) cellsToday += 1
       }
       if (!best || (Number(e.likes) || 0) > (Number(best.likes) || 0)) {
         best = { time: t, workName: e.workName || '', likes: Number(e.likes) || 0, size: s }
@@ -109,6 +118,8 @@ export async function onRequestPost(context) {
         works: mine.length,
         likes,
         cells,
+        cellsToday,
+        worksToday,
         days: days.size,
         sizeCount,
         best,

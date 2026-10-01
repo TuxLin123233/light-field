@@ -1094,7 +1094,12 @@ export default {
       const items = [
         { n: st.works, lab: '发布作品' },
         { n: st.likes, lab: '收到的光尘' },
-        { n: st.cells, lab: '绘制格数' },
+        /* 原来是「绘制格数」＝历史累计，只涨不掉，当不了进度看。
+           改成今日绘制格子数；顺带把今天发了几幅也带出来（0 幅就写「今天还没画」）。 */
+        {
+          n: st.cellsToday != null ? st.cellsToday : st.cells,
+          lab: st.worksToday ? '今日绘制格子数' : '今日还没画',
+        },
         { n: st.days, lab: '创作天数' },
       ]
       items.forEach((it) => {
