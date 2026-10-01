@@ -4,6 +4,7 @@
 // ownerUser 字段绝不对外暴露。
 import { readAllHistory, removeByTime } from './_history.js'
 import { readActiveUser, pickToken, BANNED_ERROR } from './_auth.js'
+import { migrateClaimWorks } from './_claimmigrate.js'
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -39,6 +40,15 @@ export async function onRequestPost(context) {
   if (who.banned) return json(BANNED_ERROR, 403)
   if (who.gone) return json({ error: '账号不存在', code: 'gone' }, 401)
   const isMine = (e) => e && e.ownerUser === who.uid
+
+  /* 一次性迁移：把认领码时代的老作品归到当前账号。
+     浏览器里那把钥匙（localStorage.paintClaim）还在的话，
+     交上来就能把哈希对上的老作品一次性收回来。 */
+  if (action === 'migrate-claim') {
+    const r = await migrateClaimWorks(env.LIGHTFIELD_KV, who.uid, body && body.code)
+    if (!r.ok) return json({ error: r.error }, 400)
+    return json({ ok: true, moved: r.moved, alreadyMine: r.alreadyMine })
+  }
 
   if (action === 'list') {
     const { entries } = await readAllHistory(env.LIGHTFIELD_KV)

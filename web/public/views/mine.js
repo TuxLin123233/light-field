@@ -997,6 +997,42 @@ export default {
       )
     }
 
+    /* 一次性迁移：认领码时代的老作品。
+       当年认领码的明文存在 localStorage.paintClaim，作品上只存它的哈希。
+       认领码功能下线后老作品成了孤儿，作品数和绘制格数都不计入。
+       这里把浏览器里还留着的那串码交给服务端做一次哈希匹配，
+       对上的老作品就归到当前账号；服务端确认收完就把本地这串码删掉。 */
+    const CLAIM_KEY = 'paintClaim'
+    async function tryClaimMigrate(token) {
+      let code = ''
+      try {
+        code = localStorage.getItem(CLAIM_KEY) || ''
+      } catch (e) {}
+      if (!code) return 0
+      try {
+        const res = await fetch('/api/mine', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+          body: JSON.stringify({ action: 'migrate-claim', code }),
+        })
+        const d = await res.json().catch(() => ({}))
+        if (!d || !d.ok) return 0
+        // 不管有没有收到作品，都把这串码删掉：迁移是一次性的，
+        // 留着只会让每次进页面都白跑一遍哈希
+        try {
+          localStorage.removeItem(CLAIM_KEY)
+        } catch (e) {}
+        if (d.moved > 0) {
+          if (window.sfx) window.sfx('ding')
+          if (window.toast) window.toast('找回了 ' + d.moved + ' 幅以前发布的作品，已计入创作数据')
+          else console.log('[claim] 找回 ' + d.moved + ' 幅老作品')
+        }
+        return d.moved || 0
+      } catch (e) {
+        return 0
+      }
+    }
+
     async function loadMine() {
       let token = ''
       try {
@@ -1012,6 +1048,8 @@ export default {
       }
       const headers = { 'Content-Type': 'application/json' }
       if (token) headers.Authorization = 'Bearer ' + token
+      // 先迁移再统计，否则这一次的数字还是不含老作品
+      await tryClaimMigrate(token)
       try {
         const res = await fetch('/api/mine', {
           method: 'POST',
