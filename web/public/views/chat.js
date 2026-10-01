@@ -69,12 +69,9 @@ export default {
       .ch-time { flex: none; font-size: 10px; color: var(--text-faint); }
 
 
-      /* 不用 flex 的 gap，改用子元素 margin。
-         微信内置浏览器（Android 版 X5 内核）常常不支持 flex 的 gap（Chrome 84 才有），
-         一不支持，所有间距就整个塌成 0 —— 输入框贴着发送键、消息挤成一团，
-         看着就是「比例不对」（荣耀畅玩60 的用户是在微信里打开的）。
-         @supports 也检测不出来：Chrome 57~83 支持 grid 的 gap 但不支持 flex 的，
-         @supports (gap:1px) 在那里照样返回 true。所以只能老老实实用 margin。 */
+      /* 这里用子元素 margin 而不是 flex 的 gap。
+         flex 的 gap 要 Chrome 84 才支持，个别手机上的浏览器（微信里的 X5 内核）
+         不支持就会让间距整个塌成 0。margin 没有这个兼容问题，两边都稳妥。 */
       /* 对话气泡 */
       .ch-msgs {
         display: flex; flex-direction: column;
@@ -107,20 +104,16 @@ export default {
         background: color-mix(in srgb, var(--accent) 12%, var(--surface));
         border-radius: 999px; padding: 4px 11px; font-weight: 700;
       }
-      .ch-sendbar { display: flex; margin-top: 10px; }
+      .ch-sendbar { display: flex; margin-top: 10px; min-width: 0; }
       .ch-in {
-        /* min-width: 0 必须写：<input> 有默认 size 带来的固有宽度，
-           作为 flex 子项默认 min-width:auto 缩不下去，
-           窄屏（20:9 的机器）会把「发送」挤出屏幕 ——
-           荣耀畅玩60 上反馈的「比例问题」就是这个。
-           顺便把 size 收小，让它的固有宽度别再撑事。 */
+        /* min-width: 0 必须写：<input> 有 size 属性带来的固有宽度，
+           作为 flex 子项默认 min-width:auto 缩不下去，窄屏会把「发送」挤出屏幕。 */
         flex: 1 1 auto; min-width: 0;
         border: 1px solid var(--border-input); background: var(--surface-2);
         color: var(--text); border-radius: 12px; padding: 10px 12px;
         font-size: 13px; font-family: inherit; line-height: 1.5;
       }
       .ch-sendbar > * + * { margin-left: 8px; }
-      .ch-sendbar { min-width: 0; }
       .ch-in:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
       .ch-send {
         flex: 0 0 auto; border: 0; border-radius: 12px; padding: 0 17px;
