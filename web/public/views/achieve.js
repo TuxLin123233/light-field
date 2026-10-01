@@ -102,6 +102,39 @@ export default {
         font-weight: 800;
         color: var(--text);
       }
+      .ach-grp {
+        margin-bottom: 10px;
+      }
+      .ach-grp-h {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 11px 13px;
+        font-family: inherit;
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text);
+        cursor: pointer;
+        margin-bottom: 8px;
+      }
+      .ach-grp-n { flex: 1; text-align: left; }
+      .ach-grp-c {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-faint);
+      }
+      .ach-grp-h.open .ach-grp-c { color: var(--accent, #5b8def); }
+      .ach-grp-a { color: var(--text-faint); font-size: 12px; }
+      .ach-grp-b {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding-left: 2px;
+      }
       .ach-sec {
         font-size: 13px;
         font-weight: 700;
@@ -286,16 +319,8 @@ export default {
 
       const card = (a) => {
         const num = a.need || 0
-        const cur = num && m[a.id] != null ? m[a.id] : null
-        // 进度条的当前值按指标名取
-        const metricVal = {
-          works1: m.works, works5: m.works, works20: m.works, works50: m.works,
-          cells1k: m.cells, cells10k: m.cells, cells50k: m.cells,
-          likes10: m.likes, likes50: m.likes, likes200: m.likes,
-          days7: m.days, days30: m.days,
-          sign30: m.signTotal, sign100: m.signTotal,
-          got100: m.got,
-        }[a.id]
+        // 当前值直接按指标名取，新增成就不用再改前端
+        const metricVal = a.metric ? Number(m[a.metric]) || 0 : 0
         const w = a.type === 'progress' ? Math.min(100, Math.round(((Number(metricVal) || 0) / num) * 100)) : a.got ? 100 : 0
         return (
           '<div class="ach-item' + (a.got ? ' got' : '') + '">' +
@@ -316,6 +341,34 @@ export default {
         )
       }
 
+      // 100 个成就拉成一条太长，按分类折叠
+      const cats = Array.isArray(d.categories) && d.categories.length
+        ? d.categories
+        : [{ key: '', name: '全部' }]
+      const byCat = {}
+      for (const a of items) {
+        const k = a.cat || ''
+        if (!byCat[k]) byCat[k] = []
+        byCat[k].push(a)
+      }
+
+      const groupHtml = (c) => {
+        const list = byCat[c.key] || []
+        const gotN = list.filter((x) => x.got).length
+        const open = c.key === cats[0].key
+        return (
+          '<div class="ach-grp">' +
+          '<button class="ach-grp-h' + (open ? ' open' : '') + '" type="button" data-cat="' + esc(c.key) + '">' +
+          '<span class="ach-grp-n">' + esc(c.name) + '</span>' +
+          '<span class="ach-grp-c">' + gotN + ' / ' + list.length + '</span>' +
+          '<span class="ach-grp-a">' + (open ? '▾' : '▸') + '</span>' +
+          '</button>' +
+          '<div class="ach-grp-b" data-body="' + esc(c.key) + '"' + (open ? '' : ' hidden') + '>' +
+          list.map(card).join('') +
+          '</div></div>'
+        )
+      }
+
       $('achBody').innerHTML =
         '<div class="ach-sum">' +
         '<div class="ach-sum-top"><span>已解锁成就</span><span><b>' + d.unlocked + '</b> / ' + d.total + '</span></div>' +
@@ -331,11 +384,20 @@ export default {
         '<div class="ach-wide">' +
         '<span>💝 累计收到光尘</span><b>' + fmt(m.got) + '</b>' +
         '</div>' +
-        '<div class="ach-sec">进度成就</div>' +
-        '<div class="ach-list">' + progress.map(card).join('') + '</div>' +
-        '<div class="ach-sec">里程碑</div>' +
-        '<div class="ach-list">' + badges.map(card).join('') + '</div>'
+        cats.map(groupHtml).join('')
     }
+
+    $('achBody').addEventListener('click', (e) => {
+      const h = e.target.closest('.ach-grp-h')
+      if (!h) return
+      const key = h.getAttribute('data-cat')
+      const body = $('achBody').querySelector('[data-body="' + key + '"]')
+      if (!body) return
+      const open = body.hidden
+      body.hidden = !open
+      h.classList.toggle('open', open)
+      h.querySelector('.ach-grp-a').textContent = open ? '▾' : '▸'
+    })
 
     async function sync() {
       const t = token()
