@@ -824,11 +824,33 @@ export default {
         text-align: center;
       }
 
+      /* 头部吸顶：评论一多内容变长，头部跟着滚出去就够不着「关闭」了
+         （反馈是「评论 3 个就关不掉作品」）。吸顶后按钮永远在。 */
       .preview-head {
         display: flex;
         justify-content: space-between;
         align-items: center;
+        gap: 10px;
         margin-bottom: 14px;
+        position: sticky;
+        top: 0;
+        z-index: 3;
+        padding: 8px 0;
+        margin-top: -8px;
+        background: var(--surface);
+        border-radius: 12px 12px 0 0;
+      }
+      /* 下滑关闭：按住预览往下一拖，松手就关。手指按住的地方会跟手。 */
+      .preview-card {
+        touch-action: pan-y;
+        transition: transform 0.18s ease-out;
+      }
+      .preview-card.swiping { transition: none; }
+      .preview-grab {
+        width: 38px; height: 4px; border-radius: 999px;
+        background: var(--border-strong);
+        margin: -2px auto 8px;
+        flex: none;
       }
 
       .preview-title {
@@ -1145,6 +1167,14 @@ export default {
         display: flex; gap: 8px; background: var(--surface-2);
         border-radius: 11px; padding: 8px 10px;
       }
+      /* 自己的评论整条镜像到右边：头像在右、文字右对齐。
+         全都靠左排在一起，分不清哪条是自己的，看着很乱。 */
+      .cmt-item.mine {
+        flex-direction: row-reverse;
+        background: color-mix(in srgb, var(--accent) 9%, var(--surface-2));
+      }
+      .cmt-item.mine .cmt-main { text-align: right; }
+      .cmt-item.mine .cmt-row { flex-direction: row-reverse; }
       .cmt-item.owner { background: color-mix(in srgb, var(--accent) 10%, var(--surface-2)); }
       .cmt-av {
         width: 24px; height: 24px; flex: 0 0 24px; border-radius: 7px; overflow: hidden;
@@ -1156,10 +1186,13 @@ export default {
       .cmt-name { font-size: 12px; font-weight: 800; color: var(--text); }
       .cmt-item.owner .cmt-name { color: var(--accent); }
       .cmt-time { font-size: 10px; color: var(--text-faint); }
+      .cmt-row { display: flex; align-items: baseline; gap: 6px; }
       .cmt-del {
         margin-left: auto; border: 0; background: none; padding: 0;
         font-size: 11px; font-family: inherit; color: var(--text-faint); cursor: pointer;
+        flex: none;
       }
+      .cmt-item.mine .cmt-del { margin-left: 0; margin-right: auto; }
       .cmt-text {
         font-size: 13px; color: var(--text); line-height: 1.6;
         margin-top: 2px; word-break: break-word; white-space: pre-wrap;
@@ -1518,7 +1551,9 @@ export default {
     </div>
 
     <div class="preview-overlay" id="previewOverlay" hidden>
-      <div class="preview-box">
+      <!-- preview-box 支持往下一拖关闭：评论多的时候不用去够右上角的按钮 -->
+      <div class="preview-box" id="previewBox">
+        <div class="preview-grab" aria-hidden="true"></div>
         <div class="preview-head">
           <span class="preview-title" id="previewTitle">作品预览</span>
           <button class="preview-close" id="previewClose" type="button">关闭</button>
@@ -3289,6 +3324,7 @@ export default {
       const cmtCount = document.getElementById('cmtCount')
       const C = window.LWCache || {}
       let cmtWork = 0
+      let cmtMyUid = '' // 服务端在读评论时顺便带回我的 uid，用来把「我说的」镜像到右边
 
       function cmtToken() {
         try {
@@ -3311,6 +3347,7 @@ export default {
           cmtList.innerHTML = '<div class="cmt-tip">评论读取失败</div>'
           return
         }
+        if (d.myUid) cmtMyUid = d.myUid
         const items = d.items || []
         cmtCount.textContent = items.length ? items.length + ' 条评论' : ''
         if (!items.length) {
@@ -3322,10 +3359,10 @@ export default {
         try {
         cmtList.innerHTML = items
           .map((c) => {
-            const mineUid = window.LWMe && window.LWMe.uid
-            const canDel = c.owner || (mineUid && c.uid === mineUid)
+            const isMine = !!(cmtMyUid && c.uid === cmtMyUid)
+            const canDel = c.owner || isMine
             return (
-              '<div class="cmt-item' + (c.owner ? ' owner' : '') + '">' +
+              '<div class="cmt-item' + (c.owner ? ' owner' : '') + (isMine ? ' mine' : '') + '">' +
               '<span class="cmt-av" data-uid="' + esc(c.uid) + '"></span>' +
               '<span class="cmt-main">' +
               '<span class="cmt-row">' +
@@ -3399,6 +3436,7 @@ export default {
       async function loadComments(work, force) {
         cmtWork = work
         const key = 'cmt:' + work
+        cmtMyUid = ''
         if (force) C.drop(key)
         const t = cmtToken()
         const head = t ? { Authorization: 'Bearer ' + t } : {}
@@ -3492,7 +3530,82 @@ export default {
         stopAnimPlay()
         previewOverlay.hidden = true
         currentPreview = null
+        const box = document.getElementById('previewBox')
+        if (box) {
+          box.classList.remove('swiping')
+          box.style.transform = ''
+        }
       }
+
+      /* 预览弹窗往下一拖就关。
+         为什么要手势：评论一多，弹窗内容很长，「关闭」按钮会跟着滚出屏幕
+         （反馈是「评论 3 个就关不掉作品」）。头部已改成吸顶，这里再加手势，
+         两种方式都留着。 */
+      ;(function bindSwipeDown() {
+        const box = document.getElementById('previewBox')
+        if (!box) return
+        let startY = 0
+        let startX = 0
+        let dy = 0
+        let tracking = false
+        const reset = () => {
+          tracking = false
+          dy = 0
+          box.classList.remove('swiping')
+          box.style.transform = ''
+        }
+        box.addEventListener(
+          'pointerdown',
+          (e) => {
+            // 只响应单指；多点触控是缩放，别抢
+            if (e.isPrimary === false) return
+            // 从输入框/按钮起手的交给它们自己处理
+            const t = e.target
+            if (t && t.closest && t.closest('input, textarea, button, .cmt-list, .pal-box')) return
+            startY = e.clientY
+            startX = e.clientX
+            dy = 0
+            tracking = true
+            box.classList.add('swiping')
+          },
+          { passive: true }
+        )
+        box.addEventListener(
+          'pointermove',
+          (e) => {
+            if (!tracking) return
+            const my = e.clientY - startY
+            const mx = e.clientX - startX
+            // 横向移动更多就当是划页，不做关闭手势
+            if (Math.abs(mx) > Math.abs(my) && Math.abs(mx) > 12) {
+              reset()
+              return
+            }
+            if (my <= 0) return
+            dy = my
+            // 阻尼：拖得越远越沉，手感更像真的弹层
+            box.style.transform = 'translateY(' + Math.round(dy * 0.85) + 'px)'
+          },
+          { passive: true }
+        )
+        const end = () => {
+          if (!tracking) return
+          const h = box.getBoundingClientRect().height || 1
+          // 拖过 1/4 高度，或者速度够快（dy 已经很大）就关
+          if (dy > h * 0.25 || dy > 160) {
+            box.style.transform = 'translateY(' + h + 'px)'
+            closePreview()
+            if (window.sfx) window.sfx('close')
+            // 等动画走完再复位，不然下次打开会带着位移
+            setTimeout(reset, 200)
+            return
+          }
+          reset()
+        }
+        box.addEventListener('pointerup', end)
+        box.addEventListener('pointercancel', end)
+        box.addEventListener('pointerleave', end)
+      })()
 
       document.getElementById('previewClose').addEventListener('click', closePreview)
       /* ---------- 举报（长按 1.5 秒触发，避免误触） ---------- */

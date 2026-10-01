@@ -13,21 +13,33 @@ window.LWThumb = (function () {
     const o = opts || {}
     const n = size === 32 || size === 64 ? size : 16
 
-    // 目标 CSS 宽度：优先取传入值，否则量当前元素
+    /* 目标 CSS 宽度：优先取传入值，否则量当前元素。
+       量不到（元素还没布局，宽度为 0）时不要瞎猜一个值写进 style ——
+       之前这里回退成 76，再被 floor(76/16)=4 算成 64px 写死在内联样式上，
+       卡片后来变宽了图也不会跟着变，右边空出一大块，看着就是「图没居中」。
+       量不到就干脆不动内联样式，交给 CSS，下一次 draw 就会量到真值。 */
     let css = Number(o.css) || 0
     if (!css) {
       const r = canvas.getBoundingClientRect()
-      css = Math.round(r.width) || 76
+      css = Math.round(r.width) || 0
     }
+    if (!css) return // 还没布局好，等下次
+
     if (css < n) css = n
 
-    // 每个源像素占 k 个 CSS 像素，取整数倍
-    const k = Math.max(1, Math.floor(css / n))
+    // 每个源像素占 k 个 CSS 像素，取整数倍。
+    // 用 round 而不是 floor：floor 总是往小取，64×64 的图在 101px 的格子里
+    // 只能取到 96，白白浪费 5px；round 能取到更贴合的整数倍。
+    const k = Math.max(1, Math.round(css / n))
     const side = n * k
     const dpr = Math.min(3, window.devicePixelRatio || 1)
 
+    // 缩完通常比格子窄一点（101 → 96），水平居中，两边留一样宽的边
     canvas.style.width = side + 'px'
     canvas.style.height = side + 'px'
+    canvas.style.display = 'block'
+    canvas.style.marginLeft = 'auto'
+    canvas.style.marginRight = 'auto'
     canvas.width = Math.round(side * dpr)
     canvas.height = Math.round(side * dpr)
 

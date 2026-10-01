@@ -228,12 +228,15 @@ export default {
         overflow: hidden;
         cursor: pointer;
       }
+      /* 缩略图。LWThumb 会按整数倍缩放并水平居中，
+         这里不写死 width:100% —— 那样会把整数倍缩放的好处（不切出白条纹）毁掉，
+         宽高由 LWThumb 写内联，margin:auto 保证居中。 */
       .mine-item canvas {
         display: block;
-        width: 100%;
-        aspect-ratio: 1;
+        margin: 0 auto;
         image-rendering: pixelated;
         background: var(--art-bg);
+        max-width: 100%;
       }
       /* 作品卡片标题。
          之前是 white-space:nowrap + overflow:hidden：文字比卡片宽时
@@ -529,6 +532,11 @@ export default {
           <span class="ml-num" id="lnkMail">0</span>
           <span>信箱</span>
         </router-link>
+        <router-link class="m-link" to="/chat">
+          <span class="ml-ico">💬</span>
+          <span class="ml-num" id="lnkChat"></span>
+          <span>私信</span>
+        </router-link>
         <router-link class="m-link" to="/rank">
           <span class="ml-ico">🏆</span>
           <span class="ml-num" id="lnkRank"></span>
@@ -591,6 +599,10 @@ export default {
     // 领完每日任务，光尘变了，角标要重新算（强制绕过缓存）
     window.addEventListener('lw-dust-changed', function () {
       loadTaskBadge(true)
+    })
+    // 收发私信后未读数会变
+    window.addEventListener('lw-chat-changed', function () {
+      loadChatBadge(true)
     })
     window.addEventListener('lw-dust-changed', onDust)
     window.addEventListener('lw-auth-changed', onDust)
@@ -864,6 +876,42 @@ export default {
         toast(hit ? '获得徽章 ' + hit.ico + ' ' + hit.name + '！' : '签到成功，连续 ' + d.streak + ' 天')
       })
     })
+
+    /* 私信未读数角标：只有真正的好友会话才计。同样只在这台设备第一次看时请求。 */
+    function loadChatBadge(force) {
+      const el = $('lnkChat')
+      if (!el) return
+      let t = ''
+      try {
+        t = localStorage.getItem('lw-token') || ''
+      } catch (e) {}
+      if (!t) {
+        el.textContent = ''
+        return
+      }
+      const C = window.LWCache || {}
+      const apply = (d) => {
+        if (!d || !d.ok) return
+        const n = (d.list || []).reduce((a, r) => a + (Number(r.unread) || 0), 0)
+        el.textContent = n > 0 ? (n > 99 ? '99+' : String(n)) : ''
+        C.put('chatBadge', d)
+      }
+      const go = () => {
+        fetch('/api/chat?type=list', { headers: { Authorization: 'Bearer ' + t }, cache: 'no-store' })
+          .then((r) => (r.status === 401 ? null : r.json()))
+          .then(apply)
+          .catch(() => {})
+      }
+      if (force) {
+        C.drop('chatBadge')
+        go()
+        return
+      }
+      if (!C.cached('chatBadge', go)) {
+        const d = C.get('chatBadge')
+        if (d) apply(d)
+      }
+    }
 
     /* 每日任务角标：显示「还有几个能领」。
        角标以前每次进「我的」都请求一次，切几轮页面就多打几次接口。
@@ -1294,6 +1342,7 @@ export default {
     loadMailBadge()
     loadAchBadge()
     loadTaskBadge()
+    loadChatBadge()
 
     applyMode()
     renderHeroName()

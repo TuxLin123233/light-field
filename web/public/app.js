@@ -16,6 +16,7 @@ import intro from './views/intro.js'
 import tasks from './views/tasks.js'
 import rank from './views/rank.js'
 import user from './views/user.js'
+import chat from './views/chat.js'
 
 const { createApp } = window.Vue
 const { createRouter, createWebHistory } = window.VueRouter
@@ -118,6 +119,7 @@ const routes = [
   { path: '/tasks', component: withAutoCleanup(tasks) },
   { path: '/rank', component: withAutoCleanup(rank) },
   { path: '/u', component: withAutoCleanup(user) },
+  { path: '/chat', component: withAutoCleanup(chat) },
   { path: '/avatar', component: withAutoCleanup(avatar) },
   { path: '/intro', component: withAutoCleanup(intro) },
   { path: '/settings', component: withAutoCleanup(settings) },

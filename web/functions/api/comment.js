@@ -87,8 +87,17 @@ export async function onRequestGet(context) {
   if (!Number.isFinite(work) || work <= 0) return json({ error: '缺少 work' }, 400)
 
   const kv = env.LIGHTFIELD_KV
+  // 顺便把「我的 uid」带回去：前端要靠它区分自己的评论（镜像到右边），
+  // 为此单独再请求一次接口不值得。
+  const myUid = await readActiveUser(env, '', request.headers.get('authorization'))
   const list = await readComments(kv, work)
-  return json({ ok: true, work, total: list.length, items: await decorate(kv, list) })
+  return json({
+    ok: true,
+    work,
+    total: list.length,
+    items: await decorate(kv, list),
+    myUid: myUid ? myUid.uid : '',
+  })
 }
 
 export async function onRequestPost(context) {
