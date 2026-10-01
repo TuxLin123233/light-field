@@ -384,6 +384,20 @@ export default {
         line-height: 1.5;
         margin-top: 3px;
       }
+      .me-hero-bio {
+        font-size: 12.5px;
+        color: var(--text-muted);
+        line-height: 1.55;
+        margin-top: 4px;
+        max-width: 46vw;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-decoration: underline dotted;
+        text-underline-offset: 3px;
+      }
+      .me-hero-bio.empty { color: var(--text-faint); }
   `,
   template: `<div class="container mine-wrap">
     <div class="me-hero">
@@ -393,6 +407,7 @@ export default {
       </router-link>
       <div class="me-hero-txt">
         <h1 class="me-hero-name" id="meName">未登录</h1>
+        <div class="me-hero-bio" id="meBio">点此写简介</div>
         <div class="me-hero-sub" id="meHeroSub">登录后同步光尘与成就</div>
       </div>
     </div>
@@ -563,6 +578,47 @@ export default {
       }
     }
     window.addEventListener('lw-auth-changed', renderHeroName)
+
+    /* ---------- 简介 ---------- */
+    function renderBio() {
+      const el = $('meBio')
+      if (!el) return
+      let t = ''
+      try {
+        t = localStorage.getItem('lw-token') || ''
+      } catch (e) {}
+      if (!t) {
+        el.textContent = '登录后可写简介'
+        el.classList.add('empty')
+        return
+      }
+      el.textContent = '读取中…'
+      el.classList.remove('empty')
+      fetch('/api/auth', { headers: { Authorization: 'Bearer ' + t }, cache: 'no-store' })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => {
+          if (!d || !d.loggedIn) {
+            el.textContent = '登录后可写简介'
+            el.classList.add('empty')
+            return
+          }
+          const b = (d.bio || '').trim()
+          el.textContent = b || '点此写简介'
+          el.classList.toggle('empty', !b)
+        })
+        .catch(() => {
+          el.textContent = '点此写简介'
+          el.classList.add('empty')
+        })
+    }
+    window.addEventListener('lw-bio-changed', renderBio)
+    const bioEl = $('meBio')
+    if (bioEl) {
+      bioEl.addEventListener('click', () => {
+        if (window.sfx) window.sfx('tap')
+        location.href = '/intro'
+      })
+    }
 
     /* ---------- 头像渲染 ----------
        头像按 uid 索引，而本机只存了用户名（令牌是签名串，解不出 uid），
@@ -1056,6 +1112,7 @@ export default {
 
     applyMode()
     renderHeroName()
+    renderBio()
     renderMyAvatar()
     renderSign()
     loadMine()

@@ -876,19 +876,25 @@ color: var(--text-muted);
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 1px;
-        line-height: 1.1;
+        /* 图标和小字之间要留出明显空隙：emoji 字形偏大，
+           gap 太小（1px）时下方文字会贴着图标，看着像连在一起 */
+        gap: 4px;
+        line-height: 1;
         padding: 4px 6px;
       }
       .actions .abtn-ico {
-        font-size: 18px;
-        line-height: 1.1;
+        font-size: 17px;
+        /* 收紧行高，避免 emoji 的行内额外空间把两者拉近或撑开 */
+        line-height: 1;
+        display: block;
+        height: 17px;
       }
       .actions .abtn-tx {
         font-size: 10px;
         font-weight: 600;
         color: var(--text-muted2);
         letter-spacing: 0.2px;
+        line-height: 1;
         white-space: nowrap;
       }
       .actions button.abtn.active .abtn-tx { color: #fff; }

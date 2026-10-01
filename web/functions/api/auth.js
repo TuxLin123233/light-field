@@ -23,7 +23,11 @@ import {
   pickToken,
   isBanned,
   BANNED_ERROR,
+  sanitizeBio,
+  BIO_COST,
+  BIO_MAX,
 } from './_auth.js'
+import { readBook, writeBook, publicView } from './_dust.js'
 import { ensureOffers } from './_mail.js'
 
 const CORS_HEADERS = {
@@ -63,6 +67,7 @@ export async function onRequestGet(context) {
     banned: isBanned(user),
     banReason: isBanned(user) ? user.banReason || '' : '',
     username: user.username,
+    bio: user.bio || '',
     createdAt: user.createdAt,
   })
 }
@@ -101,6 +106,7 @@ export async function onRequestPost(context) {
       uid: newUid(),
       username,
       pw: await hashPassword(password),
+      bio: '',
       createdAt: Date.now(),
     }
     await writeUser(kv, user)
@@ -156,6 +162,36 @@ export async function onRequestPost(context) {
     // 改完密码重新签发，延长有效期
     const token = await issueToken(env, user)
     return json({ ok: true, token })
+  }
+
+  /* ---------------- 个人简介 ---------------- */
+  // 改一次 10 光尘。没有简介时首次填写同样收费，避免「先清空再写」绕过。
+  if (action === 'bio') {
+    const who = await readToken(env, pickToken(request, body), request.headers.get('authorization'))
+    if (!who) return json({ error: '请先登录' }, 401)
+
+    const user = await readUser(kv, who.uid)
+    if (!user) return json({ error: '账号不存在' }, 404)
+    if (isBanned(user)) return json(BANNED_ERROR, 403)
+
+    const bio = sanitizeBio(body.bio)
+    if (bio === (user.bio || '')) {
+      // 内容没变就不该扣钱
+      return json({ ok: true, bio, changed: false, cost: 0, book: publicView(await readBook(kv, who.uid)) })
+    }
+
+    const book = await readBook(kv, who.uid)
+    if (book.bal < BIO_COST) {
+      return json(
+        { error: `修改简介需要 ${BIO_COST} 个光尘，你只有 ${book.bal} 个`, need: BIO_COST, book: publicView(book) },
+        400
+      )
+    }
+    const charged = await writeBook(kv, who.uid, { ...book, bal: book.bal - BIO_COST })
+    user.bio = bio
+    await writeUser(kv, user)
+
+    return json({ ok: true, bio, changed: true, cost: BIO_COST, max: BIO_MAX, book: publicView(charged) })
   }
 
   /* ---------------- 注销 ---------------- */

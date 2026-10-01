@@ -274,3 +274,19 @@ export function pickToken(request, body) {
   if (body && typeof body.token === 'string' && body.token.trim()) return body.token.trim()
   return ''
 }
+
+/* -------------------- 个人简介 --------------------
+   存在用户记录里，公开可读。修改一次 10 个光尘 ——
+   跟头像一个思路：内容写在服务端就该有成本，否则会被灌满广告。
+   限 60 字，够写一句自我介绍了。 */
+
+export const BIO_COST = 10
+export const BIO_MAX = 60
+
+export function sanitizeBio(s) {
+  return String(s == null ? '' : s)
+    .replace(/[\r\n]+/g, ' ')   // 换行折成空格，简介只占一行
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, BIO_MAX)
+}
