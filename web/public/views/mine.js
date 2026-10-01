@@ -369,6 +369,11 @@ export default {
           <span class="ml-num" id="lnkLiked">0</span>
           <span>送出的</span>
         </router-link>
+        <router-link class="m-link" to="/mail">
+          <span class="ml-ico">✉️</span>
+          <span class="ml-num" id="lnkMail">0</span>
+          <span>信箱</span>
+        </router-link>
         <a class="m-link" href="/paint">
           <span class="ml-ico">🎨</span>
           <span>去画</span>
@@ -409,6 +414,7 @@ export default {
       renderDustBalance()
       renderSign()
     }
+    window.addEventListener('lw-mail-claimed', onDust)
     window.addEventListener('lw-dust-changed', onDust)
     window.addEventListener('lw-auth-changed', onDust)
 
@@ -629,6 +635,27 @@ export default {
       const hit = MEDALS.find((m) => m.need === s.streak)
       toast(hit ? '获得徽章 ' + hit.ico + ' ' + hit.name + '！' : '签到成功，连续 ' + s.streak + ' 天')
     })
+
+    /* 信箱待领附件数：只对登录用户请求 */
+    function loadMailBadge() {
+      const el = $('lnkMail')
+      if (!el) return
+      let t = ''
+      try {
+        t = localStorage.getItem('lw-token') || ''
+      } catch (e) {}
+      if (!t) {
+        el.textContent = ''
+        return
+      }
+      fetch('/api/mail', { headers: { Authorization: 'Bearer ' + t }, cache: 'no-store' })
+        .then((r) => (r.status === 401 ? null : r.json()))
+        .then((d) => {
+          if (!d || !d.ok) return
+          el.textContent = d.claimable ? String(d.claimable) : ''
+        })
+        .catch(() => {})
+    }
 
     /* ---------- 创作数据 ---------- */
     function fmt(n) {
@@ -897,6 +924,7 @@ export default {
 
     /* ---------- 送出的光尘数量 ---------- */
     $('lnkLiked').textContent = window.dust ? window.dust.giftedCount() : 0
+    loadMailBadge()
 
     applyMode()
     renderSign()
