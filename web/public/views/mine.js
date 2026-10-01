@@ -463,6 +463,11 @@ export default {
           <span class="ml-num" id="lnkMail">0</span>
           <span>信箱</span>
         </router-link>
+        <router-link class="m-link" to="/rank">
+          <span class="ml-ico">🏆</span>
+          <span class="ml-num" id="lnkRank"></span>
+          <span>排行榜</span>
+        </router-link>
         <router-link class="m-link" to="/tasks">
           <span class="ml-ico">📋</span>
           <span class="ml-num" id="lnkTask">0</span>

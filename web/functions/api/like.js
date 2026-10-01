@@ -1,8 +1,14 @@
-import { recentHistory, incrementLikes, decrementLikes} from './_history.js'
+/* 这里只保留 GET（佳作展示的 Top 榜）。
+   原来的 POST 是条谁都能刷的路：没有鉴权、没有去重、没有限流，
+   传个 time 就能把任意作品的 likes 改成任意值，而 likes 正是
+   每日榜的排序依据 —— 等于可以自己把自己顶到榜首、白拿每日冠军奖。
+   送光尘请走 /api/dust（那边有登录校验、同一作品只能送一次、
+   自己不能送、相机作品不给）。 */
+import { recentHistory } from './_history.js'
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
 }
 
@@ -14,36 +20,6 @@ const json = (body, status = 200) =>
 
 export async function onRequestOptions() {
   return new Response(null, { status: 204, headers: CORS_HEADERS })
-}
-
-export async function onRequestPost(context) {
-  const { request, env } = context
-
-  let body
-  try {
-    body = await request.json()
-  } catch {
-    return json({ error: 'Invalid JSON body' }, 400)
-  }
-
-  const time = Number(body && body.time)
-  if (!Number.isFinite(time)) {
-    return json({ error: '缺少 time 字段' }, 400)
-  }
-
-  if (!env.LIGHTFIELD_KV) {
-    return json({ error: 'LIGHTFIELD_KV is not configured' }, 500)
-  }
-
-  // unlike=1 表示取消点赞
-  const res = body.unlike
-    ? await decrementLikes(env.LIGHTFIELD_KV, time)
-    : await incrementLikes(env.LIGHTFIELD_KV, time)
-  if (!res.found) {
-    return json({ error: '作品不存在' }, 404)
-  }
-
-  return json({ ok: true, likes: res.likes })
 }
 
 export async function onRequestGet(context) {

@@ -4766,57 +4766,6 @@ color: var(--text-muted);
       refreshHint()
       fetchRecords()
 
-      /* ---------- 送光尘 ---------- */
-      const likedSet = loadLikedSet()
-
-      function loadLikedSet() {
-        try {
-          const arr = JSON.parse(localStorage.getItem('lw-liked') || '[]')
-          return new Set(Array.isArray(arr) ? arr : [])
-        } catch (e) {
-          return new Set()
-        }
-      }
-
-      function saveLikedSet() {
-        try {
-          localStorage.setItem('lw-liked', JSON.stringify([...likedSet]))
-        } catch (e) {}
-      }
-
-      async function likeWork(rec, badge) {
-        const key = String(rec.time)
-        if (likedSet.has(key)) {
-          toast('你已经送过光尘给这幅作品啦')
-          return
-        }
-        if (badge) badge.style.pointerEvents = 'none'
-        try {
-          const res = await fetch('/api/like', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ time: rec.time }),
-          })
-          const data = await res.json().catch(() => ({}))
-          if (res.ok) {
-            likedSet.add(key)
-            saveLikedSet()
-            rec.likes = data.likes
-            if (badge) {
-              badge.textContent = '♥ ' + rec.likes
-              badge.classList.add('liked')
-            }
-            toast('光尘送到了 ✨')
-          } else {
-            toast('送光尘失败：' + (data.error || res.status))
-          }
-        } catch (err) {
-          toast('送光尘失败：网络错误')
-        } finally {
-          if (badge) badge.style.pointerEvents = ''
-        }
-      }
-
       /* ---------- 键盘快捷键 ---------- */
       document.addEventListener('keydown', (e) => {
         if (e.metaKey || e.ctrlKey || e.altKey) return

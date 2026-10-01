@@ -90,17 +90,22 @@ export async function onRequestPost(context) {
       }
     }
 
-    // 自己的作品：赞照给，但光尘既不扣也不转，否则能凭空刷出光尘
+    /* 自己的作品：什么都不做，光尘不扣也不转，计数也不加。
+       之前这里是「赞照给」—— 每点一次就 incrementLikes 一次，
+       没有去重、没有上限。而 likes 正是每日榜的排序依据，
+       于是可以对着自己的画狂点把自己顶到榜首，每天白拿冠军奖。
+       作品上的数字现在表示「收到的光尘」，自己没送就不该计。 */
     if (recipient && recipient === who.uid) {
-      const likedSelf = await incrementLikes(env.LIGHTFIELD_KV, time)
-      if (!likedSelf.found) return json({ error: '作品不存在' }, 404)
+      const book = await readBook(env.LIGHTFIELD_KV, who.uid)
+      const mine = (await readAllHistory(env.LIGHTFIELD_KV)).entries.find((e) => e && e.time === time)
       return json({
         ok: true,
         self: true,
         found: true,
-        likes: likedSelf.likes,
+        likes: mine ? Number(mine.likes) || 0 : 0,
         credited: 0,
-        book: publicView(await readBook(env.LIGHTFIELD_KV, who.uid)),
+        message: '这是你自己的画，不能自己送光尘给自己',
+        book: publicView(book),
       })
     }
 

@@ -2379,11 +2379,16 @@ export default {
           updateLikedState(btn, rec.time)
           const pv = document.getElementById('previewLikeCount')
           if (pv) pv.textContent = rec.likes
+          if (d.self) {
+            // 送自己的画：服务端不再加计数，用它回传的值覆盖本地显示，
+            // 免得本地先 +1 显示上去了、回头刷新又掉回去
+            syncLikeEverywhere(rec.time, rec.likes, false)
+            toast(d.message || '这是你自己的画，不能自己送光尘给自己')
+            return
+          }
           syncLikeEverywhere(rec.time, rec.likes, true)
           window.dispatchEvent(new CustomEvent('lw-dust-changed'))
-          if (d.self) {
-            toast('这是你自己的画，已记你一笔，光尘就不转了')
-          } else if (d.credited) {
+          if (d.credited) {
             toast('送出了 ' + window.dust.cost + ' 个光尘 ✨ 对方也收到了，余额 ' + window.dust.balance())
           } else {
             toast('送出了 ' + window.dust.cost + ' 个光尘 ✨ 余额 ' + window.dust.balance())
