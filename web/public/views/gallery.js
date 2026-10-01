@@ -895,6 +895,13 @@ export default {
         font: inherit; color: inherit; text-align: left;
       }
       .preview-author-btn:hover { text-decoration: underline; }
+      .preview-report {
+        margin-left: auto; flex: none;
+        border: 1px solid var(--border-strong); background: var(--surface-2);
+        color: var(--text-muted); border-radius: 999px; padding: 4px 10px;
+        font-size: 11px; font-weight: 700; font-family: inherit; cursor: pointer;
+      }
+      .preview-report:active { background: var(--border); }
       .preview-bio {
         font-size: 12px; font-weight: 500; color: var(--text-muted); line-height: 1.5;
         padding: 6px 10px; border-radius: 10px; background: var(--surface-2);
@@ -1566,7 +1573,12 @@ export default {
         <canvas id="previewCanvas" width="16" height="16" hidden></canvas>
         <img id="previewImg" alt="作品预览">
         <div class="preview-info">
-          <span id="previewAuthor"></span>
+          <div class="preview-who">
+            <span class="preview-av" id="previewAv"></span>
+            <button class="preview-author-btn" id="previewAuthor" type="button"></button>
+            <button class="preview-report" id="previewReportUser" type="button" hidden>🚩 举报该用户</button>
+          </div>
+          <div class="preview-bio" id="previewBio" hidden></div>
           <span id="previewTime" class="preview-time"></span>
         </div>
         <div class="preview-like">
@@ -3211,7 +3223,31 @@ export default {
           img.src = pixelsToURL(rec.pixels, rs)
           document.getElementById('previewTitle').textContent = rec.workName || rec.name || '未命名'
         }
-        document.getElementById('previewAuthor').textContent = '作者：' + (rec.author || (rec.workName ? '匿名' : rec.name || '匿名')) + ' · ' + rs + '×' + rs
+        const authorName = rec.author || (rec.workName ? '匿名' : rec.name || '匿名')
+        const authorBtn = document.getElementById('previewAuthor')
+        authorBtn.textContent = '画师 ' + authorName + ' · ' + rs + '×' + rs
+        // 有 uid 才能取头像、进主页、举报用户；老作品没有就退回去
+        const avBox = document.getElementById('previewAv')
+        const bioBox = document.getElementById('previewBio')
+        const rptBtn = document.getElementById('previewReportUser')
+        avBox.innerHTML = '<span class="author-av-ph">' + (Array.from(authorName)[0] || '?') + '</span>'
+        bioBox.hidden = true
+        bioBox.textContent = ''
+        rptBtn.hidden = !rec.ownerUser
+        rptBtn.onclick = null
+        authorBtn.onclick = rec.ownerUser
+          ? () => {
+              closePreview()
+              openAuthor(authorName)
+            }
+          : null
+        if (rec.ownerUser && window.LWAvatar) {
+          const ac = document.createElement('canvas')
+          avBox.innerHTML = ''
+          avBox.appendChild(ac)
+          window.LWAvatar.draw(ac, rec.ownerUser, 30)
+        }
+        if (rec.ownerUser) loadAuthorMini(rec.ownerUser, authorName, bioBox)
         document.getElementById('previewTime').textContent = formatTime(rec.time)
         document.getElementById('previewLikeCount').textContent = rec.likes || 0
         const pvLike = document.getElementById('previewLike')
@@ -3260,6 +3296,20 @@ export default {
         }
       }
 
+      /* 预览弹窗里顺手带一下作者简介。拿不到就算了，不能挡住看作品。 */
+      function loadAuthorMini(uid, name, box) {
+        fetch('/api/profile?uid=' + encodeURIComponent(uid), { cache: 'no-store' })
+          .then((r) => (r.ok ? r.json() : null))
+          .then((d) => {
+            if (!d || !d.ok || !d.bio) return
+            // 弹窗可能已经关了，或者已经翻到别的作品了
+            if (!currentPreview || currentPreview.ownerUser !== uid) return
+            box.textContent = d.bio
+            box.hidden = false
+          })
+          .catch(() => {})
+      }
+
       function closePreview() {
         if (window.sfx) window.sfx('close')
         stopAnimPlay()
@@ -3278,6 +3328,7 @@ export default {
       let reportHoldTimer = null
       let reportHoldRaf = 0
       let reportTarget = null
+      let reportKind = 'work' // 'work' | 'user'
       let reportReason = '违法违规'
 
       const HOLD_MS = 1500
@@ -3307,8 +3358,37 @@ export default {
             b.classList.toggle('on', i === 0)
           )
           reportReason = '违法违规'
+          reportKind = 'work'
+          const tt = document.querySelector('#reportOverlay .card-title')
+          if (tt) tt.textContent = '举报作品'
           reportOverlay.hidden = false
         }, HOLD_MS)
+      }
+
+      /* 举报用户：复用举报作品的弹窗，只是提交时 target 换成 user。
+         长按举报是「举报这幅作品」，这里是「举报这个人」，两回事。 */
+      const reportUserBtn = document.getElementById('previewReportUser')
+      function openUserReport(rec) {
+        if (!rec || !rec.ownerUser) {
+          toast('这幅作品没有可举报的账号')
+          return
+        }
+        reportKind = 'user'
+        reportTarget = rec
+        const t = document.querySelector('#reportOverlay .card-title')
+        if (t) t.textContent = '举报用户'
+        if (reportNote) reportNote.value = ''
+        reportReasons.querySelectorAll('.report-reason').forEach((b, i) =>
+          b.classList.toggle('on', i === 0)
+        )
+        reportReason = '违法违规'
+        reportOverlay.hidden = false
+      }
+      if (reportUserBtn) {
+        reportUserBtn.addEventListener('click', () => {
+          if (window.sfx) window.sfx('tap')
+          openUserReport(currentPreview)
+        })
       }
 
       const reportBtn = document.getElementById('previewReport')
@@ -3344,18 +3424,28 @@ export default {
           const res = await fetch('/api/report', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              time: rec.time,
-              reason: reportReason,
-              note: reportNote ? reportNote.value : '',
-              title: rec.workName || rec.name || '',
-              author: rec.author || '',
-            }),
+            body: JSON.stringify(
+              reportKind === 'user'
+                ? {
+                    target: 'user',
+                    uid: rec.ownerUser,
+                    name: rec.author || '',
+                    reason: reportReason,
+                    note: reportNote ? reportNote.value : '',
+                  }
+                : {
+                    time: rec.time,
+                    reason: reportReason,
+                    note: reportNote ? reportNote.value : '',
+                    title: rec.workName || rec.name || '',
+                    author: rec.author || '',
+                  }
+            ),
           })
           const data = await res.json().catch(() => ({}))
           if (res.ok) {
             reportOverlay.hidden = true
-            toast('举报已提交 thanks'.replace(' thanks', '，感谢你的反馈'))
+            toast(reportKind === 'user' ? '举报已提交，感谢你的反馈' : '举报已提交，感谢你的反馈')
             if (window.sfx) window.sfx('save')
           } else {
             toast(data.error || '提交失败，请稍后再试')

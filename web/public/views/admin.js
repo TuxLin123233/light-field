@@ -481,6 +481,17 @@ export default {
       </div>
 
       <div class="card">
+        <div class="card-title">赠送光尘</div>
+        <div class="ban-lookup">
+          <input id="grantName" type="text" placeholder="输入用户名" autocomplete="off">
+          <input id="grantAmt" type="number" value="100" step="1" style="width:88px" aria-label="数量">
+          <button id="grantBtn" type="button">赠送</button>
+        </div>
+        <div id="grantOut"></div>
+        <p class="ban-hint">按用户名直接加减光尘，正数增加、负数扣减，单次上限 10 万。正数会同时计入对方「累计收到」。这里不会代替对方发信，需要通知的话在下面举报/信件里说明。</p>
+      </div>
+
+      <div class="card">
         <div class="card-title">紧急处置</div>
         <div class="card-text" style="margin-bottom:12px">若社区出现大面积违规内容，可一键清空全部作品。此操作不可恢复，请务必慎重。</div>
         <button class="clear" id="clearAllBtn" type="button">一键清空全部作品</button>
@@ -660,13 +671,21 @@ export default {
             tag.textContent = r.reason || '其他'
             const title = document.createElement('span')
             title.className = 'rp-title'
-            title.textContent = r.title || '未命名作品'
+            // 举报用户和举报作品的标题含义不同，分开标出来免得看混
+            if (r.target === 'user') {
+              tag.textContent = '👤 ' + (r.reason || '其他')
+              title.textContent = '用户 ' + (r.title || r.author || '未知')
+            } else {
+              title.textContent = r.title || '未命名作品'
+            }
             top.append(tag, title)
 
             const meta = document.createElement('div')
             meta.className = 'rp-meta'
             meta.textContent =
-              '作者 ' + (r.author || '匿名') + ' · 提交于 ' + fmtTime(r.at || 0) + ' · 作品时间戳 ' + r.time
+              r.target === 'user'
+                ? '被举报账号 ' + (r.title || '') + '（' + (r.targetUid || '?') + '） · 提交于 ' + fmtTime(r.at || 0)
+                : '作者 ' + (r.author || '匿名') + ' · 提交于 ' + fmtTime(r.at || 0) + ' · 作品时间戳 ' + r.time
 
             item.append(top, meta)
 
@@ -682,7 +701,7 @@ export default {
             const del = document.createElement('button')
             del.className = 'rp-btn danger'
             del.type = 'button'
-            del.textContent = '违规，删除作品'
+            del.textContent = r.target === 'user' ? '违规，封禁该账号' : '违规，删除作品'
             const done = document.createElement('button')
             done.className = 'rp-btn'
             done.type = 'button'
@@ -690,8 +709,14 @@ export default {
             actions.append(del, done)
             item.appendChild(actions)
 
+            const isUser = r.target === 'user'
             const handle = async (action) => {
-              const msg = action === 'remove' ? '确定删除该作品并标记举报已处理吗？' : '确定标记该举报为已处理吗？'
+              const msg =
+                action === 'remove'
+                  ? isUser
+                    ? '核实该账号违规？将立即封禁「' + (r.title || '') + '」并标记举报已处理。'
+                    : '确定删除该作品并标记举报已处理吗？'
+                  : '确定标记该举报为已处理吗？'
               if (!window.confirm(msg)) return
               const key = getKey()
               if (!key) {
@@ -713,14 +738,18 @@ export default {
                 const row = item.closest('.rp-item') || item
                 if (row && row.parentNode) row.parentNode.removeChild(row)
                 updateReportCount()
-                toast(action === 'remove' ? '已删除作品' : '已标记处理')
+                toast(
+                  action === 'remove' ? '已删除作品'
+                    : action === 'banuser' ? '已封禁该账号'
+                    : '已标记处理'
+                )
                 refresh()
                 loadReports()
               } catch (err) {
                 toast('网络错误')
               }
             }
-            del.addEventListener('click', () => handle('remove'))
+            del.addEventListener('click', () => handle(isUser ? 'banuser' : 'remove'))
             done.addEventListener('click', () => handle('done'))
 
             reportList.appendChild(item)
@@ -1018,6 +1047,59 @@ export default {
         } catch (err) {
           toast('网络错误')
         }
+      }
+
+      /* ---------- 赠送光尘 ---------- */
+      const grantBtn = document.getElementById('grantBtn')
+      const grantName = document.getElementById('grantName')
+      const grantAmt = document.getElementById('grantAmt')
+      const grantOut = document.getElementById('grantOut')
+      if (grantBtn) {
+        grantBtn.addEventListener('click', async () => {
+          const key = getKey()
+          if (!key) {
+            toast('请先登录维护面板')
+            return
+          }
+          const name = (grantName.value || '').trim()
+          const amt = Math.trunc(Number(grantAmt.value))
+          if (!name) {
+            toast('请填写用户名')
+            return
+          }
+          if (!Number.isFinite(amt) || amt === 0) {
+            toast('数量要是非 0 的整数，正数增加、负数扣减')
+            return
+          }
+          if (amt > 0 && !window.confirm('确定给「' + name + '」赠送 ' + amt + ' 个光尘吗？')) return
+          if (amt < 0 && !window.confirm('确定从「' + name + '」扣掉 ' + (-amt) + ' 个光尘吗？')) return
+          grantBtn.disabled = true
+          const old = grantBtn.textContent
+          grantBtn.textContent = '处理中'
+          try {
+            const res = await fetch('/api/ban', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'x-admin-key': key },
+              body: JSON.stringify({ action: 'grant', name: name, amount: amt }),
+            })
+            const d = await res.json().catch(() => ({}))
+            if (!res.ok || !d.ok) {
+              toast((d && d.error) || '赠送失败')
+              return
+            }
+            grantOut.textContent =
+              '✅ ' + d.user.username + '（' + d.user.uid + '）现在有 ' + d.book.bal + ' 个光尘' +
+              (amt > 0 ? '，累计收到 ' + d.book.got + ' 个。' : '。')
+            grantOut.className = ''
+            if (window.sfx) window.sfx('ding')
+            toast(amt > 0 ? '已赠送 ' + amt + ' 个光尘' : '已扣减 ' + (-amt) + ' 个光尘')
+          } catch (e) {
+            toast('赠送失败：网络错误')
+          } finally {
+            grantBtn.disabled = false
+            grantBtn.textContent = old
+          }
+        })
       }
 
       clearAllBtn.addEventListener('click', async () => {

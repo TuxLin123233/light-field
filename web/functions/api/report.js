@@ -124,7 +124,57 @@ export async function onRequestPost(context) {
         // 作品删除失败不影响举报本身已处理
       }
     }
+    // 举报用户：顺带把对方封禁，省得再点一次
+    if (body.action === 'banuser' && item.targetUid) {
+      try {
+        const { readUser, setBanned } = await import('./_auth.js')
+        const u = await readUser(env.LIGHTFIELD_KV, item.targetUid)
+        if (u) await setBanned(env.LIGHTFIELD_KV, item.targetUid, true, item.reason || '被举报核实')
+      } catch (e) {
+        // 封禁失败不影响举报本身已处理
+      }
+    }
     return json({ ok: true, action: body.action })
+  }
+
+  // 举报用户（而不是举报作品）：走 target:'user'
+  if (body && body.target === 'user') {
+    const targetUid = String((body && body.uid) || '').trim()
+    if (!/^[A-Za-z0-9_-]{1,40}$/.test(targetUid)) {
+      return json({ error: '缺少或非法的 uid' }, 400)
+    }
+    const name = String((body && body.name) || '').trim().slice(0, 20)
+    if (!name) return json({ error: '缺少用户名' }, 400)
+
+    const id = clientId(request)
+    try {
+      if (await rateLimited(env.LIGHTFIELD_KV, id)) {
+        return json({ error: '提交太频繁，请稍后再试' }, 429)
+      }
+    } catch {}
+
+    const reason = String((body && body.reason) || '').trim().slice(0, 20) || '其他'
+    const note = String((body && body.note) || '').trim().slice(0, 200)
+
+    const pending = await readList(env.LIGHTFIELD_KV, PENDING_KEY)
+    // 同一个人对同一个账号只留一条
+    const dup = pending.find((r) => r.targetUid === targetUid && r.from === id)
+    if (dup) return json({ ok: true, dup: true })
+
+    pending.push({
+      id: 'U' + targetUid + '-' + Date.now().toString(36),
+      target: 'user',
+      targetUid,
+      title: name,
+      author: name,
+      time: 0, // 用户举报没有作品时间
+      reason,
+      note,
+      from: id,
+      at: Date.now(),
+    })
+    await writeList(env.LIGHTFIELD_KV, PENDING_KEY, pending)
+    return json({ ok: true })
   }
 
   // 普通用户提交举报
