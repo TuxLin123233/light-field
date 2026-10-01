@@ -4,7 +4,7 @@
 //   GET  ?type=my             我拿过哪些奖励
 //
 // 结算说明见 _reward.js：惰性结算，靠 rwd:<kind>:<period>:<uid> 保证只发一次。
-import { readActiveUser, BANNED_ERROR } from './_auth.js'
+import { readActiveUser, readUser, BANNED_ERROR } from './_auth.js'
 import { readAllHistory } from './_history.js'
 import { readBook, publicView } from './_dust.js'
 import {
@@ -34,6 +34,32 @@ const json = (body, status = 200) =>
 
 export async function onRequestOptions() {
   return new Response(null, { status: 204, headers: CORS_HEADERS })
+}
+
+/**
+ * 把榜单补上用户名和「这期该给多少光尘」。
+ * uid 只能对上号，显示不出人名，所以这里逐个回查用户记录（最多 10 个）。
+ * 查不到的（老账号被清理过）就给空名，前端会退回显示 uid。
+ */
+async function withNames(kv, ranked, who) {
+  const out = []
+  for (let i = 0; i < ranked.length; i++) {
+    const r = ranked[i]
+    let name = ''
+    try {
+      const u = await readUser(kv, r.uid)
+      if (u && u.username) name = u.username
+    } catch (e) {}
+    out.push({
+      rank: i + 1,
+      uid: r.uid,
+      name,
+      score: r.score,
+      workName: r.workName,
+      mine: who ? r.uid === who.uid : false,
+    })
+  }
+  return out
 }
 
 export async function onRequestGet(context) {
@@ -84,14 +110,7 @@ export async function onRequestGet(context) {
       period: today,
       periodLabel: today,
       rules: DAILY_REWARDS,
-      board: ranked.map((r, i) => ({
-        rank: i + 1,
-        uid: r.uid,
-        score: r.score,
-        workName: r.workName,
-        // 只回 uid 用来对号入座，昵称由前端自己那份列表渲染
-        mine: who ? r.uid === who.uid : false,
-      })),
+      board: await withNames(kv, ranked, who),
       top: 10,
       prevSettled: settled.daily.period,
       myPrevAward: myPaid,
@@ -102,7 +121,7 @@ export async function onRequestGet(context) {
   const monday = mondayStart()
   const pool = entries.filter((e) => e && e.contest === info.week)
   const ranked = rankEntries(pool, monday, monday + WEEK_MS, 'contestVotes')
-  const prevWeek = weekIdOf(monday - WEEK_MS).week.week
+  const prevWeek = weekIdOf(monday - WEEK_MS).week
   const myPaid = who ? await alreadyPaid(kv, 'weekly', prevWeek, who.uid) : 0
   return json({
     ok: true,
@@ -113,13 +132,7 @@ export async function onRequestGet(context) {
     start: info.start,
     end: info.end,
     rules: WEEKLY_REWARDS,
-    board: ranked.map((r, i) => ({
-      rank: i + 1,
-      uid: r.uid,
-      score: r.score,
-      workName: r.workName,
-      mine: who ? r.uid === who.uid : false,
-    })),
+    board: await withNames(kv, ranked, who),
     top: 10,
     prevPeriod: prevWeek,
     prevSettled: settled.weekly.period,
