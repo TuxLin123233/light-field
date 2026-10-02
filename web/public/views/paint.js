@@ -1177,13 +1177,35 @@ color: var(--text-muted);
         cursor: pointer;
       }
 
-      .tip-qr {
-        width: 210px;
-        height: 210px;
-        object-fit: cover;
+      /* 两张收款码并排。按**宽度**自适应、高度 auto ——
+         支付宝那张是 1080×1620 的竖版海报，写死成正方形会把它压扁，
+         二维码就扫不出来了。 */
+      .tip-qrs {
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+      }
+      .tip-qr-item {
+        flex: 1;
+        max-width: 47%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .tip-qr-item + .tip-qr-item { margin-left: 12px; }
+      .tip-qr-item img {
+        width: 100%;
+        height: auto;
+        display: block;
         border-radius: 12px;
         border: 2px solid rgba(0, 0, 0, 0.08);
         background: var(--art-bg);
+      }
+      .tip-qr-item b {
+        margin-top: 7px;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--text-muted);
       }
 
       .tip-note {
@@ -2360,7 +2382,16 @@ color: var(--text-muted);
           <span class="tip-title">赞赏支持</span>
           <button class="tip-close" id="tipClose" type="button">关闭</button>
         </div>
-        <img class="tip-qr" src="/images/赞赏码.jpg" alt="赞赏码">
+        <div class="tip-qrs">
+          <div class="tip-qr-item">
+            <img src="/images/alipay-code.jpg" alt="支付宝收款码">
+            <b>支付宝</b>
+          </div>
+          <div class="tip-qr-item">
+            <img src="/images/tip-code.jpg" alt="微信赞赏码">
+            <b>微信赞赏</b>
+          </div>
+        </div>
         <div class="tip-note">喜欢像素小镇？长按识别二维码 → 扫码赞赏，感谢你的支持！</div>
       </div>
     </div>
