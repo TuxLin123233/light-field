@@ -158,11 +158,16 @@ export function sanitizeItems(items, room) {
   const R = sizeInfo(room).size
   const FL = floorLine(R)
   const used = new Set()
+  const seenIds = new Set()
   const out = []
   for (const it of items) {
     if (!it || typeof it !== 'object') return null
     const f = furnitureById(it.id)
     if (!f) return null
+    /* 同一件家具只能摆一个：商店里每件只卖一份（owned 是个集合），
+       所以摆两个以上就是凭空复制。前端也会拦，但这里才是说了算的地方。 */
+    if (seenIds.has(f.id)) return null
+    seenIds.add(f.id)
     const x = Math.floor(Number(it.x))
     const y = Math.floor(Number(it.y))
     if (!Number.isFinite(x) || !Number.isFinite(y)) return null
@@ -195,6 +200,7 @@ export function loadItems(items, room) {
   if (!Array.isArray(items)) return []
   const R = sizeInfo(room).size
   const used = new Set()
+  const seenIds = new Set()
   const out = []
   /* 一件家具占住哪些格。返回是否和已占的格子撞车 */
   const claim = (f, x, y) => {
@@ -215,6 +221,12 @@ export function loadItems(items, room) {
   for (const it of items) {
     if (!it || typeof it !== 'object') continue
     const f = furnitureById(it.id)
+    /* 同一件只留第一个。
+       在「不能重复放置」这个规则之前摆下的重复件，这里悄悄丢掉 ——
+       不这么做的话，老屋子一打开就带着重复，而用户一按保存就会被
+       严格校验整份拒掉，等于屋子锁死了。 */
+    if (seenIds.has(f.id)) continue
+    seenIds.add(f.id)
     if (!f) continue
     const x = Math.floor(Number(it.x))
     const y = Math.floor(Number(it.y))

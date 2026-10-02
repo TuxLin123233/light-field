@@ -182,6 +182,20 @@ export async function onRequestPost(context) {
 
   /* 保存布置：只让摆自己已经买下的家具 */
   if (action === 'save') {
+    /* 先单独查一遍重复，好给一句能看懂的话；
+       sanitizeItems 只会回一个笼统的 null，用户看不出是哪儿不对。 */
+    if (Array.isArray(body.items)) {
+      const seen = new Set()
+      for (const it of body.items) {
+        const id = it && it.id
+        if (!id) continue
+        if (seen.has(id)) {
+          const f = itemById(id)
+          return json({ error: '「' + ((f && f.name) || id) + '」你只有一件，不能摆两个' }, 400)
+        }
+        seen.add(id)
+      }
+    }
     const items = sanitizeItems(body.items, house.size)
     if (!items) return json({ error: '布置数据不合法（越界、重叠或没买过这件家具）' }, 400)
     for (const it of items) {

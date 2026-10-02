@@ -274,6 +274,19 @@ export default {
       <section class="group">
         <div class="ver red">
           <div class="ver-body">
+            <div class="ver-title"><span class="ver-tag">v1.7.3</span> 一件家具不能摆两个了 <span class="ver-date">2026-10</span></div>
+            <ul class="ver-list">
+              <li><span class="li-tag tag-fix">修复</span><b>同一件家具被重复摆的问题</b>。铺子里每件家具只卖一份，但之前屋里<b>可以把它摆出好几个</b> —— 买一支蜡烛能摆三支。现在一件就是一件</li>
+              <li><span class="li-tag tag-ui">界面</span>摆出去的那件，在下面托盘里会<b>变灰并标上「已摆出」</b>，不用点半天才反应过来为什么放不下去。拖着自己那件挪位置不受影响</li>
+              <li><span class="li-tag tag-fix">修复</span>之前已经摆重了的屋子，打开时<b>会自动只留一件</b>，不会卡住也不会丢别的家具</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="group">
+        <div class="ver red">
+          <div class="ver-body">
             <div class="ver-title"><span class="ver-tag">v1.7.2</span> 窗外的天气可以自己挑了 <span class="ver-date">2026-10</span></div>
             <ul class="ver-list">
               <li><span class="li-tag tag-new">新功能</span><b>小屋的天气能自己挑了</b>。屋子下面多了一排按钮：跟随现实 / ☀️晴 / ☁️多云 / 🌧️雨 / ❄️雪 / 🌅清晨 / 🌇黄昏 / 🌙夜，点一下墙上那扇小窗立刻跟着变</li>

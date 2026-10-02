@@ -263,6 +263,12 @@ export default {
     function placeWhy(it, exceptIdx) {
       const f = findItem(it.id)
       if (!f || !f.art) return '这件东西不认识了'
+      /* 每件家具商店里只卖一份，摆两个以上就是凭空复制。
+         拖着自己那件挪位置时 exceptIdx 指向它本身，不会被这里误判。 */
+      for (let i = 0; i < house.items.length; i++) {
+        if (i === exceptIdx) continue
+        if (house.items[i].id === it.id) return '「' + f.name + '」你已经摆了一个了'
+      }
       const sz = artSize(f.art)
       if (it.x < 0 || it.y < 0 || it.x + sz.w > ROOM || it.y + sz.h > ROOM) return '这里放不下，往里边挪一挪'
       if (!f.wallOk && it.y + sz.h - 1 < floorY) return '「' + f.name + '」得放在地上，往下挪一挪'
@@ -662,13 +668,19 @@ export default {
     }
 
     /* ---------- 家具铺 ---------- */
-    const itemBtn = (f, mode) =>
-      '<button class="tw-item' + (mode === 'pick' && picked === f.id ? ' on' : '') +
-      '" type="button" data-' + mode + '="' + esc(f.id) + '">' +
-      '<canvas data-art="' + esc(f.id) + '"></canvas>' +
-      '<span>' + esc(f.name) + '</span>' +
-      (mode === 'buy' ? '<span class="tw-item-price">' + f.price + ' ✨</span>' : '') +
-      '</button>'
+    const itemBtn = (f, mode) => {
+      /* 已经摆出去的那件在托盘里置灰：每件只有一份，摆过就不能再摆第二个，
+         免得点半天点不动还不知道为什么。 */
+      const placed = mode === 'pick' && (house.items || []).some((it) => it.id === f.id)
+      return (
+        '<button class="tw-item' + (mode === 'pick' && picked === f.id ? ' on' : '') +
+        '" type="button"' + (placed ? ' disabled' : '') + ' data-' + mode + '="' + esc(f.id) + '">' +
+        '<canvas data-art="' + esc(f.id) + '"></canvas>' +
+        '<span>' + esc(f.name) + (placed ? ' 已摆出' : '') + '</span>' +
+        (mode === 'buy' ? '<span class="tw-item-price">' + f.price + ' ✨</span>' : '') +
+        '</button>'
+      )
+    }
 
     const surfBtn = (sf) => {
       const has = (house.owned || []).indexOf(sf.id) >= 0
