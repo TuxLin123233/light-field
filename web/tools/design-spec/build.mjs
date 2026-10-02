@@ -13,8 +13,8 @@ const score = (f) => new Set(f.art.join('').split('')).size
 const furn = [...FURNITURE].sort((a, b) => score(b) - score(a)).slice(0, 120).map((f) => ({ art: f.art, pal: f.pal || null }))
 const src = fs.readFileSync(SRCT, 'utf8')
 function blockAt(i) { const b = src.indexOf('{', i); let d = 0; for (let j = b; j < src.length; j++) { if (src[j] === '{') d++; else if (src[j] === '}') { d--; if (d === 0) return src.slice(i, j + 1) } } }
-fs.writeFileSync('.spec/_s.mjs', blockAt(src.indexOf('function surfaceTile')) + '\nexport { surfaceTile }')
-const { surfaceTile } = await import('./_s.mjs'); fs.unlinkSync('.spec/_s.mjs')
+fs.writeFileSync('web/tools/design-spec/_s.mjs', blockAt(src.indexOf('function surfaceTile')) + '\nexport { surfaceTile }')
+const { surfaceTile } = await import('./_s.mjs'); fs.unlinkSync('web/tools/design-spec/_s.mjs')
 const surfaces = SURFACES.map((s) => ({ tile: surfaceTile(s, 16, 0).map((r) => r.join('')) }))
 const grab = (n) => blockAt(src.indexOf('function ' + n + '('))
 // wxT 是天气动画的帧计数。不补这一行，drawWindow 会 ReferenceError，
@@ -62,40 +62,41 @@ html, body {
 /* ===== 规范页自己的排版：全部 sp- 前缀，避免和站点类名撞 ===== */
 .sp-page, .sp-page * { box-sizing: border-box; }
 body { margin: 0; background: #f2efe9; font-family: "HarmonyOS Sans SC", -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; }
-.sp-page { width: 1400px; margin: 0 auto; background: #faf8f4; }
-.sp-hero { background: #241f1a; color: #fff; padding: 58px 72px 52px; }
-.sp-hero h1 { margin: 0; font-size: 62px; font-weight: 900; letter-spacing: 2px; color: #fff !important; }
-.sp-hero p { margin: 14px 0 0; font-size: 23px; color: #c5baa7 !important; }
-.sp-hero .sp-u { display: inline-block; margin-top: 22px; font-size: 21px; color: #96b9ff; border: 2px solid #5b8def; border-radius: 999px; padding: 9px 26px; }
-.sp-sec { padding: 44px 72px 8px; }
-.sp-sec > h2 { font-size: 31px; font-weight: 800; color: #3b342c; margin: 0 0 5px; }
-.sp-sec > .sp-d { font-size: 16px; color: #8c7f6b; margin: 0 0 24px; }
+/* 手机尺寸：发论坛主要用手机看，1400 宽在手机上会糊成一团 */
+.sp-page { width: 750px; margin: 0 auto; background: #faf8f4; }
+.sp-hero { background: #241f1a; color: #fff; padding: 44px 30px 40px; }
+.sp-hero h1 { margin: 0; font-size: 44px; font-weight: 900; letter-spacing: 1px; color: #fff !important; }
+.sp-hero p { margin: 12px 0 0; font-size: 17px; color: #c5baa7 !important; }
+.sp-hero .sp-u { display: inline-block; margin-top: 18px; font-size: 16px; color: #96b9ff; border: 2px solid #5b8def; border-radius: 999px; padding: 9px 26px; }
+.sp-sec { padding: 34px 30px 6px; }
+.sp-sec > h2 { font-size: 25px; font-weight: 800; color: #3b342c; margin: 0 0 4px; }
+.sp-sec > .sp-d { font-size: 13.5px; color: #8c7f6b; margin: 0 0 18px; line-height: 1.65; }
 .sp-row { display: flex; flex-wrap: wrap; align-items: flex-start; }
-.sp-cell { margin: 0 26px 28px 0; }
-.sp-cell .sp-cap { font-size: 13px; color: #8c7f6b; margin-top: 11px; }
+.sp-cell { margin: 0 18px 22px 0; }
+.sp-cell .sp-cap { font-size: 12px; color: #8c7f6b; margin-top: 11px; }
 .sp-cell .sp-cap b { color: #3b342c; font-weight: 700; display: block; }
 .sp-cell code { font-size: 11px; color: #b0a697; font-family: ui-monospace, Menlo, monospace; }
-.sp-sw { width: 128px; margin: 0 16px 22px 0; }
-.sp-sw i { display: block; height: 70px; border-radius: 12px; border: 1px solid rgba(0,0,0,.07); }
+.sp-sw { width: 96px; margin: 0 12px 18px 0; }
+.sp-sw i { display: block; height: 54px; border-radius: 12px; border: 1px solid rgba(0,0,0,.07); }
 .sp-sw b { display: block; font-size: 12px; color: #3b342c; margin-top: 7px; font-weight: 700; }
 .sp-sw code { font-size: 11px; color: #b0a697; font-family: ui-monospace, Menlo, monospace; }
 .sp-tp { margin: 0 0 24px; }
 .sp-tp .t { color: #3b342c; }
 .sp-tp .n { font-size: 12px; color: #b0a697; font-family: ui-monospace, Menlo, monospace; margin-top: 3px; }
 .sp-pad { background: #fff; border: 1px solid #efe7da; border-radius: 14px; padding: 20px; }
-.sp-av { width: 64px; height: 64px; margin: 0 7px 7px 0; border-radius: 11px; background: #f6f4f0; display: flex; align-items: center; justify-content: center; }
-.sp-av canvas { width: 52px; height: 52px; image-rendering: pixelated; display: block; }
-.sp-f { width: 54px; height: 54px; margin: 0 7px 7px 0; border-radius: 10px; background: #f7f5f1; display: flex; align-items: center; justify-content: center; }
+.sp-av { width: 56px; height: 56px; margin: 0 5px 5px 0; border-radius: 11px; background: #f6f4f0; display: flex; align-items: center; justify-content: center; }
+.sp-av canvas { width: 46px; height: 46px; image-rendering: pixelated; display: block; }
+.sp-f { width: 48px; height: 48px; margin: 0 5px 5px 0; border-radius: 10px; background: #f7f5f1; display: flex; align-items: center; justify-content: center; }
 .sp-f canvas { image-rendering: pixelated; display: block; }
-.sp-s { width: 38px; height: 38px; margin: 0 6px 6px 0; border-radius: 8px; overflow: hidden; }
+.sp-s { width: 34px; height: 34px; margin: 0 5px 5px 0; border-radius: 8px; overflow: hidden; }
 .sp-s canvas { width: 100%; height: 100%; image-rendering: pixelated; display: block; }
-.sp-w { border-radius: 14px; background: #fff; border: 1px solid #efe7da; padding: 13px 13px 7px; margin: 0 13px 13px 0; text-align: center; }
+.sp-w { border-radius: 12px; background: #fff; border: 1px solid #efe7da; padding: 10px 10px 6px; margin: 0 10px 10px 0; text-align: center; }
 .sp-w canvas { image-rendering: pixelated; display: block; margin: 0 auto; }
-.sp-w span { display: block; font-size: 13px; color: #6b5f50; margin-top: 7px; }
-.sp-dark { background: #241f1a; padding: 38px 72px 46px; color: #fff; margin-top: 18px; }
-.sp-dark h2 { font-size: 29px; font-weight: 800; margin: 0 0 14px; }
-.sp-dark p { color: #c5baa7; font-size: 19px; margin: 0; }
-.sp-w1 { width: 250px; } .sp-w2 { width: 320px; } .sp-w3 { width: 380px; }
+.sp-w span { display: block; font-size: 11.5px; color: #6b5f50; margin-top: 7px; }
+.sp-dark { background: #241f1a; padding: 30px 30px 36px; color: #fff; margin-top: 18px; }
+.sp-dark h2 { font-size: 21px; font-weight: 800; margin: 0 0 14px; }
+.sp-dark p { color: #c5baa7; font-size: 14px; margin: 0; }
+.sp-w1 { width: 100%; } .sp-w2 { width: 100%; } .sp-w3 { width: 100%; }
 </style></head>
 <body><div class="sp-page">
 <div class="sp-hero"><h1>像素小镇 · 设计规范</h1>
