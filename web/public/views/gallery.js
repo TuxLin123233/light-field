@@ -986,6 +986,35 @@ export default {
       }
 
       /* ---------- 用色色板 ---------- */
+
+      /* 用色占比条：按比例横向铺开，一眼看出主色调。
+         比一串色块直观 —— 光看色块不知道哪个是主色。 */
+      .pal-bar {
+        display: flex;
+        height: 12px;
+        border-radius: 6px;
+        overflow: hidden;
+        margin-bottom: 10px;
+        border: 1px solid var(--border);
+      }
+      .pal-bar i { display: block; min-width: 2px; }
+      .pal-sum {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        font-size: 11.5px;
+        color: var(--text-faint);
+        margin-bottom: 10px;
+      }
+      .pal-sum b { color: var(--text); font-weight: 700; }
+      .pal-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+      .pal-chip span em {
+        font-style: normal;
+        font-size: 9.5px;
+        color: var(--text-faint);
+        margin-left: 4px;
+      }
+
       .share-btn.on {
         border-color: var(--accent);
         color: var(--accent);
@@ -3332,15 +3361,55 @@ export default {
           palGrid.appendChild(tip)
           return
         }
-        list.forEach(([hex, n]) => {
+
+        /* 用色占比条：按比例横向铺开，一眼看出主色调是什么。
+           比一串色块直观得多 —— 光看色块不知道哪个是主色。 */
+        const total = list.reduce((a, e) => a + e[1], 0) || 1
+        const bar = document.createElement('div')
+        bar.className = 'pal-bar'
+        bar.title = '用色占比'
+        list.slice(0, 24).forEach(([hex, c]) => {
+          const seg = document.createElement('i')
+          seg.style.background = hex
+          seg.style.flex = c + ' 0 0'
+          seg.title = hex + ' ' + ((c / total) * 100).toFixed(1) + '%'
+          bar.appendChild(seg)
+        })
+        palGrid.appendChild(bar)
+
+        // 三个小结语，比只有色块有用
+        const sum = document.createElement('div')
+        sum.className = 'pal-sum'
+        const top3 = list.slice(0, 3)
+        const top3pct = ((top3.reduce((a, e) => a + e[1], 0) / total) * 100).toFixed(0)
+        const kind = list.length <= 4 ? '极少色' : list.length <= 10 ? '克制' : list.length <= 24 ? '丰富' : '很杂'
+        sum.innerHTML =
+          '<span>主色 <b>' + top3[0][0] + '</b></span>' +
+          '<span>前 3 色占 <b>' + top3pct + '%</b></span>' +
+          '<span>用色 <b>' + kind + '</b></span>'
+        palGrid.appendChild(sum)
+
+        // 角标上带占比，和上面的条对应起来
+        const nf = document.createElement('div')
+        nf.className = 'pal-chips'
+        list.forEach(([hex, cnt]) => {
           const chip = document.createElement('button')
           chip.type = 'button'
           chip.className = 'pal-chip'
-          chip.title = hex + '（用了 ' + n + ' 格）· 点击复制'
-          chip.innerHTML = '<i style="background:' + hex + '"></i><span>' + hex.slice(1) + '</span>'
+          const pct = ((cnt / total) * 100).toFixed(1)
+          chip.title = hex + '（用了 ' + cnt + ' 格，占 ' + pct + '%）· 点击复制'
+          chip.innerHTML =
+            '<i style="background:' + hex + '"></i><span>' + hex.slice(1) +
+            '<em>' + pct + '%</em></span>'
           chip.addEventListener('click', () => copyHex(hex))
-          palGrid.appendChild(chip)
+          nf.appendChild(chip)
         })
+        palGrid.appendChild(nf)
+
+        /* 逐个淡入，色号多的时候像在「铺开」 */
+        try {
+          if (window.LWAnim) window.LWAnim.stagger(nf)
+        } catch (e) {}
       }
 
       function closePalette() {
