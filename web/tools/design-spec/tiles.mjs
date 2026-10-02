@@ -259,13 +259,13 @@ DATA.surfaces.slice(0,24).forEach(s=>{const d=document.createElement('div');d.cl
     }}],
  ];
  const row1=document.createElement('div');
- row1.style.cssText='width:100%;display:flex;justify-content:center;align-items:flex-start;margin-bottom:15px';
+ row1.style.cssText='width:100%;display:flex;justify-content:center;align-items:flex-start;margin-bottom:12px';
  modes.forEach(([ico,name,desc,n,draw])=>{
-  const col=document.createElement('div');col.style.cssText='width:140px;margin:0 5px;text-align:center';
+  const col=document.createElement('div');col.style.cssText='width:132px;margin:0 4px;text-align:center';
   const box=document.createElement('div');
-  box.style.cssText='width:112px;height:112px;margin:0 auto;border:1px solid #efe7da;border-radius:12px;display:flex;align-items:center;justify-content:center;background:#fff';
+  box.style.cssText='width:102px;height:102px;margin:0 auto;border:1px solid #efe7da;border-radius:12px;display:flex;align-items:center;justify-content:center;background:#fff';
   const c=cv(n,n),g=c.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,n,n); draw(g,n);
-  c.style.cssText='width:94px;height:94px;image-rendering:pixelated';
+  c.style.cssText='width:86px;height:86px;image-rendering:pixelated';
   box.appendChild(c); col.appendChild(box);
   const t1=document.createElement('div'); t1.style.cssText='font-size:16px;font-weight:700;color:#3b342c;margin-top:8px'; t1.textContent=ico+' '+name; col.appendChild(t1);
   const t2=document.createElement('div'); t2.style.cssText='font-size:11.5px;color:#8c7f6b;margin-top:3px'; t2.textContent=desc+' · '+n+'×'+n; col.appendChild(t2);
@@ -277,11 +277,11 @@ DATA.surfaces.slice(0,24).forEach(s=>{const d=document.createElement('div');d.cl
  lab.style.cssText='width:100%;text-align:center;font-size:12px;color:#8c7f6b;margin:0 0 7px';
  lab.textContent='工具'; put('t6',lab);
  const row2=document.createElement('div');
- row2.style.cssText='width:100%;display:flex;flex-wrap:wrap;justify-content:center;margin-bottom:15px';
+ row2.style.cssText='width:100%;display:flex;flex-wrap:wrap;justify-content:center;margin-bottom:12px';
  [['✏️','画笔'],['╱','直线'],['▭','矩形'],['◯','圆'],['🧽','橡皮'],
   ['💧','填充'],['💉','吸管'],['✋','手型'],['🦋','镜像'],['↩️','撤销']].forEach(([i,t])=>{
   const d=document.createElement('div');
-  d.style.cssText='width:64px;margin:0 4px 7px;padding:7px 2px;border:1px solid #efe7da;border-radius:10px;background:#fff;text-align:center';
+  d.style.cssText='width:58px;margin:0 4px 6px;padding:6px 2px;border:1px solid #efe7da;border-radius:10px;background:#fff;text-align:center';
   const a1=document.createElement('div'); a1.style.cssText='font-size:17px;line-height:1.1'; a1.textContent=i; d.appendChild(a1);
   const a2=document.createElement('div'); a2.style.cssText='font-size:10.5px;color:#6b5f50;margin-top:3px'; a2.textContent=t; d.appendChild(a2);
   row2.appendChild(d);
@@ -289,10 +289,11 @@ DATA.surfaces.slice(0,24).forEach(s=>{const d=document.createElement('div');d.cl
  put('t6',row2);
  // 附加功能
  const row3=document.createElement('div');
- row3.style.cssText='width:100%;display:flex;justify-content:center';
+ /* bottom 留 22px：不留的话会贴到页脚那行「像素小镇 / light-field.pages.dev」上 */
+ row3.style.cssText='width:100%;display:flex;justify-content:center;padding-bottom:22px';
  [['🎞️','逐帧画导 GIF'],['📷','照片转像素'],['🎯','按题目出题']].forEach(([i,t])=>{
   const d=document.createElement('div');
-  d.style.cssText='width:134px;margin:0 5px;padding:10px 6px;border:1px solid #efe7da;border-radius:11px;background:#fff;text-align:center';
+  d.style.cssText='width:126px;margin:0 4px;padding:9px 6px;border:1px solid #efe7da;border-radius:11px;background:#fff;text-align:center';
   const a1=document.createElement('div'); a1.style.cssText='font-size:20px;line-height:1'; a1.textContent=i; d.appendChild(a1);
   const a2=document.createElement('div'); a2.style.cssText='font-size:11.5px;color:#6b5f50;margin-top:6px'; a2.textContent=t; d.appendChild(a2);
   row3.appendChild(d);
