@@ -1163,6 +1163,13 @@ export default {
       const paintBadge = (d) => {
         if (!d || !d.ok) return
         el.textContent = d.claimable ? String(d.claimable) : ''
+        /* 有未领的信时给整个入口一圈呼吸光晕，比单纯一个数字角标更容易注意到 */
+        try {
+          if (window.LWFx) {
+            const link = el.closest ? el.closest('.m-link') : null
+            if (link) window.LWFx.unread(link, !!d.claimable)
+          }
+        } catch (e) {}
       }
       if (MLC.cached('mailBadge', () => {
         fetch('/api/mail', { headers: { Authorization: 'Bearer ' + t }, cache: 'no-store' })

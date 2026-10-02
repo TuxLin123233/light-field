@@ -990,7 +990,11 @@ export default {
         </div>
         <div class="row">
           <div>
-            <div class="row-label">提示音效</div>
+            <div class="row-label">
+              提示音效
+              <!-- 开着的时候有个跳动的波形，一眼看出音效是开的 -->
+              <span id="sfxWaveHost"></span>
+            </div>
             <div class="row-desc">点按钮时的轻响，比如保存成功那声「叮」</div>
           </div>
           <input class="switch" id="sfxSwitch" type="checkbox" role="switch">
@@ -1803,8 +1807,25 @@ export default {
       const sfxSwitch = document.getElementById('sfxSwitch')
       if (sfxSwitch) {
         sfxSwitch.checked = window.getSfx ? window.getSfx() : true
+
+        /* 开关旁边的跳动波形。开着才跳 —— 这样不用读文字也知道音效是开是关，
+           而且真的发声时会跟着动一下（见下面的 tick）。 */
+        let wave = null
+        const waveHost = document.getElementById('sfxWaveHost')
+        if (waveHost && window.LWDeco && window.LWDeco.wave) {
+          wave = window.LWDeco.wave(sfxSwitch.checked)
+          waveHost.appendChild(wave)
+        }
+        const syncWave = () => {
+          if (wave && window.LWDeco) window.LWDeco.setWave(wave, sfxSwitch.checked)
+        }
+        syncWave()
+        // 切换开关时整页重渲染会丢状态，所以这里也顺带同步一次
+        window.addEventListener('lw-sfx-changed', syncWave)
+
         sfxSwitch.addEventListener('change', () => {
           if (window.setSfx) window.setSfx(sfxSwitch.checked)
+          syncWave()
           toast(sfxSwitch.checked ? '音效已开启' : '音效已关闭')
         })
       }

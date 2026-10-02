@@ -1027,6 +1027,8 @@
           }
         }
         window.setSfx = function (v) {
+          // 广播出去，设置页的音效波形靠它同步
+          try { window.dispatchEvent(new CustomEvent('lw-sfx-changed', { detail: !!v })) } catch (e) {}
           on = !!v
           try {
             localStorage.setItem('lw-sfx', v ? '1' : '0')

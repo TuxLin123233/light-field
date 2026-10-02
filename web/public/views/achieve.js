@@ -425,6 +425,17 @@ export default {
           if (Array.isArray(d.fresh) && d.fresh.length) {
             if (window.sfx) window.sfx('achieve')
             toast('新成就 ' + d.fresh.length + ' 个' + (d.reward ? '，获得 ' + d.reward + ' 个光尘 ✨' : '！'))
+            /* 撒彩带庆祝。从屏幕中上方撒，撒完顺手把刚解锁那两个条目闪一下，
+               让用户知道「是这几个亮了」。 */
+            try {
+              if (window.LWFx) window.LWFx.confetti(window.innerWidth / 2, window.innerHeight * 0.28, 34)
+              if (window.LWHaptic) window.LWHaptic.ok()
+              if (window.LWAnim) {
+                const items = document.querySelectorAll('.ach-item:not(.locked), .ach-item.on')
+                const n = Math.min(items.length, d.fresh.length || 1)
+                for (let i = 0; i < n; i++) window.LWAnim.bounce(items[i])
+              }
+            } catch (e) {}
             if (d.book) window.dispatchEvent(new CustomEvent('lw-dust-changed', { detail: d.book }))
           }
         } else {
