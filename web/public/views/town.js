@@ -443,13 +443,6 @@ export default {
         msg((e && e.message) || '网络错误', true)
       }
 
-    /* 天气按钮走事件委托：renderHome 每次重画都会换掉一批 DOM，
-       一个一个绑容易漏，直接挂容器上。app.js 会自动清理这些监听。 */
-    document.addEventListener('click', (e) => {
-      const b = e.target && e.target.closest ? e.target.closest('[data-weather]') : null
-      if (!b) return
-      setWeather(b.getAttribute('data-weather'))
-    })
       renderHome()
     }
 
@@ -1060,7 +1053,15 @@ export default {
         })
       }
       $('twBody').querySelectorAll('[data-delmsg]').forEach((b) => {
+
         b.addEventListener('click', () => doDelMsg(b.getAttribute('data-delmsg')))
+      })
+
+      /* 天气按钮：renderHome 每次重画都是新节点，直接绑就行。
+         注意别挂到 document 上 —— app.js 的 withAutoCleanup 只接管
+         window.addEventListener，挂 document 的话每进一次小镇就漏一个。 */
+      $('twBody').querySelectorAll('[data-weather]').forEach((el) => {
+        el.addEventListener('click', () => setWeather(el.getAttribute('data-weather')))
       })
 
       const up = $('twUp')

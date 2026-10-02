@@ -274,6 +274,18 @@ export default {
       <section class="group">
         <div class="ver red">
           <div class="ver-body">
+            <div class="ver-title"><span class="ver-tag">v1.7.5</span> 天气按钮点得动了 <span class="ver-date">2026-10</span></div>
+            <ul class="ver-list">
+              <li><span class="li-tag tag-fix">修复</span><b>上一版加的天气按钮点了没反应</b>。按钮画出来了，但<b>处理点击的那段代码被我插进了它自己的处理函数里面</b> —— 成了个死锁：注册监听的唯一途径是调用那个函数，而调用它的唯一途径就是那个监听器</li>
+              <li><span class="li-tag tag-update">更新</span>现在点「🌧️ 雨」「❄️ 雪」那些，墙上那扇小窗<b>立刻跟着变</b></li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="group">
+        <div class="ver red">
+          <div class="ver-body">
             <div class="ver-title"><span class="ver-tag">v1.7.4</span> 分享到聊天里的画作能看见了 <span class="ver-date">2026-10</span></div>
             <ul class="ver-list">
               <li><span class="li-tag tag-fix">修复</span><b>把作品分享给好友，气泡里却是一片空白</b>。消息本身一直存着呢，只是<b>那段画图的代码我压根没写</b> —— 气泡里留了个纯白的方框，看着就像消息没发出去</li>
