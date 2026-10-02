@@ -870,6 +870,13 @@ export default {
       .preview-art {
         touch-action: none; /* 这块由手势处理，别让浏览器拿去滚 */
         cursor: grab;
+        /* 关掉系统自带的长按菜单（iOS Safari / 安卓 Chrome 都有）：
+           它们是浏览器级弹层，出现时机不受我们控制，会盖在我们的
+           作品菜单上面，点「转发给朋友」会点穿到它去。
+           touch-action: none 挡不住它，只有 -webkit-touch-callout 能。 */
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        user-select: none;
       }
       #previewBox.swiping .preview-art { cursor: grabbing; }
       .preview-grab {
@@ -1679,7 +1686,7 @@ export default {
           <div class="pal-grid" id="palGrid"></div>
           <div class="pal-tip">点任意色块即可复制它的色号</div>
         </div>
-        <div class="preview-note">仅支持预览，不可载入作画。请勿抄袭或直接提交他人的作品。长按图片可保存到相册。</div>
+        <div class="preview-note">仅支持预览，不可载入作画。请勿抄袭或直接提交他人的作品。对着画右键（手机长按）可以转发或保存。</div>
         </div>
       </div>
     </div>
@@ -3916,6 +3923,54 @@ export default {
         reportUserBtn.addEventListener('click', () => {
           if (window.sfx) window.sfx('tap')
           openUserReport(currentPreview)
+        })
+      }
+
+      /* 举报作品：菜单里点「举报这幅画」直接开弹窗。
+         原来只有长按 1.5 秒那一条路（防误触），但在菜单里点是有意为之的
+         ——手指已经停了半秒、还专门选了这一项，再要求长按一遍纯属折磨。 */
+      function openWorkReport(rec) {
+        if (!rec) return
+        reportKind = 'work'
+        reportTarget = rec
+        if (reportNote) reportNote.value = ''
+        reportReasons.querySelectorAll('.report-reason').forEach((b, i) =>
+          b.classList.toggle('on', i === 0)
+        )
+        reportReason = '违法违规'
+        const tt = document.querySelector('#reportOverlay .card-title')
+        if (tt) tt.textContent = '举报作品'
+        reportOverlay.hidden = false
+      }
+
+      /* 作品菜单：对着画右键（桌面）或长按（手机）就弹出来，
+         跟微信里长按图片弹「转发/收藏/保存」是同一套手势。 */
+      if (window.LWWorkMenu) {
+        const art = document.getElementById('previewArt')
+        window.LWWorkMenu.bind(art, {
+          selector: '#previewArt',
+          getInfo() {
+            const rec = currentPreview
+            if (!rec) return null
+            return {
+              time: rec.time,
+              title: rec.workName || rec.name || '未命名',
+              author: rec.author || (rec.workName ? '匿名' : rec.name || '匿名'),
+              work: rec,
+              onCard() {
+                openCard(
+                  rec.pixels,
+                  workSize(rec),
+                  rec.workName || rec.name || '未命名',
+                  rec.author || '匿名',
+                  rec.likes || 0,
+                  rec.tags,
+                  rec.ownerUser || ''
+                )
+              },
+              onReport: () => openWorkReport(rec),
+            }
+          },
         })
       }
 

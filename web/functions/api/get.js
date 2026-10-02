@@ -231,7 +231,14 @@ export async function onRequestGet(context) {
         if (authorParam && (e.author || '') !== authorParam) return false
         if (tagParam && !(Array.isArray(e.tags) && e.tags.includes(tagParam))) return false
         if (qParam) {
-          const hay = ((e.workName || '') + ' ' + (e.author || '') + ' ' + (e.tags || []).join(' ')).toLowerCase()
+          // name 也要搜：早期作品没有 workName，名字存在 name 里。
+          // 只搜 workName 的话，那些老作品怎么都搜不出来
+          const hay = (
+            (e.workName || '') + ' ' +
+            (e.name || '') + ' ' +
+            (e.author || '') + ' ' +
+            (e.tags || []).join(' ')
+          ).toLowerCase()
           if (!hay.includes(qParam)) return false
         }
         return true

@@ -313,7 +313,8 @@ export default {
 
       /* 屏蔽手机上的长按菜单/选中/拖放：
          不加这些，按住画布超过半秒浏览器会启动自己的长按行为，
-         我们的删除长按就抢不到了。 */
+         我们的作品菜单就抢不到了（它的系统菜单是浏览器级弹层，
+         弹出来会盖在我们的菜单上面）。 */
       .mine-item {
         -webkit-touch-callout: none;
         -webkit-user-select: none;
@@ -321,11 +322,6 @@ export default {
         -webkit-tap-highlight-color: transparent;
       }
       .mine-item canvas, .mine-item .mine-cap { -webkit-touch-callout: none; user-select: none; }
-      .mine-hold-bar {
-        position: absolute; left: 0; bottom: 0; height: 3px; width: 0;
-        background: var(--accent, #5b8def); border-radius: 0 3px 3px 0;
-        pointer-events: none; z-index: 2;
-      }
       .mine-del-tip {
         font-size: 11px; color: var(--text-faint);
         margin: -2px 0 8px;
@@ -590,7 +586,7 @@ export default {
     <!-- 我的作品：页内完整列表，只显示自己的 -->
     <div class="m-card" id="mineCard">
       <div class="m-card-title">🎨 我的画<span class="m-tip" id="mineTip"></span><button class="lw-refresh" id="mineRefresh" type="button" data-label="刷新"></button></div>
-      <div class="mine-del-tip">长按任意一幅可以删掉它（删了找不回来）</div>
+      <div class="mine-del-tip">右键（手机长按）任意一幅可以转发、保存或删掉它（删了找不回来）</div>
       <div class="mine-filter" id="mineFilter" hidden>
         <span class="mf-label">筛选</span>
         <div class="mf-chips" id="mineChips"></div>
@@ -1479,6 +1475,20 @@ export default {
       }
     }
 
+    /* 两个列表（我的画 / 送过光尘的）各绑一次。
+       「送过光尘的」里是**别人的作品**，绑定时不给 onDelete，
+       菜单里就没有删除这一项 —— 不用在事件里再判一次 own。 */
+    function bindWorkMenu() {
+      if (!window.LWWorkMenu) return
+      for (const id of ['mineGrid', 'likedGrid']) {
+        window.LWWorkMenu.bind($(id), {
+          selector: '.mine-item',
+          getInfo: (el) => (el.__lwwmInfo ? el.__lwwmInfo() : null),
+        })
+      }
+    }
+    bindWorkMenu()
+
     /* own：这张画是不是我自己发布的。
        「送过光尘的」列表里是**别人的作品**，绝不能给删除入口 ——
        之前两个列表共用 buildWorkItem，长按会弹出删除确认框
@@ -1517,73 +1527,30 @@ export default {
         if (window.__lwRouter) window.__lwRouter.push(target)
         else location.href = target
       })
-      /* 长按 1.2 秒删掉自己这幅画。
-         为什么用长按：单击是「去社区看这幅」，两个操作挨在一起，
-         误触就删了不可恢复。跟举报的交互保持一致。
+      /* 右键（桌面）/ 长按（手机）→ 作品菜单，跟微信长按图片一个路数。
+         原来这里是「长按 1.2 秒直接弹删除确认」，现在删画挪进菜单里了。
 
-         真机上踩过的坑：早期版本在 pointercancel 里清掉了计时器，
-         结果长按永远不触发 —— 手机按住 <div>/<canvas> 超过半秒，
-         浏览器会启动自己的长按行为（弹出菜单 / 选中 / 拖放），
-         随即发 pointercancel，把刚开始的计时器清了。
-         现在三处一起改：
-           · 抓住指针（setPointerCapture），不让手势被别人抢
-           · CSS 里 -webkit-touch-callout / user-select 屏蔽系统长按菜单
-           · pointercancel 不再清计时器，只是停止进度条动画；
-             时间到了照样触发删除
-           · 有一条进度条，按住时能看到在走（不然用户不知道有没有生效） */
-      const HOLD_MS = 1200
-      let holdTimer = null
-      let holdRaf = 0
-      let bar = null
-      const stopBar = () => {
-        cancelAnimationFrame(holdRaf)
-        holdRaf = 0
-        if (bar) {
-          bar.remove()
-          bar = null
-        }
-      }
-      const cancelHold = () => {
-        clearTimeout(holdTimer)
-        holdTimer = null
-        stopBar()
-      }
-      const startHold = (e) => {
-        if (e.target.closest('button, a')) return
-        // 不是我的画：只准看，不准删
-        if (!own) return
-        cancelHold()
-        try {
-          if (item.setPointerCapture && e.pointerId != null) item.setPointerCapture(e.pointerId)
-        } catch (err) {}
-        bar = document.createElement('i')
-        bar.className = 'mine-hold-bar'
-        item.appendChild(bar)
-        const t0 = performance.now()
-        const tick = () => {
-          if (!bar) return
-          const k = Math.min(1, (performance.now() - t0) / HOLD_MS)
-          bar.style.width = (k * 100).toFixed(1) + '%'
-          if (k < 1) holdRaf = requestAnimationFrame(tick)
-        }
-        holdRaf = requestAnimationFrame(tick)
-        holdTimer = setTimeout(() => {
-          holdTimer = null
-          stopBar()
-          if (window.sfx) window.sfx('warn')
-          deleteOwnWork(w, item)
-        }, HOLD_MS)
-      }
-      item.addEventListener('pointerdown', startHold)
-      item.addEventListener('pointerup', cancelHold)
-      item.addEventListener('pointerleave', cancelHold)
-      /* pointercancel 故意不清计时器：手指按住不动时浏览器照样会发它，
-         清掉就等于长按永远不生效（这正是之前删不掉的原因）。 */
-      item.addEventListener('pointercancel', stopBar)
-      item.addEventListener('contextmenu', (e) => e.preventDefault())
-      // iOS Safari 的长按选中/放大
-      item.addEventListener('touchstart', (e) => { if (e.touches.length > 1) cancelHold() }, { passive: true })
+         为什么非得挪：两个长按计时器会同时跑。原逻辑 1.2 秒弹删除确认，
+         菜单 0.5 秒就弹出来了 —— 于是用户长按想删画，先被弹出来的菜单
+         糊一脸，1.2 秒到了菜单上面又盖一个删除确认框。两个弹层叠着，
+         底下那个还能点穿。合并成一处才不会这样。
+
+         这里只挂信息，事件交给下面的 bindWorkMenu 统一委托 ——
+         作品列表是重建的，逐个卡片绑事件的话每次刷新都得重绑一遍，
+         漏一个就有一个点不开。 */
+      item.dataset.workTime = String(w.time)
+      item.dataset.workTitle = w.workName || '未命名'
+      item.__lwwmInfo = () => ({
+        time: w.time,
+        title: w.workName || '未命名',
+        author: w.author || (w.workName ? '匿名' : w.name || '匿名'),
+        work: w,
+        // 只有自己的画才给删除入口。别人的画长按只能看不能删
+        onDelete: own ? () => deleteOwnWork(w, item) : null,
+      })
       item.addEventListener('dragstart', (e) => e.preventDefault())
+      return item
+      return item
       return item
     }
 
