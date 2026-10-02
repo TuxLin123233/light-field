@@ -58,6 +58,10 @@
     '34%{transform:translate(-50%,-6px) scale(1)}' +
     '100%{opacity:0;transform:translate(-50%,-42px) scale(1)}}' +
     /* 弹一下 */
+    /* 左右摇：出错/危险操作时强调 */
+    '@keyframes lwd-shake{0%,100%{transform:translateX(0)}' +
+    '15%{transform:translateX(-8px)}30%{transform:translateX(7px)}' +
+    '45%{transform:translateX(-5px)}60%{transform:translateX(4px)}80%{transform:translateX(-2px)}}' +
     '@keyframes lwd-pop{0%{transform:scale(1)}35%{transform:scale(1.28)}' +
     '70%{transform:scale(.96)}100%{transform:scale(1)}}' +
     '@media (prefers-reduced-motion:reduce){' +
@@ -119,6 +123,14 @@
     setTimeout(function () { el.style.animation = '' }, 460)
   }
 
+  function reduceMotion() {
+    try {
+      return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+    } catch (e) {
+      return false
+    }
+  }
+
   var esc = function (s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
@@ -164,6 +176,18 @@
     if (input && o.input) {
       input.value = o.input.value == null ? '' : String(o.input.value)
       if (o.input.placeholder) input.placeholder = o.input.placeholder
+    }
+
+    /* 出错/危险操作的对话框，入场后抖一下强调。
+       只在 danger 或调用方显式传 shake 时才抖 —— 每个提示框都抖会让人晕。 */
+    if ((o.danger || o.shake) && !reduceMotion()) {
+      var shakeBox = layer.querySelector('.lwd-box')
+      if (shakeBox) {
+        setTimeout(function () {
+          shakeBox.style.animation = 'lwd-shake .5s cubic-bezier(.36,.07,.19,.97)'
+          setTimeout(function () { shakeBox.style.animation = '' }, 560)
+        }, 90)
+      }
     }
 
     var done = false

@@ -878,7 +878,7 @@ export default {
                   {
                     text: '永久删除', cls: 'danger',
                     fn: async () => {
-                      if (!(await lwConfirm('永久删除这件作品？\n\n不可撤销。\n时间：' + h.time))) return
+                      if (!(await lwConfirm('永久删除这件作品？\n\n不可撤销。\n时间：' + h.time, { danger: true }))) return
                       const r = await adminMod({ action: 'delete', time: h.time })
                       if (!r || !r.ok) { await lwAlert((r && r.error) || '删除失败'); return }
                       toast('已永久删除')
@@ -1247,7 +1247,7 @@ export default {
         btn.textContent = u.banned ? '解封该账号' : '封禁该账号'
         btn.addEventListener('click', async () => {
           const act = u.banned ? 'unban' : 'ban'
-          if (act === 'ban' && !(await lwConfirm('确定封禁「' + u.username + '」吗？\n\n对方将无法签到、送光尘和发布作品，直到解封。'))) return
+          if (act === 'ban' && !(await lwConfirm('确定封禁「' + u.username + '」吗？\n\n对方将无法签到、送光尘和发布作品，直到解封。', { danger: true }))) return
           btn.disabled = true
           try {
             const res = await fetch('/api/ban', {
@@ -1373,7 +1373,7 @@ export default {
 
       async function removeEntry(rec) {
         const label = rec.name || '匿名'
-        if (!(await lwConfirm(`确定删除「${label}」的作品吗？`))) return
+        if (!(await lwConfirm(`确定删除「${label}」的作品吗？`, { danger: true }))) return
 
         const key = getKey()
         if (!key) {
@@ -1591,7 +1591,7 @@ export default {
       }
 
       clearAllBtn.addEventListener('click', async () => {
-        if (!(await lwConfirm('确定清空全部数据吗？此操作不可恢复！'))) return
+        if (!(await lwConfirm('确定清空全部数据吗？此操作不可恢复！', { danger: true }))) return
 
         const key = getKey()
         if (!key) {

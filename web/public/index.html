@@ -1177,6 +1177,7 @@
     <script src="/lw-gravity.js"></script>
     <script src="/lw-thumb.js"></script>
     <script src="/lw-cache.js"></script>
+    <script src="/lw-anim.js"></script>
     <script src="/lw-dialog.js"></script>
     <script src="/lw-workmenu.js"></script>
   </head>
@@ -1271,11 +1272,28 @@
              各页面用的类名不统一，所以列一组常见选择器一起找。
              金额没变（比如只是刷新了一次账本）就不弹，免得无意义的动效 */
           var nowBal = server ? server.bal : null
-          if (nowBal !== null && prevBal !== null && nowBal !== prevBal && window.LWDialog && window.LWDialog.pop) {
-            var sels = ['.dust-bal', '.tw-dust', '.mine-dust', '[data-dust]', '.aw-num', '.dh-dust']
+          if (nowBal !== null && prevBal !== null && nowBal !== prevBal) {
+            /* 余额变了：数字滚过去 + 元素弹一下。
+               必须放在 listeners 之后 —— 各页面是在 listener 里重绘余额的，
+               先滚就会被随后的重绘盖掉，动画根本看不见。
+               各页面类名不统一，列一组常见选择器一起找。 */
+            var sels = ['.dust-bal', '.tw-dust', '.mine-dust', '[data-dust]', '.aw-num', '.dh-dust', '.tk-dust']
+            var seen = []
             for (var si = 0; si < sels.length; si++) {
               var els = document.querySelectorAll(sels[si])
-              for (var ei = 0; ei < els.length; ei++) window.LWDialog.pop(els[ei])
+              for (var ei = 0; ei < els.length; ei++) {
+                var el = els[ei]
+                if (seen.indexOf(el) >= 0) continue
+                seen.push(el)
+                /* 元素里只有纯数字才滚，带「光尘」这类前缀的只弹不滚
+                   （滚动会把自己写的文字覆盖掉） */
+                var raw = (el.textContent || '').trim()
+                if (/^-?\d+$/.test(raw)) {
+                  if (window.LWAnim) window.LWAnim.count(el, nowBal, 560)
+                } else if (window.LWDialog && window.LWDialog.pop) {
+                  window.LWDialog.pop(el)
+                }
+              }
             }
           }
         }

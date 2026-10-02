@@ -1466,7 +1466,7 @@ export default {
         return
       }
       const name = w.workName || '未命名'
-      if (!(await lwConfirm('确定删除「' + name + '」吗？删除后无法恢复。'))) return
+      if (!(await lwConfirm('确定删除「' + name + '」吗？删除后无法恢复。', { danger: true }))) return
       item.dataset.deleting = '1'
       try {
         const res = await fetch('/api/mine', {
