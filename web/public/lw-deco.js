@@ -628,6 +628,7 @@ html[data-theme='dark'] .lwdeco-grid {
       closed = true
       if (pendingTimer) clearTimeout(pendingTimer)
       document.removeEventListener('click', onDocClick, true)
+      document.removeEventListener('click', onAct, true)
       if (window.__lwGuideCleanup === hardCleanup) window.__lwGuideCleanup = null
       clearHL()
       wrap.classList.remove('on')
@@ -646,6 +647,7 @@ html[data-theme='dark'] .lwdeco-grid {
       closed = true
       if (pendingTimer) clearTimeout(pendingTimer)
       document.removeEventListener('click', onDocClick, true)
+      document.removeEventListener('click', onAct, true)
       clearHL()
       if (wrap.parentNode) wrap.parentNode.removeChild(wrap)
       if (window.__lwGuideCleanup === hardCleanup) window.__lwGuideCleanup = null
@@ -728,23 +730,38 @@ html[data-theme='dark'] .lwdeco-grid {
       }, reduce ? 0 : 60)
     }
 
-    btnGo.addEventListener('click', function (e) {
-      e.stopPropagation()
+    /* ---------- 按钮交互 ----------
+       ★ 为什么改成「一个 document 委托 + 防抖」而不是给每个按钮挂监听：
+       用户报过「下一步要点很多次才走」。除了监听泄漏（已修），
+       还有一个结构性隐患：三个按钮各自挂监听、各自可能被残留的
+       旧浮层监听干扰，一次点击可能走两步、或者被旧浮层的
+       「点外面关闭」抢先处理掉。
+       改成统一在 document 上委托一次：
+         · 一次点击只可能匹配一个分支（next / prev / skip）
+         · 250ms 的锁保证一次点击只前进一步
+         · 浮层关掉时只摘这一个监听，不会漏
+       这样无论外面有多少历史遗留，行为都是确定的。 */
+    var lastAct = 0
+    function onAct(e) {
+      if (closed) return
+      var t = e.target
+      if (!t || !t.closest) return
+      var btn = t.closest('.b-acts button')
+      if (!btn || !bubble.contains(btn)) return
       e.preventDefault()
-      next()
-    })
-    if (btnPrev) {
-      btnPrev.addEventListener('click', function (e) {
-        e.stopPropagation()
-        e.preventDefault()
-        if (o.onPrev) o.onPrev()
-      })
+      e.stopPropagation()
+      var now = Date.now()
+      if (now - lastAct < 250) return
+      lastAct = now
+      if (btn.classList.contains('go')) next()
+      else if (btn.classList.contains('prev')) { if (o.onPrev) o.onPrev() }
+      else close('skip')
     }
-    btnSkip.addEventListener('click', function (e) {
-      e.stopPropagation()
-      e.preventDefault()
-      close('skip')
-    })
+    document.addEventListener('click', onAct, true)
+    // 触摸设备上 pointerup 比 click 早，反馈更即时（防抖锁会挡掉重复）
+    document.addEventListener('pointerup', function (e) {
+      if (e.pointerType === 'touch') onAct(e)
+    }, true)
     /* 点气泡以外的地方也跳过。
        浮层本身不能吃 pointer-events（否则挡住画布），所以不挂在浮层上，
        改挂 document 并用 capture —— 这样盖在下面的按钮不会被误触。 */
