@@ -133,7 +133,7 @@ body { font-family: "HarmonyOS Sans SC", -apple-system, "PingFang SC", "Microsof
 <div class="foot"><span>像素小镇</span><b>light-field.pages.dev</b></div></div>
 
 <div class="tile alt"><div class="ico">🃏</div><h3>卡片</h3>
-<p>作品卡、数据卡、入口卡、状态徽章</p>
+<p>作品卡、数据卡、入口卡</p>
 <div class="body" id="t8"></div>
 <div class="foot"><span>像素小镇</span><b>light-field.pages.dev</b></div></div>
 
@@ -326,7 +326,7 @@ DATA.surfaces.slice(0,24).forEach(s=>{const d=document.createElement('div');d.cl
  put('t7',box);
 })();
 
-/* 8 卡片 —— 3 张作品卡 + 4 张数据卡 + 徽章行 */
+/* 8 卡片 —— 3 张作品卡 + 4 张数据卡 + 2 张入口卡 */
 (function(){
  const row=document.createElement('div');
  row.style.cssText='width:100%;display:flex;justify-content:center;align-items:flex-start;margin-bottom:18px';
@@ -360,12 +360,22 @@ DATA.surfaces.slice(0,24).forEach(s=>{const d=document.createElement('div');d.cl
  put('t8',row2);
 })();
 
-/* 8b 徽章 */
-/* 10 个徽章一行塞不下，精简到 6 个 */
-[['新功能','li-tag tag-new'],['修复','li-tag tag-fix'],['更新','li-tag tag-update']]
- .forEach(([t,c])=>{const s=document.createElement('span');s.className=c;s.textContent=t;put('t8',s)});
-[['🎞️ 动画','anim-badge'],['👥 多人','room-badge']]
- .forEach(([t,c])=>{const s=document.createElement('span');s.className=c;s.textContent=t;put('t8',s)});
+/* 8c 入口卡 —— 替换掉原来的徽章行 */
+(function(){
+ [['🎨','画头像','自己画或换默认'],['🛒','家具商店','620 多件，买过归你']].forEach(([ico,label,desc])=>{
+  const d=document.createElement('div');d.className='entry';
+  d.style.cssText='width:212px;margin:0 6px;flex:none';
+  d.innerHTML='<span class="entry-ico">'+ico+'</span><span class="entry-body"><span class="entry-label">'+label+
+   '</span><span class="entry-desc">'+desc+'</span></span><span class="entry-arrow">›</span>';
+  // 标题和说明要上下两行，不然会粘成「画头像自己画或换默认」
+  const body=d.querySelector('.entry-body');
+  if(body) body.style.cssText='display:flex;flex-direction:column;min-width:0;flex:1';
+  const lb=d.querySelector('.entry-label'), ds=d.querySelector('.entry-desc');
+  if(lb) lb.style.cssText='font-size:14px;font-weight:700;color:#3b342c';
+  if(ds) ds.style.cssText='font-size:11px;color:#8c7f6b;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
+  put('t8',d);
+ });
+})();
 </script></body></html>`
 fs.writeFileSync('.tiles/tiles.html', html)
 console.log('  ✓ tiles.html  ' + (html.length / 1024).toFixed(0) + ' KB')
