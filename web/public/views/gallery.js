@@ -555,6 +555,9 @@ export default {
       }
 
       .card {
+        /* 审核员的「下架」按钮是绝对定位的，卡片必须是定位上下文，
+           否则按钮会跑到整个页面左上角去 */
+        position: relative;
         background: var(--surface);
         border: 1px solid transparent;
         border-radius: 16px;
@@ -665,6 +668,23 @@ export default {
         text-overflow: ellipsis;
         white-space: nowrap;
       }
+
+      /* 审核员勋章：挂在作者名旁边 */
+      .mod-badge {
+        font-size: 10px; font-weight: 700; color: #2f6b3f;
+        background: #e8f5ec; border: 1px solid #cbe6d4;
+        border-radius: 999px; padding: 1px 6px; margin-left: 4px;
+        white-space: nowrap; flex: none;
+      }
+      /* 审核员的「暂时下架」按钮：卡片左上角，只有审核员看得见 */
+      .mod-hide {
+        position: absolute; left: 6px; top: 6px; z-index: 3;
+        border: 0; border-radius: 999px; cursor: pointer;
+        background: rgba(60, 48, 36, .82); color: #fff;
+        font-family: inherit; font-size: 11px; font-weight: 700;
+        padding: 4px 9px; backdrop-filter: blur(2px);
+      }
+      .mod-hide:active { transform: scale(.94); }
 
       .card-size {
         flex: 0 0 auto;
@@ -1685,6 +1705,54 @@ export default {
       function workSize(rec) {
         const s = (rec && rec.size) || 0
         return s === 32 || s === 64 ? s : 16
+      }
+
+      /* 我是不是审核员。是的话卡片上会多一个「下架」按钮。
+         不是审核员的人，接口直接返回 isMod:false，按钮根本不会生成。 */
+      let isMod = false
+
+      async function loadModState() {
+        try {
+          const t = localStorage.getItem('lw-token') || ''
+          const res = await fetch('/api/mod', {
+            headers: t ? { Authorization: 'Bearer ' + t } : {},
+            cache: 'no-store',
+          })
+          const d = await res.json().catch(() => ({}))
+          isMod = !!(d && d.isMod)
+        } catch (e) {
+          isMod = false
+        }
+      }
+
+      /** 暂时下架一件作品。原因必填 —— 作者后台要照着它判断是否真删。 */
+      async function doHideWork(rec) {
+        const name = rec.workName || rec.name || '未命名'
+        const why = await lwPrompt('下架「' + name + '」\n\n写一句原因（作者会看到，用来决定是否删除）：', '')
+        if (why === null) return
+        const reason = String(why || '').trim()
+        if (!reason) {
+          await lwAlert('原因不能空着，作者需要知道为什么被下架。')
+          return
+        }
+        try {
+          const t = localStorage.getItem('lw-token') || ''
+          const res = await fetch('/api/mod', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t },
+            body: JSON.stringify({ action: 'hide', time: rec.time, reason }),
+          })
+          const d = await res.json().catch(() => ({}))
+          if (!d || !d.ok) {
+            await lwAlert((d && d.error) || '下架失败')
+            return
+          }
+          if (window.sfx) window.sfx('tick')
+          await lwAlert('已下架「' + name + '」。\n作品不会被删除，作者会在后台看到并决定。')
+          location.reload()
+        } catch (e) {
+          await lwAlert('网络错误')
+        }
       }
 
       const gallery = document.getElementById('gallery')
@@ -2757,6 +2825,14 @@ export default {
               gotoAuthor(rec)
             })
           }
+          // 审核员勋章：作者是审核员就挂一枚，别人一眼看得出谁在管社区
+          if (rec.isMod) {
+            const mb = document.createElement('span')
+            mb.className = 'mod-badge'
+            mb.textContent = '🛡️ 审核员'
+            mb.title = '社区审核员'
+            sub.appendChild(mb)
+          }
           const sizeBadge = document.createElement('span')
           sizeBadge.className = 'card-size'
           sizeBadge.textContent = rs + '×' + rs
@@ -2784,6 +2860,22 @@ export default {
               tw.appendChild(tg)
             })
             card.appendChild(tw)
+
+            /* 审核员的「暂时下架」按钮，直接长在卡片上 —— 用户要求就在列表里审，
+               不用再进后台。不是审核员的人根本不会走到这里。 */
+            if (isMod) {
+              const hb = document.createElement('button')
+              hb.className = 'mod-hide'
+              hb.type = 'button'
+              hb.textContent = '🛡️ 下架'
+              hb.title = '暂时不显示这件作品，交给作者决定是否删除'
+              hb.addEventListener('click', (e) => {
+                e.stopPropagation()
+                e.preventDefault()
+                doHideWork(rec)
+              })
+              card.appendChild(hb)
+            }
           }
           card.addEventListener('click', () => preview(rec))
           card.addEventListener('keydown', (e) => {
@@ -2882,7 +2974,9 @@ export default {
         countEl.textContent = msg
         sentinel.hidden = false
         sentinel.innerHTML = '<span class="lw-load"></span>加载中…'
-        loadMore()
+        /* 先查身份再拉列表：审核员的卡片要多长一个「下架」按钮。
+         查不到就当普通用户，不影响正常浏览。 */
+      loadModState().then(loadMore)
       }
 
       function renderChips() {

@@ -1,4 +1,27 @@
 import { recentHistory, readAllHistory, findIndexByTime, historyCount } from './_history.js'
+import { readActiveUser } from './_auth.js'
+import { readHiddenMap, readMods, readModBan } from './_mod.js'
+
+/* 被审核员暂时下架的作品，正常列表里不显示；审核员自己看得到（好操作「恢复」）。
+   下架记录存在一个键里，这里一次读出来，不是每件作品读一次。 */
+async function hiddenSet(env, request) {
+  const kv = env.LIGHTFIELD_KV
+  const who = await readActiveUser(env, '', request.headers.get('authorization')).catch(() => null)
+  let isMod = false
+  if (who && who.uid) {
+    const list = await readMods(kv)
+    if (list.some((m) => m.uid === who.uid)) isMod = !(await readModBan(kv, who.uid))
+  }
+  const map = await readHiddenMap(kv)
+  const set = new Set(Object.keys(map).map(Number))
+  return { set, isMod }
+}
+
+/** 把审核员标记挂到条目上，前端据此显示「审核员」勋章 */
+async function modUids(kv) {
+  const list = await readMods(kv)
+  return new Set(list.map((m) => m.uid))
+}
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -249,6 +272,16 @@ export async function onRequestGet(context) {
     const { entries } = await recentHistory(env.LIGHTFIELD_KV, { offset, limit: limitParam2 })
     history = entries.map(normalizeEntry).filter((e) => Array.isArray(e.pixels))
   }
+
+  /* 过滤被审核员暂时下架的作品。审核员自己看得到（不然没法操作「恢复」）。 */
+  const hid = await hiddenSet(env, request)
+  if (!hid.isMod && hid.set.size) {
+    history = history.filter((e) => !hid.set.has(Number(e.time)))
+    if (latest && hid.set.has(Number(latest.time))) latest = null
+  }
+  // 挂上审核员标记，前端据此显示勋章
+  const mods = await modUids(env.LIGHTFIELD_KV)
+  for (const e of history) if (e && mods.has(e.ownerUser)) e.isMod = true
 
   const noNew = after !== null && latest && latest.time === after
 

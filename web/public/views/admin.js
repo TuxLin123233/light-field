@@ -329,6 +329,42 @@ export default {
         justify-content: center;
       }
 
+      /* ---------- 审核员管理 ---------- */
+      .mod-list { display: flex; flex-direction: column; margin-top: 10px; }
+      .mod-row {
+        display: flex; align-items: center; gap: 8px;
+        padding: 10px 0; border-bottom: 1px solid var(--border);
+        font-size: 13px;
+      }
+      .mod-row:last-child { border-bottom: 0; }
+      .mod-row .mi { flex: 1; min-width: 0; }
+      .mod-row .mi b { display: block; color: var(--text); font-weight: 700; }
+      .mod-row .mi span { display: block; color: var(--text-faint); font-size: 11.5px; margin-top: 2px; }
+      .mod-row button {
+        flex: none; border: 1px solid var(--border-input); background: var(--surface-2);
+        color: var(--text-muted); border-radius: 999px; padding: 5px 11px;
+        font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
+      }
+      .mod-row button.danger { color: #c0392b; border-color: #eec9c2; background: #fff1ee; }
+      .mod-row button.ok { color: #2f6b3f; border-color: #cbe6d4; background: #e8f5ec; }
+      .mod-row .tag-banned {
+        font-size: 11px; font-weight: 700; color: #c0392b;
+        background: #fff1ee; border: 1px solid #eec9c2; border-radius: 999px; padding: 2px 7px;
+      }
+      .mod-add { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+      .mod-add input {
+        flex: 1; min-width: 120px; border: 1px solid var(--border-input);
+        border-radius: 10px; padding: 10px; font-family: inherit; font-size: 13px;
+        background: var(--surface); color: var(--text);
+      }
+      .mod-add button {
+        flex: none; border: 0; border-radius: 10px; padding: 10px 16px;
+        background: var(--accent); color: #fff;
+        font-family: inherit; font-size: 13px; font-weight: 800; cursor: pointer;
+      }
+      .hint { font-size: 12px; color: var(--text-faint); line-height: 1.7; margin-top: 10px; }
+      .hint b { color: var(--text-muted); }
+
       .mail-go {
         display: block;
         margin-top: 14px;
@@ -508,6 +544,31 @@ export default {
     </div>
 
     <div id="panel" hidden>
+      <!-- ============ 审核员管理 ============ -->
+      <div class="card">
+        <div class="card-title">审核员名单 <span id="modCount" style="font-weight:400;color:var(--text-faint)"></span></div>
+        <div id="modList" class="mod-list"><div class="empty">读取中…</div></div>
+        <div class="mod-add">
+          <input id="modUid" type="text" placeholder="要任命的用户 ID" autocomplete="off">
+          <input id="modName" type="text" placeholder="显示名（可留空）" autocomplete="off">
+          <button id="modAdd" type="button">任命为审核员</button>
+        </div>
+        <div class="hint">审核员只能<b>暂时下架</b>作品，不能删除、不能封号。下架原因必填，你在这里决定是恢复还是真删。</div>
+      </div>
+
+      <!-- ============ 待处理下架 ============ -->
+      <div class="card">
+        <div class="card-title">待处理下架 <span id="pendCount" style="font-weight:400;color:var(--text-faint)"></span></div>
+        <div id="pendList" class="mod-list"><div class="empty">读取中…</div></div>
+        <div class="hint">「恢复显示」会撤销下架，作品原样回到社区；「永久删除」不可撤销。</div>
+      </div>
+
+      <!-- ============ 审核员举报 ============ -->
+      <div class="card">
+        <div class="card-title">审核员举报 <span id="repCount" style="font-weight:400;color:var(--text-faint)"></span></div>
+        <div id="repList" class="mod-list"><div class="empty">读取中…</div></div>
+      </div>
+
       <div class="card">
         <div class="card-title">最新社区作品</div>
         <div class="latest" id="latestWrap">
@@ -657,6 +718,7 @@ export default {
             passInput.value = ''
             toast('口令验证通过')
             refresh()
+            loadModAdmin()
           } else {
             toast('口令错误')
           }
@@ -677,6 +739,201 @@ export default {
         panel.hidden = true
         loginCard.hidden = false
       })
+
+      /* ---------- 审核员管理 ----------
+         全站唯一能「真删作品」和「封审核员」的地方。
+         审核员自己做不到这两件事 —— 接口层面就没给他们。 */
+      const modListEl = document.getElementById('modList')
+      const pendListEl = document.getElementById('pendList')
+      const repListEl = document.getElementById('repList')
+      const modCountEl = document.getElementById('modCount')
+      const pendCountEl = document.getElementById('pendCount')
+      const repCountEl = document.getElementById('repCount')
+      const modUidEl = document.getElementById('modUid')
+      const modNameEl = document.getElementById('modName')
+      const modAddBtn = document.getElementById('modAdd')
+
+      async function adminMod(body) {
+        const res = await fetch('/api/admin/mod', {
+          method: body ? 'POST' : 'GET',
+          headers: body
+            ? { 'Content-Type': 'application/json', 'x-admin-key': getKey() }
+            : { 'x-admin-key': getKey() },
+          body: body ? JSON.stringify(body) : undefined,
+        })
+        return res.json().catch(() => ({}))
+      }
+
+      function emptyRow(text) {
+        const d = document.createElement('div')
+        d.className = 'empty'
+        d.textContent = text
+        return d
+      }
+
+      function modRow(title, sub, buttons) {
+        const row = document.createElement('div')
+        row.className = 'mod-row'
+        const mi = document.createElement('div')
+        mi.className = 'mi'
+        const b = document.createElement('b')
+        b.textContent = title
+        mi.appendChild(b)
+        const sp = document.createElement('span')
+        sp.textContent = sub
+        mi.appendChild(sp)
+        row.appendChild(mi)
+        ;(buttons || []).forEach(({ text, cls, fn }) => {
+          const btn = document.createElement('button')
+          btn.type = 'button'
+          btn.textContent = text
+          if (cls) btn.className = cls
+          btn.addEventListener('click', fn)
+          row.appendChild(btn)
+        })
+        return row
+      }
+
+      function fmtTime(t) {
+        const d = new Date(Number(t) || 0)
+        const p = (x) => String(x).padStart(2, '0')
+        return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes())
+      }
+
+      async function loadModAdmin() {
+        let d
+        try {
+          d = await adminMod(null)
+        } catch (e) {
+          d = {}
+        }
+        if (!d || !d.ok) {
+          modListEl.textContent = ''
+          modListEl.appendChild(emptyRow('读取失败，口令可能过期了'))
+          return
+        }
+
+        // 审核员名单
+        const mods = d.mods || []
+        modCountEl.textContent = mods.length ? '共 ' + mods.length + ' 人' : ''
+        modListEl.textContent = ''
+        if (!mods.length) {
+          modListEl.appendChild(emptyRow('还没有审核员。在下面输入用户 ID 任命一个。'))
+        } else {
+          mods.forEach((m) => {
+            const btns = []
+            if (m.banned) {
+              btns.push({
+                text: '恢复资格', cls: 'ok',
+                fn: async () => { await adminMod({ action: 'unban', uid: m.uid }); loadModAdmin() },
+              })
+            } else {
+              btns.push({
+                text: '暂停资格', cls: 'danger',
+                fn: async () => {
+                  const why = await lwPrompt('暂停「' + (m.name || m.uid) + '」的审核资格，写一句原因：', '')
+                  if (why === null) return
+                  if (!String(why).trim()) { await lwAlert('原因不能空'); return }
+                  await adminMod({ action: 'ban', uid: m.uid, reason: why })
+                  loadModAdmin()
+                },
+              })
+            }
+            btns.push({
+              text: '撤职', cls: 'danger',
+              fn: async () => {
+                if (!(await lwConfirm('把「' + (m.name || m.uid) + '」从审核员名单里移除？'))) return
+                await adminMod({ action: 'remove', uid: m.uid })
+                loadModAdmin()
+              },
+            })
+            const sub = m.uid + (m.banned ? ' · 已暂停：' + (m.banReason || '') : ' · ' + fmtTime(m.at) + ' 任命')
+            modListEl.appendChild(modRow(m.name || m.uid, sub, btns))
+          })
+        }
+
+        // 待处理下架
+        const pend = d.pending || []
+        pendCountEl.textContent = pend.length ? pend.length + ' 件待处理' : ''
+        pendListEl.textContent = ''
+        if (!pend.length) {
+          pendListEl.appendChild(emptyRow('没有待处理的下架。'))
+        } else {
+          pend.forEach((h) => {
+            pendListEl.appendChild(
+              modRow(
+                '作品时间 ' + h.time,
+                (h.byName || h.byUid || '?') + ' 于 ' + fmtTime(h.at) + ' 下架 · 原因：' + (h.reason || '无'),
+                [
+                  {
+                    text: '恢复显示', cls: 'ok',
+                    fn: async () => { await adminMod({ action: 'restore', time: h.time }); loadModAdmin() },
+                  },
+                  {
+                    text: '永久删除', cls: 'danger',
+                    fn: async () => {
+                      if (!(await lwConfirm('永久删除这件作品？\n\n不可撤销。\n时间：' + h.time))) return
+                      const r = await adminMod({ action: 'delete', time: h.time })
+                      if (!r || !r.ok) { await lwAlert((r && r.error) || '删除失败'); return }
+                      toast('已永久删除')
+                      loadModAdmin()
+                    },
+                  },
+                ]
+              )
+            )
+          })
+        }
+
+        // 审核员举报
+        const reps = d.reports || []
+        const open = reps.filter((r) => !r.handled)
+        repCountEl.textContent = open.length ? open.length + ' 条未处理' : reps.length ? '全部已处理' : ''
+        repListEl.textContent = ''
+        if (!reps.length) {
+          repListEl.appendChild(emptyRow('还没有审核员之间的举报。'))
+        } else {
+          reps.slice(0, 30).forEach((rp) => {
+            const btns = []
+            if (!rp.handled) {
+              btns.push({
+                text: '标记已处理',
+                fn: async () => { await adminMod({ action: 'handle', id: rp.id }); loadModAdmin() },
+              })
+              btns.push({
+                text: '暂停其资格', cls: 'danger',
+                fn: async () => {
+                  const why = await lwPrompt('暂停「' + (rp.targetName || rp.targetUid) + '」的资格，原因：', rp.reason || '')
+                  if (why === null) return
+                  await adminMod({ action: 'ban', uid: rp.targetUid, reason: why || '举报核实' })
+                  await adminMod({ action: 'handle', id: rp.id })
+                  loadModAdmin()
+                },
+              })
+            }
+            repListEl.appendChild(
+              modRow(
+                (rp.byName || rp.byUid) + ' 举报 ' + (rp.targetName || rp.targetUid),
+                fmtTime(rp.at) + ' · ' + (rp.reason || '') + (rp.handled ? '（已处理）' : ''),
+                btns
+              )
+            )
+          })
+        }
+      }
+
+      if (modAddBtn) {
+        modAddBtn.addEventListener('click', async () => {
+          const uid = (modUidEl.value || '').trim()
+          if (!uid) { toast('请填用户 ID'); return }
+          const r = await adminMod({ action: 'add', uid, name: (modNameEl.value || '').trim() })
+          if (!r || !r.ok) { await lwAlert((r && r.error) || '任命失败'); return }
+          modUidEl.value = ''
+          modNameEl.value = ''
+          toast('已任命')
+          loadModAdmin()
+        })
+      }
 
       async function refresh() {
         // 举报、封号与作品列表互不影响：任何一边失败另一边照样能看
