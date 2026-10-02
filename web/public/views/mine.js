@@ -714,9 +714,15 @@ export default {
       const back = $('mineBack')
       if (MODE === 'home') {
         if (back) back.hidden = true
+        /* ★ 主页不再显示「我的画」那一块（用户要求删掉，它在最底部，
+           每次进来都要滑很久才看到别的入口）。
+           注意是**隐藏**不是删掉元素 —— /mine/works 这个过滤页复用的
+           就是 #mineCard，删了那个页面会空白。
+           想看完整列表走「常去的地方」里「我的作品」那个入口。 */
         CARDS.forEach((id) => {
           const el = $(id)
-          if (el) el.hidden = false
+          if (!el) return
+          el.hidden = id === 'mineCard'
         })
         return
       }
@@ -1689,11 +1695,11 @@ export default {
           : '<div class="me-empty">还没给别人的画送过光尘</div>'
     }
 
-    $('lnkWorksBtn') &&
-      $('lnkWorksBtn').addEventListener('click', () => {
-        $('mineCard').scrollIntoView({ behavior: 'smooth', block: 'start' })
-        if (window.sfx) window.sfx('tap')
-      })
+    /* 这里原来有一段「滚到下面那张我的画卡片」的逻辑，
+       绑在 id=lnkWorksBtn 上 —— 但页面上**根本没有这个 id**，
+       「我的作品」是个 <router-link to="/mine/works">，自带跳转。
+       所以那段代码从来没生效过（$() 返回 null，&& 直接短路）。
+       现在主页也不显示那张卡片了，整段一并删掉。 */
     /* 底部那张「送过光尘的」卡片已经删了，所以这个入口改成直接跳到
        /mine/gifted 过滤页 —— 以前是「加载完再滚到卡片」，卡片没了会直接报错。 */
     $('lnkLikedBtn') &&
