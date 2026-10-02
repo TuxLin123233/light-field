@@ -1,3 +1,4 @@
+import { checkOrigin } from './_origin.js'
 // 关注与好友
 //
 //   GET  ?uid=xxx            某个人的关注状态（关注数/粉丝数/是否已关注/是否好友）
@@ -119,6 +120,11 @@ export async function onRequestGet(context) {
 
 export async function onRequestPost(context) {
   const { request, env } = context
+  // 改状态的请求必须来自本站
+  {
+    const g = checkOrigin(request)
+    if (!g.ok) return json(g.body, g.status)
+  }
   if (!env.LIGHTFIELD_KV) return json({ error: 'LIGHTFIELD_KV is not configured' }, 500)
 
   let body

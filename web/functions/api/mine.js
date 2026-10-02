@@ -1,3 +1,4 @@
+import { checkOrigin } from './_origin.js'
 // 「我自己的作品」：列出 / 统计 / 删除。
 // 归属只看登录账号（ownerUser）。认领码那套已整体移除，
 // 账号系统之前发布的老作品没有 ownerUser，属于无人认领的历史数据。
@@ -24,6 +25,11 @@ export async function onRequestOptions() {
 
 export async function onRequestPost(context) {
   const { request, env } = context
+  // 改状态的请求必须来自本站
+  {
+    const g = checkOrigin(request)
+    if (!g.ok) return json(g.body, g.status)
+  }
   if (!env.LIGHTFIELD_KV) return json({ error: 'LIGHTFIELD_KV is not configured' }, 500)
 
   let body

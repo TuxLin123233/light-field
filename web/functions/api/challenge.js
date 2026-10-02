@@ -1,3 +1,4 @@
+import { checkOrigin } from './_origin.js'
 // 每日挑战 API：GET 看今日题目与当日榜；POST 报名（写入 daily 字段）
 import { readAllHistory, markByTime, findByTime } from './_history.js'
 import { dailyInfo, todayId } from './_daily.js'
@@ -64,6 +65,11 @@ const INK_BLOCKED = new Set(['gravity'])
 
 export async function onRequestPost(context) {
   const { request, env } = context
+  // 改状态的请求必须来自本站
+  {
+    const g = checkOrigin(request)
+    if (!g.ok) return json(g.body, g.status)
+  }
   if (!env.LIGHTFIELD_KV) return json({ error: 'LIGHTFIELD_KV is not configured' }, 500)
 
   let body

@@ -1,3 +1,4 @@
+import { checkOrigin } from './_origin.js'
 // 审核员接口
 //
 //   GET                         我是不是审核员 + 当前被下架的作品列表
@@ -72,6 +73,11 @@ export async function onRequestGet(context) {
 
 export async function onRequestPost(context) {
   const { request, env } = context
+  // 改状态的请求必须来自本站，挡掉「拿别人浏览器当肉鸡」
+  {
+    const g = checkOrigin(request)
+    if (!g.ok) return json(g.body, g.status)
+  }
   if (!env.LIGHTFIELD_KV) return json({ error: 'LIGHTFIELD_KV is not configured' }, 500)
 
   let body

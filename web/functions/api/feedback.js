@@ -1,3 +1,6 @@
+import { checkOrigin } from './_origin.js'
+import { hitWords } from './_lexicon.js'
+import { hitTrade, checkText } from './_illegal.js'
 import { adminAuth } from './_adminauth.js'
 // 问题反馈：用户提意见，管理员在后台看与处理。
 //
@@ -132,6 +135,11 @@ export async function onRequestGet(context) {
 
 export async function onRequestPost(context) {
   const { request, env } = context
+  // 改状态的请求必须来自本站，挡掉「拿别人浏览器当肉鸡」
+  {
+    const g = checkOrigin(request)
+    if (!g.ok) return json(g.body, g.status)
+  }
   if (!env.LIGHTFIELD_KV) return json({ error: 'LIGHTFIELD_KV is not configured' }, 500)
 
   let body
@@ -201,6 +209,11 @@ export async function onRequestPost(context) {
 
   const note = String((body && body.note) || '').trim().slice(0, NOTE_MAX)
   if (note.length < 4) return json({ error: '多写几个字吧，至少 4 个' }, 400)
+  // 反馈是直接进后台给人看的，同样要过敏感词
+  {
+    const bad = checkText(note, { hitWords })
+    if (bad.length) return json({ error: '内容里有不合适的部分：' + bad.join('、') }, 400)
+  }
 
   const id = clientId(request)
   try {

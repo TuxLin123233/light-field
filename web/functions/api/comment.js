@@ -1,3 +1,4 @@
+import { checkOrigin } from './_origin.js'
 // 评论
 //
 //   GET  ?work=<time>            某幅作品的评论
@@ -9,7 +10,7 @@
 // 文本走和发布作品同一套敏感词过滤，但只提示、不静默丢弃。
 import { readActiveUser, readUser, BANNED_ERROR } from './_auth.js'
 import { hitWords } from './_lexicon.js'
-import { hitTrade } from './_illegal.js'
+import { hitTrade, checkText } from './_illegal.js'
 import { recentHistory, readAllHistory } from './_history.js'
 
 const CORS_HEADERS = {
@@ -120,6 +121,11 @@ export async function onRequestGet(context) {
 
 export async function onRequestPost(context) {
   const { request, env } = context
+  // 改状态的请求必须来自本站，挡掉「拿别人浏览器当肉鸡」
+  {
+    const g = checkOrigin(request)
+    if (!g.ok) return json(g.body, g.status)
+  }
   if (!env.LIGHTFIELD_KV) return json({ error: 'LIGHTFIELD_KV is not configured' }, 500)
 
   let body
@@ -153,7 +159,7 @@ export async function onRequestPost(context) {
     if (!exists) return json({ error: '这幅作品已经不在了' }, 404)
 
     // 敏感词：命中就拒，并告诉你是哪个词
-    const hit = hitWords(text, { minLen: 2 }).concat(hitTrade(text))
+    const hit = checkText(text, { hitWords })
     if (hit && hit.length) {
       return json({ error: '不合适的内容：' + hit.join('、'), hit }, 400)
     }

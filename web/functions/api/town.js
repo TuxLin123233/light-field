@@ -1,3 +1,6 @@
+import { checkOrigin } from './_origin.js'
+import { hitWords } from './_lexicon.js'
+import { hitTrade, checkText } from './_illegal.js'
 // 像素小镇 · 地图与个人小屋
 //
 //   GET  ?list=1                      小镇地图（不用登录）
@@ -159,6 +162,11 @@ export async function onRequestGet(context) {
 
 export async function onRequestPost(context) {
   const { request, env } = context
+  // 改状态的请求必须来自本站，挡掉「拿别人浏览器当肉鸡」
+  {
+    const g = checkOrigin(request)
+    if (!g.ok) return json(g.body, g.status)
+  }
   if (!env.LIGHTFIELD_KV) return json({ error: 'LIGHTFIELD_KV is not configured' }, 500)
   const kv = env.LIGHTFIELD_KV
 
@@ -247,6 +255,12 @@ export async function onRequestPost(context) {
   if (action === 'msg') {
     const to = String((body && body.to) || '').trim()
     if (!RE.test(to)) return json({ error: '参数不对' }, 400)
+    // 留言板别人能看到，走和聊天同一套过滤
+    {
+      const t = String((body && body.text) || '')
+      const bad = checkText(t, { hitWords })
+      if (bad.length) return json({ error: '留言里有不合适的内容：' + bad.join('、') }, 400)
+    }
     const list = await addMsg(kv, to, who.uid, who.username, body && body.text)
     if (!list) return json({ error: '说点什么再留吧' }, 400)
     return json({ ok: true, msgs: list })

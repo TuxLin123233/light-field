@@ -1,7 +1,8 @@
+import { checkOrigin } from './_origin.js'
 import { appendEntry, recentHistory, HISTORY_MAX } from './_history.js'
 import { contestInfo } from './_contest.js'
 import { hitWords } from './_lexicon.js'
-import { hitTrade } from './_illegal.js'
+import { hitTrade, checkText } from './_illegal.js'
 import { readActiveUser, pickToken, BANNED_ERROR } from './_auth.js'
 import { creditDust, dayStamp } from './_dust.js'
 import { inspectArtwork } from './_camera.js'
@@ -67,6 +68,11 @@ export async function onRequestOptions() {
 
 export async function onRequestPost(context) {
   const { request, env } = context
+  // 改状态的请求必须来自本站，挡掉「拿别人浏览器当肉鸡」
+  {
+    const g = checkOrigin(request)
+    if (!g.ok) return json(g.body, g.status)
+  }
 
   let body
   try {
@@ -194,10 +200,10 @@ export async function onRequestPost(context) {
   // 内容安全：作品名、作者名、标签任一命中敏感词就拒绝发布。
   // 词库只在服务端使用，不下发到浏览器，改前端也绕不过。
   // 分字段返回命中词：只说「不合规」用户根本不知道该改哪一项。
-  const hitName = hitWords(workName).concat(hitTrade(workName))
-  const hitAuthor = hitWords(author).concat(hitTrade(author))
+  const hitName = checkText(workName, { hitWords })
+  const hitAuthor = checkText(author, { hitWords })
   const hitTags = []
-  for (const t of entry.tags || []) hitTags.push(...hitWords(t), ...hitTrade(t))
+  for (const t of entry.tags || []) hitTags.push(...checkText(t, { hitWords }))
   const risky = hitName.concat(hitAuthor).concat(hitTags)
   if (risky.length) {
     const where = []

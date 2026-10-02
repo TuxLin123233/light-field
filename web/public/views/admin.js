@@ -647,21 +647,27 @@ export default {
       const reportList = document.getElementById('reportList')
       const reportCount = document.getElementById('reportCount')
       const clearAllBtn = document.getElementById('clearAllBtn')
+      // 老版本把口令存在 sessionStorage 里，清掉，别留着
+      try { sessionStorage.removeItem('adminKey') } catch (e) {}
+
       const logoutBtn = document.getElementById('logoutBtn')
 
-      const KEY = 'adminKey'
+      /* 后台口令**只存内存**，不落 sessionStorage 也不落 localStorage。
+         落盘的话，页面上任何一个 XSS 都能把口令读走 —— 那是整站后台。
+         代价是刷新要重输一次，这个代价值得付。 */
+      let adminKeyMem = ''
       const dpr = window.devicePixelRatio || 1
 
       function getKey() {
-        return sessionStorage.getItem(KEY) || ''
+        return adminKeyMem
       }
 
       function setKey(k) {
-        sessionStorage.setItem(KEY, k)
+        adminKeyMem = String(k || '')
       }
 
       function clearKey() {
-        sessionStorage.removeItem(KEY)
+        adminKeyMem = ''
       }
 
       function formatTime(ts) {

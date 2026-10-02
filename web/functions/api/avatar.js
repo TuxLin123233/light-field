@@ -1,3 +1,4 @@
+import { checkOrigin } from './_origin.js'
 // 头像接口
 //
 //   GET  ?uids=a,b,c   批量取头像（画社区列表时一次拿完，避免 N 次请求）
@@ -88,6 +89,11 @@ export async function onRequestGet(context) {
 
 export async function onRequestPost(context) {
   const { request, env } = context
+  // 改状态的请求必须来自本站
+  {
+    const g = checkOrigin(request)
+    if (!g.ok) return json(g.body, g.status)
+  }
   if (!env.LIGHTFIELD_KV) return json({ error: 'LIGHTFIELD_KV is not configured' }, 500)
 
   let body

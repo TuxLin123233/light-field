@@ -1,5 +1,6 @@
+import { checkOrigin } from './_origin.js'
 import { hitWords } from './_lexicon.js'
-import { hitTrade } from './_illegal.js'
+import { hitTrade, checkText } from './_illegal.js'
 // 私信（非实时）
 //
 //   GET  ?with=<uid>            我和某个人的对话
@@ -37,20 +38,7 @@ const json = (body, status = 200) =>
 
 /* 文本检查统一走这里：主词库（政治/色情）+ 交易词表（引流/违法交易）。
    返回命中的词数组，空数组表示没问题。不抛异常 —— 抛出去没人接就变 500。 */
-function badWords(text) {
-  const t = String(text || '')
-  if (!t) return []
-  /* 主词库用 minLen:3，不用 2。
-     那 50837 条是从全网 dump 的，里面收了「北京」「河南」「东北」这类地名，
-     两字就匹配的话，「我在北京画的」会被拦 —— 聊天本来没过滤，
-     接上主词库反而引入误伤，不如只拦三字以上的明确敏感词。
-     交易/引流那部分（hitTrade）是人工整理的，没有这个问题，照常查。 */
-  /* 主词库里有一堆**碎片条目**（"河南的"、"我在北京" 这种从长句里切出来的），
-     它们会误伤正常聊天。判据：命中词里带虚词/代词基本就是碎片，不是真敏感词。 */
-  const FRAG = /[的了着过是在有和与我你他她它这那就都也还很更把被给对从到]/
-  const strict = hitWords(t, { minLen: 3 }).filter((w) => !FRAG.test(w))
-  return [...new Set(strict.concat(hitTrade(t)))]
-}
+
 
 export async function onRequestOptions() {
   return new Response(null, { status: 204, headers: CORS_HEADERS })
@@ -292,6 +280,11 @@ export async function onRequestGet(context) {
 
 export async function onRequestPost(context) {
   const { request, env } = context
+  // 改状态的请求必须来自本站，挡掉「拿别人浏览器当肉鸡」
+  {
+    const g = checkOrigin(request)
+    if (!g.ok) return json(g.body, g.status)
+  }
   if (!env.LIGHTFIELD_KV) return json({ error: 'LIGHTFIELD_KV is not configured' }, 500)
 
   let body
@@ -339,7 +332,7 @@ export async function onRequestPost(context) {
       if (!text) return json({ error: '说点什么再发吧' }, 400)
       /* 敏感词：政治/色情走主词库，交易/站外引流走 _illegal。
          两个都要查 —— 主词库偏政治色情，「加我微信转账」这类它一条都不含。 */
-      const bad = badWords(text)
+      const bad = checkText(text, { hitWords })
       if (bad.length) {
         return json({ error: '消息里有不合适的内容：' + bad.join('、'), hit: bad }, 400)
       }
@@ -363,7 +356,7 @@ export async function onRequestPost(context) {
       })
       item.dust = amt
       const note = String((body && body.text) || '').replace(/\s+/g, ' ').trim().slice(0, MAX_LEN)
-      const badNote = badWords(note)
+      const badNote = checkText(note, { hitWords })
       if (badNote.length) {
         return json({ error: '附言里有不合适的内容：' + badNote.join('、'), hit: badNote }, 400)
       }

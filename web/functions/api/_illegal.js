@@ -91,3 +91,29 @@ export function hitTrade(text) {
 export function hasTrade(text) {
   return hitTrade(text).length > 0
 }
+
+
+/* ============ 全站统一的文本检查 ============ */
+
+/* 碎片判据：命中词里带虚词/代词，基本就是从长句里切出来的片段，
+   不是真的敏感词。主词库实测有「河南的」「我在北京」这类条目。 */
+const FRAGMENT = /[的了着过是在有和与我你他她它这那就都也还很更把被给对从到]/
+
+/**
+ * 检查一段用户文本。
+ * 主词库用 minLen:3 并过滤碎片 —— 2 字的话「北京」「河南」全中，
+ * 正常聊天会被大量误伤。交易/引流表是人工整理的，没有这个问题。
+ * @returns {string[]} 命中的词（去重），空数组表示没问题
+ */
+export function checkText(text, lexicon) {
+  const t = String(text || '')
+  if (!t) return []
+  const out = []
+  if (lexicon && typeof lexicon.hitWords === 'function') {
+    for (const w of lexicon.hitWords(t, { minLen: 3 })) {
+      if (!FRAGMENT.test(w)) out.push(w)
+    }
+  }
+  out.push(...hitTrade(t))
+  return [...new Set(out)]
+}

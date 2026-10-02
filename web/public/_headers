@@ -1,23 +1,26 @@
-# 页面与脚本不缓存：这个站经常改动，7 天缓存会让改动迟迟看不到
+# Cloudflare Pages 的响应头配置
+#
+# 加的是浏览器层的最后一道防线：就算代码里哪天混进一个 XSS，
+# 有 CSP 也执行不了、偷不走东西。
+
 /*
-  Cache-Control: public, max-age=0, must-revalidate
+  # 只允许加载本站资源。内联脚本和 eval 必须放行 ——
+  # Vue 用的是运行时编译版本（vue.global.prod.js），模板是运行时编译的。
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; media-src 'self' blob:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests
+  # 禁止被嵌进别人的 iframe 里（点击劫持）
+  X-Frame-Options: DENY
+  # 别让浏览器猜 MIME 类型
+  X-Content-Type-Options: nosniff
+  # 跳去外站时不带完整地址（避免把站内路径漏给第三方）
+  Referrer-Policy: strict-origin-when-cross-origin
+  # 用不到的浏览器能力直接关掉
+  Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=()
 
-# 静态图片可以放心长缓存
-/images/*
-  Cache-Control: public, max-age=604800
+# 静态资源可以长缓存
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
 
-/favicon.ico
-  Cache-Control: public, max-age=604800
-
-# Service Worker 必须允许根路径拿到，否则离线能力失效
-/sw.js
-  Cache-Control: public, max-age=0, must-revalidate
-  Service-Worker-Allowed: /
-
-# PWA 清单与图标
-/manifest.webmanifest
-  Content-Type: application/manifest+json
-  Cache-Control: public, max-age=604800
-
-/icons/*
-  Cache-Control: public, max-age=604800
+# 接口一律不缓存，也不许被嵌
+/api/*
+  Cache-Control: no-store
+  X-Frame-Options: DENY

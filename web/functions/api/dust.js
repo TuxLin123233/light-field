@@ -1,3 +1,4 @@
+import { checkOrigin } from './_origin.js'
 // 光尘账本接口（登录用户）
 //
 //   GET  ?action=me     取账本
@@ -50,6 +51,11 @@ export async function onRequestGet(context) {
 
 export async function onRequestPost(context) {
   const { request, env } = context
+  // 改状态的请求必须来自本站
+  {
+    const g = checkOrigin(request)
+    if (!g.ok) return json(g.body, g.status)
+  }
   if (!env.LIGHTFIELD_KV) return json({ error: 'LIGHTFIELD_KV is not configured' }, 500)
 
   let body

@@ -1,3 +1,4 @@
+import { checkOrigin } from './_origin.js'
 import { adminAuth } from './_adminauth.js'
 // 封号管理（仅管理员）
 //
@@ -92,6 +93,11 @@ export async function onRequestGet(context) {
 
 export async function onRequestPost(context) {
   const { request, env } = context
+  // 改状态的请求必须来自本站，挡掉「拿别人浏览器当肉鸡」
+  {
+    const g = checkOrigin(request)
+    if (!g.ok) return json(g.body, g.status)
+  }
   const gate = await adminAuth(env, request)
   if (!gate.ok) return json(gate.body, gate.status)
   if (!env.LIGHTFIELD_KV) return json({ error: 'LIGHTFIELD_KV is not configured' }, 500)

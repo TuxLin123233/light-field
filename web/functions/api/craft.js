@@ -1,3 +1,4 @@
+import { checkOrigin } from './_origin.js'
 // 合成台与背包
 //
 //   GET                     背包 + 配方表（含每样还差多少）
@@ -85,6 +86,11 @@ export async function onRequestGet(context) {
 
 export async function onRequestPost(context) {
   const { request, env } = context
+  // 改状态的请求必须来自本站
+  {
+    const g = checkOrigin(request)
+    if (!g.ok) return json(g.body, g.status)
+  }
   if (!env.LIGHTFIELD_KV) return json({ error: 'LIGHTFIELD_KV is not configured' }, 500)
 
   let body

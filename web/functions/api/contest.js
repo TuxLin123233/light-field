@@ -1,3 +1,4 @@
+import { checkOrigin } from './_origin.js'
 import { recentHistory, incrementContestVotes } from './_history.js'
 import { contestInfo, contestByWeek } from './_contest.js'
 
@@ -93,6 +94,11 @@ export async function onRequestGet(context) {
 
 export async function onRequestPost(context) {
   const { request, env } = context
+  // 改状态的请求必须来自本站
+  {
+    const g = checkOrigin(request)
+    if (!g.ok) return json(g.body, g.status)
+  }
 
   let body
   try {

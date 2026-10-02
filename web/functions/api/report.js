@@ -1,3 +1,6 @@
+import { checkOrigin } from './_origin.js'
+import { hitWords } from './_lexicon.js'
+import { hitTrade, checkText } from './_illegal.js'
 import { adminAuth } from './_adminauth.js'
 // 举报：用户提交违规内容举报，管理员在后台查看与处理。
 // 存储：KV key `reports`（待处理） / `reports:log`（已处理留档）
@@ -90,6 +93,11 @@ export async function onRequestGet(context) {
 
 export async function onRequestPost(context) {
   const { request, env } = context
+  // 改状态的请求必须来自本站，挡掉「拿别人浏览器当肉鸡」
+  {
+    const g = checkOrigin(request)
+    if (!g.ok) return json(g.body, g.status)
+  }
 
   if (!env.LIGHTFIELD_KV) return json({ error: 'LIGHTFIELD_KV is not configured' }, 500)
 
@@ -155,6 +163,11 @@ export async function onRequestPost(context) {
 
     const reason = String((body && body.reason) || '').trim().slice(0, 20) || '其他'
     const note = String((body && body.note) || '').trim().slice(0, 200)
+  // 举报补充说明是用户自由填写的，同样过一遍
+  {
+    const bad = checkText(note, { hitWords })
+    if (bad.length) return json({ error: '说明里有不合适的部分：' + bad.join('、') }, 400)
+  }
 
     const pending = await readList(env.LIGHTFIELD_KV, PENDING_KEY)
     // 同一个人对同一个账号只留一条

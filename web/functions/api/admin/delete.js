@@ -1,3 +1,4 @@
+import { checkOrigin } from '../_origin.js'
 import { adminAuth } from '../_adminauth.js'
 import { removeByTime } from '../_history.js'
 
@@ -19,6 +20,11 @@ export async function onRequestOptions() {
 
 export async function onRequestPost(context) {
   const { request, env } = context
+  // 改状态的请求必须来自本站，挡掉「拿别人浏览器当肉鸡」
+  {
+    const g = checkOrigin(request)
+    if (!g.ok) return json(g.body, g.status)
+  }
 
   const gate = await adminAuth(env, request)
   if (!gate.ok) return json(gate.body, gate.status)
