@@ -309,21 +309,32 @@ DATA.surfaces.slice(0,24).forEach(s=>{const d=document.createElement('div');d.cl
 /* 7 五套配色 —— 每套 16 色，色块放大到 27px，一行放得下 */
 (function(){
  const box=document.createElement('div');
- box.style.cssText='width:100%;display:flex;flex-direction:column;gap:11px';
+ box.style.cssText='width:100%;display:flex;flex-direction:column;gap:17px';
  DATA.themes.forEach(t=>{
   const d=document.createElement('div');
   d.style.cssText='display:flex;align-items:center;justify-content:center';
   const b=document.createElement('b');
-  b.style.cssText='font-size:15px;color:#3b342c;font-weight:700;width:46px;flex:none;text-align:right;padding-right:8px';
+  b.style.cssText='font-size:16px;color:#3b342c;font-weight:700;width:52px;flex:none;text-align:right;padding-right:10px';
   b.textContent=t.name; d.appendChild(b);
   const sw=document.createElement('div');
   sw.style.cssText='display:flex;flex-wrap:nowrap';
   Object.keys(t.pal).forEach(k=>{const q=t.pal[k];const i=document.createElement('i');
-   i.style.cssText='display:block;width:22px;height:22px;border-radius:6px;margin-right:2px;border:1px solid rgba(0,0,0,.06);background:rgb('+q[0]+','+q[1]+','+q[2]+')';
+   i.style.cssText='display:block;width:27px;height:27px;border-radius:7px;margin-right:2px;border:1px solid rgba(0,0,0,.06);background:rgb('+q[0]+','+q[1]+','+q[2]+')';
    sw.appendChild(i)});
   d.appendChild(sw); box.appendChild(d);
  });
- put('t7',box);
+ // 再补一行界面配色，把下半截填上
+ const ui=document.createElement('div');
+ ui.style.cssText='display:flex;align-items:center;justify-content:center;margin-top:19px';
+ const ub=document.createElement('b');
+ ub.style.cssText='font-size:16px;color:#3b342c;font-weight:700;width:52px;flex:none;text-align:right;padding-right:10px';
+ ub.textContent='界面'; ui.appendChild(ub);
+ [['#faf5ef'],['#ffffff'],['#3b342c'],['#efe7da'],['#5b8def'],['#d1944d'],['#e5574b']].forEach(([hex])=>{
+  const i=document.createElement('i');
+  i.style.cssText='display:block;width:27px;height:27px;border-radius:7px;margin-right:2px;border:1px solid rgba(0,0,0,.06);background:'+hex;
+  ui.appendChild(i);
+ });
+ put('t7',box); put('t7',ui);
 })();
 
 /* 8 卡片 —— 3 张作品卡 + 4 张数据卡 + 2 张入口卡 */
