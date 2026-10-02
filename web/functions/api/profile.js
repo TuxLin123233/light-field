@@ -80,6 +80,15 @@ export async function onRequestGet(context) {
     ok: true,
     uid: user.uid,
     isMod: await (async () => { try { const { isMod } = await import('./_mod.js'); return await isMod(env.LIGHTFIELD_KV, user.uid) } catch (e) { return false } })(),
+    // 这个人下架过多少件 —— 主页上给审核员一个「干了多少活」的交代
+    modHides: await (async () => {
+      try {
+        const { listHidden, isMod } = await import('./_mod.js')
+        if (!(await isMod(env.LIGHTFIELD_KV, user.uid))) return 0
+        const all = await listHidden(env.LIGHTFIELD_KV)
+        return all.filter((h) => h && h.byUid === user.uid).length
+      } catch (e) { return 0 }
+    })(),
     username: user.username,
     bio: user.bio || '',
     // 选了默认头像的人这里给 null，前端会画 uid 生成的默认头像

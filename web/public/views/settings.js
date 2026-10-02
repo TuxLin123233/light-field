@@ -1088,7 +1088,7 @@ export default {
           <span class="entry-ico">📄</span>
           <span class="entry-body">
             <span class="entry-label">使用条款</span>
-            <div class="entry-desc">服务说明与规范</div>
+            <div class="entry-desc">我下架过哪些作品 · 误下架可以一键恢复</div>
           </span>
           <span class="entry-arrow">›</span>
         </router-link>
@@ -1113,11 +1113,11 @@ export default {
       <section class="group">
         <div class="group-title">联系与社区</div>
         <div class="contact-card">
-          <router-link class="entry" to="/admin">
+          <router-link class="entry" to="/mod">
             <span class="entry-ico">🛡️</span>
             <span class="entry-body">
-              <span class="entry-label">维护社区稳定</span>
-              <div class="entry-desc">审核社区内容 · 由作者在后台添加</div>
+              <span class="entry-label">审核记录</span>
+              <div class="entry-desc">我下架过哪些作品 · 误下架可以一键恢复</div>
             </span>
             <span class="entry-arrow">›</span>
           </router-link>

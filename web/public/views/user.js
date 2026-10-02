@@ -58,6 +58,10 @@ export default {
       .u-av canvas { width: 100%; height: 100%; image-rendering: pixelated; display: block; }
       .u-id { flex: 1; min-width: 0; }
       .u-name { font-size: 17px; font-weight: 800; color: var(--text); }
+      .u-modline {
+        font-size: 12px; color: var(--text-muted); margin-top: 5px;
+      }
+      .u-modline b { color: #2f6b3f; font-size: 14px; font-weight: 800; }
       .u-name .mod-badge {
         font-size: 11px; font-weight: 700; color: #2f6b3f; background: #e8f5ec;
         border: 1px solid #cbe6d4; border-radius: 999px; padding: 2px 8px;
@@ -388,6 +392,9 @@ export default {
         '<div class="u-av" id="uAv">' + avBox + '</div>' +
         '<div class="u-id">' +
         '<div class="u-name">' + esc(profile.username) + (profile.isMod ? ' <span class="mod-badge">🛡️ 审核员</span>' : '') + (profile.todayBirthday ? ' 🎂' : '') + '</div>' +
+        (profile.isMod
+          ? '<div class="u-modline">🛡️ 已审核下架 <b>' + (Number(profile.modHides) || 0) + '</b> 件</div>'
+          : '') +
         (joined ? '<div class="u-joined">' + esc(joined) + '</div>' : '') +
         tagHtml +
         (profile.bio ? '<div class="u-bio">' + esc(profile.bio) + '</div>' : '') +

@@ -5,6 +5,7 @@ import gallery from './views/gallery.js'
 import settings from './views/settings.js'
 import changelog from './views/changelog.js'
 import admin from './views/admin.js'
+import modPanel from './views/mod.js'
 import terms from './views/terms.js'
 import faq from './views/faq.js'
 import mine from './views/mine.js'
@@ -132,6 +133,7 @@ const routes = [
   { path: '/settings', component: withAutoCleanup(settings) },
   { path: '/changelog', component: withAutoCleanup(changelog) },
   { path: '/admin', component: withAutoCleanup(admin) },
+  { path: '/mod', component: withAutoCleanup(modPanel) },
   { path: '/terms', component: withAutoCleanup(terms) },
   { path: '/faq', component: withAutoCleanup(faq) },
   { path: '/:pathMatch(.*)*', redirect: resolveEntrance },
