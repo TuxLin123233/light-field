@@ -11,6 +11,9 @@ import { computeMetrics } from './_achieve.js'
 import { recentHistory } from './_history.js'
 import { readAvatar } from './_avatar.js'
 import { deliver } from './_mail.js'
+import { readHouse, readMsgs, surfaceById, furnitureById, DEFAULT_WALL, DEFAULT_FLOOR } from './_town.js'
+import { readBag } from './_craft.js'
+import { followStats } from './_follow.js'
 import { TASKS, PER_DAY, TOTAL, periodOf, todaysTasks, viewTasks } from './_dailytask.js'
 
 const CORS_HEADERS = {
@@ -43,18 +46,71 @@ async function readClaims(kv, uid, period) {
   }
 }
 
-/** 组出这个账号当前的指标，额外补两个任务专用字段 */
+/** 组出这个账号当前的指标，额外补一批「任务专用字段」。
+
+    成就指标（computeMetrics）只认作品历史和光尘账本，
+    而小镇、商店、好友这些数据各存在自己的 key 里、彼此不通 ——
+    所以这里按「一个指标一次读」的原则补进去，读法与 town/craft/follow
+    保持一致（宁可读各自的原始记录，也不给它们另建一份汇总，
+    省一次写、也不会和真实数据对不上）。
+
+    全部并发读，多加几个指标不会让接口变慢。 */
 async function metricsFor(kv, uid, user) {
-  const [book, av, { entries }] = await Promise.all([
+  const [book, av, { entries }, house, bag, follow, msgs] = await Promise.all([
     readBook(kv, uid),
     readAvatar(kv, uid),
     recentHistory(kv, { limit: 400 }),
+    readHouse(kv, uid),
+    readBag(kv, uid),
+    followStats(kv, uid),
+    readMsgs(kv, uid),
   ])
   const m = computeMetrics(entries, book, user)
-  // 这两个不在成就指标里，但任务要用
+
+  /* 这两个不在成就指标里，但任务要用 */
   m.hasAvatar = av ? 1 : 0
   m.hasBio = user && user.bio ? 1 : 0
+
+  /* 小镇与商店。owned 里塞着白送的墙纸地板（readHouse 会补），
+     所以比较时要用「同一种东西算一个」，别把白送的算进家具件数。 */
+  const ownedFurn = (house.owned || []).filter((x) => x && !isSurfaceId(x)).length
+  m.furnOwned = ownedFurn
+  m.furnPlaced = (house.items || []).length
+  m.houseSize = (house.items || []).length
+  m.hasWallpaper = hasCustomSurface(house) ? 1 : 0
+
+  /* 材料：累计捡到过多少。背包只存「当前持有」，
+     用完了会归零，所以这里只能表达「手里攒过多少」，
+     不是历史总量 —— 名字也就叫 matsHeld，别写成 matsTotal 骗人。 */
+  let matsHeld = 0
+  const bagMat = (bag && bag.mat) || {}
+  for (const k in bagMat) {
+    const n = Number(bagMat[k])
+    if (Number.isFinite(n) && n > 0) matsHeld += n
+  }
+  m.matsHeld = matsHeld
+  m.hasCrystal = bagMat.crystal ? 1 : 0
+
+  /* 社交。follow-out/in 是两把独立的集合，串门数没法从上面推 ——
+     「被串门」这件事只留在别人家的留言板上，我们自己这边查不到，
+     所以不编一个假的「串门次数」指标出来。 */
+  m.friendsOut = (follow && follow.following) || 0
+  m.friendsIn = (follow && follow.followers) || 0
+  m.msgGot = (msgs || []).length
+
   return { metrics: m, book }
+}
+
+/** owned 里混着家具 id 和贴面 id，家具件数要排除后者 */
+function isSurfaceId(id) {
+  return !!(surfaceById(id) && !furnitureById(id))
+}
+
+function hasCustomSurface(house) {
+  const w = surfaceById(house.wall)
+  const f = surfaceById(house.floor)
+  // 默认那两套不算「换过」，非默认才算
+  return !!(w && w.id !== DEFAULT_WALL) || !!(f && f.id !== DEFAULT_FLOOR)
 }
 
 export async function onRequestGet(context) {

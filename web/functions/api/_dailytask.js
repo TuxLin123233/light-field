@@ -58,6 +58,22 @@ const M = {
   g_twice: '一天画两幅',
   g_mixsize: '用过多种尺寸',
   g_only16: '只画 16×16',
+
+  /* ---- 小镇 / 商店 / 社交 ----
+     这一批指标不在 computeMetrics 里（那里只认作品历史和光尘账本），
+     由 dailytask.js 的 metricsFor 单独读小屋、背包、关注、留言补上。
+     加它们的理由：任务池原先 100 条全是画画行为，
+     小镇、背包合成、串门留言、加好友这些功能一个指标都没有 ——
+     玩家把这些玩熟了，任务进度一点不动。 */
+  furnOwned: '收藏家具',
+  furnPlaced: '摆出家具',
+  houseSize: '小屋有多大',
+  hasWallpaper: '换过墙纸',
+  matsHeld: '攒到的材料',
+  hasCrystal: '捡到晶石',
+  friendsOut: '关注了谁',
+  friendsIn: '有多少人关注',
+  msgGot: '收到留言',
 }
 
 /**
@@ -194,6 +210,35 @@ const POOL = [
   { metric: 'g_early', target: 1, text: '在社区满 30 天了', dust: 6 },
   { metric: 'g_senior', target: 1, text: '在社区满 180 天了', dust: 7 },
   { metric: 'g_veteran', target: 1, text: '坚持创作满 100 天', dust: 8 },
+
+  /* ---- 小镇 / 商店 / 社交 ----
+     每类都从易到难给几档，和上面一样。dust 比同类画画任务略高一点：
+     家具、合成、串门这些是有成本的（要花光尘、要跑几趟采集），
+     给太薄没人愿意做。 */
+  { metric: 'furnOwned', target: 1, text: '收藏 {n} 件家具', dust: 3 },
+  { metric: 'furnOwned', target: 5, text: '收藏 {n} 件家具', dust: 5 },
+  { metric: 'furnOwned', target: 15, text: '收藏 {n} 件家具', dust: 8 },
+  { metric: 'furnOwned', target: 40, text: '收藏 {n} 件家具', dust: 12 },
+  { metric: 'furnPlaced', target: 1, text: '往屋里摆 {n} 件家具', dust: 3 },
+  { metric: 'furnPlaced', target: 4, text: '往屋里摆 {n} 件家具', dust: 5 },
+  { metric: 'furnPlaced', target: 10, text: '往屋里摆 {n} 件家具', dust: 8 },
+  { metric: 'furnPlaced', target: 20, text: '往屋里摆 {n} 件家具', dust: 11 },
+  { metric: 'houseSize', target: 24, text: '把小屋扩到 {n}×{n}', dust: 10 },
+  { metric: 'houseSize', target: 32, text: '把小屋扩到 {n}×{n}', dust: 18 },
+  { metric: 'hasWallpaper', target: 1, text: '给小屋换一套墙纸或地板', dust: 4 },
+  { metric: 'matsHeld', target: 5, text: '手里攒到 {n} 份材料', dust: 3 },
+  { metric: 'matsHeld', target: 15, text: '手里攒到 {n} 份材料', dust: 5 },
+  { metric: 'matsHeld', target: 30, text: '手里攒到 {n} 份材料', dust: 7 },
+  { metric: 'hasCrystal', target: 1, text: '捡到一块晶石', dust: 6 },
+  { metric: 'friendsOut', target: 1, text: '关注 {n} 个人', dust: 3 },
+  { metric: 'friendsOut', target: 3, text: '关注 {n} 个人', dust: 4 },
+  { metric: 'friendsOut', target: 10, text: '关注 {n} 个人', dust: 6 },
+  { metric: 'friendsIn', target: 1, text: '有 {n} 个人关注你', dust: 4 },
+  { metric: 'friendsIn', target: 3, text: '有 {n} 个人关注你', dust: 5 },
+  { metric: 'friendsIn', target: 10, text: '有 {n} 个人关注你', dust: 8 },
+  { metric: 'msgGot', target: 1, text: '收到 {n} 条留言', dust: 4 },
+  { metric: 'msgGot', target: 3, text: '收到 {n} 条留言', dust: 6 },
+  { metric: 'msgGot', target: 8, text: '收到 {n} 条留言', dust: 9 },
 ]
 
 /** 布尔型指标，达标就是 true */
@@ -201,6 +246,7 @@ const BOOL_METRICS = new Set([
   'hasAvatar', 'hasBio',
   'g_night', 'g_dawn', 'g_morning', 'g_noon', 'g_afternoon', 'g_evening',
   'g_twice', 'g_mixsize', 'g_only16', 'g_early', 'g_senior', 'g_veteran',
+  'hasWallpaper', 'hasCrystal',
 ])
 
 /** 任务总数上限。池子里的条目多于它，按指标轮转取前 TOTAL 个，
