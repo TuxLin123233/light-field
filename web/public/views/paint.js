@@ -660,16 +660,28 @@ color: var(--text-muted);
         right: 12px;
         z-index: 40;
         pointer-events: auto;
-        width: 30px;
-        height: 30px;
-        border-radius: 10px;
+        /* 显式方形 + flex 居中。原来只写了 width/height，
+           但按钮默认是 inline-block、内容居中靠行高，
+           一旦被别处的 button 规则改掉 display 或 line-height，
+           就会变成一个横向长条（用户实际遇到的）。 */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 34px;
+        height: 34px;
+        min-width: 34px;
+        max-width: 34px;
+        flex: none;
+        border-radius: 11px;
         border: 2px solid var(--border);
         background: var(--surface);
         color: var(--text-muted);
-        font-size: 15px;
+        font-size: 16px;
+        line-height: 1;
         cursor: pointer;
         box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
         padding: 0;
+        box-sizing: border-box;
       }
 
       .tools {
@@ -3020,15 +3032,21 @@ color: var(--text-muted);
       }
       readMiniPref()
 
-      const MINI = MINI_SIZES[miniSize]
-      miniCanvas.width = miniCanvas.height = MINI * dpr
-      miniCanvas.style.width = MINI + 'px'
-      miniCanvas.style.height = MINI + 'px'
+      /* ★ 不要再存一个 MINI 常量。
+         切尺寸只改 miniSize，常量还留着旧值 —— clampMiniPos 和默认位置
+         会按旧尺寸算，换到「大」之后可能会越界。
+         统一走 curMini() 现算。 */
+      function curMini() {
+        return MINI_SIZES[miniSize] || 120
+      }
+      miniCanvas.width = miniCanvas.height = curMini() * dpr
+      miniCanvas.style.width = curMini() + 'px'
+      miniCanvas.style.height = curMini() + 'px'
 
       /* 把位置夹在视口内，别让小地图被拖到看不见的地方 */
       function clampMiniPos(x, y) {
-        const w = MINI + 12
-        const h = MINI + 12
+        const w = curMini() + 12
+        const h = curMini() + 12
         const maxX = Math.max(4, window.innerWidth - w - 4)
         const maxY = Math.max(4, window.innerHeight - h - 4)
         return { x: Math.max(4, Math.min(maxX, x)), y: Math.max(4, Math.min(maxY, y)) }
@@ -3036,7 +3054,7 @@ color: var(--text-muted);
       function applyMiniPos() {
         if (!miniPos) {
           // 默认：右上角，但要避开顶部栏和缩放条
-          miniPos = clampMiniPos(window.innerWidth - (MINI + 12) - 12, 96)
+          miniPos = clampMiniPos(window.innerWidth - (curMini() + 12) - 12, 96)
         } else {
           miniPos = clampMiniPos(miniPos.x, miniPos.y)
         }
@@ -4135,6 +4153,8 @@ color: var(--text-muted);
         miniShow.addEventListener('click', () => {
           miniOpen = true
           updateMiniVis()
+          // 展开后把位置重新夹一次（窗口大小可能变了）
+          try { applyMiniPos() } catch (e) {}
         })
       if (miniHide)
         miniHide.addEventListener('click', () => {

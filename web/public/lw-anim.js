@@ -266,8 +266,12 @@ html[data-theme='dark'] .lwa-shine::after {
 .card-title, .group-title, .mp-head h1 {
   position: relative;
 }
+/* 同上：卡片也只用 opacity。
+   卡片里可能嵌着 fixed 的浮层（.card-overlay / .preview-overlay 都在
+   .page 下、但二级页面里也有嵌在卡片里的），带 transform 会让它们
+   在动画那 300ms 里跳到卡片坐标系里去。 */
 .page > .card, .page > section {
-  animation: lwa-scale-in .32s cubic-bezier(.2,1.15,.4,1) both;
+  animation: lwa-fade .3s ease-out both;
 }
 /* 卡片依次错开，避免整页同时弹 */
 .page > .card:nth-of-type(1), .page > section:nth-of-type(1) { animation-delay: .02s }
@@ -287,6 +291,123 @@ html[data-theme='dark'] .lwa-shine::after {
 }
 /* 点按时的图标反馈 */
 .entry:active .entry-ico, .m-link:active .ml-ico { transform: scale(.92) }
+
+/* ============ 第三批：直接套在站内已有元素上 ============ */
+/* 全部用「已有的类名」，不改视图就能生效 */
+
+/* 作品卡片：进场时轻轻浮起 + 缩放入场。用 :nth-child 做前几个错开 */
+@keyframes lwa-card-in {
+  from { opacity: 0; transform: translateY(10px) scale(.97) }
+  to   { opacity: 1; transform: none }
+}
+.card, .mine-item, .tw-item, .bg-item, .mp-row, .mod-row {
+  animation: lwa-card-in .34s cubic-bezier(.2,1.12,.4,1) both;
+}
+/* 只给前 12 个错开，再多就一起出现，不然往下滚要等很久才看到内容 */
+.card:nth-child(1), .mine-item:nth-child(1), .tw-item:nth-child(1) { animation-delay: .01s }
+.card:nth-child(2), .mine-item:nth-child(2), .tw-item:nth-child(2) { animation-delay: .04s }
+.card:nth-child(3), .mine-item:nth-child(3), .tw-item:nth-child(3) { animation-delay: .07s }
+.card:nth-child(4), .mine-item:nth-child(4), .tw-item:nth-child(4) { animation-delay: .1s }
+.card:nth-child(5), .mine-item:nth-child(5), .tw-item:nth-child(5) { animation-delay: .13s }
+.card:nth-child(6), .mine-item:nth-child(6), .tw-item:nth-child(6) { animation-delay: .16s }
+.card:nth-child(7), .mine-item:nth-child(7), .tw-item:nth-child(7) { animation-delay: .19s }
+.card:nth-child(8), .mine-item:nth-child(8), .tw-item:nth-child(8) { animation-delay: .22s }
+.card:nth-child(9), .mine-item:nth-child(9), .tw-item:nth-child(9) { animation-delay: .25s }
+.card:nth-child(10), .mine-item:nth-child(10), .tw-item:nth-child(10) { animation-delay: .28s }
+.card:nth-child(11), .mine-item:nth-child(11), .tw-item:nth-child(11) { animation-delay: .31s }
+.card:nth-child(n+12), .mine-item:nth-child(n+12), .tw-item:nth-child(n+12) { animation-delay: .34s }
+
+/* 评论：从左侧滑入，像「冒出来」 */
+@keyframes lwa-cmt-in {
+  from { opacity: 0; transform: translateX(-10px) }
+  to   { opacity: 1; transform: none }
+}
+.cmt-item { animation: lwa-cmt-in .3s cubic-bezier(.2,1.1,.4,1) both; }
+
+/* 聊天消息：自己的从右、对方的从左 */
+@keyframes lwa-msg-right { from { opacity: 0; transform: translateX(14px) scale(.96) } to { opacity: 1; transform: none } }
+@keyframes lwa-msg-left  { from { opacity: 0; transform: translateX(-14px) scale(.96) } to { opacity: 1; transform: none } }
+.ch-msg.mine, .ch-bub.mine { animation: lwa-msg-right .26s cubic-bezier(.2,1.15,.4,1) both }
+.ch-msg:not(.mine), .ch-bub:not(.mine) { animation: lwa-msg-left .26s cubic-bezier(.2,1.15,.4,1) both }
+
+/* 成就条目：解锁的亮起来，未解锁的灰着（原来只是颜色差，加个动效） */
+@keyframes lwa-ach-get {
+  0%   { transform: scale(.94); box-shadow: 0 0 0 0 rgba(76,175,125,.5) }
+  55%  { transform: scale(1.03); box-shadow: 0 0 0 6px rgba(76,175,125,0) }
+  100% { transform: none; box-shadow: 0 0 0 0 rgba(76,175,125,0) }
+}
+.ach-item:not(.locked) { animation: lwa-ach-get .8s cubic-bezier(.2,1.2,.4,1) both }
+
+/* 徽章 / 标签：脉冲一圈 */
+.anim-badge, .room-badge, .img-badge, .card-tag {
+  animation: lwa-pulse 2.6s ease-out infinite;
+}
+/* 但列表里一大堆一起脉冲会很吵，只让第一个动 */
+.cmt-item ~ .cmt-item .card-tag,
+li:nth-child(n+3) .card-tag { animation: none; }
+
+/* 光尘数字：变大的一瞬间闪一下金色 */
+@keyframes lwa-gold {
+  0%   { color: inherit; text-shadow: none }
+  40%  { color: #d1944d; text-shadow: 0 0 10px rgba(209,148,77,.55) }
+  100% { color: inherit; text-shadow: none }
+}
+.dust-num, .ml-num, .in-num { transition: color .2s; }
+
+/* 头像 / 缩略图：加载完从模糊到清晰（像冲洗照片） */
+@keyframes lwa-develop {
+  from { opacity: 0; filter: blur(6px) saturate(.6) }
+  to   { opacity: 1; filter: none }
+}
+.card-av, .card-art, .card img, .mine-item canvas {
+  animation: lwa-develop .42s ease-out both;
+}
+
+/* 按钮：悬停时轻微上浮 + 高光扫过（只在桌面） */
+@media (hover: hover) and (pointer: fine) {
+  .tw-btn, .auth-btn, .lw-refresh, .enter, .save {
+    position: relative;
+    overflow: hidden;
+  }
+  .tw-btn:hover, .auth-btn:hover, .lw-refresh:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.05);
+  }
+}
+
+/* 输入框聚焦：边框「亮起来」而不是硬切 */
+input, textarea, select {
+  transition: border-color .18s ease, box-shadow .18s ease, background-color .18s ease;
+}
+input:focus, textarea:focus, select:focus {
+  box-shadow: 0 0 0 3px rgba(91,141,239,.14);
+}
+
+/* 天气 / 尺寸切换：被选中的那个弹一下 */
+.tw-tab.on, .ch-chip.on, .pal-chip.on, .mode-chip.on {
+  animation: lwa-pop .3s cubic-bezier(.2,1.35,.4,1);
+}
+
+/* 加载失败：整个块轻微抖动（比只写一行红字更容易注意到） */
+@keyframes lwa-err {
+  0%, 100% { transform: translateX(0) }
+  25% { transform: translateX(-5px) }
+  75% { transform: translateX(5px) }
+}
+.status:not(:empty), .ach-empty, .bg-empty {
+  animation: lwa-fade .3s ease-out both;
+}
+.err, .tw-err { animation: lwa-err .4s ease-in-out; }
+
+/* 列表分隔线：进入时从中间往两边展开 */
+@keyframes lwa-sep {
+  from { transform: scaleX(0); opacity: 0 }
+  to   { transform: none; opacity: 1 }
+}
+.entry-sep, .divider, hr {
+  animation: lwa-sep .4s cubic-bezier(.2,1.1,.4,1) both;
+  transform-origin: center;
+}
 
 /* ============ 可直接用的工具类 ============ */
 .lwa-fade  { animation: lwa-fade  .3s ease-out both }
@@ -369,8 +490,15 @@ button, [role='button'], .lwa-tap {
 /* ============ 视图切换 ============ */
 /* 路由切换时给页面内容一个淡入上浮。@vue-router 换掉视图后
    根元素是新节点，所以这动画每次都会重放。 */
+/* ★★ 这里**绝对不能**用带 transform 的动画。
+   只要 .page 上有 transform（动画进行中或 animation-fill-mode: both
+   保留的最终值），它就成了后代的 containing block ——
+   页面里所有 position: fixed 的元素（小地图、浮层、缩略图按钮…）
+   会改为相对 .page 定位，全部错位、被拉伸。
+   paint.js 里光 fixed 就有 10 个，一加就炸。
+   所以页面级过渡只用 opacity。 */
 .page { animation: lwa-fade .22s ease-out both }
-#app > * > .page { animation: lwa-up .28s cubic-bezier(.2,1.1,.4,1) both }
+#app > * > .page { animation: lwa-fade .26s ease-out both }
 
 /* ============ 滚动进入视口才播 ============ */
 .lwa-io { opacity: 0; transform: translateY(16px); transition: opacity .4s ease-out, transform .45s cubic-bezier(.2,1.1,.4,1) }
