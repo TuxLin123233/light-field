@@ -1501,6 +1501,63 @@ export default {
       }
 
       /* ---- 气泡上挂事件（每轮渲染都是新节点）---- */
+      /* 分享过来的画作：缓存过的像素，key 是作品时间戳 */
+      const workPxCache = new Map()
+
+      /**
+       * 把气泡里那个 canvas 画出来。
+       *
+       * 消息里**只带时间戳**，不带像素 —— 一幅 64×64 是 4096 个三元组，
+       * 每条都塞进消息里能把整个对话撑爆。所以按需去 /api/get 单取一幅，
+       * 取过的记在 workPxCache 里，翻来覆去不会重复请求。
+       *
+       * 以前这里**根本没人画**：气泡里那个 128×128 的框一直是纯白的，
+       * 看着就像消息没发出去。
+       */
+      async function paintWorkCv(cv) {
+        const t = Number(cv.getAttribute('data-work'))
+        const want = Number(cv.getAttribute('data-wsize')) || 16
+        /* 先把尺寸定下来铺一层浅灰。canvas 不设 width/height 时默认 300×150，
+           取像素那几百毫秒里就是一个惨白的大方块，看着像消息是空的。 */
+        const n0 = want === 32 || want === 64 ? want : 16
+        cv.width = n0
+        cv.height = n0
+        const c0 = cv.getContext('2d')
+        c0.fillStyle = '#eef0f3'
+        c0.fillRect(0, 0, n0, n0)
+        if (!Number.isFinite(t) || t <= 0) return
+        let rec = workPxCache.get(t)
+        if (rec === undefined) {
+          rec = null
+          try {
+            const res = await fetch('/api/get?single=1&locate=' + encodeURIComponent(t), { cache: 'no-store' })
+            const jd = await res.json().catch(() => ({}))
+            if (jd && jd.found && jd.work && Array.isArray(jd.work.pixels)) {
+              const sz = jd.work.size === 32 || jd.work.size === 64 ? jd.work.size : 16
+              rec = { pixels: jd.work.pixels, size: sz }
+            }
+          } catch (e) {}
+          workPxCache.set(t, rec)
+        }
+        if (!rec) {
+          // 作者删了或者取不到。留个白框会让人以为消息丢了，直接藏掉，
+          // 下面那行「🖼️ 作品名」还在，点一下能去社区里找。
+          cv.hidden = true
+          return
+        }
+        const n = rec.size
+        cv.width = n
+        cv.height = n
+        const c = cv.getContext('2d')
+        for (let y = 0; y < n; y++) {
+          for (let x = 0; x < n; x++) {
+            const q = rec.pixels[y * n + x] || [255, 255, 255]
+            c.fillStyle = 'rgb(' + q[0] + ',' + q[1] + ',' + q[2] + ')'
+            c.fillRect(x, y, 1, 1)
+          }
+        }
+      }
+
       function bindBubbles() {
         const body = $('chBody')
         if (!body) return
@@ -1519,6 +1576,9 @@ export default {
             }
           }
         })
+
+        // 分享过来的画作：按需取像素再画（消息里只有时间戳）
+        body.querySelectorAll('canvas[data-work]').forEach((cv) => paintWorkCv(cv))
         body.querySelectorAll('[data-react]').forEach((b) => {
           b.addEventListener('click', () => doReact(b.getAttribute('data-mid'), b.getAttribute('data-react')))
         })

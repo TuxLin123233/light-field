@@ -274,6 +274,19 @@ export default {
       <section class="group">
         <div class="ver red">
           <div class="ver-body">
+            <div class="ver-title"><span class="ver-tag">v1.7.4</span> 分享到聊天里的画作能看见了 <span class="ver-date">2026-10</span></div>
+            <ul class="ver-list">
+              <li><span class="li-tag tag-fix">修复</span><b>把作品分享给好友，气泡里却是一片空白</b>。消息本身一直存着呢，只是<b>那段画图的代码我压根没写</b> —— 气泡里留了个纯白的方框，看着就像消息没发出去</li>
+              <li><span class="li-tag tag-update">更新</span>现在点「＋ → 🖼️ 画作」发出去，对方能<b>直接看到画</b>，点一下还能跳到社区找那一幅</li>
+              <li><span class="li-tag tag-update">更新</span>作品是按需去取的（一幅 64×64 是四千多个像素点，全塞进每条消息里会把对话撑爆），取过一次就记住，来回翻不会重复请求</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="group">
+        <div class="ver red">
+          <div class="ver-body">
             <div class="ver-title"><span class="ver-tag">v1.7.3</span> 一件家具不能摆两个了 <span class="ver-date">2026-10</span></div>
             <ul class="ver-list">
               <li><span class="li-tag tag-fix">修复</span><b>同一件家具被重复摆的问题</b>。铺子里每件家具只卖一份，但之前屋里<b>可以把它摆出好几个</b> —— 买一支蜡烛能摆三支。现在一件就是一件</li>
