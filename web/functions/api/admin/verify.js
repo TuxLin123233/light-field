@@ -1,3 +1,4 @@
+import { adminAuth } from '../_adminauth.js'
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
@@ -10,12 +11,6 @@ const json = (body, status = 200) =>
     headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
   })
 
-function authorized(request, env) {
-  const key = (request.headers.get('x-admin-key') || '').trim()
-  const adminKey = env.ADMIN_KEY || ''
-  return !!(adminKey && key === adminKey)
-}
-
 export async function onRequestOptions() {
   return new Response(null, { status: 204, headers: CORS_HEADERS })
 }
@@ -23,9 +18,8 @@ export async function onRequestOptions() {
 export async function onRequestGet(context) {
   const { request, env } = context
 
-  if (!authorized(request, env)) {
-    return json({ error: 'Unauthorized' }, 401)
-  }
+  const gate = await adminAuth(env, request)
+  if (!gate.ok) return json(gate.body, gate.status)
 
   return json({ ok: true })
 }

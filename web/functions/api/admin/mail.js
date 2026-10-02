@@ -1,3 +1,4 @@
+import { adminAuth } from '../_adminauth.js'
 // 后台信箱发布：维护者可以发公告、发奖励
 //
 //   GET                          列出已发布的广播信
@@ -21,12 +22,6 @@ const json = (body, status = 200) =>
     headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
   })
 
-function authorized(request, env) {
-  const key = (request.headers.get('x-admin-key') || '').trim()
-  const adminKey = env.ADMIN_KEY || ''
-  return !!(adminKey && key === adminKey)
-}
-
 const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6)
 
 export async function onRequestOptions() {
@@ -35,7 +30,8 @@ export async function onRequestOptions() {
 
 export async function onRequestGet(context) {
   const { request, env } = context
-  if (!authorized(request, env)) return json({ error: 'Unauthorized' }, 401)
+  const gate = await adminAuth(env, request)
+  if (!gate.ok) return json(gate.body, gate.status)
   if (!env.LIGHTFIELD_KV) return json({ error: 'LIGHTFIELD_KV is not configured' }, 500)
   const mails = await readAdminMails(env.LIGHTFIELD_KV)
   return json({ ok: true, mails })
@@ -43,7 +39,8 @@ export async function onRequestGet(context) {
 
 export async function onRequestPost(context) {
   const { request, env } = context
-  if (!authorized(request, env)) return json({ error: 'Unauthorized' }, 401)
+  const gate = await adminAuth(env, request)
+  if (!gate.ok) return json(gate.body, gate.status)
   if (!env.LIGHTFIELD_KV) return json({ error: 'LIGHTFIELD_KV is not configured' }, 500)
 
   let body

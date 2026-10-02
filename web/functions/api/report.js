@@ -1,3 +1,4 @@
+import { adminAuth } from './_adminauth.js'
 // 举报：用户提交违规内容举报，管理员在后台查看与处理。
 // 存储：KV key `reports`（待处理） / `reports:log`（已处理留档）
 const CORS_HEADERS = {
@@ -28,12 +29,6 @@ const json = (body, status = 200) =>
       Pragma: 'no-cache',
     },
   })
-
-function authorized(request, env) {
-  const key = (request.headers.get('x-admin-key') || '').trim()
-  const adminKey = env.ADMIN_KEY || ''
-  return !!(adminKey && key === adminKey)
-}
 
 async function readList(kv, key) {
   const raw = await kv.get(key)
@@ -82,7 +77,8 @@ export async function onRequestOptions() {
 // 管理员读取待处理举报
 export async function onRequestGet(context) {
   const { request, env } = context
-  if (!authorized(request, env)) return json({ error: 'Unauthorized' }, 401)
+  const gate = await adminAuth(env, request)
+  if (!gate.ok) return json(gate.body, gate.status)
   if (!env.LIGHTFIELD_KV) return json({ error: 'LIGHTFIELD_KV is not configured' }, 500)
   try {
     const pending = await readList(env.LIGHTFIELD_KV, PENDING_KEY)
@@ -106,7 +102,8 @@ export async function onRequestPost(context) {
 
   // 管理员处理动作：done（忽略/已处理）或 remove（同时删除作品）
   if (body && body.action) {
-    if (!authorized(request, env)) return json({ error: 'Unauthorized' }, 401)
+    const gate = await adminAuth(env, request)
+  if (!gate.ok) return json(gate.body, gate.status)
     const id = String(body.id || '')
     if (!id) return json({ error: '缺少 id' }, 400)
     const pending = await readList(env.LIGHTFIELD_KV, PENDING_KEY)

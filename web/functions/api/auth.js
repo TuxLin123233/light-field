@@ -32,6 +32,7 @@ import {
   BIRTHDAY_GIFT,
   BIRTHDAY_COOLDOWN,
 } from './_auth.js'
+import { clientIp, checkLimit, bumpFail, clearFail, tooMany } from './_ratelimit.js'
 import { readBook, writeBook, publicView } from './_dust.js'
 import { ensureOffers } from './_mail.js'
 
@@ -127,13 +128,24 @@ export async function onRequestPost(context) {
     const password = String(body.password || '')
     if (!username || !password) return json(BAD_CREDENTIALS, 401)
 
+    /* 防爆破：按 IP 和按账号两道闸，15 分钟窗口。
+       只按 IP 会被代理池绕过，只按账号挡不住撞库，所以两个都要。 */
+    const ip = clientIp(request)
+    const lim = await checkLimit(kv, ip, username)
+    if (!lim.ok) return json(tooMany(lim.retryAfter), 429)
+
     const user = await readUserByName(kv, username)
     // 即使用户不存在也走一次哈希校验，让耗时相近，避免用响应时间探测账号
     const ok = user
       ? await verifyPassword(password, user.pw)
       : await verifyPassword(password, 'pbkdf2$' + 10000 + '$' + '00'.repeat(16) + '$' + '00'.repeat(32))
     // 密码错和账号不存在返回同一句话，避免被人枚举账号
-    if (!user || !ok) return json(BAD_CREDENTIALS, 401)
+    if (!user || !ok) {
+      await bumpFail(kv, ip, username)
+      return json(BAD_CREDENTIALS, 401)
+    }
+    // 登录成功就清掉这个账号的失败计数，误输几次不至于把人锁死
+    await clearFail(kv, username)
 
     // 被封禁的账号即使密码正确也不能登录
     if (isBanned(user)) {

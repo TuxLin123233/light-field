@@ -1,3 +1,4 @@
+import { adminAuth } from './_adminauth.js'
 // 问题反馈：用户提意见，管理员在后台看与处理。
 //
 // 跟举报（report.js）是两回事，别合并：
@@ -43,12 +44,6 @@ const json = (body, status = 200) =>
       Pragma: 'no-cache',
     },
   })
-
-function authorized(request, env) {
-  const key = (request.headers.get('x-admin-key') || '').trim()
-  const adminKey = env.ADMIN_KEY || ''
-  return !!(adminKey && key === adminKey)
-}
 
 async function readList(kv, key) {
   const raw = await kv.get(key)
@@ -119,7 +114,8 @@ export async function onRequestOptions() {
 /* 管理员读取：?all=1 连已处理的留档一起给 */
 export async function onRequestGet(context) {
   const { request, env } = context
-  if (!authorized(request, env)) return json({ error: 'Unauthorized' }, 401)
+  const gate = await adminAuth(env, request)
+  if (!gate.ok) return json(gate.body, gate.status)
   if (!env.LIGHTFIELD_KV) return json({ error: 'LIGHTFIELD_KV is not configured' }, 500)
   const url = new URL(request.url)
   try {
@@ -152,7 +148,8 @@ export async function onRequestPost(context) {
        drop   垃圾/重复，直接丢掉、不留档
      */
   if (body && body.action) {
-    if (!authorized(request, env)) return json({ error: 'Unauthorized' }, 401)
+    const gate = await adminAuth(env, request)
+  if (!gate.ok) return json(gate.body, gate.status)
     const action = String(body.action)
     if (action !== 'adopt' && action !== 'close' && action !== 'drop') {
       return json({ error: 'action 只能是 adopt / close / drop' }, 400)

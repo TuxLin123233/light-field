@@ -1,3 +1,4 @@
+import { adminAuth } from './_adminauth.js'
 // 封号管理（仅管理员）
 //
 //   GET  ?action=list            被封账号列表
@@ -32,12 +33,6 @@ const json = (body, status = 200) =>
     },
   })
 
-function authorized(request, env) {
-  const key = (request.headers.get('x-admin-key') || '').trim()
-  const adminKey = env.ADMIN_KEY || ''
-  return !!(adminKey && key === adminKey)
-}
-
 function view(u) {
   return {
     uid: u.uid,
@@ -55,7 +50,8 @@ export async function onRequestOptions() {
 
 export async function onRequestGet(context) {
   const { request, env } = context
-  if (!authorized(request, env)) return json({ error: '需要管理员密钥' }, 401)
+  const gate = await adminAuth(env, request)
+  if (!gate.ok) return json(gate.body, gate.status)
   if (!env.LIGHTFIELD_KV) return json({ error: 'LIGHTFIELD_KV is not configured' }, 500)
 
   const url = new URL(request.url)
@@ -96,7 +92,8 @@ export async function onRequestGet(context) {
 
 export async function onRequestPost(context) {
   const { request, env } = context
-  if (!authorized(request, env)) return json({ error: '需要管理员密钥' }, 401)
+  const gate = await adminAuth(env, request)
+  if (!gate.ok) return json(gate.body, gate.status)
   if (!env.LIGHTFIELD_KV) return json({ error: 'LIGHTFIELD_KV is not configured' }, 500)
 
   let body

@@ -1,3 +1,4 @@
+import { adminAuth } from '../_adminauth.js'
 import { clearAllHistory } from '../_history.js'
 
 const CORS_HEADERS = {
@@ -21,9 +22,8 @@ export async function onRequestPost(context) {
 
   const key = (request.headers.get('x-admin-key') || '').trim()
   const adminKey = env.ADMIN_KEY || ''
-  if (!adminKey || key !== adminKey) {
-    return json({ error: 'Unauthorized' }, 401)
-  }
+  const gate = await adminAuth(env, request)
+  if (!gate.ok) return json(gate.body, gate.status)
 
   if (!env.LIGHTFIELD_KV) {
     return json({ error: 'LIGHTFIELD_KV is not configured' }, 500)

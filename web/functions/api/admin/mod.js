@@ -1,3 +1,4 @@
+import { adminAuth } from '../_adminauth.js'
 // 管理员接口：审核员管理 + 待处理下架 + 举报 + 真删
 //
 //   GET                                           名单 / 待处理 / 举报
@@ -33,15 +34,10 @@ export async function onRequestOptions() {
   return new Response(null, { status: 204, headers: CORS_HEADERS })
 }
 
-function auth(env, request) {
-  const key = (request.headers.get('x-admin-key') || '').trim()
-  const want = env.ADMIN_KEY || ''
-  return !!want && key === want
-}
-
 export async function onRequestGet(context) {
   const { request, env } = context
-  if (!auth(env, request)) return json({ error: 'Unauthorized' }, 401)
+  const gate = await adminAuth(env, request)
+  if (!gate.ok) return json(gate.body, gate.status)
   if (!env.LIGHTFIELD_KV) return json({ error: 'LIGHTFIELD_KV is not configured' }, 500)
   const kv = env.LIGHTFIELD_KV
   return json({
@@ -55,7 +51,8 @@ export async function onRequestGet(context) {
 
 export async function onRequestPost(context) {
   const { request, env } = context
-  if (!auth(env, request)) return json({ error: 'Unauthorized' }, 401)
+  const gate = await adminAuth(env, request)
+  if (!gate.ok) return json(gate.body, gate.status)
   if (!env.LIGHTFIELD_KV) return json({ error: 'LIGHTFIELD_KV is not configured' }, 500)
   const kv = env.LIGHTFIELD_KV
 
