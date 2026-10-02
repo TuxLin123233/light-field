@@ -472,8 +472,11 @@ export default {
 
     /** 小窗贴在墙上偏右，随房间大小缩放 */
     function windowRect() {
-      const w = Math.max(3, Math.round(ROOM * 0.26))
-      const h = Math.max(3, Math.round(ROOM * 0.24))
+      /* 别小于 5×5：中间的十字窗棂会把窗子切成四块，
+         4×4 的时候每块只剩 1 像素，雨和雪都只能画成一个个小点，
+         根本分不出来谁是谁。 */
+      const w = Math.max(5, Math.round(ROOM * 0.34))
+      const h = Math.max(5, Math.round(ROOM * 0.30))
       return { x: Math.round(ROOM * 0.62), y: Math.round(ROOM * 0.12), w, h }
     }
 
@@ -517,10 +520,25 @@ export default {
 
       // 雨 / 雪：粒子随时间下落（用帧计数驱动，看着是动的）
       if (weather === 'rain') {
-        for (let i = 0; i < 6; i++) put(r.x + ((i * 5 + 1) % r.w), r.y + ((i * 3 + Math.floor(wxT / 2)) % r.h), [178, 202, 234])
+        /* 雨丝要画成**一小段斜线**（滴 + 后面拖的尾巴），不能只点一个像素 ——
+           窗子只有几个像素大，形状是唯一能跟雪区分开的线索。
+           尾巴甩向左上，看上去就是往右下斜着落。 */
+        const n = Math.max(7, Math.round((r.w * r.h) / 5))
+        for (let i = 0; i < n; i++) {
+          const x = r.x + ((i * 5 + 1) % r.w)
+          const y = r.y + ((i * 3 + Math.floor(wxT / 2)) % r.h)
+          put(x, y, [206, 224, 246])
+          put(x > r.x ? x - 1 : x + 1, y > r.y ? y - 1 : y + 1, [150, 182, 226])
+        }
       } else if (weather === 'snow') {
-        for (let i = 0; i < 5; i++) {
-          put(r.x + ((i * 4 + Math.floor(wxT / 6) + i) % r.w), r.y + ((i * 3 + Math.floor(wxT / 4)) % r.h), [252, 252, 255])
+        /* 雪比雨慢得多，而且是一片一片往下**飘**（左右还会晃），
+           不像雨那样一条线地赶。 */
+        const n = Math.max(6, Math.round((r.w * r.h) / 8))
+        for (let i = 0; i < n; i++) {
+          const sway = Math.floor(Math.sin((wxT + i * 9) / 7) * 1.6)
+          const x = r.x + ((((i * 5 + sway) % r.w) + r.w) % r.w)
+          const y = r.y + ((i * 3 + Math.floor(wxT / 5)) % r.h)
+          put(x, y, [252, 252, 255])
         }
       }
 

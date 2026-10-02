@@ -5,3 +5,5 @@ __pycache__/
 *secret*.h
 *.ino
 secrets.h
+窗外天气*.png
+forecast.png
