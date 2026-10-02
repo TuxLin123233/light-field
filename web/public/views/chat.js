@@ -986,6 +986,25 @@ export default {
       let rpsPick = ''
       let rpsWager = 0
       let replyTo = null
+      /* 这四个必须声明在**最上面**。
+         bindSend() 会调到 setupPlusPanel()/hidePanes()，而 bindSend 是
+         函数声明（会提升），在下面这些 fetch 之前就被调用了；
+         如果把这些 let/const 留在文件后半段，调用时它们还在 TDZ 里，
+         整页会直接抛 "Cannot access 'xxx' before initialization"。 */
+      const PANES = ['gift', 'doodle', 'work', 'rps']
+      const RPS_NAME = { rock: '石头', scissors: '剪刀', paper: '布' }
+      const paneEl = (name) => $('chPane' + name.charAt(0).toUpperCase() + name.slice(1))
+      let plusReady = false
+      /* 一条消息在引用条 / 列表里显示成什么。放在这里而不是下面，
+         理由同上面那四个：被提升的函数会用到它。 */
+      const previewOf = (m) => {
+        const k = m.kind || 'text'
+        if (k === 'dust') return '🎁 ' + (m.dust || 0) + ' 个光尘'
+        if (k === 'doodle') return '🎨 一张涂鸦'
+        if (k === 'work') return '🖼️ ' + ((m.work && m.work.name) || '一幅作品')
+        if (k === 'rps') return '🎲 猜拳'
+        return m.text || ''
+      }
       const myUid = () => d.me || ''
 
       function rpsHtml(m) {
@@ -1169,9 +1188,6 @@ export default {
       /* 输入栏的交互。抽成函数是因为空对话和有消息两条路径都要用它 ——
          以前只有「有消息」那条绑过，所以新会话连输入框都没有。 */
       /* ---------- 更多功能：面板与动作 ---------- */
-      const PANES = ['gift', 'doodle', 'work', 'rps']
-      const RPS_NAME = { rock: '石头', scissors: '剪刀', paper: '布' }
-      const paneEl = (name) => $('chPane' + name.charAt(0).toUpperCase() + name.slice(1))
       function hidePanes() {
         PANES.forEach((k) => {
           const el = paneEl(k)
@@ -1418,14 +1434,6 @@ export default {
       }
 
       /* ---- ↩️ 引用回复 ---- */
-      const previewOf = (m) => {
-        const k = m.kind || 'text'
-        if (k === 'dust') return '🎁 ' + (m.dust || 0) + ' 个光尘'
-        if (k === 'doodle') return '🎨 一张涂鸦'
-        if (k === 'work') return '🖼️ ' + ((m.work && m.work.name) || '一幅作品')
-        if (k === 'rps') return '🎲 猜拳'
-        return m.text || ''
-      }
       function setReply(m) {
         replyTo = m
         const bar = $('chReplyBar')
@@ -1544,7 +1552,6 @@ export default {
       }
 
       /* ---- 面板总绑定：只做一次 ---- */
-      let plusReady = false
       function setupPlusPanel() {
         if (plusReady) return
         plusReady = true
