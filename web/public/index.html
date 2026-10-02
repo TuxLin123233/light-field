@@ -605,6 +605,14 @@
             return false
           }
         }
+        /* 每次播放整体微调音高（±3.5%）：同一个音效连按很多次也不会一模一样，
+           避免机械感 —— 游戏音效的常见做法。整条音效共用一个偏移量，
+           所以琶音、和弦内部的音程关系不会被打乱。 */
+        let curPitch = 1
+        function jitterPitch() {
+          curPitch = 1 + (Math.random() * 2 - 1) * 0.035
+        }
+
         /* 一个音符：正弦 + 快速衰减，听起来就是「叮」 */
         function note(freq, at, dur, vol, type) {
           const c = ctx()
@@ -613,7 +621,7 @@
           const osc = c.createOscillator()
           const gain = c.createGain()
           osc.type = type || 'sine'
-          osc.frequency.setValueAtTime(freq, t0)
+          osc.frequency.setValueAtTime(freq * curPitch, t0)
           gain.gain.setValueAtTime(0.0001, t0)
           gain.gain.exponentialRampToValueAtTime(vol, t0 + 0.012)
           gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur)
@@ -631,8 +639,8 @@
           const osc = c.createOscillator()
           const gain = c.createGain()
           osc.type = type || 'sine'
-          osc.frequency.setValueAtTime(Math.max(20, f1), t0)
-          osc.frequency.exponentialRampToValueAtTime(Math.max(20, f2), t0 + dur)
+          osc.frequency.setValueAtTime(Math.max(20, f1 * curPitch), t0)
+          osc.frequency.exponentialRampToValueAtTime(Math.max(20, f2 * curPitch), t0 + dur)
           gain.gain.setValueAtTime(0.0001, t0)
           gain.gain.exponentialRampToValueAtTime(vol, t0 + 0.015)
           gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur)
@@ -695,7 +703,7 @@
           const lfo = c.createOscillator()
           const lfoGain = c.createGain()
           osc.type = type || 'sine'
-          osc.frequency.value = freq
+          osc.frequency.value = freq * curPitch
           lfo.frequency.value = rate || 6
           lfoGain.gain.value = depth || 3
           lfo.connect(lfoGain)
@@ -852,6 +860,10 @@
           if (isSilent()) return
           const fn = SFX[name]
           if (fn) {
+            jitterPitch()
+            /* 记下最后发声的时刻：全局按钮音效靠它判断「这一下点击视图里
+               已经自己配过音了」，从而避免同一个按钮响两次。 */
+            window.__lwSfxAt = performance.now()
             try {
               fn()
             } catch (e) {}
@@ -867,6 +879,112 @@
         window.getSfx = function () {
           return !isSilent()
         }
+
+        /* ---------- 全局按钮音效：让站里每个按钮都有反馈 ----------
+           逐个页面给按钮配音不现实（站里有上百个按钮），所以这里在 document
+           上做一次事件委托，按按钮的语义挑音效。已经自己配过音的视图不会响
+           两次：视图的处理器是同步执行的，而这里推迟到 setTimeout(0) 才发声，
+           只要这期间 window.sfx 被调用过，就说明这一下点击已经有音效了。 */
+        ;(function () {
+          const BTN =
+            'button, [role="button"], a[href], input[type="button"], input[type="submit"], summary, [data-sfx]'
+          /* 底部导航有专门的切页音效，交给 app.js，全局不插手 */
+          const SKIP = '#appNav a'
+
+          /* 找出这次点击该由哪个元素负责发声。
+             站里有一半「按钮」其实是 div/span/i（画廊卡片、分页圆点等），
+             它们没有语义标签，所以再用样式兜一层：
+               cursor:pointer     → 可点
+               cursor:not-allowed → 不可点（发「不行」的反馈）
+             画布的 cursor 是 crosshair / grab，天然落不进这两个分支，
+             所以在画布上落笔不会触发通用按钮音效。 */
+          function resolveTarget(node) {
+            const semantic = node.closest ? node.closest(BTN) : null
+            if (semantic) {
+              /* 语义按钮也要看一眼样式：没加 disabled 属性、只是被 CSS 画成
+                 cursor:not-allowed 的按钮，点下去同样该给「不行」的反馈 */
+              let c = ''
+              try {
+                c = getComputedStyle(semantic).cursor
+              } catch (e) {}
+              return { el: semantic, blocked: c === 'not-allowed' }
+            }
+            let n = node
+            let hops = 0
+            while (n && n.nodeType === 1 && n !== document.body && hops < 6) {
+              if (n.tagName === 'CANVAS') return null
+              let cur = ''
+              try {
+                cur = getComputedStyle(n).cursor
+              } catch (e) {}
+              if (cur === 'not-allowed') return { el: n, blocked: true }
+              if (cur === 'pointer') return { el: n, blocked: false }
+              n = n.parentElement
+              hops++
+            }
+            return null
+          }
+
+          /* 语义分类：先判危险 / 关闭 / 切换这类明确的，再落到通用 */
+          function pick(el) {
+            const cls = typeof el.className === 'string' ? el.className : el.getAttribute('class') || ''
+            const txt =
+              (el.textContent || '') + ' ' + (el.getAttribute('aria-label') || '') + ' ' + (el.title || '')
+            const all = (cls + ' ' + (el.id || '')).toLowerCase()
+            if (
+              /del|delete|remove|clear|danger|wipe|logout|unsub|block|ban/.test(all) ||
+              /删除|清空|移除|注销|退出登录|取消关注|拉黑/.test(txt)
+            )
+              return 'warn'
+            if (/cancel|close|dismiss|back|exit/.test(all) || /取消|关闭|返回|收起|退出/.test(txt)) return 'close'
+            if (
+              /tab|toggle|switch|seg|filter|chip|opt|radio|check/.test(all) ||
+              el.hasAttribute('aria-pressed') ||
+              el.classList.contains('on') ||
+              el.classList.contains('active') ||
+              el.getAttribute('role') === 'tab'
+            )
+              return 'tick'
+            if (
+              /save|submit|publish|confirm|primary|send|upload|post/.test(all) ||
+              /保存|发布|提交|发送|确定|确认|上传|立即/.test(txt)
+            )
+              return 'save'
+            if (/add|create|new|plus|open|expand|more/.test(all) || /新建|添加|创建|打开|展开|更多/.test(txt))
+              return 'open'
+            if (/like|heart|fav|star|upvote/.test(all) || /点赞|喜欢|收藏/.test(txt)) return 'like'
+            if (/share|copy|link|invite/.test(all) || /分享|复制|链接|邀请/.test(txt)) return 'select'
+            return 'tap'
+          }
+
+          document.addEventListener(
+            'click',
+            (event) => {
+              const node = event.target
+              if (!node || !node.closest) return
+              const hit = resolveTarget(node)
+              if (!hit) return
+              const el = hit.el
+              if (el.closest && el.closest(SKIP)) return
+              const blocked =
+                hit.blocked || el.disabled || el.getAttribute('aria-disabled') === 'true'
+              /* 推迟到本轮同步流程跑完再判断：视图若已自己配音，这里就跳过。
+                 注意 lastAt 未定义时不能当成 0 —— performance.now() 在页面刚
+                 加载时数值很小，那样会把「还没响过」误判成「刚刚响过」。 */
+              setTimeout(() => {
+                const lastAt = window.__lwSfxAt
+                if (lastAt && performance.now() - lastAt < 220) return
+                /* 灰掉的按钮也给个「不行」的反馈，比点了毫无动静友好 */
+                if (blocked) return window.sfx('no')
+                /* data-sfx 可显式指定音效，留给以后按需覆盖 */
+                const want = el.getAttribute && el.getAttribute('data-sfx')
+                window.sfx(want || pick(el))
+              }, 0)
+            },
+            true
+          )
+        })()
+
         /* 首次交互解锁音频（浏览器自动播放策略） */
         const unlock = function () {
           ctx()
