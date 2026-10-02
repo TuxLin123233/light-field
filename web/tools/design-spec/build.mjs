@@ -74,15 +74,16 @@ body { margin: 0; background: #f2efe9; font-family: "HarmonyOS Sans SC", -apple-
 .sp-row { display: flex; flex-wrap: wrap; align-items: flex-start; }
 .sp-cell { margin: 0 18px 22px 0; }
 .sp-cell .sp-cap { font-size: 12px; color: #8c7f6b; margin-top: 11px; }
-.sp-cell .sp-cap b { color: #3b342c; font-weight: 700; display: block; }
-.sp-cell code { font-size: 11px; color: #b0a697; font-family: ui-monospace, Menlo, monospace; }
+.sp-cell .sp-cap b { color: #3b342c; font-weight: 700; display: block; font-size: 14px; }
+/* 对外发的功能介绍，不留类名/色值这些专业信息 */
+.sp-cell code { display: none; }
 .sp-sw { width: 96px; margin: 0 12px 18px 0; }
 .sp-sw i { display: block; height: 54px; border-radius: 12px; border: 1px solid rgba(0,0,0,.07); }
 .sp-sw b { display: block; font-size: 12px; color: #3b342c; margin-top: 7px; font-weight: 700; }
-.sp-sw code { font-size: 11px; color: #b0a697; font-family: ui-monospace, Menlo, monospace; }
+.sp-sw code { display: none; }
 .sp-tp { margin: 0 0 24px; }
 .sp-tp .t { color: #3b342c; }
-.sp-tp .n { font-size: 12px; color: #b0a697; font-family: ui-monospace, Menlo, monospace; margin-top: 3px; }
+.sp-tp .n { display: none; }
 .sp-pad { background: #fff; border: 1px solid #efe7da; border-radius: 14px; padding: 20px; }
 .sp-av { width: 56px; height: 56px; margin: 0 5px 5px 0; border-radius: 11px; background: #f6f4f0; display: flex; align-items: center; justify-content: center; }
 .sp-av canvas { width: 46px; height: 46px; image-rendering: pixelated; display: block; }
@@ -99,28 +100,28 @@ body { margin: 0; background: #f2efe9; font-family: "HarmonyOS Sans SC", -apple-
 .sp-w1 { width: 100%; } .sp-w2 { width: 100%; } .sp-w3 { width: 100%; }
 </style></head>
 <body><div class="sp-page">
-<div class="sp-hero"><h1>像素小镇 · 设计规范</h1>
-<p>按钮 / 标签 / 卡片 / 输入 / 像素单元 —— 全部取自站点真实样式</p>
+<div class="sp-hero"><h1>像素小镇 · 功能介绍</h1>
+<p>能画像素画，也能盖自己的小屋</p>
 <span class="sp-u">light-field.pages.dev</span></div>
 
 <section class="sp-sec"><h2>默认头像 · 3888 种</h2><p class="sp-d">24 色相 × 3 明度 × 3 耳型 × 2 眼型 × 3 嘴型 × 3 底纹，按账号名自动生成</p><div class="sp-row" id="avatars"></div></section>
 <section class="sp-sec"><h2>家具 · 654 件</h2><p class="sp-d">5 套配色主题 × 基础家具，同一件换个主题就是另一件</p><div class="sp-row" id="furn"></div></section>
 <section class="sp-sec"><h2>墙纸与地毯 · 50 种</h2><p class="sp-d">图案 × 配色，贴墙上或铺地上</p><div class="sp-row" id="surf"></div></section>
 <section class="sp-sec"><h2>一间自己的小屋</h2><p class="sp-d">16×16 起步，能扩到 24×24 / 32×32。家具按住就能拖着摆，只能放在下半部分（墙上那扇窗除外）</p><div class="sp-row" id="room"></div></section>
-<section class="sp-sec"><h2>窗外天气 · 8 种</h2><p class="sp-d">雨是斜着往下赶的雨丝，雪是慢慢飘的白点 —— 形状不同，不只是换颜色</p><div class="sp-row" id="weather"></div></section>
-<section class="sp-sec"><h2>像素单元</h2><p class="sp-d">画布 16 / 32 / 64，小屋 16 / 24 / 32，一格 = 一个逻辑像素</p><div class="sp-row" id="units"></div></section>
-<section class="sp-sec"><h2>配色主题</h2><p class="sp-d">界面一套变量走明暗两种主题；家具另有 5 套调色板</p><div class="sp-row" id="themes"></div></section>
-<section class="sp-sec"><h2>配色</h2><p class="sp-d">站点 CSS 变量</p><div class="sp-row" id="swatches"></div></section>
-<section class="sp-sec"><h2>字体</h2><p class="sp-d">HarmonyOS Sans SC · 标题 Black/Bold，正文 Regular</p><div id="typo"></div></section>
-<section class="sp-sec"><h2>按钮</h2><p class="sp-d">主要动作实心、次要幽灵、切换用胶囊，圆角 999px 与 10px 两档</p><div class="sp-row" id="buttons"></div></section>
-<section class="sp-sec"><h2>芯片与切换</h2><p class="sp-d">尺寸、天气、金额这种「多选一」全用胶囊芯片</p><div class="sp-row" id="chips"></div></section>
-<section class="sp-sec"><h2>标签与徽章</h2><p class="sp-d">更新日志分类、版本号、数字角标、作品状态徽章</p><div class="sp-row" id="tags"></div></section>
+<section class="sp-sec"><h2>窗外天气 · 8 种</h2><p class="sp-d">雨是斜着往下赶的雨丝，雪是慢慢飘的白点</p><div class="sp-row" id="weather"></div></section>
+<section class="sp-sec"><h2>像素单元</h2><p class="sp-d">画布和小屋都是「一格一格」拼出来的</p><div class="sp-row" id="units"></div></section>
+<section class="sp-sec"><h2>配色主题</h2><p class="sp-d">同一件家具，换个配色就是另一件</p><div class="sp-row" id="themes"></div></section>
+<section class="sp-sec"><h2>配色</h2><p class="sp-d">整套界面就这几种颜色</p><div class="sp-row" id="swatches"></div></section>
+<section class="sp-sec"><h2>字体</h2><p class="sp-d">标题粗、正文细，手机上看着不累</p><div id="typo"></div></section>
+<section class="sp-sec"><h2>按钮</h2><p class="sp-d">重要的按钮是实心的，次要的是描边的</p><div class="sp-row" id="buttons"></div></section>
+<section class="sp-sec"><h2>芯片与切换</h2><p class="sp-d">尺寸、天气、金额这种「多选一」都用圆角按钮</p><div class="sp-row" id="chips"></div></section>
+<section class="sp-sec"><h2>标签与徽章</h2><p class="sp-d">分类标签、数字角标、作品状态</p><div class="sp-row" id="tags"></div></section>
 <section class="sp-sec"><h2>作品卡片</h2><p class="sp-d">社区里最小的一块：画 + 名字 + 作者头像 + 收到的光尘</p><div class="sp-row" id="works"></div></section>
 <section class="sp-sec"><h2>数据卡片</h2><p class="sp-d">数字大、标题小，一眼看清累积了多少</p><div class="sp-row" id="stats"></div></section>
-<section class="sp-sec"><h2>入口卡片与列表行</h2><p class="sp-d">带图标的一行，右侧箭头；设置项用两行文字</p><div class="sp-row" id="entries"></div></section>
-<section class="sp-sec"><h2>成就条目</h2><p class="sp-d">图标 + 名字 + 奖励光尘，未解锁的压暗</p><div class="sp-row" id="ach"></div></section>
-<section class="sp-sec"><h2>输入</h2><p class="sp-d">圆角 10px，聚焦时描边换成主色</p><div class="sp-row" id="inputs"></div></section>
-<section class="sp-sec"><h2>对话框与提示</h2><p class="sp-d">确认框、Toast 提示</p><div class="sp-row" id="dialogs"></div></section>
+<section class="sp-sec"><h2>入口卡片与列表行</h2><p class="sp-d">带图标的一行，点进去就是那个功能</p><div class="sp-row" id="entries"></div></section>
+<section class="sp-sec"><h2>成就条目</h2><p class="sp-d">解锁了会亮起来，没解锁是灰的</p><div class="sp-row" id="ach"></div></section>
+<section class="sp-sec"><h2>输入</h2><p class="sp-d">点进去边框会变蓝，知道自己选中了</p><div class="sp-row" id="inputs"></div></section>
+<section class="sp-sec"><h2>对话框与提示</h2><p class="sp-d">删除之类的操作会先问一句</p><div class="sp-row" id="dialogs"></div></section>
 
 <div class="sp-dark"><h2>完全免费 · 无广告 · 不要邮箱手机号</h2>
 <p>浏览器打开就能画，手机和电脑都行 → light-field.pages.dev</p></div>
