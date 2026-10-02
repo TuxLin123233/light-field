@@ -797,7 +797,7 @@ export default {
     /** 换默认头像 / 换回自绘。都免费，都只动一个标记，绝不碰自己画的那份 */
     async function toggleDefault() {
       const btn = $('avSwitch')
-      if (!window.confirm(useDefault ? '换回你自己画的那张？' : '换成系统默认头像？不要光尘，你画的会留着。')) return
+      if (!(await lwConfirm(useDefault ? '换回你自己画的那张？' : '换成系统默认头像？不要光尘，你画的会留着。'))) return
       if (btn) btn.disabled = true
       try {
         const t = localStorage.getItem('lw-token') || ''
@@ -808,7 +808,7 @@ export default {
         })
         const d = await res.json().catch(() => ({}))
         if (!d || !d.ok) {
-          window.alert((d && d.error) || '换不了')
+          await lwAlert((d && d.error) || '换不了')
           if (btn) btn.disabled = false
           return
         }
@@ -826,7 +826,7 @@ export default {
         renderFrame()
         paintCurrent()
       } catch (e) {
-        window.alert('网络错误')
+        await lwAlert('网络错误')
         if (btn) btn.disabled = false
       }
     }

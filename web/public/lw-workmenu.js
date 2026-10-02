@@ -159,7 +159,7 @@ window.LWWorkMenu = (function () {
     function done() {
       if (window.sfx) window.sfx('tick')
       if (window.lwAlert) window.lwAlert(okMsg)
-      else alert(okMsg)
+      else if (window.lwAlert) window.lwAlert(okMsg)
     }
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(s).then(done, function () { fallback() })

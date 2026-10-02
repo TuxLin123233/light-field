@@ -221,13 +221,39 @@ export default {
         grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
         gap: 10px;
       }
-      .mine-item {
+      /* 「⋯」按钮（绝对定位，贴卡片右上角）。
+       原来这里是靠长按弹菜单，滑动时手指一停就误触，所以改成显式按钮。
+       定位上下文用 .mine-item 自带的 position: relative，不用重复声明。 */
+    .mine-more {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      width: 26px;
+      height: 26px;
+      border: 0;
+      border-radius: 50%;
+      background: rgba(60, 48, 36, .55);
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      line-height: 1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 0 6px;
+      z-index: 2;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .mine-more:active { background: rgba(60, 48, 36, .8); }
+
+    .mine-item {
         background: var(--surface-2);
         border: 1px solid var(--border);
         border-radius: 12px;
         overflow: hidden;
         cursor: pointer;
-        position: relative; /* 长按进度条要贴着卡片底边 */
+        position: relative; /* 「⋯」按钮要贴着卡片右上角 */
       }
       /* 缩略图。LWThumb 会按整数倍缩放并水平居中，
          这里不写死 width:100% —— 那样会把整数倍缩放的好处（不切出白条纹）毁掉，
@@ -1475,19 +1501,10 @@ export default {
       }
     }
 
-    /* 两个列表（我的画 / 送过光尘的）各绑一次。
-       「送过光尘的」里是**别人的作品**，绑定时不给 onDelete，
-       菜单里就没有删除这一项 —— 不用在事件里再判一次 own。 */
-    function bindWorkMenu() {
-      if (!window.LWWorkMenu) return
-      for (const id of ['mineGrid', 'likedGrid']) {
-        window.LWWorkMenu.bind($(id), {
-          selector: '.mine-item',
-          getInfo: (el) => (el.__lwwmInfo ? el.__lwwmInfo() : null),
-        })
-      }
-    }
-    bindWorkMenu()
+    /* 这里**故意不挂长按菜单**。
+       用户反馈：手机上滑动列表时手指稍微停一下就弹菜单，很烦、还容易误触。
+       长按在「列表页」本来就是个坏交互 —— 列表的第一用途是滚动。
+       改成卡片右上角一个「⋯」按钮，点了才弹。 */
 
     /* own：这张画是不是我自己发布的。
        「送过光尘的」列表里是**别人的作品**，绝不能给删除入口 ——
@@ -1513,6 +1530,26 @@ export default {
         cap.appendChild(n)
       }
       item.append(cv, cap)
+
+      /* 右上角的「⋯」：只有自己的画才给（别人的画没有可操作项）。
+         挂 mousedown/touchstart 的 stopPropagation 不够 —— 直接用 click
+         并阻止冒泡，避免点菜单按钮时把卡片本身的「跳到社区」也触发了。 */
+      if (own && window.LWWorkMenu) {
+        const more = document.createElement('button')
+        more.type = 'button'
+        more.className = 'mine-more'
+        more.textContent = '⋯'
+        more.title = '更多操作'
+        more.setAttribute('aria-label', '更多操作')
+        more.addEventListener('click', (e) => {
+          e.stopPropagation()
+          e.preventDefault()
+          const info = item.__lwwmInfo ? item.__lwwmInfo() : null
+          if (info) window.LWWorkMenu.open(info)
+        })
+        item.appendChild(more)
+      }
+
       item.dataset.time = String(w.time)
       item.addEventListener('click', () => {
         // 长按删除刚触发完，别顺手又跳到社区去
@@ -1549,8 +1586,6 @@ export default {
         onDelete: own ? () => deleteOwnWork(w, item) : null,
       })
       item.addEventListener('dragstart', (e) => e.preventDefault())
-      return item
-      return item
       return item
     }
 

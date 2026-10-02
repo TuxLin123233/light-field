@@ -1257,7 +1257,7 @@ export default {
     async function doGiftHome() {
       if (liked || mine) return
       const who = woodName || '屋主'
-      if (!window.confirm('送 ' + giftCost + ' 个光尘给 ' + who + '？送出就从你账上扣掉了。')) return
+      if (!(await lwConfirm('送 ' + giftCost + ' 个光尘给 ' + who + '？送出就从你账上扣掉了。'))) return
       const d = await post({ action: 'like', to: wantUid })
       if (!d || !d.ok) {
         msg((d && d.error) || '送不出去', true)
@@ -1290,7 +1290,7 @@ export default {
 
     /** 删自己家的一条留言 */
     async function doDelMsg(id) {
-      if (!window.confirm('删掉这条留言？')) return
+      if (!(await lwConfirm('删掉这条留言？'))) return
       const d = await post({ action: 'delmsg', id })
       if (!d || !d.ok) {
         msg((d && d.error) || '删不掉', true)
