@@ -78,6 +78,19 @@ export default {
         background: var(--surface-2);
         touch-action: manipulation;
       }
+      /* 自己家的屋子要能拖着挪家具，必须给 touch-action: none。
+
+         manipulation 只是禁掉双击缩放、**仍然允许平移**：手指在画布上一划，
+         浏览器会判成「滚动页面」，手势一旦被它接管就不会再发 pointermove，
+         改发 pointercancel —— 于是 endDrag(true) 把刚拖起来的家具原样弹回去，
+         手感就是「按下去家具跟着动，一划就弹回来，等于拖不动」。
+         鼠标没这个毛病（鼠标没有平移手势），所以是「电脑上能拖、手机上拖不动」。
+
+         touch-action 必须在手势**开始前**声明，中途改是来不及的，
+         这也是 pointerdown 里 preventDefault 救不了的原因，只能提前声明 none。
+         代价是在这块画布上没法用手指滑页面；不过屋子下面还有家具栏和商店，
+         页面照样滚得动。来串门（不是自己的屋子）保持 manipulation，不受影响。 */
+      .tw-room.mine { touch-action: none; }
       .tw-room.editing { cursor: crosshair; }
       .tw-room.dragging { cursor: grabbing; }
       .tw-acts { display: flex; justify-content: center; margin-top: 12px; }
@@ -844,7 +857,7 @@ export default {
         : ROOM + '×' + ROOM + ' · 来串门看看 · ' + wname
       $('twBody').innerHTML =
         '<div class="tw-room-wrap">' +
-        '<canvas class="tw-room' + (mine && picked ? ' editing' : '') + '" id="twRoom" width="' +
+        '<canvas class="tw-room' + (mine ? ' mine' : '') + (mine && picked ? ' editing' : '') + '" id="twRoom" width="' +
         ROOM + '" height="' + ROOM + '"></canvas>' +
         '</div>' +
         (mine
