@@ -8,9 +8,9 @@
 // 谁进过自己的小屋，谁才被登记到 town:list 上 —— 没进过的本来也没屋可看。
 //
 // 物品（墙纸 / 地板 / 家具）的定义都在 _townitems.js，这里只管逻辑。
-import { PAL, FURNITURE, SURFACES, CAT_NAMES, furnitureById, surfaceById, itemById } from './_townitems.js'
+import { PAL, FURNITURE, FURNITURE_BASE, THEMES, THEME_PAL, SURFACES, CAT_NAMES, furnitureById, surfaceById, itemById } from './_townitems.js'
 
-export { PAL, FURNITURE, SURFACES, CAT_NAMES, furnitureById, surfaceById, itemById }
+export { PAL, FURNITURE, FURNITURE_BASE, THEMES, THEME_PAL, SURFACES, CAT_NAMES, furnitureById, surfaceById, itemById }
 
 export const ROOM = 16 // 默认房间尺寸（老代码的兼容引用）
 export const MAX_HOUSES = 200
@@ -36,9 +36,13 @@ export function nextSize(n) {
   return i >= 0 && i + 1 < SIZES.length ? SIZES[i + 1] : null
 }
 
-/** 房间第几行往下算地板。墙太矮屋子会显得很扁，所以按比例给 */
+/**
+ * 房间第几行往下算地板。
+ * 定成**正好一半**：上半是墙、下半是地面 —— 家具只能放在下半部分。
+ * 这条线前端也会画出来，摆的时候一眼看得到哪里能放。
+ */
 export function floorLine(room) {
-  return Math.max(4, Math.round((Number(room) || DEFAULT_SIZE) / 3))
+  return Math.max(4, Math.round((Number(room) || DEFAULT_SIZE) / 2))
 }
 
 export const LIST_KEY = 'town:list'

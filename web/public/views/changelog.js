@@ -274,6 +274,21 @@ export default {
       <section class="group">
         <div class="ver red">
           <div class="ver-body">
+            <div class="ver-title"><span class="ver-tag">v1.7.0</span> 家具 636 件 · 家具能拖着挪 · 墙上开了扇小窗 <span class="ver-date">2026-10</span></div>
+            <ul class="ver-list">
+              <li><span class="li-tag tag-new">新功能</span><b>家具从 116 件扩到 636 件</b>。不是硬画五百张图，而是做了五套配色主题 —— <b>墨玉 / 深海 / 樱花 / 鎏金 / 幽林</b>，拿基础家具整体做色相与明度偏移，每件变体自带一份调色板。所以「木凳 · 墨玉」和「木凳 · 鎏金」是真的两种颜色，摆一屋子也不撞。带主题的卖得贵些（1.25~1.8 倍）</li>
+              <li><span class="li-tag tag-fix">修复</span><b>家具能拖着挪位置了</b>。以前想挪一格只能「收起来再重新放」，家具一多根本摆不整齐。现在<b>按住屋里的家具直接拖</b>，落点不合适会告诉你为什么（会放不下 / 得放在地上 / 这儿已经有东西了）并弹回原位。轻点一下还是收起来</li>
+              <li><span class="li-tag tag-ui">界面</span><b>可放区域明确成房间的下半部分</b>。以前只有一条看不见的线在管，摆的时候全靠试。现在编辑时墙会压暗，一眼看出家具只能摆在下半部分（16×16 是下面 8 行），挂墙的钟和画不受此限</li>
+              <li><span class="li-tag tag-new">新功能</span><b>墙上开了一扇小窗，窗外是会变的天气</b>：晴、多云、雨、雪、清晨、黄昏、夜。按<b>北京时间的小时</b>切换昼夜，按<b>当天的日期</b>决定这天是晴是雨（同一天里大家看到的一样，过一天就换），下雨下雪时雨滴雪花会往下落。<b>只有冬天才会下雪</b></li>
+              <li><span class="li-tag tag-ui">界面</span>小屋标题上会写出当前天气（比如「16×16 · 3 件摆出来 · 晴」）</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="group">
+        <div class="ver red">
+          <div class="ver-body">
             <div class="ver-title"><span class="ver-tag">v1.6.1</span> 小屋能留言了 · 也能给屋主送光尘 <span class="ver-date">2026-10</span></div>
             <ul class="ver-list">
               <li><span class="li-tag tag-new">新功能</span><b>小屋留言板</b>：去别人家串门时，下面多了一块留言板，可以留一句话（最多 60 字）。屋主在自己家里能看到，也能<b>删掉自己板子上的留言</b>。同一个人只保留最新一条，免得一个人把板子刷满</li>

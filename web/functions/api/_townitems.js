@@ -231,7 +231,7 @@ export const WALL_OK = [
   'chandelier',
 ]
 
-export const FURNITURE = RAW.map(([id, name, price, cat, art, craftOnly]) => ({
+export const FURNITURE_BASE = RAW.map(([id, name, price, cat, art, craftOnly]) => ({
   id,
   name,
   price,
@@ -240,6 +240,101 @@ export const FURNITURE = RAW.map(([id, name, price, cat, art, craftOnly]) => ({
   wallOk: WALL_OK.indexOf(id) >= 0,
   craftOnly: !!craftOnly, // 只能合成，商店不卖
 }))
+
+/* -------------------- 配色变体：一次性把家具扩到 600+ --------------------
+   手写五百件家具不现实，也没必要 —— 玩家真正感知到的是「颜色和样子不一样」。
+   所以拿基础家具做色相/明度偏移，每件变体自带一份调色板（pal 字段），
+   渲染时优先用它，没有才用全局 PAL。
+   104 件基础 × 5 套主题 = 520 件新家具。 */
+
+/** rgb -> hsl（h 0~360, s/l 0~1） */
+function rgb2hsl(c) {
+  const r = c[0] / 255, g = c[1] / 255, b = c[2] / 255
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b)
+  const l = (mx + mn) / 2
+  if (mx === mn) return [0, 0, l]
+  const d = mx - mn
+  const s2 = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn)
+  let h
+  if (mx === r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6
+  else if (mx === g) h = ((b - r) / d + 2) / 6
+  else h = ((r - g) / d + 4) / 6
+  return [h * 360, s2, l]
+}
+
+/** hsl -> rgb（h 可以是任意度数，会自己绕回来） */
+function hsl2rgb(h, s, l) {
+  h = ((h % 360) + 360) % 360 / 360
+  s = Math.max(0, Math.min(1, s))
+  l = Math.max(0.04, Math.min(0.97, l))
+  if (s === 0) {
+    const v = Math.round(l * 255)
+    return [v, v, v]
+  }
+  const q = l < 0.5 ? l * (1 + s) : l + s - l * s
+  const pp = 2 * l - q
+  const f = (t) => {
+    if (t < 0) t += 1
+    if (t > 1) t -= 1
+    if (t < 1 / 6) return pp + (q - pp) * 6 * t
+    if (t < 1 / 2) return q
+    if (t < 2 / 3) return pp + (q - pp) * (2 / 3 - t) * 6
+    return pp
+  }
+  return [Math.round(f(h + 1 / 3) * 255), Math.round(f(h) * 255), Math.round(f(h - 1 / 3) * 255)]
+}
+
+/** 把一整套调色板整体偏移，得到主题化的一份 */
+function themePal(dh, ds, dl) {
+  const out = {}
+  for (const k of Object.keys(PAL)) {
+    const [h, s, l] = rgb2hsl(PAL[k])
+    /* 饱和度给个下限：不然深色主题一压，绿色会变成灰紫，
+       整套配色糊成一片看不出是什么东西。
+       本来就接近灰的颜色（石头、铁灰）不强行上色，保持中性。 */
+    const ns = s < 0.08 ? s : Math.max(0.17, s + ds)
+    out[k] = hsl2rgb(h + dh, ns, l + dl)
+  }
+  return out
+}
+
+/* 五套主题。mult 是价格倍数：越"贵气"的配色卖得越贵 */
+export const THEMES = [
+  { key: 'ink', name: '墨玉', dh: 208, ds: -0.12, dl: -0.11, mult: 1.6 },
+  { key: 'sea', name: '深海', dh: 170, ds: 0.05, dl: -0.06, mult: 1.35 },
+  { key: 'sakura', name: '樱花', dh: -56, ds: -0.03, dl: 0.13, mult: 1.45 },
+  { key: 'gold', name: '鎏金', dh: 30, ds: 0.09, dl: 0.02, mult: 1.8 },
+  { key: 'forest', name: '幽林', dh: 80, ds: -0.05, dl: -0.09, mult: 1.25 },
+]
+
+/* 每套主题的调色板只算一次，别每件家具都重算 */
+export const THEME_PAL = {}
+for (const t of THEMES) THEME_PAL[t.key] = themePal(t.dh, t.ds, t.dl)
+
+/** 给基础家具生成配色变体。合成限定的不做变体 —— 那批靠攒材料，不靠花钱 */
+function makeVariants() {
+  const out = []
+  for (const t of THEMES) {
+    for (const f of FURNITURE_BASE) {
+      if (f.craftOnly) continue
+      out.push({
+        id: f.id + '__' + t.key,
+        name: f.name + ' · ' + t.name,
+        price: Math.max(6, Math.round(f.price * t.mult)),
+        cat: f.cat,
+        art: f.art,
+        wallOk: f.wallOk,
+        craftOnly: false,
+        pal: THEME_PAL[t.key],
+        theme: t.key,
+        base: f.id,
+      })
+    }
+  }
+  return out
+}
+
+export const FURNITURE = FURNITURE_BASE.concat(makeVariants())
 
 /** 商店里能买到的（排除合成限定） */
 export const SHOP_ITEMS = FURNITURE.filter((f) => !f.craftOnly)

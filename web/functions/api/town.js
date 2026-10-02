@@ -7,7 +7,9 @@
 import { readActiveUser, pickToken, BANNED_ERROR } from './_auth.js'
 import { readBook, writeBook, giveHome, DUST_COST, publicView } from './_dust.js'
 import {
-  FURNITURE,
+  FURNITURE_BASE,
+  THEMES,
+  THEME_PAL,
   SURFACES,
   CAT_NAMES,
   SIZES,
@@ -54,9 +56,11 @@ export async function onRequestOptions() {
 /** 物品库：连像素画、分类和调色板一起发下去，前端不用自己维护一份。
     贴面（墙纸/地板）没有字符画，只有「图案 + 配色」，前端照着现画。 */
 const catalog = () => ({
-  /* 只能合成的那批（合成限定）不进商店 —— 让材料和光尘两条路互不挤占。
-     它们的定义在 _townitems.js 里，合成台那边自己下发。 */
-  furniture: FURNITURE.filter((f) => !f.craftOnly).map((f) => ({
+  /* 只发**基础家具**，配色变体（500 多件）由前端按下面的主题规则现算。
+     全发的话光目录就 208KB —— 手机打开小镇要白等好几秒。
+     规则简单且确定（基础 id + '__' + 主题 key），两边算出来必须一模一样。
+     只能合成的那批不进商店，它们的定义在 _townitems.js，合成台自己下发。 */
+  furniture: FURNITURE_BASE.filter((f) => !f.craftOnly).map((f) => ({
     id: f.id,
     name: f.name,
     price: f.price,
@@ -64,6 +68,7 @@ const catalog = () => ({
     art: f.art,
     wallOk: !!f.wallOk, // 能不能挂墙上；不行的必须站在地上
   })),
+  themes: THEMES.map((t) => ({ key: t.key, name: t.name, mult: t.mult, pal: THEME_PAL[t.key] })),
   surfaces: SURFACES.map((s) => ({ id: s.id, name: s.name, price: s.price, kind: s.kind, pat: s.pat, colors: s.colors })),
   cats: CAT_NAMES,
   sizes: SIZES,

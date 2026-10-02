@@ -79,6 +79,7 @@ export default {
         touch-action: manipulation;
       }
       .tw-room.editing { cursor: crosshair; }
+      .tw-room.dragging { cursor: grabbing; }
       .tw-acts { display: flex; justify-content: center; margin-top: 12px; }
       .tw-acts > * + * { margin-left: 8px; }
       .tw-btn {
@@ -123,7 +124,46 @@ export default {
       .tw-tab.on { background: var(--accent); border-color: var(--accent); color: #fff; }
       .tw-hint { font-size: 12px; color: var(--text-faint); line-height: 1.8; padding: 2px 0; }
 
-      /* ---------- 留言板 ---------- */
+      /**
+     * 这件东西放在当前位置行不行。
+     * 行就返回 true；不行返回一句能直接给人看的原因。
+     * 拖拽落点和「拿在手上放下」都走这一套判定，规则只有一份。
+     */
+    function placeWhy(it, exceptIdx) {
+      const f = findItem(it.id)
+      if (!f || !f.art) return '这件东西不认识了'
+      const sz = artSize(f.art)
+      if (it.x < 0 || it.y < 0 || it.x + sz.w > ROOM || it.y + sz.h > ROOM) return '这里放不下，往里边挪一挪'
+      if (!f.wallOk && it.y + sz.h - 1 < floorY) return '「' + f.name + '」得放在地上，往下挪一挪'
+      for (let i = 0; i < house.items.length; i++) {
+        if (i === exceptIdx) continue
+        const o = house.items[i]
+        const g = findItem(o.id)
+        if (!g || !g.art) continue
+        const gs = artSize(g.art)
+        if (it.x < o.x + gs.w && it.x + sz.w > o.x && it.y < o.y + gs.h && it.y + sz.h > o.y) {
+          return '这里已经有东西了'
+        }
+      }
+      return true
+    }
+
+    /* 天气动画：4 帧/秒就够了，像素雨雪不需要更顺 */
+    function startWeather() {
+      stopWeather()
+      wxTimer = setInterval(() => {
+        wxT++
+        drawRoom()
+      }, 260)
+    }
+    function stopWeather() {
+      if (wxTimer) {
+        clearInterval(wxTimer)
+        wxTimer = null
+      }
+    }
+
+    /* ---------- 留言板 ---------- */
       .tw-gift { display: flex; align-items: center; margin-top: 12px; }
       .tw-gift .tw-btn { flex: 1; }
       .tw-gift .tw-btn.on { background: var(--surface-2); color: #2e7d32; border: 1px solid var(--border-input); }
@@ -189,7 +229,7 @@ export default {
     let mine = !wantUid
 
     let ROOM = 16 // 房间边长，由服务端下发（可扩建）
-    let floorY = 5 // 第几行往下算地板，同样由服务端给
+    let floorY = 8 // 第几行往下算地板：上半墙、下半地面（正好一半）
     let PAL = {}
     /* 物品库分两半：furniture 能摆在屋里，surfaces 是墙纸地板（整片贴）。
        shopTab 是家具铺当前翻到哪一页。 */
@@ -198,12 +238,41 @@ export default {
     let shopTab = 'seat'
     let woodName = ''
     let picked = '' // 手上拿着哪件家具，'' 表示空手
+    let dragOn = null // 正在拖的那件：{ i, dx, dy, ox, oy, moved }
+    let wxTimer = null // 天气动画
     let dirty = false
     /* 留言板与「送光尘给屋主」。liked 是「我给这间屋子送过没有」 */
     let msgs = []
     let liked = false
     let giftCost = 1
     let msgLen = 60
+
+    /**
+     * 把「基础家具 + 主题」拼成完整目录。
+     * 服务端只发 104 件基础家具和 5 套主题（16KB），500 多件配色变体在这里现算 ——
+     * 全发的话光目录就 208KB，手机打开小镇要白等好几秒。
+     * 这条规则必须和服务端 _townitems.js 里的 makeVariants 一模一样。
+     */
+    function buildCatalog(list, themes) {
+      const out = []
+      for (const f of list) out.push({ ...f, theme: '', pal: null, base: f.id })
+      for (const t of themes || []) {
+        for (const f of list) {
+          out.push({
+            id: f.id + '__' + t.key,
+            name: f.name + ' · ' + t.name,
+            price: Math.max(6, Math.round(f.price * t.mult)),
+            cat: f.cat,
+            art: f.art,
+            wallOk: f.wallOk,
+            theme: t.key,
+            pal: t.pal || null,
+            base: f.id,
+          })
+        }
+      }
+      return out
+    }
 
     const findItem = (id) => cat.furniture.find((x) => x.id === id) || cat.surfaces.find((x) => x.id === id)
     /** 下一档房间尺寸；已经是最大的就返回 null */
@@ -323,6 +392,99 @@ export default {
       }
     }
 
+    /* ---------- 小窗与天气 ----------
+       房间墙上那扇小窗会显示当前天气。天气按「北京时间的小时 + 当天日期」
+       算出来，所以同一天里大家看到的是同一种，过一天会换。 */
+    const WEATHER_NAME = { sunny: '晴', cloudy: '多云', rain: '雨', snow: '雪', dawn: '清晨', dusk: '黄昏', night: '夜' }
+
+    function hashStr(str) {
+      let h = 2166136261
+      const t = String(str)
+      for (let i = 0; i < t.length; i++) {
+        h ^= t.charCodeAt(i)
+        h = Math.imul(h, 16777619) >>> 0
+      }
+      return h
+    }
+
+    function weatherNow(now) {
+      const d = new Date((Number(now) || Date.now()) + 8 * 3600000)
+      const h = d.getUTCHours()
+      const month = d.getUTCMonth() + 1
+      const day = d.getUTCFullYear() * 10000 + month * 100 + d.getUTCDate()
+      if (h < 5 || h >= 20) return 'night'
+      if (h < 7) return 'dawn'
+      if (h >= 18) return 'dusk'
+      const pool = ['sunny', 'sunny', 'sunny', 'cloudy', 'cloudy', 'rain']
+      if (month >= 11 || month <= 2) pool.push('snow', 'snow') // 冬天才会下雪
+      return pool[hashStr(day) % pool.length]
+    }
+
+    /** 小窗贴在墙上偏右，随房间大小缩放 */
+    function windowRect() {
+      const w = Math.max(3, Math.round(ROOM * 0.26))
+      const h = Math.max(3, Math.round(ROOM * 0.24))
+      return { x: Math.round(ROOM * 0.62), y: Math.round(ROOM * 0.12), w, h }
+    }
+
+    const SKY = {
+      sunny: [126, 186, 232], cloudy: [150, 164, 178], rain: [86, 104, 126],
+      snow: [206, 222, 236], dawn: [232, 168, 140], dusk: [198, 124, 132], night: [38, 44, 76],
+    }
+
+    let wxT = 0 // 天气动画的帧计数
+
+    function drawWindow(c, weather) {
+      const r = windowRect()
+      const sky = SKY[weather] || SKY.sunny
+      c.fillStyle = 'rgb(' + sky[0] + ',' + sky[1] + ',' + sky[2] + ')'
+      c.fillRect(r.x, r.y, r.w, r.h)
+
+      const put = (px, py, col) => {
+        if (px < r.x || py < r.y || px >= r.x + r.w || py >= r.y + r.h) return
+        c.fillStyle = 'rgb(' + col[0] + ',' + col[1] + ',' + col[2] + ')'
+        c.fillRect(px, py, 1, 1)
+      }
+
+      // 太阳 / 月亮
+      if (weather === 'sunny' || weather === 'dawn' || weather === 'dusk') {
+        const sc = weather === 'sunny' ? [255, 228, 126] : [255, 178, 96]
+        for (let j = 0; j < 2; j++) for (let i = 0; i < 2; i++) put(r.x + r.w - 3 + i, r.y + 1 + j, sc)
+      } else if (weather === 'night') {
+        put(r.x + r.w - 3, r.y + 1, [246, 242, 210])
+        put(r.x + r.w - 2, r.y + 1, [246, 242, 210])
+        put(r.x + r.w - 3, r.y + 2, [246, 242, 210])
+        put(r.x + r.w - 2, r.y + 2, [206, 202, 176])
+        for (let i = 0; i < 4; i++) put(r.x + 1 + ((i * 3) % Math.max(1, r.w - 2)), r.y + 1 + ((i * 2) % Math.max(1, r.h - 2)), [222, 228, 250])
+      }
+
+      // 云
+      if (weather === 'cloudy' || weather === 'rain' || weather === 'snow') {
+        const cc = weather === 'cloudy' ? [234, 238, 242] : [178, 190, 204]
+        put(r.x + 1, r.y + 1, cc); put(r.x + 2, r.y + 1, cc); put(r.x + 3, r.y + 1, cc)
+        put(r.x + 1, r.y + 2, cc); put(r.x + 2, r.y + 2, cc)
+      }
+
+      // 雨 / 雪：粒子随时间下落（用帧计数驱动，看着是动的）
+      if (weather === 'rain') {
+        for (let i = 0; i < 6; i++) put(r.x + ((i * 5 + 1) % r.w), r.y + ((i * 3 + Math.floor(wxT / 2)) % r.h), [178, 202, 234])
+      } else if (weather === 'snow') {
+        for (let i = 0; i < 5; i++) {
+          put(r.x + ((i * 4 + Math.floor(wxT / 6) + i) % r.w), r.y + ((i * 3 + Math.floor(wxT / 4)) % r.h), [252, 252, 255])
+        }
+      }
+
+      // 窗框 + 十字窗棂
+      c.fillStyle = 'rgb(120,88,58)'
+      c.fillRect(r.x - 1, r.y - 1, r.w + 2, 1)
+      c.fillRect(r.x - 1, r.y + r.h, r.w + 2, 1)
+      c.fillRect(r.x - 1, r.y, 1, r.h)
+      c.fillRect(r.x + r.w, r.y, 1, r.h)
+      c.fillStyle = 'rgb(142,106,70)'
+      c.fillRect(r.x + Math.floor(r.w / 2), r.y, 1, r.h)
+      c.fillRect(r.x, r.y + Math.floor(r.h / 2), r.w, 1)
+    }
+
     /* ---------- 房间 ---------- */
     function drawRoom() {
       const cv = $('twRoom')
@@ -341,14 +503,24 @@ export default {
           c.fillRect(x, y, 1, 1)
         }
       }
+      // 小窗（画在家具之前，挂墙的家具可以盖在上面）
+      drawWindow(c, weatherNow(Date.now()))
+
       // 墙脚线：一条深色横线，房间立刻有了纵深
       c.fillStyle = 'rgba(0,0,0,.20)'
       c.fillRect(0, FLOOR - 1, ROOM, 1)
-      // 家具
+
+      // 编辑时把「不能放东西的墙」压暗：一眼看出家具只能摆在下半部分
+      if (mine && (picked || dragOn)) {
+        c.fillStyle = 'rgba(30,24,18,.26)'
+        c.fillRect(0, 0, ROOM, FLOOR)
+      }
+
+      // 家具。每件可以自带调色板（配色变体就是这么来的），没有才用全局 PAL
       for (const it of house.items || []) {
         const f = findItem(it.id)
         if (!f || !f.art) continue
-        drawArt(c, f.art, PAL, it.x, it.y)
+        drawArt(c, f.art, f.pal || PAL, it.x, it.y)
       }
       // 布置模式：网格线，方便对齐
       if (mine && picked && cv.classList.contains('editing')) {
@@ -454,11 +626,20 @@ export default {
         .join('')
     }
 
+    /* 一次最多画这么多件。加了 500 多件配色变体之后，
+       一个分类能有一百多件 —— 全渲染出来会卡，而且翻半天也找不到。
+       超出的部分提示用分类翻页找。 */
+    const TRAY_MAX = 40
+
     function trayHtml() {
       const owned = house.owned || []
       const myItems = owned.map(findItem).filter((f) => f && !f.kind)
+      const myShow = myItems.slice(0, TRAY_MAX)
       const mineHtml = myItems.length
-        ? '<div class="tw-items">' + myItems.map((f) => itemBtn(f, 'pick')).join('') + '</div>'
+        ? '<div class="tw-items">' + myShow.map((f) => itemBtn(f, 'pick')).join('') + '</div>' +
+          (myItems.length > TRAY_MAX
+            ? '<div class="tw-hint">还有 ' + (myItems.length - TRAY_MAX) + ' 件没显示（收藏太多了，先显示前 ' + TRAY_MAX + ' 件）</div>'
+            : '')
         : '<div class="tw-hint">还一件家具都没有，去下面的铺子挑一件吧。</div>'
 
       let shelf
@@ -468,8 +649,12 @@ export default {
       } else {
         // 已经买下的不再重复摆在铺子里，省得翻半天
         const shop = cat.furniture.filter((f) => f.cat === shopTab && owned.indexOf(f.id) < 0)
+        const show = shop.slice(0, TRAY_MAX)
         shelf = shop.length
-          ? '<div class="tw-items">' + shop.map((f) => itemBtn(f, 'buy')).join('') + '</div>'
+          ? '<div class="tw-items">' + show.map((f) => itemBtn(f, 'buy')).join('') + '</div>' +
+            (shop.length > TRAY_MAX
+              ? '<div class="tw-hint">这一类还有 ' + (shop.length - TRAY_MAX) + ' 件，买下前面这些会继续露出来</div>'
+              : '')
           : '<div class="tw-hint">这一类的家具你都买齐了 🎉</div>'
       }
 
@@ -494,7 +679,7 @@ export default {
         const sz = artSize(f.art)
         cv.width = sz.w
         cv.height = sz.h
-        drawArt(cv.getContext('2d'), f.art, PAL, 0, 0)
+        drawArt(cv.getContext('2d'), f.art, f.pal || PAL, 0, 0)
       })
       // 贴面：画一小块样板，8×8 就够看出花纹了
       body.querySelectorAll('canvas[data-surface]').forEach((cv) => {
@@ -580,9 +765,10 @@ export default {
     function renderHome() {
       $('twTitle').textContent = mine ? '🏠 我的小屋' : '🏠 ' + (woodName || '镇民') + '的家'
       const nx = nextSizeOf()
+      const wname = WEATHER_NAME[weatherNow(Date.now())] || ''
       $('twSub').textContent = mine
-        ? ROOM + '×' + ROOM + ' · ' + (house.items || []).length + ' 件摆出来 · ' + (house.owned || []).length + ' 件收藏'
-        : ROOM + '×' + ROOM + ' · 来串门看看'
+        ? ROOM + '×' + ROOM + ' · ' + (house.items || []).length + ' 件摆出来 · ' + (house.owned || []).length + ' 件收藏 · ' + wname
+        : ROOM + '×' + ROOM + ' · 来串门看看 · ' + wname
       $('twBody').innerHTML =
         '<div class="tw-room-wrap">' +
         '<canvas class="tw-room' + (mine && picked ? ' editing' : '') + '" id="twRoom" width="' +
@@ -603,7 +789,8 @@ export default {
           : '') +
         '<div class="tw-note">' +
         (mine
-          ? '拿在手上的家具，点房间就能放下；空手时点屋里的家具可以收起来。<br />墙纸和地板在铺子的「🧱 墙纸 / 🟫 地板」里换。'
+          ? '家具<b>按住就能拖</b>，想摆哪儿拖到哪儿；轻点一下是收起来。<br />' +
+            '家具只能放在<b>下半部分</b>（墙压暗的那块），墙上的钟和画除外。'
           : '这是人家的屋子，只能看，动不了人家的东西。') +
         '</div>' +
         (mine
@@ -618,68 +805,134 @@ export default {
         boardHtml() +
         (mine ? trayHtml() : '')
       drawRoom()
+      startWeather()
       if (mine) bindTray()
 
       const cv = $('twRoom')
       if (cv && mine) {
-        cv.addEventListener('click', (ev) => {
+        /* 指针 -> 格子。画布有一条 1px 边框，而 getBoundingClientRect() 的宽度
+           是含边框的，不减掉的话点哪儿都偏一点，格子越小越明显。 */
+        const cellAt = (ev) => {
           const r = cv.getBoundingClientRect()
-          if (r.width <= 0) return
-          /* 画布有一条 1px 边框，而 getBoundingClientRect() 的宽度是含边框的。
-             不减掉的话点击位置会整体偏一点，格子越小越明显。 */
+          if (r.width <= 0) return null
           const bx = cv.clientLeft || 0
           const by = cv.clientTop || 0
           const iw = cv.clientWidth || r.width
           const ih = cv.clientHeight || r.height
-          const x = Math.floor(((ev.clientX - r.left - bx) / iw) * ROOM)
-          const y = Math.floor(((ev.clientY - r.top - by) / ih) * ROOM)
-          if (x < 0 || y < 0 || x >= ROOM || y >= ROOM) return
-
-          if (picked) {
-            // 放下手上这件
-            const f = findItem(picked)
-            if (!f || !f.art) return
-            const s = artSize(f.art)
-            if (x + s.w > ROOM || y + s.h > ROOM) {
-              msg('这里放不下，往左边或上边挪一挪', true)
-              return
-            }
-            // 床摆在墙上会像浮在半空。钟、画、窗这类挂墙的不在此限
-            if (!f.wallOk && y + s.h - 1 < floorY) {
-              msg('「' + f.name + '」得放在地上，往下挪一挪', true)
-              return
-            }
-            // 和已有家具重叠就不给放（服务端也会拦，这里先拦一次少一次往返）
-            for (const it of house.items) {
-              const g = findItem(it.id)
-              if (!g || !g.art) continue
-              const gs = artSize(g.art)
-              if (x < it.x + gs.w && x + s.w > it.x && y < it.y + gs.h && y + s.h > it.y) {
-                msg('这里已经有东西了', true)
-                return
-              }
-            }
-            house.items.push({ id: picked, x, y })
-            dirty = true
-            msg('')
-            if (window.sfx) window.sfx('pop')
-            renderHome()
-            return
+          return {
+            x: Math.floor(((ev.clientX - r.left - bx) / iw) * ROOM),
+            y: Math.floor(((ev.clientY - r.top - by) / ih) * ROOM),
           }
-          // 空手：点房间里的家具 = 收起来
+        }
+        /** 这个格子上是哪件家具（从后往前找，压在上面的先命中） */
+        const hitAt = (x, y) => {
           for (let i = house.items.length - 1; i >= 0; i--) {
             const it = house.items[i]
             const f = findItem(it.id)
             if (!f || !f.art) continue
-            const s = artSize(f.art)
-            if (x >= it.x && x < it.x + s.w && y >= it.y && y < it.y + s.h) {
-              house.items.splice(i, 1)
-              dirty = true
-              if (window.sfx) window.sfx('undo')
-              renderHome()
-              return
-            }
+            const sz = artSize(f.art)
+            if (x >= it.x && x < it.x + sz.w && y >= it.y && y < it.y + sz.h) return i
           }
+          return -1
+        }
+
+        /* ---- 拖动：按住屋里的家具直接拖到别处。
+           以前只能「收起来再重新放」，想挪一格都得重来一遍，
+           家具一多根本摆不整齐。 ---- */
+        cv.addEventListener('pointerdown', (ev) => {
+          if (picked) return // 手上有东西时，按下就是「放下」，交给 click
+          const p = cellAt(ev)
+          if (!p) return
+          const i = hitAt(p.x, p.y)
+          if (i < 0) return
+          const it = house.items[i]
+          dragOn = { i, dx: p.x - it.x, dy: p.y - it.y, ox: it.x, oy: it.y, moved: false }
+          try {
+            cv.setPointerCapture(ev.pointerId)
+          } catch (e) {}
+        })
+
+        cv.addEventListener('pointermove', (ev) => {
+          if (!dragOn) return
+          const p = cellAt(ev)
+          if (!p) return
+          const it = house.items[dragOn.i]
+          if (!it) return
+          const nx = p.x - dragOn.dx
+          const ny = p.y - dragOn.dy
+          if (nx === it.x && ny === it.y) return
+          if (!dragOn.moved) {
+            dragOn.moved = true
+            cv.classList.add('dragging')
+            if (window.sfx) window.sfx('tick')
+          }
+          it.x = nx
+          it.y = ny
+          drawRoom()
+        })
+
+        const endDrag = (cancel) => {
+          if (!dragOn) return
+          const d = dragOn
+          dragOn = null
+          cv.classList.remove('dragging')
+          const it = house.items[d.i]
+          if (!it) {
+            drawRoom()
+            return
+          }
+          if (cancel) {
+            it.x = d.ox
+            it.y = d.oy
+            drawRoom()
+            return
+          }
+          if (!d.moved) {
+            // 按下去没动 = 轻点 → 收起来（保持原来的手感）
+            house.items.splice(d.i, 1)
+            dirty = true
+            if (window.sfx) window.sfx('undo')
+            msg('')
+            renderHome()
+            return
+          }
+          // 真的拖了：看看落点能不能放
+          const why = placeWhy(it, d.i)
+          if (why !== true) {
+            it.x = d.ox
+            it.y = d.oy
+            msg(why, true)
+            if (window.sfx) window.sfx('close')
+            drawRoom()
+            return
+          }
+          dirty = true
+          if (window.sfx) window.sfx('pop')
+          msg('挪好了，记得点「保存布置」')
+          renderHome()
+        }
+        cv.addEventListener('pointerup', () => endDrag(false))
+        cv.addEventListener('pointercancel', () => endDrag(true))
+
+        /* ---- 点击：手上拿着东西时，点房间就是放下 ---- */
+        cv.addEventListener('click', (ev) => {
+          if (!picked) return
+          const p = cellAt(ev)
+          if (!p) return
+          const { x, y } = p
+          if (x < 0 || y < 0 || x >= ROOM || y >= ROOM) return
+          const f = findItem(picked)
+          if (!f || !f.art) return
+          const why = placeWhy({ id: picked, x, y }, -1)
+          if (why !== true) {
+            msg(why, true)
+            return
+          }
+          house.items.push({ id: picked, x, y })
+          dirty = true
+          msg('')
+          if (window.sfx) window.sfx('pop')
+          renderHome()
         })
       }
 
@@ -896,9 +1149,15 @@ export default {
           return
         }
         ROOM = d.room || 16
-        floorY = d.floor || Math.max(4, Math.round(ROOM / 3))
+        floorY = d.floor || Math.max(4, Math.round(ROOM / 2))
         PAL = d.pal || {}
-        cat = d.catalog || { furniture: [], surfaces: [], cats: {} }
+        const c = d.catalog || {}
+        cat = {
+          furniture: buildCatalog(c.furniture || [], c.themes || []),
+          surfaces: c.surfaces || [],
+          cats: c.cats || {},
+          sizes: c.sizes || [],
+        }
         if (isHome) {
           house = d.house || { wall: '', floor: '', items: [], owned: [] }
           mine = !!d.mine
