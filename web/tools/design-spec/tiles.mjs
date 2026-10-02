@@ -79,8 +79,8 @@ body { font-family: "HarmonyOS Sans SC", -apple-system, "PingFang SC", "Microsof
 .pal b { font-size: 13px; color: #3b342c; font-weight: 700; margin-right: 8px; }
 .pal .sw { display: inline-block; width: 23px; height: 23px; border-radius: 5px; margin-right: 3px;
   vertical-align: middle; border: 1px solid rgba(0,0,0,.06); }
-.badges { display: flex; flex-wrap: wrap; padding-bottom: 8px; }
-.badges > * { margin: 0 6px 6px 0; transform: scale(.92); transform-origin: left center; }
+.badges { display: flex; flex-wrap: wrap; justify-content: center; padding: 2px 0 14px; }
+.badges > * { margin: 0 7px 8px 0; transform: scale(.9); transform-origin: center; }
 .roomwrap { margin-top: 2px; }
 .roomwrap canvas { image-rendering: pixelated; display: block; border-radius: 10px; }
 .close { background: #241f1a; color: #fff; align-items: center; justify-content: center; text-align: center; }
@@ -323,15 +323,15 @@ DATA.surfaces.slice(0,24).forEach(s=>{const d=document.createElement('div');d.cl
 /* 8 卡片 —— 3 张作品卡 + 4 张数据卡 + 徽章行 */
 (function(){
  const row=document.createElement('div');
- row.style.cssText='width:100%;display:flex;justify-content:center;align-items:flex-start;margin-bottom:13px';
+ row.style.cssText='width:100%;display:flex;justify-content:center;align-items:flex-start;margin-bottom:18px';
  [['爱心',16,11],['小树',16,20],['蘑菇',16,33]].forEach(([nm,sz,av])=>{
   const card=document.createElement('div');card.className='card';
-  card.style.cssText='width:106px;margin:0 6px;flex:none';
+  card.style.cssText='width:96px;margin:0 7px;flex:none';
   const c=cv(16,16);px16(c,DATA.avatars[av]);
   const im=document.createElement('img');im.className='art';im.src=c.toDataURL();im.alt=nm;card.appendChild(im);
   const meta=document.createElement('div');meta.className='card-meta';
   const a1=document.createElement('span');a1.className='card-name';a1.textContent=nm;meta.appendChild(a1);
-  const a2=document.createElement('span');a2.className='card-size';a2.textContent=sz+'×'+sz;meta.appendChild(a2);
+  // 不挂尺寸角标：卡片窄，名字会被挤成「爱…」，名字优先
   card.appendChild(meta);
   const sub=document.createElement('div');sub.className='card-sub';
   const ac=cv(20,20);ac.className='card-av';px16(ac,DATA.avatars[av+3]);sub.appendChild(ac);
@@ -342,14 +342,14 @@ DATA.surfaces.slice(0,24).forEach(s=>{const d=document.createElement('div');d.cl
  put('t8',row);
  // 数据卡 4 张
  const row2=document.createElement('div');
- row2.style.cssText='width:100%;display:flex;justify-content:center;margin-bottom:14px';
+ row2.style.cssText='width:100%;display:flex;justify-content:center;margin-bottom:20px';
  [['发布作品','4'],['收到的光尘','46'],['创作天数','7'],['成就','42']].forEach(([l,v])=>{
   const d=document.createElement('div');d.className='in-card';
-  d.style.cssText='width:100px;margin:0 5px;padding:11px 10px;flex:none';
+  d.style.cssText='width:92px;margin:0 5px;padding:9px 8px;flex:none';
   const t=document.createElement('div');t.className='card-title';t.textContent=l;
-  t.style.fontSize='13px';d.appendChild(t);
+  t.style.fontSize='12px';d.appendChild(t);
   const k=document.createElement('div');k.className='in-num';k.textContent=v;
-  k.style.fontSize='26px';d.appendChild(k);
+  k.style.fontSize='23px';d.appendChild(k);
   row2.appendChild(d)});
  put('t8',row2);
 })();
