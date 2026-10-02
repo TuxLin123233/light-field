@@ -101,6 +101,14 @@ export default {
         background: var(--accent); color: #fff; cursor: pointer; white-space: nowrap;
       }
       .u-chat:active { opacity: 0.85; }
+      .u-visit {
+        border: 1px solid var(--border-strong);
+        border-radius: 999px; padding: 7px 14px;
+        font-size: 13px; font-weight: 700; font-family: inherit;
+        background: var(--surface); color: var(--text-muted); cursor: pointer;
+        white-space: nowrap;
+      }
+      .u-visit:active { opacity: 0.8; }
       .u-follow[disabled] { opacity: 0.55; cursor: default; }
       .u-friend-tip {
         font-size: 11px; color: var(--ok); font-weight: 700; margin-top: 6px;
@@ -388,6 +396,10 @@ export default {
             (f.friend
               ? '<button class="u-chat" id="uChatBtn" type="button">💬 与他聊天</button>'
               : '') +
+            /* 去逛他家的小屋。小屋那条链路本来就支持看别人
+               （/town/home?to=xxx 会带 uid 去读），只是主页上一直没入口，
+               于是「小镇」这个玩法只有屋主自己进得去，别人看不到。 */
+            '<button class="u-visit" id="uVisitBtn" type="button">🏠 逛他家</button>' +
             '<button class="u-follow' + (f.iFollow ? ' on' : '') + '" id="uFollowBtn" type="button">' +
             (f.friend ? '🤝 好友' : f.iFollow ? '已申请' : '＋ 加好友') + '</button>' +
             '</div>') +
@@ -593,6 +605,20 @@ export default {
           else location.href = '/chat?to=' + encodeURIComponent(uid)
           cb.disabled = false
           cb.textContent = old
+        })
+      }
+
+      /* 逛他家的小屋。
+         用 uid 而不是用户名：小屋接口认 uid，用户改名后链接不会失效。
+         没登录也能看（town.js 那边 wantUid 为空时才是「自己」）。 */
+      const vb = $('uVisitBtn')
+      if (vb) {
+        vb.addEventListener('click', () => {
+          if (window.sfx) window.sfx('tap')
+          // wantUid：不论是用 uid 还是用户名进来的，到这里都已经换算成真 uid 了
+          const to = '/town/home?to=' + encodeURIComponent(profile.uid || wantUid)
+          if (window.__lwRouter) window.__lwRouter.push(to)
+          else location.href = to
         })
       }
 

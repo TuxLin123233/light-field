@@ -24,6 +24,7 @@ import {
   furnitureById,
   readHouse,
   writeHouse,
+  emptyHouse,
   sanitizeItems,
   registerHouse,
   refreshEntry,
@@ -133,9 +134,24 @@ export async function onRequestGet(context) {
   const house = await readHouse(kv, wantUid)
   const list = await readList(kv)
   const entry = list.find((h) => h && h.uid === wantUid)
-  if (!entry) return json({ error: '小镇上还没有这间屋子' }, 404)
+  if (!entry) {
+    /* 还没盖房子的人：以前直接 404，因为那时只有屋主自己会进来，
+       没屋子就等于数据坏了。现在主页上有了「逛他家」的入口，
+       点进一个没盖房子的人很常见 —— 直接 404 的话，town.js 会把
+       整页换成一句「小镇上还没有这间屋子」，用户看到的是报错，
+       不知道这是「他家还是空的」。
+
+       所以改成照常返回一间空屋，外加 hasHouse:false。
+       前端据此显示「他家还没盖房子呢」，画面正常，只是一间空房。 */
+    return json({
+      ok: true, uid: wantUid, name: (who && who.uid === wantUid ? who.username : '') || '这位画师',
+      mine: !!(who && who.uid === wantUid), hasHouse: false,
+      ...roomInfo(emptyHouse()), pal: PAL, catalog: catalog(), house: emptyHouse(),
+    })
+  }
   return json({
     ok: true, uid: wantUid, name: entry.name || '镇民', mine: !!(who && who.uid === wantUid),
+    hasHouse: true,
     ...roomInfo(house), pal: PAL, catalog: catalog(), house,
     ...(await msgInfo(kv, wantUid, who ? who.uid : '')),
   })

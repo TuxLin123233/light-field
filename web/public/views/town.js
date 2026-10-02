@@ -205,6 +205,9 @@ export default {
     const wantUid = (q.get('to') || q.get('uid') || '').trim()
     const isHome = /\/town\/home\/?$/.test(location.pathname)
     let mine = !wantUid
+    // 服务端对「还没盖房子的人」会返回空屋 + hasHouse:false，
+    // 这时要说清楚是「他家还是空的」，不能让人以为加载失败了
+    let hasHouse = true
 
     let ROOM = 16 // 房间边长，由服务端下发（可扩建）
     let floorY = 8 // 第几行往下算地板：上半墙、下半地面（正好一半）
@@ -947,7 +950,7 @@ export default {
       const wname = WEATHER_NAME[curWeather()] || (myWeather ? '自定义' : '')
       $('twSub').textContent = mine
         ? ROOM + '×' + ROOM + ' · ' + (house.items || []).length + ' 件摆出来 · ' + (house.owned || []).length + ' 件收藏 · ' + wname
-        : ROOM + '×' + ROOM + ' · 来串门看看 · ' + wname
+        : (hasHouse ? ROOM + '×' + ROOM + ' · 来串门看看' : '他家还没盖房子呢') + ' · ' + wname
       $('twBody').innerHTML =
         '<div class="tw-room-wrap">' +
         '<canvas class="tw-room' + (mine ? ' mine' : '') + (mine && picked ? ' editing' : '') + '" id="twRoom" width="' +
@@ -982,7 +985,9 @@ export default {
         (mine
           ? '家具<b>按住就能拖</b>，想摆哪儿拖到哪儿；轻点一下是收起来。<br />' +
             '家具只能放在<b>下半部分</b>（墙压暗的那块），墙上的钟和画除外。'
-          : '这是人家的屋子，只能看，动不了人家的东西。') +
+          : hasHouse
+            ? '这是人家的屋子，只能看，动不了人家的东西。'
+            : '他还没来小镇盖房子。等他盖好了，你再来串门。') +
         '</div>' +
         (mine
           ? ''
@@ -1367,6 +1372,7 @@ export default {
           myWeather = house.weather || ''
           WEATHER_LIST = isHome ? (cat.weathers || []) : WEATHER_LIST
           mine = !!d.mine
+          hasHouse = d.hasHouse !== false
           woodName = d.name || ''
           msgs = d.msgs || []
           liked = !!d.liked
