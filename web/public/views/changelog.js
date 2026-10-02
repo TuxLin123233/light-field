@@ -252,8 +252,32 @@ export default {
           <h1>更新日志</h1>
           <div class="header-sub">像素小镇 · 每次更新都有迹可循</div>
         </div>
-        <router-link class="theme-btn" to="/settings" title="设置" aria-label="设置">⚙️</router-link>
       </div>
+
+      <section class="group">
+        <div class="ver red">
+          <div class="ver-body">
+            <div class="ver-title"><span class="ver-tag">v1.5.1</span> 聊天送光尘 · 涂鸦 · 猜拳 · 家具 104 件 · 房间能扩建 <span class="ver-date">2026-10</span></div>
+            <ul class="ver-list">
+              <li><span class="li-tag tag-new">新功能</span><b>聊天不再只有打字和表情了</b>。输入框左边多了一个「＋」，里面是四样东西：<b>🎁 送光尘 / 🎨 涂鸦 / 🖼️ 画作 / 🎲 猜拳</b></li>
+              <li><span class="li-tag tag-new">新功能</span><b>🎁 送光尘</b>：选个金额（也能自己填），送出去就<b>真的进对方账本</b>，不是贴个图。气泡会显示成一张礼物卡，可以附一句话</li>
+              <li><span class="li-tag tag-new">新功能</span><b>🎨 手绘涂鸦</b>：16×16 的小画板，16 种颜色，用手指随手画一张发过去。像素小镇里聊天当然要能画两笔</li>
+              <li><span class="li-tag tag-new">新功能</span><b>🖼️ 分享画作</b>：从自己的作品里挑一幅发过去，对方点一下就能跳到社区里看那一幅</li>
+              <li><span class="li-tag tag-new">新功能</span><b>🎲 猜拳</b>：石头剪刀布，<b>可以押光尘</b>（最多 200）。有个讲究：你先出拳，但<b>在对方出拳之前，他看不到你出的是什么</b> —— 服务端会把没出完的那一方的拳藏起来，所以后出的人占不到便宜。平局谁也不用掏钱</li>
+              <li><span class="li-tag tag-new">新功能</span><b>↩️ 引用回复</b>和<b>😀 表情回应</b>：每条消息下面有「引用」和「回应」两个小按钮。回应支持 👍❤️😂😮😢🎉，再点一次就取消，不刷屏也能搭上话</li>
+              <li><span class="li-tag tag-new">新功能</span>小屋的家具从 12 件扩到 <b>104 件</b>，分成 12 类（座椅 / 桌台 / 床铺 / 收纳 / 灯具 / 植物 / 装饰 / 电器 / 乐器 / 宠物 / 厨具 / 杂物），从 8 光尘的蜡烛到 200 光尘的王座。家具铺改成分类翻页，买过的自动从铺子里消失</li>
+              <li><span class="li-tag tag-new">新功能</span><b>墙纸和地板</b>，一共 50 款。不是硬画 50 张图，而是 8 种墙纸花纹 × 4 套配色现算出来的。白送「白墙 + 橡木地板」，新屋子不会一进去就是毛坯。买完自动换上，不用手动摆</li>
+              <li><span class="li-tag tag-new">新功能</span><b>屋子能扩建了</b>：16×16 → <b>24×24（300 光尘）</b> → <b>32×32（800 光尘）</b>。墙的高度按比例一起涨，房子才不会显得扁。扩建后<b>家具会自动往下挪</b>，跟着新地板线走，不用重新摆</li>
+              <li><span class="li-tag tag-new">新功能</span><b>家具得站在地上</b>了。以前床能摆到墙上，看着像浮在半空。现在钟、画、窗、挂旗这类 11 件可以挂墙，其余的必须有一条腿落在地板上</li>
+              <li><span class="li-tag tag-ui">界面</span>小镇地图不再是一块光秃秃的绿底：加了村口土路、草地纹理、房子门口的一小块草地，还有块木牌告示。屋里有东西的人家，烟囱会冒烟</li>
+              <li><span class="li-tag tag-fix">修复</span><b>「成就数量有时候是 0」</b>。角标在页面里默认就写死成 0，接口一失败（掉线、登录过期）就永远停在那个 0 上 —— 不是变成 0，是从来没被覆盖过。信箱、每日任务、送过光尘三个角标有同样的毛病，一起改了：<b>没拿到数据就不显示数字，不谎报 0</b></li>
+              <li><span class="li-tag tag-fix">修复</span><b>作品卡片大小不一致</b>。卡片里的画用整数倍放大不会出白边，但 16×16 最大能放到 80px、64×64 只能放到 64px，两种画摆在一排就一大一小。现在改成铺满格子，<b>不管原图多大都显示成一样大</b></li>
+              <li><span class="li-tag tag-ui">界面</span>设置<b>只能在「我的」里打开了</b>。常见问题、更新日志、全部作品三个页面右上角那个齿轮按钮删掉了，后台的「返回设置」也改成了「返回我的」</li>
+              <li><span class="li-tag tag-fix">修复</span>扩建后<b>家具被清空</b>的问题。房间一大，地板线就往下走，原来站在地上的床按新规则就「违规」了，被读存档的校验默默丢掉。现在「读存档」和「校验新摆放」是两套规则，扩建时家具还会跟着地板线一起下移</li>
+            </ul>
+          </div>
+        </div>
+      </section>
 
       <section class="group">
         <div class="ver red">

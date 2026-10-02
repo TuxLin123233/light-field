@@ -81,7 +81,6 @@ export default {
           <h1>常见问题</h1>
           <div class="header-sub">一些你可能想问、但我还没做的事</div>
         </div>
-        <router-link class="theme-btn" to="/settings" title="设置" aria-label="设置">⚙️</router-link>
       </div>
 
       <div class="q-card">

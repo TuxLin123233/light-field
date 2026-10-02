@@ -1512,7 +1512,6 @@ export default {
           <h1>全部作品</h1>
           <div id="count">加载中…</div>
         </div>
-        <router-link class="theme-btn" to="/settings" title="设置" aria-label="设置">⚙️</router-link>
       </div>
 
       <section class="finder" id="finder">

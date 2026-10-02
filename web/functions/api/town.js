@@ -8,8 +8,15 @@ import { readActiveUser, pickToken, BANNED_ERROR } from './_auth.js'
 import { readBook, writeBook } from './_dust.js'
 import {
   FURNITURE,
+  SURFACES,
+  CAT_NAMES,
+  SIZES,
   ROOM,
+  floorLine,
+  nextSize,
   PAL,
+  itemById,
+  surfaceById,
   furnitureById,
   readHouse,
   writeHouse,
@@ -36,8 +43,24 @@ export async function onRequestOptions() {
   return new Response(null, { status: 204, headers: CORS_HEADERS })
 }
 
-/** 家具库：连像素画和调色板一起发下去，前端不用自己维护一份 */
-const catalog = () => FURNITURE.map((f) => ({ id: f.id, name: f.name, price: f.price, art: f.art }))
+/** 物品库：连像素画、分类和调色板一起发下去，前端不用自己维护一份。
+    贴面（墙纸/地板）没有字符画，只有「图案 + 配色」，前端照着现画。 */
+const catalog = () => ({
+  furniture: FURNITURE.map((f) => ({
+    id: f.id,
+    name: f.name,
+    price: f.price,
+    cat: f.cat,
+    art: f.art,
+    wallOk: !!f.wallOk, // 能不能挂墙上；不行的必须站在地上
+  })),
+  surfaces: SURFACES.map((s) => ({ id: s.id, name: s.name, price: s.price, kind: s.kind, pat: s.pat, colors: s.colors })),
+  cats: CAT_NAMES,
+  sizes: SIZES,
+})
+
+/** 房间尺寸和地板线一起下发：前端画房间、判「有没有站在地上」都要用 */
+const roomInfo = (house) => ({ room: house.size, floor: floorLine(house.size) })
 
 export async function onRequestGet(context) {
   const { request, env } = context
@@ -73,7 +96,7 @@ export async function onRequestGet(context) {
     await refreshEntry(kv, who.uid, who.username, house)
     return json({
       ok: true, uid: who.uid, name: who.username, mine: true,
-      room: ROOM, pal: PAL, catalog: catalog(), house,
+      ...roomInfo(house), pal: PAL, catalog: catalog(), house,
     })
   }
 
@@ -83,7 +106,7 @@ export async function onRequestGet(context) {
   if (!entry) return json({ error: '小镇上还没有这间屋子' }, 404)
   return json({
     ok: true, uid: wantUid, name: entry.name || '镇民', mine: !!(who && who.uid === wantUid),
-    room: ROOM, pal: PAL, catalog: catalog(), house,
+    ...roomInfo(house), pal: PAL, catalog: catalog(), house,
   })
 }
 
@@ -107,10 +130,10 @@ export async function onRequestPost(context) {
   const house = await readHouse(kv, who.uid)
   const action = (body && body.action) || ''
 
-  /* 买家具：买过就不再收费，想摆几件摆几件 */
+  /* 买家具或贴面：买过就不再收费，想摆几件摆几件 */
   if (action === 'buy') {
-    const f = furnitureById(body.id)
-    if (!f) return json({ error: '没有这件家具' }, 400)
+    const f = itemById(body.id)
+    if (!f) return json({ error: '没有这件东西' }, 400)
     if (house.owned.indexOf(f.id) >= 0) {
       return json({ ok: true, already: true, owned: house.owned, book: null })
     }
@@ -126,7 +149,7 @@ export async function onRequestPost(context) {
 
   /* 保存布置：只让摆自己已经买下的家具 */
   if (action === 'save') {
-    const items = sanitizeItems(body.items)
+    const items = sanitizeItems(body.items, house.size)
     if (!items) return json({ error: '布置数据不合法（越界、重叠或没买过这件家具）' }, 400)
     for (const it of items) {
       if (house.owned.indexOf(it.id) < 0) {
@@ -141,7 +164,50 @@ export async function onRequestPost(context) {
     return json({ ok: true, items: house.items, savedAt: house.updatedAt })
   }
 
-  /* 一键收起来 */
+  /* 扩建：屋子越住越大，家具原地不动。
+     只升不降 —— 降级要把放不下的家具挪走，那是给用户找麻烦。 */
+  if (action === 'upgrade') {
+    const nx = nextSize(house.size)
+    if (!nx) return json({ error: '这已经是你家最大的院子了' }, 400)
+    const book = await readBook(kv, who.uid)
+    const bal = Number(book.bal) || 0
+    if (bal < nx.price) {
+      return json({ error: '扩建要 ' + nx.price + ' 个光尘，还差 ' + (nx.price - bal) + ' 个', need: nx.price }, 400)
+    }
+    const after = await writeBook(kv, who.uid, { ...book, bal: bal - nx.price })
+    const from = house.size
+    /* 房间一大，地板线就往下走（16 是第 5 行，24 是第 8 行）。
+       家具要跟着往下挪同样的距离，否则原来站在地上的现在会浮在墙上。 */
+    const delta = floorLine(nx.size) - floorLine(house.size)
+    if (delta) {
+      house.items = (house.items || []).map((it) => ({ id: it.id, x: it.x, y: it.y + delta }))
+    }
+    house.size = nx.size
+    house.updatedAt = Date.now()
+    await writeHouse(kv, who.uid, house)
+    return json({
+      ok: true,
+      from,
+      size: house.size,
+      name: nx.name,
+      ...roomInfo(house),
+      book: { bal: after.bal, got: after.got },
+    })
+  }
+
+  /* 换墙纸 / 换地板：只认已经买下的 */
+  if (action === 'surface') {
+    const s = surfaceById(body.id)
+    if (!s) return json({ error: '没有这款贴面' }, 400)
+    if (house.owned.indexOf(s.id) < 0) return json({ error: '这款还没买下：' + s.id }, 400)
+    if (s.kind === 'wall') house.wall = s.id
+    else house.floor = s.id
+    house.updatedAt = Date.now()
+    await writeHouse(kv, who.uid, house)
+    return json({ ok: true, wall: house.wall, floor: house.floor })
+  }
+
+  /* 一键收起来：只收家具，墙纸地板留着 —— 那不算「摆在屋里」的东西 */
   if (action === 'clear') {
     house.items = []
     house.updatedAt = Date.now()

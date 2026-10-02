@@ -544,12 +544,12 @@ export default {
         </router-link>
         <router-link class="m-link" to="/mine/gifted">
           <span class="ml-ico">✨</span>
-          <span class="ml-num" id="lnkLiked">0</span>
+          <span class="ml-num" id="lnkLiked"></span>
           <span>送出的</span>
         </router-link>
         <router-link class="m-link" to="/mail">
           <span class="ml-ico">✉️</span>
-          <span class="ml-num" id="lnkMail">0</span>
+          <span class="ml-num" id="lnkMail"></span>
           <span>信箱</span>
         </router-link>
         <router-link class="m-link" to="/chat">
@@ -564,12 +564,12 @@ export default {
         </router-link>
         <router-link class="m-link" to="/tasks">
           <span class="ml-ico">📋</span>
-          <span class="ml-num" id="lnkTask">0</span>
+          <span class="ml-num" id="lnkTask"></span>
           <span>每日任务</span>
         </router-link>
         <router-link class="m-link" to="/achieve">
           <span class="ml-ico">🏅</span>
-          <span class="ml-num" id="lnkAch">0</span>
+          <span class="ml-num" id="lnkAch"></span>
           <span>成就</span>
         </router-link>
         <router-link class="m-link" to="/intro">
@@ -1220,9 +1220,11 @@ export default {
 
     /* ---------- 我的作品 ---------- */
     function paintThumb(canvas, pixels, size) {
-      // 统一走 LWThumb：整数倍缩放，不会切出白条纹
+      /* 统一走 LWThumb。这里用 fill 模式：让画布铺满格子宽度。
+         整数倍缩放虽然不会切出白条纹，但 16×16 最大能到 80px、
+         64×64 只能到 64px，两种画摆在一排就一大一小。 */
       if (window.LWThumb) {
-        window.LWThumb.draw(canvas, pixels, size)
+        window.LWThumb.draw(canvas, pixels, size, { fill: true })
         return
       }
       /* 兜底路径（LWThumb 没加载时）：背板用 1:1，靠 CSS 的 pixelated 放大。

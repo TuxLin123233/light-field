@@ -323,6 +323,141 @@ export default {
         padding: 6px 0; border-radius: 8px; cursor: pointer;
       }
       .ch-emoji-grid button:active { background: var(--surface-2); }
+
+      /* ---------- 更多功能 ---------- */
+      .ch-plus-btn {
+        flex: none; width: 36px; height: 36px; border-radius: 50%;
+        border: 1px solid var(--border-input); background: var(--surface-2);
+        color: var(--text-muted); font-size: 19px; line-height: 1;
+        font-family: inherit; cursor: pointer;
+      }
+      .ch-plus-btn.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+      .ch-plus {
+        position: absolute; left: 0; right: 0; bottom: 46px;
+        background: var(--surface); border: 1px solid var(--border-strong);
+        border-radius: 14px; padding: 10px; z-index: 6;
+        box-shadow: 0 8px 26px rgba(0,0,0,.16);
+      }
+      .ch-plus[hidden] { display: none; }
+      .ch-plus-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+      .ch-plus-i {
+        border: 1px solid var(--border-input); background: var(--surface-2);
+        border-radius: 12px; padding: 9px 4px; cursor: pointer;
+        display: flex; flex-direction: column; align-items: center; font-family: inherit;
+      }
+      .ch-plus-i span:first-child { font-size: 20px; line-height: 1.3; }
+      .ch-plus-i span:last-child { font-size: 10px; color: var(--text-muted); margin-top: 3px; }
+      .ch-plus-i.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
+      .ch-pane { margin-top: 10px; }
+      .ch-pane[hidden] { display: none; }
+      .ch-pane-h { font-size: 12px; font-weight: 800; color: var(--text); margin-bottom: 7px; }
+      .ch-chips { display: flex; flex-wrap: wrap; }
+      .ch-chip {
+        border: 1px solid var(--border-input); background: var(--surface-2);
+        color: var(--text-muted); border-radius: 999px; padding: 6px 13px;
+        font-size: 12px; font-weight: 700; font-family: inherit;
+        cursor: pointer; margin: 0 6px 6px 0;
+      }
+      .ch-chip.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+      .ch-pane-act { display: flex; margin-top: 8px; }
+      .ch-pane-act > * + * { margin-left: 8px; }
+      .ch-go {
+        flex: 1; border: 0; border-radius: 10px; padding: 10px;
+        background: var(--accent); color: #fff; font-size: 13px;
+        font-weight: 800; font-family: inherit; cursor: pointer;
+      }
+      .ch-go[disabled] { opacity: .5; cursor: default; }
+      .ch-go.ghost { background: var(--surface-2); color: var(--text-muted); border: 1px solid var(--border-input); flex: none; padding: 10px 15px; }
+      .ch-pane-tip { font-size: 11px; color: var(--text-faint); line-height: 1.7; margin-top: 6px; }
+      /* 涂鸦板 */
+      .ch-pad { display: flex; }
+      .ch-pad canvas {
+        width: 168px; height: 168px; flex: none; image-rendering: pixelated;
+        border: 1px solid var(--border-strong); border-radius: 10px;
+        background: #fff; touch-action: none; cursor: crosshair;
+      }
+      .ch-pad-colors { flex: 1; min-width: 0; margin-left: 10px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; align-content: start; }
+      .ch-pad-c { width: 100%; aspect-ratio: 1; border-radius: 7px; border: 1px solid var(--border-input); cursor: pointer; }
+      .ch-pad-c.on { outline: 2px solid var(--accent); outline-offset: 1px; }
+      /* 画作选择 */
+      .ch-works { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; max-height: 190px; overflow-y: auto; }
+      .ch-works button {
+        border: 1px solid var(--border-input); background: var(--surface-2);
+        border-radius: 9px; padding: 4px; cursor: pointer; font-family: inherit;
+      }
+      .ch-works button.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
+      .ch-works canvas { width: 100%; aspect-ratio: 1; image-rendering: pixelated; display: block; border-radius: 5px; }
+      .ch-works span { display: block; font-size: 9px; color: var(--text-muted); margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+      /* ---------- 气泡里的各种消息 ---------- */
+      .ch-gift {
+        display: flex; align-items: center; padding: 4px 2px;
+      }
+      .ch-gift-ico { font-size: 26px; margin-right: 8px; }
+      .ch-gift-amt { font-size: 17px; font-weight: 800; color: #b8860b; }
+      .ch-gift-note { font-size: 12px; opacity: .82; margin-top: 5px; }
+      .ch-doodle {
+        width: 128px; height: 128px; image-rendering: pixelated;
+        border-radius: 8px; display: block; background: #fff;
+      }
+      .ch-work {
+        display: block; width: 128px; cursor: pointer;
+        border-radius: 8px; overflow: hidden; background: var(--surface-2);
+      }
+      .ch-work canvas { width: 128px; height: 128px; image-rendering: pixelated; display: block; background: #fff; }
+      .ch-work-n { font-size: 10px; padding: 4px 6px; color: var(--text-muted); background: var(--surface-2); }
+      .ch-rps { font-size: 12px; line-height: 1.7; }
+      .ch-rps-h { font-weight: 800; margin-bottom: 6px; }
+      .ch-rps-btns { display: flex; }
+      .ch-rps-b {
+        flex: 1; border: 1px solid var(--border-input); background: var(--surface-2);
+        color: var(--text); border-radius: 9px; padding: 8px 0; font-size: 17px;
+        font-family: inherit; cursor: pointer;
+      }
+      .ch-rps-b + .ch-rps-b { margin-left: 6px; }
+      .ch-rps-row { display: flex; align-items: center; font-size: 15px; }
+      .ch-rps-row span { font-size: 17px; }
+      .ch-rps-row b { font-size: 10px; color: var(--text-faint); margin: 0 8px; }
+      .ch-rps-res { font-size: 12px; font-weight: 800; margin-top: 5px; }
+      .ch-rps-res.win { color: #2e8b57; }
+      .ch-rps-res.lose { color: #c0392b; }
+      /* 引用 */
+      .ch-quote {
+        border-left: 3px solid var(--border-strong); padding: 3px 8px;
+        margin-bottom: 6px; font-size: 11px; color: var(--text-faint);
+        background: rgba(0,0,0,.03); border-radius: 0 6px 6px 0;
+        max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      }
+      /* 表情回应 */
+      .ch-reacts { display: flex; flex-wrap: wrap; margin-top: 4px; }
+      .ch-react {
+        border: 1px solid var(--border); background: var(--surface);
+        border-radius: 999px; padding: 1px 7px; font-size: 12px;
+        font-family: inherit; cursor: pointer; margin: 0 4px 3px 0; line-height: 1.7;
+      }
+      .ch-react.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, var(--surface)); }
+      /* 引用 / 回应 的操作条 */
+      .ch-msgacts {
+        display: flex; margin-top: 4px;
+      }
+      .ch-msgacts button {
+        border: 1px solid var(--border-input); background: var(--surface);
+        border-radius: 999px; padding: 2px 9px; font-size: 11px;
+        color: var(--text-muted); font-family: inherit; cursor: pointer;
+        margin-right: 5px;
+      }
+      .ch-msgacts button.on { border-color: var(--accent); color: var(--accent); }
+      .ch-replybar {
+        display: flex; align-items: center; margin-bottom: 6px;
+        background: var(--surface-2); border-radius: 9px; padding: 6px 9px;
+        font-size: 11px; color: var(--text-muted);
+      }
+      .ch-replybar b { color: var(--text); font-weight: 700; margin-right: 6px; }
+      .ch-replybar span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .ch-replybar button {
+        flex: none; border: 0; background: transparent; color: var(--text-faint);
+        font-size: 14px; cursor: pointer; padding: 0 0 0 8px; font-family: inherit;
+      }
     `,
   template: `
     <div class="ch-wrap">
@@ -395,6 +530,14 @@ export default {
 
     /* ---------- 表情 ----------
        按分组列出来，点一下插到输入框的光标处，可以连着点好几个。 */
+    /* 涂鸦板的颜色。像素画用不到太多色，16 个够挑 */
+    const PAD_COLORS = [
+      [40, 40, 40], [255, 255, 255], [198, 74, 74], [226, 138, 74],
+      [232, 186, 78], [86, 160, 74], [120, 200, 200], [122, 168, 214],
+      [150, 120, 200], [232, 150, 190], [124, 82, 48], [170, 175, 180],
+      [92, 102, 112], [62, 46, 36], [200, 230, 150], [236, 226, 208],
+    ]
+
     const EMOJI_GROUPS = [
       {
         name: '常用',
@@ -778,6 +921,21 @@ export default {
         '<b>非实时</b>：对方发了新消息要自己点<b>刷新</b>。'
 
       const items = d.items || []
+
+      /* 重新拉一次这段对话并重画。
+         送光尘、应战猜拳、贴表情之后都要用 —— 这些动作会改动消息本身
+         （比如猜拳的结果是服务端算的），只改本地数组会跟服务端对不上。 */
+      async function reloadThread() {
+        try {
+          const tk = localStorage.getItem('lw-token') || ''
+          const res = await fetch('/api/chat?with=' + encodeURIComponent(d.with.uid), {
+            headers: { Authorization: 'Bearer ' + tk },
+            cache: 'no-store',
+          })
+          const jd = await res.json().catch(() => ({}))
+          if (jd && jd.ok) drawThread(jd)
+        } catch (e) {}
+      }
       // 算「有没有我还没看到的新消息」：对方最后一条比我这边最后一条新
       const mine = items.filter((m) => m.mine)
       myLastAt = mine.length ? Number(mine[mine.length - 1].at) || 0 : 0
@@ -802,8 +960,91 @@ export default {
          以前它被写在「有消息才渲染」那段里，于是新会话（一条都还没发过）
          页面写着「说点什么打个招呼吧」，底下却连个输入框都没有，
          根本没法开口（用户反馈）。空对话只清空消息区，输入栏照常渲染。 */
+      /* ---------- 更多功能：临时状态与渲染 ---------- */
+      const RPS_TXT = { rock: '✊', scissors: '✌️', paper: '✋' }
+      let giftAmt = 10
+      let padArt = null // 16×16，懒初始化
+      let padColor = [40, 40, 40]
+      let workList = null
+      let pickedWork = null
+      let rpsPick = ''
+      let rpsWager = 0
+      let replyTo = null
+      const myUid = () => d.me || ''
+
+      function rpsHtml(m) {
+        const r = m.rps || {}
+        if (r.stage === 'done') {
+          // a 是发起人的拳、b 是应战人的。按「我是哪一方」摆正，别显示反了
+          const myPick = r.iAm === 'a' ? r.a : r.b
+          const hisPick = r.iAm === 'a' ? r.b : r.a
+          const draw = r.result === 'draw'
+          const iWin = r.result === r.iAm
+          return (
+            '<div class="ch-rps">' +
+            '<div class="ch-rps-row"><span>' + (RPS_TXT[myPick] || '?') + '</span><b>VS</b>' +
+            '<span>' + (RPS_TXT[hisPick] || '?') + '</span></div>' +
+            '<div class="ch-rps-res' + (draw ? '' : iWin ? ' win' : ' lose') + '">' +
+            (draw ? '平局，谁也没掏钱' : iWin ? '你赢了 ' + r.moved + ' 光尘 🎉' : '你输了 ' + r.moved + ' 光尘') +
+            '</div></div>'
+          )
+        }
+        if (r.mine) return '<div class="ch-rps">你出了 ' + (RPS_TXT[r.mine] || '?') + '，等对方出拳…</div>'
+        if (m.mine) {
+          return '<div class="ch-rps">你发起了猜拳' + (r.wager ? '，押 ' + r.wager + ' 光尘' : '') + '<br />等对方应战…</div>'
+        }
+        return (
+          '<div class="ch-rps">' +
+          '<div class="ch-rps-h">🎲 对方发起猜拳' + (r.wager ? '（押 ' + r.wager + ' 光尘）' : '') + '</div>' +
+          '<div class="ch-rps-btns">' +
+          ['rock', 'scissors', 'paper']
+            .map((k) => '<button class="ch-rps-b" type="button" data-rps="' + k +
+              '" data-mid="' + esc(m.id) + '" title="出' + RPS_TXT[k] + '">' + RPS_TXT[k] + '</button>')
+            .join('') +
+          '</div></div>'
+        )
+      }
+
+      /* 一条消息在气泡里长什么样。礼物、涂鸦、画作、猜拳都不是纯文字 */
+      function bubbleHtml(m) {
+        const k = m.kind || 'text'
+        const quote = m.reply
+          ? '<div class="ch-quote">' + esc(m.reply.name) + '：' + esc(m.reply.text) + '</div>'
+          : ''
+        if (k === 'dust') {
+          return quote + '<div class="ch-gift"><span class="ch-gift-ico">🎁</span>' +
+            '<span class="ch-gift-amt">' + (m.dust || 0) + ' 光尘</span></div>' +
+            (m.text ? '<div class="ch-gift-note">' + esc(m.text) + '</div>' : '')
+        }
+        if (k === 'doodle') {
+          return quote + '<canvas class="ch-doodle" data-doodle="' + esc(m.id) + '"></canvas>' +
+            (m.text ? '<div class="ch-gift-note">' + esc(m.text) + '</div>' : '')
+        }
+        if (k === 'work' && m.work) {
+          return quote + '<div class="ch-work" data-goto="' + m.work.t + '">' +
+            '<canvas class="ch-work-cv" data-work="' + m.work.t + '" data-wsize="' + m.work.size + '"></canvas>' +
+            '<div class="ch-work-n">🖼️ ' + esc(m.work.name) + '</div></div>' +
+            (m.text ? '<div class="ch-gift-note">' + esc(m.text) + '</div>' : '')
+        }
+        if (k === 'rps') return quote + rpsHtml(m)
+        return quote + esc(m.text)
+      }
+
+      function reactHtml(m) {
+        const r = m.react || {}
+        const me = myUid()
+        const keys = Object.keys(r).filter((k) => Array.isArray(r[k]) && r[k].length)
+        if (!keys.length) return ''
+        return '<div class="ch-reacts">' + keys
+          .map((k) => '<button class="ch-react' + (r[k].indexOf(me) >= 0 ? ' on' : '') +
+            '" type="button" data-react="' + esc(k) + '" data-mid="' + esc(m.id) + '">' +
+            esc(k) + ' ' + r[k].length + '</button>')
+          .join('') + '</div>'
+      }
+
       const sendbar =
         '<div class="ch-sendbar">' +
+        '<button class="ch-plus-btn" id="chPlusBtn" type="button" aria-label="更多功能">＋</button>' +
         '<button class="ch-emoji-btn" id="chEmojiBtn" type="button" aria-label="表情">😊</button>' +
         '<input class="ch-in" id="chIn" size="1" maxlength="300" placeholder="说点什么…">' +
         '<button class="ch-send" id="chSend" type="button" disabled>发送</button>' +
@@ -811,6 +1052,52 @@ export default {
         '<div class="ch-emoji-tabs" id="chEmojiTabs"></div>' +
         '<div class="ch-emoji-grid" id="chEmojiGrid"></div>' +
         '</div>' +
+        '<div class="ch-plus" id="chPlus" hidden>' +
+        '<div class="ch-plus-grid" id="chPlusGrid">' +
+        '<button class="ch-plus-i" type="button" data-pane="gift"><span>🎁</span><span>送光尘</span></button>' +
+        '<button class="ch-plus-i" type="button" data-pane="doodle"><span>🎨</span><span>涂鸦</span></button>' +
+        '<button class="ch-plus-i" type="button" data-pane="work"><span>🖼️</span><span>画作</span></button>' +
+        '<button class="ch-plus-i" type="button" data-pane="rps"><span>🎲</span><span>猜拳</span></button>' +
+        '</div>' +
+        // ---- 送光尘 ----
+        '<div class="ch-pane" id="chPaneGift" hidden>' +
+        '<div class="ch-pane-h">送多少光尘？</div>' +
+        '<div class="ch-chips" id="chGiftChips"></div>' +
+        '<div class="ch-pane-tip" id="chGiftTip"></div>' +
+        '<div class="ch-pane-act">' +
+        '<button class="ch-go ghost" type="button" data-go="gift-reset">自定义</button>' +
+        '<button class="ch-go" type="button" data-go="gift">送出</button>' +
+        '</div></div>' +
+        // ---- 涂鸦 ----
+        '<div class="ch-pane" id="chPaneDoodle" hidden>' +
+        '<div class="ch-pane-h">随手画一张</div>' +
+        '<div class="ch-pad"><canvas id="chPad" width="16" height="16"></canvas>' +
+        '<div class="ch-pad-colors" id="chPadColors"></div></div>' +
+        '<div class="ch-pane-act">' +
+        '<button class="ch-go ghost" type="button" data-go="pad-clear">清空</button>' +
+        '<button class="ch-go" type="button" data-go="doodle">发出去</button>' +
+        '</div></div>' +
+        // ---- 分享画作 ----
+        '<div class="ch-pane" id="chPaneWork" hidden>' +
+        '<div class="ch-pane-h">挑一幅发过去</div>' +
+        '<div class="ch-works" id="chWorks"></div>' +
+        '<div class="ch-pane-tip" id="chWorkTip">正在读取你的作品…</div>' +
+        '<div class="ch-pane-act">' +
+        '<button class="ch-go" type="button" data-go="work">分享这幅</button>' +
+        '</div></div>' +
+        // ---- 猜拳 ----
+        '<div class="ch-pane" id="chPaneRps" hidden>' +
+        '<div class="ch-pane-h">出什么？</div>' +
+        '<div class="ch-chips" id="chRpsChips"></div>' +
+        '<div class="ch-pane-h" style="margin-top:10px">押多少光尘（可选）</div>' +
+        '<div class="ch-chips" id="chRpsWager"></div>' +
+        '<div class="ch-pane-tip" id="chRpsTip"></div>' +
+        '<div class="ch-pane-act">' +
+        '<button class="ch-go" type="button" data-go="rps">发出去挑战</button>' +
+        '</div></div>' +
+        '</div>' +
+        // 引用谁
+        '<div class="ch-replybar" id="chReplyBar" hidden></div>' +
         '</div>'
       if (!items.length) {
         $('chBody').innerHTML =
@@ -835,10 +1122,15 @@ export default {
           flagged = true
         }
         rows +=
-          '<div class="ch-msg' + (m.mine ? ' mine' : '') + '">' +
+          '<div class="ch-msg' + (m.mine ? ' mine' : '') + '" data-mid="' + esc(m.id) + '">' +
           (m.mine ? '' : '<span class="ch-msg-av" data-uid="' + esc(d.with.uid) + '"></span>') +
           '<div class="ch-bubble-col">' +
-          '<div class="ch-bubble">' + esc(m.text) + '</div>' +
+          '<div class="ch-bubble">' + bubbleHtml(m) + '</div>' +
+          reactHtml(m) +
+          '<div class="ch-msgacts">' +
+          '<button type="button" data-quote="' + esc(m.id) + '">引用</button>' +
+          '<button type="button" data-reacting="' + esc(m.id) + '">回应</button>' +
+          '</div>' +
           '<div class="ch-mtime">' + esc(clock(m.at)) + '</div>' +
           '</div></div>'
       })
@@ -860,6 +1152,460 @@ export default {
 
       /* 输入栏的交互。抽成函数是因为空对话和有消息两条路径都要用它 ——
          以前只有「有消息」那条绑过，所以新会话连输入框都没有。 */
+      /* ---------- 更多功能：面板与动作 ---------- */
+      const PANES = ['gift', 'doodle', 'work', 'rps']
+      const RPS_TXT = { rock: '✊', scissors: '✌️', paper: '✋' }
+      const RPS_NAME = { rock: '石头', scissors: '剪刀', paper: '布' }
+      let giftAmt = 10
+      let padArt = null // 16×16，懒初始化
+      let padColor = [40, 40, 40]
+      let workList = null
+      let pickedWork = null
+      let rpsPick = ''
+      let rpsWager = 0
+      let replyTo = null
+      const myUid = () => d.me || ''
+
+      const paneEl = (name) => $('chPane' + name.charAt(0).toUpperCase() + name.slice(1))
+      function hidePanes() {
+        PANES.forEach((k) => {
+          const el = paneEl(k)
+          if (el) el.hidden = true
+        })
+        document.querySelectorAll('#chPlusGrid .ch-plus-i').forEach((b) => b.classList.remove('on'))
+      }
+      function openPane(name) {
+        const el = paneEl(name)
+        if (!el) return
+        const willOpen = el.hidden
+        hidePanes()
+        el.hidden = !willOpen
+        const btn = document.querySelector('#chPlusGrid [data-pane="' + name + '"]')
+        if (btn) btn.classList.toggle('on', willOpen)
+        if (!willOpen) return
+        if (name === 'doodle') initPad()
+        if (name === 'work') loadWorks()
+        if (name === 'gift') {
+          const tip = $('chGiftTip')
+          if (tip) tip.textContent = '你现在有 ' + (Number(d.bal) || 0) + ' 个光尘。送出去就真的到对方账上了。'
+        }
+      }
+
+      /* ---- 🎁 送光尘 ---- */
+      function paintGiftChips() {
+        const box = $('chGiftChips')
+        if (!box) return
+        const max = Number(d.maxGift) || 500
+        box.innerHTML = [5, 10, 20, 50, 100]
+          .filter((x) => x <= max)
+          .map((x) => '<button class="ch-chip' + (giftAmt === x ? ' on' : '') +
+            '" type="button" data-gift="' + x + '">' + x + '</button>')
+          .join('')
+      }
+      async function doGift() {
+        if (!(giftAmt > 0)) return
+        if (!window.confirm('送出 ' + giftAmt + ' 个光尘？送出就从你账上扣掉了。')) return
+        const r = await sendMsg({ kind: 'dust', dust: giftAmt, text: inp ? inp.value.trim() : '' })
+        if (!r) return
+        if (inp) inp.value = ''
+        sync()
+        hidePanes()
+        if (window.sfx) window.sfx('coin')
+        if (window.dust && window.dust.sync) window.dust.sync()
+        reloadThread()
+      }
+
+      /* ---- 🎨 手绘涂鸦 ---- */
+      function initPad() {
+        if (!padArt) {
+          padArt = []
+          for (let i = 0; i < 256; i++) padArt.push([255, 255, 255])
+        }
+        const box = $('chPadColors')
+        if (box && !box.dataset.ready) {
+          box.dataset.ready = '1'
+          box.innerHTML = PAD_COLORS.map((c, i) =>
+            '<button class="ch-pad-c' + (i === 0 ? ' on' : '') + '" type="button" data-padc="' + i +
+            '" style="background:rgb(' + c[0] + ',' + c[1] + ',' + c[2] + ')"></button>').join('')
+          box.addEventListener('click', (e) => {
+            const b = e.target.closest ? e.target.closest('[data-padc]') : null
+            if (!b) return
+            padColor = PAD_COLORS[Number(b.getAttribute('data-padc'))] || [0, 0, 0]
+            box.querySelectorAll('.ch-pad-c').forEach((x) => x.classList.remove('on'))
+            b.classList.add('on')
+          })
+        }
+        const cv = $('chPad')
+        if (cv && !cv.dataset.ready) {
+          cv.dataset.ready = '1'
+          let down = false
+          const put = (ev) => {
+            const r = cv.getBoundingClientRect()
+            if (r.width <= 0) return
+            const x = Math.floor(((ev.clientX - r.left) / r.width) * 16)
+            const y = Math.floor(((ev.clientY - r.top) / r.height) * 16)
+            if (x < 0 || y < 0 || x >= 16 || y >= 16) return
+            padArt[y * 16 + x] = padColor.slice()
+            paintPad()
+          }
+          cv.addEventListener('pointerdown', (e) => {
+            down = true
+            try { cv.setPointerCapture(e.pointerId) } catch (err) {}
+            put(e)
+          })
+          cv.addEventListener('pointermove', (e) => {
+            if (down) put(e)
+          })
+          const stop = () => { down = false }
+          cv.addEventListener('pointerup', stop)
+          cv.addEventListener('pointercancel', stop)
+        }
+        paintPad()
+      }
+      function paintPad() {
+        const cv = $('chPad')
+        if (!cv || !padArt) return
+        const c = cv.getContext('2d')
+        for (let y = 0; y < 16; y++) {
+          for (let x = 0; x < 16; x++) {
+            const q = padArt[y * 16 + x] || [255, 255, 255]
+            c.fillStyle = 'rgb(' + q[0] + ',' + q[1] + ',' + q[2] + ')'
+            c.fillRect(x, y, 1, 1)
+          }
+        }
+      }
+      async function doDoodle() {
+        if (!padArt) return
+        const blank = padArt.every((q) => q[0] > 250 && q[1] > 250 && q[2] > 250)
+        if (blank) {
+          window.alert('还什么都没画呢')
+          return
+        }
+        const r = await sendMsg({ kind: 'doodle', art: padArt, text: inp ? inp.value.trim() : '' })
+        if (!r) return
+        if (inp) inp.value = ''
+        sync()
+        padArt = null // 擦干净，下一张不带上一张
+        initPad()
+        hidePanes()
+        if (window.sfx) window.sfx('save')
+        reloadThread()
+      }
+
+      /* ---- 🖼️ 分享画作 ---- */
+      async function loadWorks() {
+        const box = $('chWorks')
+        const tip = $('chWorkTip')
+        if (!box) return
+        if (workList) {
+          paintWorks()
+          return
+        }
+        if (tip) tip.textContent = '正在读取你的作品…'
+        try {
+          const t = localStorage.getItem('lw-token') || ''
+          const res = await fetch('/api/mine', { headers: { Authorization: 'Bearer ' + t }, cache: 'no-store' })
+          const jd = await res.json().catch(() => ({}))
+          workList = (jd && (jd.list || jd.history)) || []
+          if (!Array.isArray(workList)) workList = []
+        } catch (e) {
+          workList = []
+        }
+        if (!workList.length) {
+          box.innerHTML = ''
+          if (tip) tip.textContent = '还没发布过作品。先去画一幅吧。'
+          return
+        }
+        paintWorks()
+      }
+      function paintWorks() {
+        const box = $('chWorks')
+        const tip = $('chWorkTip')
+        if (!box || !workList) return
+        box.innerHTML = workList
+          .slice(0, 24)
+          .map((w, i) =>
+            '<button class="' + (pickedWork && pickedWork.time === w.time ? 'on' : '') +
+            '" type="button" data-work-pick="' + i + '">' +
+            '<div style="width:100%;aspect-ratio:1;background:var(--surface-2);border-radius:5px;' +
+            'display:flex;align-items:center;justify-content:center;font-size:18px">🖼️</div>' +
+            '<span>' + esc(w.workName || '未命名') + '</span></button>')
+          .join('')
+        if (tip) tip.textContent = '挑一幅，对方会在对话里看到它'
+      }
+      async function doShareWork() {
+        if (!pickedWork) {
+          window.alert('先挑一幅作品')
+          return
+        }
+        const r = await sendMsg({
+          kind: 'work',
+          wt: pickedWork.time,
+          wname: pickedWork.workName || '未命名',
+          wsize: pickedWork.size,
+          text: inp ? inp.value.trim() : '',
+        })
+        if (!r) return
+        if (inp) inp.value = ''
+        sync()
+        hidePanes()
+        if (window.sfx) window.sfx('send')
+        reloadThread()
+      }
+
+      /* ---- 🎲 猜拳 ---- */
+      function paintRpsChips() {
+        const box = $('chRpsChips')
+        const wbox = $('chRpsWager')
+        const tip = $('chRpsTip')
+        if (box) {
+          box.innerHTML = ['rock', 'scissors', 'paper']
+            .map((k) => '<button class="ch-chip' + (rpsPick === k ? ' on' : '') +
+              '" type="button" data-rpspick="' + k + '">' + RPS_TXT[k] + ' ' + RPS_NAME[k] + '</button>')
+            .join('')
+        }
+        if (wbox) {
+          const maxW = Number(d.maxWager) || 200
+          wbox.innerHTML = [0, 10, 30, 50, 100]
+            .filter((x) => x <= maxW)
+            .map((x) => '<button class="ch-chip' + (rpsWager === x ? ' on' : '') +
+              '" type="button" data-wager="' + x + '">' + (x ? x + ' ✨' : '不押') + '</button>')
+            .join('')
+        }
+        if (tip) {
+          tip.textContent = '你先出拳，发出去之后对方看不到你出的是什么。' +
+            (rpsWager ? '赢了对方付你 ' + rpsWager + ' 个光尘，输了从你账上扣。' : '')
+        }
+      }
+      async function doRps() {
+        if (!rpsPick) {
+          window.alert('先出拳')
+          return
+        }
+        const r = await sendMsg({ kind: 'rps', pick: rpsPick, wager: rpsWager })
+        if (!r) return
+        hidePanes()
+        if (window.sfx) window.sfx('send')
+        reloadThread()
+      }
+      async function answerRps(mid, pick) {
+        const jd = await chatPost({ action: 'rps', with: d.with.uid, id: mid, pick })
+        if (!jd) return
+        if (!jd.ok) {
+          window.alert(jd.error || '出拳失败')
+          return
+        }
+        if (window.sfx) window.sfx(jd.result === 'draw' ? 'tick' : 'coin')
+        if (window.dust && window.dust.sync) window.dust.sync()
+        reloadThread()
+      }
+
+      /* ---- 😀 表情回应 ---- */
+      async function doReact(mid, emoji) {
+        const jd = await chatPost({ action: 'react', with: d.with.uid, id: mid, emoji })
+        if (!jd) return
+        if (!jd.ok) {
+          window.alert(jd.error || '回应失败')
+          return
+        }
+        if (window.sfx) window.sfx('tick')
+        reloadThread()
+      }
+
+      /* ---- ↩️ 引用回复 ---- */
+      const previewOf = (m) => {
+        const k = m.kind || 'text'
+        if (k === 'dust') return '🎁 ' + (m.dust || 0) + ' 个光尘'
+        if (k === 'doodle') return '🎨 一张涂鸦'
+        if (k === 'work') return '🖼️ ' + ((m.work && m.work.name) || '一幅作品')
+        if (k === 'rps') return '🎲 猜拳'
+        return m.text || ''
+      }
+      function setReply(m) {
+        replyTo = m
+        const bar = $('chReplyBar')
+        if (!bar) return
+        bar.hidden = false
+        bar.innerHTML = '<b>回复 ' + esc(m.mine ? '自己' : d.with.name) + '</b><span>' +
+          esc(previewOf(m)) + '</span><button type="button" id="chReplyX">✕</button>'
+        const x = $('chReplyX')
+        if (x) {
+          x.addEventListener('click', () => {
+            replyTo = null
+            bar.hidden = true
+          })
+        }
+        if (inp) inp.focus()
+      }
+
+      /* ---- 统一的发消息 / 调接口 ---- */
+      async function chatPost(payload) {
+        const t = localStorage.getItem('lw-token') || ''
+        try {
+          const res = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t },
+            body: JSON.stringify(payload),
+          })
+          return await res.json().catch(() => ({}))
+        } catch (e) {
+          window.alert('网络错误')
+          return null
+        }
+      }
+      async function sendMsg(payload) {
+        if (replyTo) {
+          payload.reply = {
+            id: replyTo.id,
+            name: replyTo.mine ? '我' : d.with.name,
+            text: previewOf(replyTo).slice(0, 80),
+          }
+        }
+        const jd = await chatPost({ action: 'send', to: d.with.uid, ...payload })
+        if (!jd) return null
+        if (!jd.ok) {
+          window.alert(jd.error || '发送失败')
+          return null
+        }
+        replyTo = null
+        const bar = $('chReplyBar')
+        if (bar) bar.hidden = true
+        return jd
+      }
+
+      /* ---- 气泡上挂事件（每轮渲染都是新节点）---- */
+      function bindBubbles() {
+        const body = $('chBody')
+        if (!body) return
+        // 把涂鸦直接画出来
+        body.querySelectorAll('canvas[data-doodle]').forEach((cv) => {
+          const m = items.find((x) => x.id === cv.getAttribute('data-doodle'))
+          if (!m || !Array.isArray(m.art)) return
+          cv.width = 16
+          cv.height = 16
+          const c = cv.getContext('2d')
+          for (let y = 0; y < 16; y++) {
+            for (let x = 0; x < 16; x++) {
+              const q = m.art[y * 16 + x] || [255, 255, 255]
+              c.fillStyle = 'rgb(' + q[0] + ',' + q[1] + ',' + q[2] + ')'
+              c.fillRect(x, y, 1, 1)
+            }
+          }
+        })
+        body.querySelectorAll('[data-react]').forEach((b) => {
+          b.addEventListener('click', () => doReact(b.getAttribute('data-mid'), b.getAttribute('data-react')))
+        })
+        body.querySelectorAll('[data-rps]').forEach((b) => {
+          b.addEventListener('click', () => answerRps(b.getAttribute('data-mid'), b.getAttribute('data-rps')))
+        })
+        body.querySelectorAll('[data-quote]').forEach((b) => {
+          b.addEventListener('click', () => {
+            const m = items.find((x) => x.id === b.getAttribute('data-quote'))
+            if (m) setReply(m)
+          })
+        })
+        // 分享的画作：点一下去社区里找到那一幅
+        body.querySelectorAll('[data-goto]').forEach((el) => {
+          el.addEventListener('click', () => {
+            const t = el.getAttribute('data-goto')
+            if (window.__lwRouter) window.__lwRouter.push('/gallery?t=' + encodeURIComponent(t))
+            else location.href = '/gallery?t=' + encodeURIComponent(t)
+          })
+        })
+        // 「回应」：就地展开一排表情
+        body.querySelectorAll('[data-reacting]').forEach((b) => {
+          b.addEventListener('click', () => {
+            const mid = b.getAttribute('data-reacting')
+            const host = b.parentElement
+            if (!host) return
+            const old = host.querySelector('.ch-react-pop')
+            if (old) {
+              old.remove()
+              return
+            }
+            const pop = document.createElement('div')
+            pop.className = 'ch-reacts ch-react-pop'
+            pop.style.marginTop = '4px'
+            pop.innerHTML = (d.reactEmoji || ['👍', '❤️', '😂', '😮', '😢', '🎉'])
+              .map((e) => '<button class="ch-react" type="button" data-pop="' + e + '">' + e + '</button>')
+              .join('')
+            pop.querySelectorAll('[data-pop]').forEach((x) => {
+              x.addEventListener('click', () => doReact(mid, x.getAttribute('data-pop')))
+            })
+            host.appendChild(pop)
+            if (window.sfx) window.sfx('open')
+          })
+        })
+      }
+
+      /* ---- 面板总绑定：只做一次 ---- */
+      let plusReady = false
+      function setupPlusPanel() {
+        if (plusReady) return
+        plusReady = true
+        const on = (sel, ev, fn) => {
+          const el = $(sel)
+          if (el) el.addEventListener(ev, fn)
+        }
+        on('chPlusGrid', 'click', (e) => {
+          const b = e.target.closest ? e.target.closest('[data-pane]') : null
+          if (!b) return
+          openPane(b.getAttribute('data-pane'))
+          if (window.sfx) window.sfx('tick')
+        })
+        paintGiftChips()
+        on('chGiftChips', 'click', (e) => {
+          const b = e.target.closest ? e.target.closest('[data-gift]') : null
+          if (!b) return
+          giftAmt = Number(b.getAttribute('data-gift')) || 0
+          paintGiftChips()
+          if (window.sfx) window.sfx('tick')
+        })
+        paintRpsChips()
+        on('chRpsChips', 'click', (e) => {
+          const b = e.target.closest ? e.target.closest('[data-rpspick]') : null
+          if (!b) return
+          rpsPick = b.getAttribute('data-rpspick')
+          paintRpsChips()
+          if (window.sfx) window.sfx('tick')
+        })
+        on('chRpsWager', 'click', (e) => {
+          const b = e.target.closest ? e.target.closest('[data-wager]') : null
+          if (!b) return
+          rpsWager = Number(b.getAttribute('data-wager')) || 0
+          paintRpsChips()
+          if (window.sfx) window.sfx('tick')
+        })
+        on('chWorks', 'click', (e) => {
+          const b = e.target.closest ? e.target.closest('[data-work-pick]') : null
+          if (!b || !workList) return
+          pickedWork = workList[Number(b.getAttribute('data-work-pick'))] || null
+          paintWorks()
+          if (window.sfx) window.sfx('tick')
+        })
+        on('chPlus', 'click', (e) => {
+          const b = e.target.closest ? e.target.closest('[data-go]') : null
+          if (!b) return
+          const go = b.getAttribute('data-go')
+          if (go === 'gift') doGift()
+          else if (go === 'gift-reset') {
+            const v = window.prompt('要送多少光尘？（最多 ' + (Number(d.maxGift) || 500) + '）', String(giftAmt))
+            const num = Math.floor(Number(v))
+            if (Number.isFinite(num) && num >= 1) {
+              giftAmt = Math.min(Number(d.maxGift) || 500, num)
+              paintGiftChips()
+            }
+          } else if (go === 'pad-clear') {
+            padArt = null
+            initPad()
+            if (window.sfx) window.sfx('clear')
+          } else if (go === 'doodle') doDoodle()
+          else if (go === 'work') doShareWork()
+          else if (go === 'rps') doRps()
+        })
+      }
+
+
       function bindSend() {
         inp = $('chIn')
         send = $('chSend')
@@ -883,6 +1629,31 @@ export default {
         })
 
         // 表情面板。每轮渲染都是新节点，用 dataset 标记避免重复初始化
+        // 更多功能面板。setupPlusPanel 只做一次，面板节点每轮渲染都是新的
+        const plusBtn = $('chPlusBtn')
+        const plusBox = $('chPlus')
+        if (plusBtn && plusBox) {
+          setupPlusPanel()
+          if (!plusBtn.dataset.ready) {
+            plusBtn.dataset.ready = '1'
+            plusBtn.addEventListener('click', () => {
+              const willOpen = plusBox.hidden
+              if (willOpen) {
+                const ep = $('chEmoji')
+                if (ep) ep.hidden = true
+                const eb = $('chEmojiBtn')
+                if (eb) eb.classList.remove('on')
+              } else {
+                hidePanes()
+              }
+              plusBox.hidden = !willOpen
+              plusBtn.classList.toggle('on', willOpen)
+              if (window.sfx) window.sfx(willOpen ? 'open' : 'close')
+            })
+          }
+        }
+        bindBubbles()
+
         const emojiBtn = $('chEmojiBtn')
         const emojiPanel = $('chEmoji')
         if (emojiBtn && emojiPanel && !emojiPanel.dataset.ready) {

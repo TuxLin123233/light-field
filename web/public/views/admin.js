@@ -485,7 +485,7 @@ export default {
       [data-mood="dark"] .clear { background: #b03a2e; color: #fff; }
 `,
   template: `<div class="page-head">
-      <router-link class="back" to="/settings">← 返回设置</router-link>
+      <router-link class="back" to="/mine">← 我的</router-link>
       <h1>🛡️ 维护社区稳定</h1>
       <div class="sub">像素小镇是大家共同的家，社区的和谐需要每一位热心用户共同守护。</div>
     </div>

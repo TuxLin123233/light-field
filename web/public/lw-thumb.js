@@ -48,6 +48,41 @@ window.LWThumb = (function () {
 
     if (css < n) css = n
 
+    /* fill 模式：画布铺满容器宽度，不追求整数倍。
+       用途是「一个格子里放不同分辨率的画」——整数倍缩放时，16×16 最大能到
+       80px，64×64 只能到 64px，两种作品摆在一排就一大一小，看着很乱。
+       fill 模式下格子边界取整（round），既铺满又不会露出缝。 */
+    if (o.fill) {
+      const dprF = Math.min(3, window.devicePixelRatio || 1)
+      const px = Math.max(n, Math.round(css * dprF))
+      canvas.width = px
+      canvas.height = px
+      canvas.style.width = '100%'
+      canvas.style.height = 'auto'
+      canvas.style.display = 'block'
+      canvas.style.marginLeft = ''
+      canvas.style.marginRight = ''
+      const cf = canvas.getContext('2d')
+      if (!cf) return
+      cf.setTransform(1, 0, 0, 1, 0, 0)
+      cf.imageSmoothingEnabled = false
+      cf.fillStyle = o.bg || '#ffffff'
+      cf.fillRect(0, 0, px, px)
+      for (let y = 0; y < n; y++) {
+        for (let x = 0; x < n; x++) {
+          const p = pixels && pixels[y * n + x]
+          if (!Array.isArray(p) || p.length < 3) continue
+          cf.fillStyle = 'rgb(' + p[0] + ',' + p[1] + ',' + p[2] + ')'
+          const x0 = Math.round((x * px) / n)
+          const x1 = Math.round(((x + 1) * px) / n)
+          const y0 = Math.round((y * px) / n)
+          const y1 = Math.round(((y + 1) * px) / n)
+          cf.fillRect(x0, y0, x1 - x0, y1 - y0)
+        }
+      }
+      return
+    }
+
     // 每个源像素占 k 个 CSS 像素，取整数倍。
     // 用 round 而不是 floor：floor 总是往小取，64×64 的图在 101px 的格子里
     // 只能取到 96，白白浪费 5px；round 能取到更贴合的整数倍。
