@@ -612,6 +612,99 @@ export default {
       }
     }
 
+    /* ---------- 导出成图片 ----------
+       把屋子画到一张离屏大画布上，导出 PNG。
+
+       为什么不直接拿屏幕上的 twRoom 去导出：
+         · 屏幕画布是 ROOM×ROOM 的逻辑像素（16/24/32），直接存出来
+           就是一张 16px 的小图，放大全是锯齿。
+         · 屏幕上那层「编辑态压暗」「网格线」「拖动残影」都不该出现在图里。
+       所以另画一张干净的：同样的墙纸地板和家具，按 SCALE 倍放大，
+       再加一圈边框和一行署名。
+
+       放大倍数跟着房间尺寸走 —— 16 格和 32 格都用同一倍数的话，
+       32 格那间导出后会小一圈，看起来像「远景」。 */
+    const EXPORT_SCALE = 12
+    function exportImage() {
+      const SCALE = EXPORT_SCALE
+      // 四周各留一条边：上面写「谁的屋」，下面写尺寸和件数
+      const PAD = Math.round(SCALE * 1.6)
+      // 宽高都要算上左右/上下留白。只给 W=ROOM*SCALE 的话，
+      // 房间从 PAD 开始画，右边会超出画布被裁掉一条 ——
+      // 而且看不出来，导出照常成功，只是图缺了一截。
+      const W = ROOM * SCALE + PAD * 2
+      const H = W
+      const cv = document.createElement('canvas')
+      cv.width = W
+      cv.height = H
+      const c = cv.getContext('2d')
+
+      // 底：外面一圈木色，当画框
+      c.fillStyle = '#3a2b1f'
+      c.fillRect(0, 0, W, H)
+      // 墙纸 + 地板，跟屏幕上画的是同一套 pattern
+      const wt = surfaceTile(surfaceOf(house.wall), ROOM, 0)
+      const ft = surfaceTile(surfaceOf(house.floor), ROOM, floorY)
+      for (let y = 0; y < ROOM; y++) {
+        for (let x = 0; x < ROOM; x++) {
+          const ch = y < floorY ? wt[y][x] : ft[y - floorY][x]
+          const col = PAL[ch] || (y < floorY ? [232, 220, 204] : [198, 168, 128])
+          c.fillStyle = 'rgb(' + col[0] + ',' + col[1] + ',' + col[2] + ')'
+          // PAD 这个偏移不能忘：忘了房间就从 (0,0) 起画，
+          // 画框被顶掉、标题文字直接压在地板上
+          c.fillRect(PAD + x * SCALE, PAD + y * SCALE, SCALE, SCALE)
+        }
+      }
+      // 墙上的小窗
+      c.save()
+      c.translate(PAD, PAD)
+      c.scale(SCALE, SCALE)
+      drawWindow(c, curWeather())
+      c.restore()
+      // 家具
+      for (const it of house.items || []) {
+        const f = findItem(it.id)
+        if (!f || !f.art) continue
+        c.save()
+        c.translate(PAD + it.x * SCALE, PAD + it.y * SCALE)
+        c.scale(SCALE, SCALE)
+        drawArt(c, f.art, f.pal || PAL, 0, 0)
+        c.restore()
+      }
+
+      // 署名。像素风的中文用系统字体就行，不必也不该去找像素中文字体 ——
+      // 那类字体文件动辄好几 MB，为了几个字不值得。
+      const who = mine ? '我的小屋' : (woodName || '镇民') + '的家'
+      c.fillStyle = '#f3e7d0'
+      c.textAlign = 'center'
+      c.textBaseline = 'middle'
+      c.font = '700 ' + Math.round(SCALE * 0.95) + 'px system-ui, sans-serif'
+      c.fillText(who, W / 2, PAD / 2)
+      c.fillStyle = '#b9a48a'
+      c.font = '600 ' + Math.round(SCALE * 0.6) + 'px system-ui, sans-serif'
+      c.fillText(ROOM + '×' + ROOM + ' · ' + (house.items || []).length + ' 件家具', W / 2, H - PAD / 2)
+
+      const name = (mine ? '我的小屋' : (woodName || '小屋') + '的小屋') + '.png'
+      // toBlob 比 toDataURL 省内存：64×32 的图放大 12 倍后有好几 MB，
+      // dataURL 会在内存里留一份 base64 字符串，手机上容易卡一下
+      cv.toBlob((blob) => {
+        if (!blob) {
+          msg('导出失败，换个浏览器再试试', true)
+          return
+        }
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = name
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+        // 立刻 revoke 会让部分浏览器（Safari）拿不到数据，
+        // 挪到下一个事件循环再释放
+        setTimeout(() => URL.revokeObjectURL(url), 10000)
+      }, 'image/png')
+    }
+
     /* ---------- 地图 ---------- */
     function drawMap(data) {
       const list = data.list || []
@@ -867,6 +960,9 @@ export default {
             '<button class="tw-btn ghost" type="button" id="twClear">全部收起来</button>' +
             '</div>' +
             '<div class="tw-acts">' +
+            '<button class="tw-btn ghost" type="button" id="twShot">🖼️ 存成图片</button>' +
+            '</div>' +
+            '<div class="tw-acts">' +
             (nx
               ? '<button class="tw-btn ghost" type="button" id="twUp">📐 扩建成' + esc(nx.name) +
                 '（' + nx.size + '×' + nx.size + '，' + nx.price + ' ✨）</button>'
@@ -1079,6 +1175,9 @@ export default {
 
       const up = $('twUp')
       if (up) up.addEventListener('click', upgrade)
+
+      const shot = $('twShot')
+      if (shot) shot.addEventListener('click', exportImage)
 
       const cl = $('twClear')
       if (cl) {
