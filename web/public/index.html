@@ -791,6 +791,164 @@
       }
     </style>
     <style id="view-style"></style>
+    <!-- 细节收敛层。
+         ★ 必须放在 #view-style **之后** —— 视图 CSS 是运行时注入到
+           #view-style 里的，同优先级下后出现的赢。放前面就白写了。 -->
+    <style id="lw-detail">
+      /* ============ 圆角收敛 ============
+         原本全站用了 16 种不同的圆角值（2/4/5/6/7/8/9/10/11/12/13/14/
+         16/18/20 + 999）。同一个层级的卡片圆角不一样，看久了会觉得
+         「说不上哪里乱，但就是乱」。
+         收敛成 6 档，每档有明确用途： */
+      :root {
+        --r-pill: 999px;   /* 胶囊：按钮、标签、芯片 */
+        --r-xl:  18px;     /* 大卡片、弹层 */
+        --r-lg:  14px;     /* 常规卡片 */
+        --r-md:  10px;     /* 小卡片、输入框、图块 */
+        --r-sm:  6px;      /* 微元素：小角标、色块 */
+        --r-xs:  3px;      /* 极小：进度条、分隔装饰 */
+
+        /* 字号阶梯。原本 14 种，收敛成 8 档 */
+        --fs-xs:  10px;
+        --fs-sm:  11px;
+        --fs-base:12px;
+        --fs-md:  13px;
+        --fs-lg:  14px;
+        --fs-xl:  16px;
+        --fs-2xl: 18px;
+        --fs-3xl: 22px;
+
+        /* 间距阶梯：4 的倍数。原本 5/6/7/9/11/13/15 都有，
+           奇数间距在偶数倍缩放的屏幕上会有半像素模糊 */
+        --sp-1: 4px;
+        --sp-2: 8px;
+        --sp-3: 12px;
+        --sp-4: 16px;
+        --sp-5: 20px;
+        --sp-6: 24px;
+      }
+
+      /* ---- 大卡片 / 弹层 ---- */
+      .card, .in-card, .mp-row, .mod-row, .ch-msg, .lwdeco-lv,
+      .cp-card, .guide-row, .radio-row + .radio-row,
+      .faq-item, .rank-item, .entry, .m-card, .ach-item,
+      .ver-item, .tw-plot, .bg-item, .u-grid > *, .tk-item {
+        border-radius: var(--r-lg);
+      }
+      .lwd-box, .lwfx-keys-box, .mp-head, .fn-box,
+      .card-box, .preview-box, .consent-box, .imgmode-box {
+        border-radius: var(--r-xl);
+      }
+
+      /* ---- 小元素 / 输入框 ---- */
+      input, textarea, select,
+      .pal-chip, .tw-item, .mini-wrap, .tip-qr-item,
+      .lwdeco-typing, .ch-chip, .radio-chip, .mode-chip,
+      .li-tag, .ver-tag, .ml-num, .card-tag,
+      .anim-badge, .room-badge, .img-badge,
+      .lwp-retry, .guide-replay, .mod-add input, .mod-add button {
+        border-radius: var(--r-md);
+      }
+      /* 胶囊：这些本来该是圆的，别被上面的规则拉成方角 */
+      .tw-btn, .auth-btn, .lw-refresh, .enter, .save, .tip-btn,
+      .lwd-btns button, .like-btn, .share-btn, .vote-btn, .report-hold,
+      .ch-send, .tw-tab, .mini-hide, .mini-size, .mini-show,
+      .fn-btn, .guide-row, .radio-chip, .mode-chip,
+      .li-tag, .ver-tag, .ml-num, .card-tag, .lwp-skel-row {
+        border-radius: var(--r-pill);
+      }
+
+      /* ---- 微元素 ---- */
+      .lwdeco-lv-bar, .lwp-pw, .pal-bar, .fn-bar,
+      .lwp-skel-card, .hue-marker, .sv-marker {
+        border-radius: var(--r-sm);
+      }
+      .lwdeco-lv-bar, .lwp-pw, .pal-bar, .fn-bar { border-radius: var(--r-pill); }
+
+      /* ============ 字号收敛 ============
+         把这些类里出现的 11.5 / 13.5 / 17 / 19 / 15 统一到阶梯上。
+         只用类选择器，不动行内样式和 canvas。 */
+      .entry-desc, .row-desc, .guide-note, .hint, .anim-lv-tip,
+      .card-sub, .mine-cap, .tw-plot-name, .tip-note, .qr-note {
+        font-size: var(--fs-base);
+      }
+      .entry-label, .card-title, .group-title, .li-tag, .ver-tag,
+      .pal-chip span, .ml-num, .card-tag, .stat-lab, .row-label {
+        font-size: var(--fs-md);
+      }
+      .u-name, .mp-head h1, .page > h1, .fn-box h2, .card-head .card-title {
+        font-size: var(--fs-2xl);
+      }
+      .stat-num, .in-num, .dust-num {
+        font-size: var(--fs-3xl);
+      }
+      /* emoji 和文字混排时，emoji 天生比中文字宽 15% 左右，
+         缩小一点视觉重量才对得上 */
+      .entry-ico, .ml-ico, .group-title > :first-child {
+        font-size: 1em;
+        line-height: 1;
+      }
+
+      /* 描边宽度：全站只有 1px 和 2px 两档就够，不再出现 1.5px。
+         ★ 不用 `* { border-width: 0 }` 来「清底」——
+         那会波及所有元素，包括靠浏览器默认边框的元素，
+         以后加任何带边框的东西都得先想想这层有没有踩到。
+         只对明确知道该多宽的元素写。 */
+
+      /* ============ 间距统一 ============
+         把奇数内边距收到 4 的倍数上 ——
+         奇数间距在 2 倍屏上会落在半像素，边缘会发虚。 */
+      .entry, .guide-row, .inline-card, .in-card {
+        padding: var(--sp-3);
+      }
+      .card { padding: var(--sp-4); }
+      .mp-row, .mod-row { padding: var(--sp-3) var(--sp-3); }
+
+      /* ============ 图标与文字的对齐 ============
+         emoji 的基线和中文字不一样，用 vertical-align 硬拉总会差一点。
+         统一交给 flex 居中。 */
+      .entry, .m-link, .guide-row, .tw-btn, .lwd-btns button {
+        align-items: center;
+      }
+      .entry-ico, .ml-ico, .nav-icon, .px-ico-host {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: none;
+        line-height: 1;
+        vertical-align: middle;
+      }
+
+      /* ============ 细节：焦点环偏移 ============
+         偏移 2px 时贴着圆角卡片会显得外扩，缩到 1px 更贴合 */
+      :focus-visible { outline-offset: 1px; }
+
+      /* ============ 细节：卡片里的第一/最后一个元素不要再顶边 ============ */
+      .card > :first-child, .in-card > :first-child { margin-top: 0; }
+      .card > :last-child, .in-card > :last-child { margin-bottom: 0; }
+
+      /* 画布底部由各自的视图负责铺（它们知道该用 --art-bg 还是别的）。
+         ★ 不要在这里给所有 canvas/img 统一铺白底 ——
+         那会把二维码、透明 PNG 的背景也一起染白，反而更脏。 */
+
+      /* ============ 细节：长文本不撑破容器 ============ */
+      .entry-label, .entry-desc, .card-title, .mp-row .mi b,
+      .mine-cap .mc-title, .tw-plot-name, .guide-row .gt {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        min-width: 0;
+      }
+      /* 但多行说明要能换行 */
+      .entry-desc, .row-desc, .hint, .guide-note, .cp-card p {
+        white-space: normal;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        /* 这层没有动画，占位而已 */
+      }
+    </style>
+
     <script>
       /* ---------- 轻量音效（WebAudio 实时合成，无音频文件） ---------- */
       ;(function () {
