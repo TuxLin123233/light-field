@@ -125,7 +125,7 @@ const routes = [
   // 小镇地图 / 个人小屋（小屋是二级页，导航会自动收起来）
   { path: '/town', component: withAutoCleanup(town) },
   { path: '/town/home', component: withAutoCleanup(town) },
-  // 背包与合成台：二级页，导航会自动收起来
+  // 家具商店：二级页，导航会自动收起来
   { path: '/town/bag', component: withAutoCleanup(bag) },
   { path: '/avatar', component: withAutoCleanup(avatar) },
   { path: '/intro', component: withAutoCleanup(intro) },

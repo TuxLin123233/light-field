@@ -1,13 +1,14 @@
-// 背包与合成台
+// 家具商店（原来叫「背包与合成台」）
 //
 //   /town/bag
 //
-// 上半是背包（六种材料 + 去镇上转转），下半是合成台（配方表）。
+// 上半是材料（六种 + 去镇上转转），下半是合成台（配方表）。
+// 整页统称「家具商店」：光尘买和材料做两条路都通向这儿。
 // 合出来的是「商店买不到」的那批家具，所以材料这条线和光尘那条线不打架：
 // 光尘想买什么买什么，材料是一点点攒出来的。
 export default {
   name: 'bag',
-  title: '背包',
+  title: '家具商店',
   css: `
       [hidden] { display: none !important; }
       .bg-wrap { width: 100%; max-width: 460px; margin: 0 auto; padding: 0 0 20px; }
@@ -31,7 +32,10 @@ export default {
       .bg-h span { font-weight: 600; color: var(--text-faint); font-size: 11px; }
 
       /* ---------- 背包 ---------- */
-      .bg-mats { display: grid; grid-template-columns: repeat(6, 1fr); gap: 7px; }
+      /* 7 列 = 材料种数（第二批配方新增了「玻璃」，一共 7 种）。
+         写死列数而不是 auto-fill：材料是定长的，auto-fill 会按容器宽度
+         排出 4/5 列，最后一行空一格，看着像少了几种材料。 */
+      .bg-mats { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
       .bg-mat {
         display: flex; flex-direction: column; align-items: center;
         background: var(--surface-2); border-radius: 11px; padding: 8px 2px 6px;
@@ -93,7 +97,7 @@ export default {
       <div class="bg-bar">
         <a class="bg-back" id="bgBack" href="/town">← 小镇</a>
         <div class="bg-bar-main">
-          <div class="bg-title" id="bgTitle">🎒 背包与合成台</div>
+          <div class="bg-title" id="bgTitle">🏠 家具商店</div>
           <div class="bg-sub" id="bgSub"></div>
         </div>
         <button class="lw-refresh" id="bgRefresh" type="button" data-label="刷新"></button>
@@ -168,7 +172,7 @@ export default {
 
     /* ---------- 渲染 ---------- */
     function render() {
-      $('bgTitle').textContent = '🎒 背包与合成台'
+      $('bgTitle').textContent = '🏠 家具商店'
       const total = Object.values(bag).reduce((a, b) => a + (Number(b) || 0), 0)
       const madeN = recipes.filter((r) => r.owned).length
       $('bgSub').textContent = total + ' 个材料 · 已合成 ' + madeN + '/' + recipes.length
@@ -230,7 +234,7 @@ export default {
         '</div></div>' +
 
         '<div class="bg-card">' +
-        '<div class="bg-h">合成台 <span>做出来的家具商店里买不到</span></div>' +
+        '<div class="bg-h">合成台 <span>这几样家具商店里买不到，只能做</span></div>' +
         (recipes.length ? '<div class="bg-list">' + recHtml + '</div>' : '<div class="bg-empty">读取中…</div>') +
         '</div>' +
 
@@ -274,7 +278,7 @@ export default {
     async function api(payload) {
       const t = token()
       if (!t) {
-        msg('背包和账号绑定，登录之后才能捡东西', true)
+        msg('材料和账号绑定，登录之后才能捡东西', true)
         return null
       }
       try {

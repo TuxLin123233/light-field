@@ -197,6 +197,29 @@ const RAW = [
   ['musicbox', '八音盒', 0, 'music', ['PPP', 'PYP', 'PPP'], true],
   ['luckycat', '招财猫', 0, 'pet', ['W.W', 'RWR', '.Y.'], true],
   ['tinytree', '会发光的树', 0, 'plant', ['..Y..', '.YGY.', 'YGGGY', '..B..', '..B..'], true],
+  /* ---- 第二批合成限定（补上原先偏空的分类）----
+     第一批 12 件里 deco 占了 4 件、lamp 2 件，而 seat / table / bed /
+     store / kitchen / tech / misc 只有 cloudbed 与 magicbooks 两件撑场面，
+     合成台翻两页就见底了。这一批按「越靠后越难凑」排，
+     用到的材料种类也比第一批多（第一批最多 3 种，这里用到 4 种）。 */
+  ['moonstool', '月光凳', 0, 'seat', ['.M.', 'MMM', 'MKM'], true],
+  ['cloudsofa', '云朵沙发', 0, 'seat', ['WWWWWW', 'WWWWWW', 'CCWWCC'], true],
+  ['starlighttable', '星光茶几', 0, 'table', ['YAYYAY', '......', 'BB..BB'], true],
+  ['crystaltable', '水晶桌', 0, 'table', ['C....C', '.CCCC.', 'B....B'], true],
+  ['rainbowbed', '彩虹床', 0, 'bed', ['ROYGBM', 'ROYGBM', 'MMMMMM'], true],
+  ['starcanopy', '星星顶床', 0, 'bed', ['.Y..Y.', 'YYYYYY', 'WWWWWW', 'BBBBBB'], true],
+  ['crystalchest', '晶石柜', 0, 'store', ['CCCC', 'C..C', 'CNNC'], true],
+  ['paintbox', '颜料箱', 0, 'store', ['RRRR', 'YGYG', 'BBBB'], true],
+  ['magicstove', '魔法灶台', 0, 'kitchen', ['NNNN', 'NOON', 'NNNN'], true],
+  ['cloudpot', '云朵茶壶', 0, 'kitchen', ['WWWWW', 'WKCKW', '.WWW.'], true],
+  ['holo', '全息投影', 0, 'tech', ['CCCCC', 'CMAYC', 'CCCCC'], true],
+  ['sunlamp', '小太阳灯', 0, 'lamp', ['.Y.', 'YAY', 'YYY', '.K.'], true],
+  ['rainlamp', '雨夜灯', 0, 'lamp', ['A..A', 'ABBA', '.KK.', '.KK.'], true],
+  ['windchime2', '风铃架', 0, 'deco', ['..B..', '.BBB.', 'Y.Y.Y', '.Y.Y.'], true],
+  ['moonshard', '月碎片', 0, 'deco', ['.MM.', 'MWWM', '.MM.'], true],
+  ['featherstool', '羽翼凳', 0, 'seat', ['WWW', 'PWW', 'WWW'], true],
+  ['lanternfish', '灯笼鱼缸', 0, 'pet', ['WWWWW', 'WAAKW', 'WOKOW', 'WWWWW'], true],
+  ['starjar', '星星罐', 0, 'misc', ['.Y.', 'YSY', 'YCY'], true],
 ]
 
 export const CAT_NAMES = {
@@ -220,6 +243,10 @@ export const CAT_NAMES = {
 export const WALL_OK = [
   'flag',
   'windchime',
+  /* 第二批合成家具里这两件也是挂墙的（和 windchime / poster 一类），
+     不加进来就会被当成「必须摆在地上」，挂不上去。 */
+  'windchime2',
+  'moonshard',
   'clock',
   'frame',
   'poster',

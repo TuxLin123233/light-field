@@ -20,6 +20,9 @@ export const MATERIALS = [
   { id: 'gear', name: '零件', ico: '⚙️', weight: 14 },
   { id: 'paint', name: '颜料', ico: '🎨', weight: 12 },
   { id: 'crystal', name: '晶石', ico: '💎', weight: 6 },
+  /* 第二批配方才用得到的材料。比晶石常见、比颜料稀有 ——
+     正好卡在「多跑两趟就能凑齐，但不会一采一大把」。 */
+  { id: 'glass', name: '玻璃', ico: '🫙', weight: 9 },
 ]
 
 export const MAT_IDS = MATERIALS.map((m) => m.id)
@@ -54,6 +57,28 @@ export const RECIPES = [
   { id: 'tinytree', need: { wood: 5, paint: 3, crystal: 2 } },
   { id: 'cloudbed', need: { cloth: 8, crystal: 1 } },
   { id: 'crystalchand', need: { stone: 4, gear: 3, crystal: 2 } },
+
+  /* ---- 第二批配方 ----
+     需求按「越晚越难凑」往后排，用到的材料种类也比第一批多
+     （第一批最多 3 种，这里普遍 4 种，要多逛几趟才凑得出来）。 */
+  { id: 'featherstool', need: { cloth: 3, paint: 2 } },
+  { id: 'moonstool', need: { paint: 3, crystal: 1 } },
+  { id: 'cloudsofa', need: { cloth: 10, crystal: 2 } },
+  { id: 'starlighttable', need: { wood: 4, paint: 6 } },
+  { id: 'crystaltable', need: { stone: 6, crystal: 3 } },
+  { id: 'starjar', need: { crystal: 2, paint: 3, glass: 2 } },
+  { id: 'moonshard', need: { crystal: 3, paint: 4, glass: 2 } },
+  { id: 'windchime2', need: { stone: 2, gear: 2, glass: 3 } },
+  { id: 'rainbowbed', need: { cloth: 12, paint: 8, crystal: 3 } },
+  { id: 'starcanopy', need: { cloth: 14, crystal: 4, paint: 6 } },
+  { id: 'crystalchest', need: { stone: 5, crystal: 3, gear: 2 } },
+  { id: 'paintbox', need: { wood: 4, paint: 8 } },
+  { id: 'sunlamp', need: { paint: 5, crystal: 2, glass: 3 } },
+  { id: 'rainlamp', need: { stone: 3, gear: 3, glass: 3, paint: 4 } },
+  { id: 'cloudpot', need: { cloth: 6, paint: 4, crystal: 2 } },
+  { id: 'magicstove', need: { stone: 8, gear: 6, crystal: 3 } },
+  { id: 'lanternfish', need: { glass: 5, crystal: 3, paint: 5, cloth: 4 } },
+  { id: 'holo', need: { gear: 8, crystal: 5, glass: 6, paint: 6 } },
 ].filter((r) => !!furnitureById(r.id)) // 配方指到不存在的家具就直接丢掉，不让它变成一个永远合不出的坑
 
 export function recipeById(id) {
