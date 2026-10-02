@@ -12,3 +12,5 @@ config.json
 web/tools/poster/*.json
 web/tools/poster/*.png
 宣传长图.png
+ui-shots/
+宣传长图*.png
