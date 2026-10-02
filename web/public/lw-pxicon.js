@@ -855,6 +855,43 @@
     var frames = def.frames && def.frames.length ? def.frames : def.base ? [def.base] : null
     if (!frames || !frames.length) return null
 
+    /* ★ 先裁掉四周的空白行/列。
+       我画图标时为了对齐留了不少 '.'，但每个图标留的多少不一样：
+       arrowRight 的内容只占中间一小块，star 却几乎铺满 ——
+       不裁的话，同样给 16px，看起来一个大一个小。
+       裁完之后每个图标都是「内容顶满边框」，视觉重量才一致。 */
+    var allRows = []
+    for (var fi = 0; fi < frames.length; fi++) allRows = allRows.concat(frames[fi])
+    var minX = 1e9, minY = 1e9, maxX = -1, maxY = -1
+    for (var fi2 = 0; fi2 < frames.length; fi2++) {
+      var fr = frames[fi2]
+      for (var y = 0; y < fr.length; y++) {
+        var row = fr[y]
+        for (var x = 0; x < row.length; x++) {
+          var ch = row.charAt(x)
+          if (ch === '.' || ch === ' ' || !C[ch]) continue
+          if (x < minX) minX = x
+          if (x > maxX) maxX = x
+          if (y < minY) minY = y
+          if (y > maxY) maxY = y
+        }
+      }
+    }
+    // 裁的时候用**所有帧的并集**，不能逐帧裁 ——
+    // 那样每帧尺寸不同，动画会一跳一跳
+    if (maxX < 0) return null
+    var PAD = 0
+    minX = Math.max(0, minX - PAD); minY = Math.max(0, minY - PAD)
+    maxX += PAD; maxY += PAD
+    frames = frames.map(function (fr) {
+      var out2 = []
+      for (var yy = minY; yy <= maxY && yy < fr.length; yy++) {
+        var r = fr[yy] || ''
+        out2.push(r.slice(minX, maxX + 1))
+      }
+      return out2
+    })
+
     var grid = frames[0]
     var gw = 0
     for (var i = 0; i < grid.length; i++) gw = Math.max(gw, grid[i].length)
@@ -1244,7 +1281,8 @@
           var ic = document.createElement('i')
           ic.className = 'px-ico-host px-ico-inline'
           ic.setAttribute('data-px', hit[0])
-          ic.setAttribute('data-px-size', '16')
+          /* 不写 data-px-size —— 让 sizeFor 按所在位置的字号算。
+             emoji 本来就是跟着 font-size 走的，写死会大小不一。 */
           ic.setAttribute('data-px-on', hit[1])
           ic.setAttribute('aria-hidden', 'true')
           frag.appendChild(ic)
@@ -1263,13 +1301,29 @@
   /* ================= 自动替换 =================
      页面上写 <i class="px-ico" data-px="dust"></i> 就会被换成图标。
      size 从 data-px-size 取，默认 20。 */
+  /* 图标该多大。
+     显式写了 data-px-size 就用它；
+     没写就**跟随父元素的字号** ——
+     emoji 本来就是跟着 font-size 走的，替换之后如果一律 16px，
+     那些原本 30px 的地方（对话框图标、大标题前的图标）就会变小一圈。 */
+  function sizeFor(el, fallback) {
+    var attr = el.getAttribute('data-px-size')
+    if (attr) return Number(attr) || fallback
+    try {
+      var host = el.parentNode
+      var fs = host ? parseFloat(getComputedStyle(host).fontSize) : 0
+      if (fs && fs > 0) return Math.round(Math.min(40, Math.max(12, fs * 1.15)))
+    } catch (e) {}
+    return fallback
+  }
+
   function apply(root, opts) {
     var scope = root || document
     var nodes = scope.querySelectorAll('[data-px]:not([data-px-done])')
     for (var i = 0; i < nodes.length; i++) {
       var el = nodes[i]
       var name = el.getAttribute('data-px')
-      var size = Number(el.getAttribute('data-px-size')) || 20
+      var size = sizeFor(el, 20)
       /* data-px-on 指定动画由什么驱动：
          idle / active / hover / press / none（不写默认 active） */
       var o = {}
