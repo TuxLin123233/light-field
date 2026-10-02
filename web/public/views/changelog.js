@@ -274,6 +274,21 @@ export default {
       <section class="group">
         <div class="ver red">
           <div class="ver-body">
+            <div class="ver-title"><span class="ver-tag">v1.6.0</span> 背包与合成台开张 · 12 件店里买不到的家具 <span class="ver-date">2026-10</span></div>
+            <ul class="ver-list">
+              <li><span class="li-tag tag-new">新功能</span><b>背包和合成台来了</b>，入口在小镇页面上的「🎒 背包与合成台」，小屋里也放了一个。上半是背包，下半是合成台</li>
+              <li><span class="li-tag tag-new">新功能</span><b>六种材料</b>：🪵木料 🪨石料 🧵布料 ⚙️零件 🎨颜料 💎晶石。点「去镇上转转」就能捡到，一趟 1~3 个，20 分钟一趟，一天最多 12 趟。越稀罕的越难捡 —— 木料差不多三成，晶石只有半成多</li>
+              <li><span class="li-tag tag-new">新功能</span><b>12 件商店里买不到的家具</b>，只能拿材料合成：星空灯、彩虹地毯、星辰挂画、时光沙漏、八音盒、暖暖壁炉、招财猫、魔法书架、机械钟、会发光的树、云朵床、水晶吊灯</li>
+              <li><span class="li-tag tag-ui">界面</span>合成台会列出每件还差什么：<b>够的材料标绿、缺的标红</b>，一眼看出该去捡什么。做好的家具直接进你的收藏，回小屋在「我的家具」里就能摆</li>
+              <li><span class="li-tag tag-new">新功能</span>这么设计是想让<b>两条路互不挤占</b>：光尘解决「想要什么买什么」，材料解决「一点点攒出来」。所以合成那批不放进家具铺，硬买会被拦下来并提示去合成台</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="group">
+        <div class="ver red">
+          <div class="ver-body">
             <div class="ver-title"><span class="ver-tag">v1.5.4</span> 在别人的主页上能看见性别和生日了 <span class="ver-date">2026-10</span></div>
             <ul class="ver-list">
               <li><span class="li-tag tag-fix">修复</span><b>性别和生日填了没地方看</b>。上一版只把这两样显示在「个人信息」里，也就是<b>只有你自己看得见</b>；画师主页压根没渲染过它们，所以别人的性别在哪儿都找不到。现在画师主页的名字下面会多一行标签：<code>🙋‍♀️ 女生　🎂 3 月 15 日</code>，<b>没填就整行不显示</b>，不占地方</li>

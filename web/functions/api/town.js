@@ -46,7 +46,9 @@ export async function onRequestOptions() {
 /** 物品库：连像素画、分类和调色板一起发下去，前端不用自己维护一份。
     贴面（墙纸/地板）没有字符画，只有「图案 + 配色」，前端照着现画。 */
 const catalog = () => ({
-  furniture: FURNITURE.map((f) => ({
+  /* 只能合成的那批（合成限定）不进商店 —— 让材料和光尘两条路互不挤占。
+     它们的定义在 _townitems.js 里，合成台那边自己下发。 */
+  furniture: FURNITURE.filter((f) => !f.craftOnly).map((f) => ({
     id: f.id,
     name: f.name,
     price: f.price,
@@ -134,6 +136,8 @@ export async function onRequestPost(context) {
   if (action === 'buy') {
     const f = itemById(body.id)
     if (!f) return json({ error: '没有这件东西' }, 400)
+    // 合成限定的东西买不到，得去合成台做
+    if (f.craftOnly) return json({ error: '「' + f.name + '」商店里不卖，去合成台做吧' }, 400)
     if (house.owned.indexOf(f.id) >= 0) {
       return json({ ok: true, already: true, owned: house.owned, book: null })
     }

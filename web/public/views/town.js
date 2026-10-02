@@ -349,6 +349,7 @@ export default {
         '</div>' +
         '<div class="tw-acts">' +
         '<button class="tw-btn" type="button" id="twGoHome">🏠 回我的小屋</button>' +
+        '<button class="tw-btn ghost" type="button" id="twGoBag">🎒 背包与合成台</button>' +
         '</div>'
 
       $('twBody').querySelectorAll('canvas[data-house]').forEach((cv) => {
@@ -362,6 +363,15 @@ export default {
           else location.href = to
         })
       })
+      const gb = $('twGoBag')
+      if (gb) {
+        gb.addEventListener('click', () => {
+          if (window.sfx) window.sfx('tick')
+          const to = '/town/bag'
+          if (window.__lwRouter) window.__lwRouter.push(to)
+          else location.href = to
+        })
+      }
       const gh = $('twGoHome')
       if (gh) {
         gh.addEventListener('click', () => {
@@ -427,6 +437,7 @@ export default {
       return (
         '<div class="tw-tray">' +
         '<div class="tw-tray-h">我的家具 <span>点一件拿在手上，再点房间放下</span></div>' +
+        '<div class="tw-tabs"><button class="tw-tab" type="button" id="twToBag">🎒 去合成台做新家具</button></div>' +
         mineHtml +
         '<div class="tw-tray-h" style="margin-top:14px">家具铺 <span>买下就永久归你，想摆几件摆几件</span></div>' +
         '<div class="tw-tabs">' + tabsHtml() + '</div>' +
@@ -463,6 +474,14 @@ export default {
           }
         }
       })
+      const toBag = $('twToBag')
+      if (toBag) {
+        toBag.addEventListener('click', () => {
+          if (window.sfx) window.sfx('tick')
+          if (window.__lwRouter) window.__lwRouter.push('/town/bag')
+          else location.href = '/town/bag'
+        })
+      }
       body.querySelectorAll('[data-tab]').forEach((b) => {
         b.addEventListener('click', () => {
           shopTab = b.getAttribute('data-tab')

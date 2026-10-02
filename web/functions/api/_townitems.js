@@ -180,6 +180,23 @@ const RAW = [
   ['anchor', '船锚', 45, 'misc', ['.S.', 'SSS', '.S.']],
   ['compass', '罗盘', 52, 'misc', ['.S.', 'SKS', '.S.']],
   ['gem', '宝石', 130, 'misc', ['.A.', 'AAA', '.A.']],
+
+  /* ---------- 合成限定：商店里买不到，只能拿材料在合成台换 ----------
+     这样两条路互不挤占：光尘解决「想要什么买什么」，
+     材料解决「一点点攒出来」的成就感。
+     价格写 0（不卖），第 6 个字段 true 表示只能合成。 */
+  ['starlamp', '星空灯', 0, 'lamp', ['.Y.', 'YAY', '.K.', '.K.'], true],
+  ['crystalchand', '水晶吊灯', 0, 'lamp', ['.C.', 'CAC', 'CAC', '.K.'], true],
+  ['warmfire', '暖暖壁炉', 0, 'deco', ['KKK', 'KOK', 'KYK', 'KKK'], true],
+  ['gearclock', '机械钟', 0, 'deco', ['SSS', 'SKS', 'SSS', 'SSS'], true],
+  ['hourglass', '时光沙漏', 0, 'deco', ['.S.', 'SYS', '.S.', 'SSS'], true],
+  ['rainbowrug', '彩虹地毯', 0, 'deco', ['ROY', 'YGB', 'BAM'], true],
+  ['starposter', '星辰挂画', 0, 'deco', ['KAK', 'AWA', 'KAK'], true],
+  ['cloudbed', '云朵床', 0, 'bed', ['WWWW', 'WWWW', 'CWWC'], true],
+  ['magicbooks', '魔法书架', 0, 'store', ['MMM', 'MWM', 'MAM'], true],
+  ['musicbox', '八音盒', 0, 'music', ['PPP', 'PYP', 'PPP'], true],
+  ['luckycat', '招财猫', 0, 'pet', ['W.W', 'RWR', '.Y.'], true],
+  ['tinytree', '会发光的树', 0, 'plant', ['..Y..', '.YGY.', 'YGGGY', '..B..', '..B..'], true],
 ]
 
 export const CAT_NAMES = {
@@ -214,14 +231,20 @@ export const WALL_OK = [
   'chandelier',
 ]
 
-export const FURNITURE = RAW.map(([id, name, price, cat, art]) => ({
+export const FURNITURE = RAW.map(([id, name, price, cat, art, craftOnly]) => ({
   id,
   name,
   price,
   cat,
   art,
   wallOk: WALL_OK.indexOf(id) >= 0,
+  craftOnly: !!craftOnly, // 只能合成，商店不卖
 }))
+
+/** 商店里能买到的（排除合成限定） */
+export const SHOP_ITEMS = FURNITURE.filter((f) => !f.craftOnly)
+/** 只能合成的 */
+export const CRAFT_ITEMS = FURNITURE.filter((f) => f.craftOnly)
 
 export function furnitureById(id) {
   for (const f of FURNITURE) if (f.id === id) return f
