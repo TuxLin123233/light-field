@@ -987,6 +987,140 @@ export default {
 
       /* ---------- 用色色板 ---------- */
 
+      /* ---------- 过滤器 ---------- */
+      .filter-toggle {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        width: 100%;
+        margin-top: 8px;
+        padding: 9px 12px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--surface);
+        color: var(--text);
+        font-family: inherit;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+        text-align: left;
+      }
+      .filter-toggle[aria-expanded='true'] { border-color: var(--accent); color: var(--accent); }
+      .filter-toggle .ft-badge {
+        min-width: 17px;
+        padding: 1px 5px;
+        border-radius: 999px;
+        background: var(--accent);
+        color: #fff;
+        font-size: 11px;
+        text-align: center;
+      }
+      .filter-toggle .ft-caret { margin-left: auto; transition: transform .2s; }
+      .filter-toggle[aria-expanded='true'] .ft-caret { transform: rotate(180deg); }
+
+      .filter-panel {
+        margin-top: 8px;
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--surface);
+        display: flex;
+        flex-direction: column;
+        gap: 11px;
+        animation: lwa-fade .2s ease-out both;
+      }
+      .fp-group { display: flex; align-items: flex-start; gap: 9px; }
+      .fp-label {
+        flex: none;
+        width: 32px;
+        padding-top: 6px;
+        font-size: 11.5px;
+        color: var(--text-faint);
+      }
+      .fp-chips { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; }
+      .fp-chips button {
+        padding: 5px 11px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: var(--surface-2);
+        color: var(--text-muted);
+        font-family: inherit;
+        font-size: 12px;
+        cursor: pointer;
+      }
+      .fp-chips button.on {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+        font-weight: 700;
+      }
+      .fp-chips button:active { transform: scale(.94); }
+      .fp-foot {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-top: 9px;
+        border-top: 1px solid var(--border);
+      }
+      .fp-count { font-size: 11.5px; color: var(--text-faint); }
+      .fp-reset {
+        padding: 4px 12px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: none;
+        color: var(--text-faint);
+        font-family: inherit;
+        font-size: 11.5px;
+        cursor: pointer;
+      }
+
+      /* ---------- 分区标题 ---------- */
+      .sec-bar {
+        display: flex;
+        gap: 6px;
+        overflow-x: auto;
+        margin-top: 10px;
+        padding-bottom: 2px;
+        -webkit-overflow-scrolling: touch;
+      }
+      .sec-bar::-webkit-scrollbar { display: none }
+      .sec-bar button {
+        flex: none;
+        padding: 5px 13px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: var(--surface);
+        color: var(--text-muted);
+        font-family: inherit;
+        font-size: 12.5px;
+        white-space: nowrap;
+        cursor: pointer;
+      }
+      .sec-bar button.on {
+        background: var(--text);
+        border-color: var(--text);
+        color: var(--surface);
+        font-weight: 700;
+      }
+      .sec-bar button i { font-style: normal; opacity: .6; margin-left: 3px; }
+      /* 卡片上标出它是哪种画布 */
+      .card .card-method {
+        position: absolute;
+        left: 6px;
+        bottom: 6px;
+        padding: 1px 6px;
+        border-radius: 999px;
+        background: rgba(0,0,0,.5);
+        color: #fff;
+        font-size: 10px;
+        line-height: 1.5;
+        backdrop-filter: blur(2px);
+        pointer-events: none;
+      }
+
+      /* 被过滤掉的卡片直接不占位 */
+      .card.f-off { display: none !important; }
+
       /* 用色占比条：按比例横向铺开，一眼看出主色调。
          比一串色块直观 —— 光看色块不知道哪个是主色。
          ★ .pal-grid 是 flex-wrap 容器，插进去的元素默认都是 flex item，
@@ -1546,6 +1680,42 @@ export default {
         </div>
         <div class="chip-row" id="chipRow" hidden></div>
         <div class="tag-cloud" id="tagCloud" hidden></div>
+
+        <!-- 过滤器：折叠面板，默认收起，不占地方 -->
+        <button class="filter-toggle" id="filterToggle" type="button" aria-expanded="false">
+          <span>⚙️ 筛选</span>
+          <span class="ft-badge" id="filterBadge" hidden>0</span>
+          <span class="ft-caret">▾</span>
+        </button>
+        <div class="filter-panel" id="filterPanel" hidden>
+          <div class="fp-group" data-group="method">
+            <span class="fp-label">画布</span>
+            <div class="fp-chips" id="fpMethod"></div>
+          </div>
+          <div class="fp-group" data-group="size">
+            <span class="fp-label">尺寸</span>
+            <div class="fp-chips" id="fpSize"></div>
+          </div>
+          <div class="fp-group" data-group="range">
+            <span class="fp-label">时间</span>
+            <div class="fp-chips" id="fpRange"></div>
+          </div>
+          <div class="fp-group" data-group="sort">
+            <span class="fp-label">排序</span>
+            <div class="fp-chips" id="fpSort"></div>
+          </div>
+          <div class="fp-group" data-group="extra">
+            <span class="fp-label">其它</span>
+            <div class="fp-chips" id="fpExtra"></div>
+          </div>
+          <div class="fp-foot">
+            <span class="fp-count" id="fpCount"></span>
+            <button class="fp-reset" id="fpReset" type="button">全部重置</button>
+          </div>
+        </div>
+
+        <!-- 分区标题（按画布类型分组时用） -->
+        <div class="sec-bar" id="secBar" hidden></div>
       </section>
 
       <section class="daily" id="dailyPanel" hidden>
@@ -2789,10 +2959,17 @@ export default {
         return ''
       }
 
+      /* 已经渲染出来的卡片。过滤器在它们身上直接改 class，
+         不重新请求，也不打断滚动位置。
+         ★ 声明必须放在 appendCards 之前 —— 放后面虽然「调用时机上」也安全，
+         但那是靠运气，以后有人提前调一次 appendCards 就会踩 TDZ。 */
+      let cards = []
+
       function appendCards(records) {
         // 先把卡片画出来（此时头像用默认的），再批量拉真头像回来重绘，
         // 这样不用等接口就能出内容
         const authorAvatars = []
+        const firstNew = cards.length
         records.forEach((rec) => {
           const card = document.createElement('div')
           card.className = 'card'
@@ -2916,6 +3093,17 @@ export default {
               card.appendChild(hb)
             }
           }
+          /* 登记到过滤器用的列表，并把「这是哪种画布」标在卡片上 */
+          card.__rec = rec
+          cards.push(card)
+          const mt = methodOf(rec)
+          if (mt) {
+            const mb = document.createElement('span')
+            mb.className = 'card-method'
+            const md = METHOD_DEFS.find((d) => d[0] === mt)
+            mb.textContent = md ? md[1] : mt
+            card.appendChild(mb)
+          }
           card.addEventListener('click', () => preview(rec))
           card.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' || e.key === ' ') {
@@ -2935,6 +3123,9 @@ export default {
             }
           })
         }
+
+        // 新来的这一批马上套用当前的过滤条件
+        applyFilter()
       }
 
       /* ---------- 每日挑战 ---------- */
@@ -2979,6 +3170,72 @@ export default {
         } catch (e) {}
       }
 
+      /* ================= 过滤器 =================
+         比「搜索」强一档的东西：按画布类型 / 尺寸 / 时间 / 排序筛。
+         这些条件服务端接口还不支持，所以在**前端已加载的记录上**过滤 ——
+         翻页时新来的记录也会自动套用同一套条件。
+
+         method 是这轮新加的字段。老作品没有这个字段，
+         按 size 猜一下：16/32 只可能是逐格画，64 才需要分辨。 */
+      const METHOD_DEFS = [
+        ['', '全部', ''],
+        ['pixel', '逐格', '一格一格涂的像素画'],
+        ['spray', '喷漆', '喷枪喷出来的'],
+        ['gravity', '重力', '让像素自己落下来'],
+        ['anim', '动画', '多帧循环的'],
+        ['image', '图片', '从图片转过来的'],
+      ]
+      const SIZE_DEFS = [['', '全部'], ['16', '16×16'], ['32', '32×32'], ['64', '64×64']]
+      const RANGE_DEFS = [['', '全部'], ['day', '今天'], ['week', '本周'], ['month', '本月']]
+      const SORT_DEFS = [['new', '最新'], ['hot', '最热'], ['dust', '最多光尘'], ['big', '大画优先']]
+      const EXTRA_DEFS = [['liked', '我赞过的'], ['mine', '我画的'], ['tagged', '带标签的']]
+
+      const filter = { method: '', size: '', range: '', sort: 'new', extra: [] }
+
+      /** 一条记录属于哪种画布 */
+      function methodOf(rec) {
+        if (rec.fromImage) return 'image'
+        if (rec.type === 'anim') return 'anim'
+        if (rec.method === 'spray') return 'spray'
+        if (rec.method === 'gravity') return 'gravity'
+        if (rec.method === 'pixel') return 'pixel'
+        // 老作品没这个字段：64 的说不准，小尺寸一定是逐格
+        return Number(rec.size) <= 32 ? 'pixel' : ''
+      }
+
+      function inRange(rec) {
+        if (!filter.range) return true
+        const t = Number(rec.time) || 0
+        const now = new Date()
+        if (filter.range === 'day') {
+          const d0 = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
+          return t >= d0
+        }
+        if (filter.range === 'week') return t >= Date.now() - 7 * 864e5
+        if (filter.range === 'month') return t >= Date.now() - 30 * 864e5
+        return true
+      }
+
+      function passFilter(rec) {
+        if (filter.method && methodOf(rec) !== filter.method) return false
+        if (filter.size && String(rec.size) !== filter.size) return false
+        if (!inRange(rec)) return false
+        if (filter.extra.indexOf('liked') >= 0 && !rec.liked) return false
+        if (filter.extra.indexOf('mine') >= 0 && !rec.mine) return false
+        if (filter.extra.indexOf('tagged') >= 0 && !(rec.tags && rec.tags.length)) return false
+        return true
+      }
+
+      function activeCount() {
+        let c = 0
+        if (filter.method) c++
+        if (filter.size) c++
+        if (filter.range) c++
+        if (filter.sort !== 'new') c++
+        c += filter.extra.length
+        return c
+      }
+
       /* ---------- 搜索 / 标签 / 作者 ---------- */
       const searchInput = document.getElementById('searchInput')
       const searchClear = document.getElementById('searchClear')
@@ -3009,6 +3266,7 @@ export default {
         offset = 0
         done = false
         loading = false
+        cards = []
         gallery.innerHTML = ''
         countEl.textContent = msg
         sentinel.hidden = false
@@ -3017,6 +3275,150 @@ export default {
          查不到就当普通用户，不影响正常浏览。 */
       loadModState().then(loadMore)
       }
+
+      /** 画一组 chip，带选中态 */
+      function buildChips(host, defs, getSel, onPick) {
+        if (!host) return
+        host.innerHTML = ''
+        defs.forEach((d) => {
+          const b = document.createElement('button')
+          b.type = 'button'
+          b.textContent = d[1]
+          if (d[2]) b.title = d[2]
+          const sel = getSel()
+          const on = Array.isArray(sel) ? sel.indexOf(d[0]) >= 0 : sel === d[0]
+          if (on) b.classList.add('on')
+          b.addEventListener('click', () => {
+            onPick(d[0])
+            if (window.sfx) window.sfx('tick')
+          })
+          host.appendChild(b)
+        })
+      }
+
+      const filterToggle = document.getElementById('filterToggle')
+      /* 面板默认收起。展开状态记在本机，下次进来还是展开的 */
+      try {
+        if (localStorage.getItem('lw-filter-open') === '1' && filterPanel) filterPanel.hidden = false
+      } catch (e) {}
+      const filterPanel = document.getElementById('filterPanel')
+      const filterBadge = document.getElementById('filterBadge')
+      const fpCount = document.getElementById('fpCount')
+      const secBar = document.getElementById('secBar')
+
+      if (filterToggle && filterPanel) {
+        filterToggle.addEventListener('click', () => {
+          filterPanel.hidden = !filterPanel.hidden
+          filterToggle.setAttribute('aria-expanded', filterPanel.hidden ? 'false' : 'true')
+          try { localStorage.setItem('lw-filter-open', filterPanel.hidden ? '0' : '1') } catch (e) {}
+          if (window.sfx) window.sfx('tap')
+        })
+      }
+      const fpReset = document.getElementById('fpReset')
+      if (fpReset) {
+        fpReset.addEventListener('click', () => {
+          filter.method = ''
+          filter.size = ''
+          filter.range = ''
+          filter.sort = 'new'
+          filter.extra = []
+          renderFilter()
+          applyFilter()
+          if (window.sfx) window.sfx('tap')
+        })
+      }
+
+      function renderFilter() {
+        buildChips(document.getElementById('fpMethod'), METHOD_DEFS,
+          () => filter.method, (v) => { filter.method = v; renderFilter(); applyFilter() })
+        buildChips(document.getElementById('fpSize'), SIZE_DEFS,
+          () => filter.size, (v) => { filter.size = v; renderFilter(); applyFilter() })
+        buildChips(document.getElementById('fpRange'), RANGE_DEFS,
+          () => filter.range, (v) => { filter.range = v; renderFilter(); applyFilter() })
+        buildChips(document.getElementById('fpSort'), SORT_DEFS,
+          () => filter.sort, (v) => { filter.sort = v; renderFilter(); applyFilter() })
+        buildChips(document.getElementById('fpExtra'), EXTRA_DEFS,
+          () => filter.extra, (v) => {
+            const i = filter.extra.indexOf(v)
+            if (i >= 0) filter.extra.splice(i, 1)
+            else filter.extra.push(v)
+            renderFilter(); applyFilter()
+          })
+
+        const c = activeCount()
+        if (filterBadge) {
+          filterBadge.hidden = c === 0
+          filterBadge.textContent = String(c)
+        }
+        if (filterToggle) filterToggle.setAttribute('aria-expanded', filterPanel && !filterPanel.hidden ? 'true' : 'false')
+        renderSecBar()
+      }
+
+      /* ---------- 分类分区 ----------
+         「全部」的时候按画布类型把结果分组，
+         顶部给一排分区标签，点一下等于快速切 method。 */
+      function renderSecBar() {
+        if (!secBar) return
+        // 已经在筛某个具体类型了，就不必再显示分区
+        secBar.hidden = !!filter.method
+        if (filter.method) return
+        const counts = {}
+        cards.forEach((c) => { const m = methodOf(c.__rec || {}); counts[m] = (counts[m] || 0) + 1 })
+        secBar.innerHTML = ''
+        const order = ['pixel', 'spray', 'gravity', 'anim', 'image', '']
+        order.forEach((m) => {
+          const n = counts[m] || 0
+          if (!n) return
+          const def = METHOD_DEFS.find((d) => d[0] === m)
+          if (!def) return
+          const b = document.createElement('button')
+          b.type = 'button'
+          b.innerHTML = def[1] + '<i>' + n + '</i>'
+          b.addEventListener('click', () => {
+            filter.method = m
+            renderFilter()
+            applyFilter()
+            if (window.sfx) window.sfx('tick')
+          })
+          secBar.appendChild(b)
+        })
+      }
+
+      /* ---------- 把过滤器套到已渲染的卡片上 ----------
+         不重新请求，直接改 class —— 快，且不打断滚动位置。
+         排序则真的重排 DOM。 */
+      function applyFilter() {
+        let shown = 0
+        cards.forEach((c) => {
+          const ok = passFilter(c.__rec || {})
+          c.classList.toggle('f-off', !ok)
+          if (ok) shown++
+        })
+        if (filter.sort !== 'new') sortCards()
+        if (fpCount) fpCount.textContent = '显示 ' + shown + ' / ' + cards.length + ' 幅'
+        renderSecBar()
+        // 过滤后没剩几幅就把下一页拉进来，免得用户看到一片空
+        if (shown < 6 && !done && !loading) loadMore()
+      }
+
+      function timeOf(c) { return Number((c.__rec || {}).time) || 0 }
+      function likeOf(c) { return Number((c.__rec || {}).likes) || 0 }
+      function sizeOf(c) { return Number((c.__rec || {}).size) || 0 }
+
+      function sortCards() {
+        if (!gallery || !cards.length) return
+        const arr = cards.slice()
+        if (filter.sort === 'hot') arr.sort((a, b) => likeOf(b) - likeOf(a) || timeOf(b) - timeOf(a))
+        else if (filter.sort === 'dust') arr.sort((a, b) => (Number((b.__rec||{}).dust)||0) - (Number((a.__rec||{}).dust)||0) || timeOf(b) - timeOf(a))
+        else if (filter.sort === 'big') arr.sort((a, b) => sizeOf(b) - sizeOf(a) || timeOf(b) - timeOf(a))
+        else arr.sort((a, b) => timeOf(b) - timeOf(a))
+        arr.forEach((c) => gallery.appendChild(c))
+      }
+
+      /* 初始化：所有 const 都声明完了，这里才能安全地画过滤器 UI。
+         ★ 之前把这行放在 resetGallery 前面，那时 filterToggle 这些
+         const 还在 TDZ 里，一进页面就整个白屏。 */
+      renderFilter()
 
       function renderChips() {
         const items = []

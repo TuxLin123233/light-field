@@ -185,6 +185,20 @@ export async function onRequestPost(context) {
   if (ink) entry.ink = ink
   if (body && body.room === true) entry.room = true
 
+  /* 用哪种画布画的。社区要按这个分区，所以必须存下来 ——
+     以前只存了 size，喷漆和逐格涂同样是 64×64 就分不开了。
+     取值只允许这几样，前端传什么都不信：
+       pixel   逐格上色（16/32/64）
+       spray   喷漆（固定 64）
+       gravity 重力撒沙（固定 64）
+       anim    帧动画（多帧，type 字段也会标） */
+  {
+    const m = String((body && body.method) || '').trim()
+    if (m === 'spray') entry.method = 'spray'
+    else if (m === 'gravity') entry.method = 'gravity'
+    else if (m !== 'anim') entry.method = 'pixel'
+  }
+
   // 标签：最多 3 个，每个最多 6 字，只保留安全字符
   if (Array.isArray(body && body.tags)) {
     const clean = []

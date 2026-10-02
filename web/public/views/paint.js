@@ -5321,6 +5321,19 @@ color: var(--text-muted);
           payload.workName = titleInput.value.trim()
         }
         if (fromImage && !gravityOn) payload.fromImage = true
+
+        /* 告诉服务端用的是哪套画板 —— 社区要按这个分区。
+
+           喷漆和重力都固定 64×64，光靠 size 分不开。 */
+
+        /* ★ 这里只能用**已经声明过**的变量。
+           我一开始顺手写了个 animOn，但那玩意儿不存在 ——
+           点发布时会抛 ReferenceError，画就发不出去了。
+           animFrames 在 4959 行就声明了（早于这里），可以安全引用。 */
+        if (animFrames && animFrames.length > 1) payload.method = 'anim'
+        else if (gravityOn) payload.method = 'gravity'
+        else if (sprayOn) payload.method = 'spray'
+        else payload.method = 'pixel'
         const tg = readTags()
         if (tg.length) payload.tags = tg
 
