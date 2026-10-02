@@ -307,7 +307,7 @@ export default {
 
     function noLogin() {
       $('achBody').innerHTML =
-        '<div class="ach-empty">成就与账号绑定，登录后才能记录。<br />' +
+        '<div class="ach-empty">成就跟着账号走。登录之后，你攒下的每一笔都记在这里。<br />' +
         '<a class="ach-cta" href="/login">去登录 / 注册</a></div>'
     }
 
@@ -342,7 +342,7 @@ export default {
         )
       }
 
-      // 100 个成就拉成一条太长，按分类折叠
+      // 成就有一百多个，拉成一条太长，按分类折叠
       const cats = Array.isArray(d.categories) && d.categories.length
         ? d.categories
         : [{ key: '', name: '全部' }]

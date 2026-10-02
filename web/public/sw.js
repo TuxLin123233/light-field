@@ -34,6 +34,7 @@ const SHELL = [
   '/views/rank.js',
   '/views/user.js',
   '/views/chat.js',
+  '/views/town.js',
   '/views/mine.js',
   '/views/intro.js',
   '/views/avatar.js',

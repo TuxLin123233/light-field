@@ -628,17 +628,26 @@ export default {
         return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
       }
 
+      /* 走 LWThumb：它会算出「整数倍缩放」再把 CSS 尺寸和背板一起设好。
+         这里原来是自己画，背板写成 n*dpr（16×2=32px），
+         却要显示到 110px / 48px —— 两边不是整数倍关系，
+         浏览器拉伸时最后一行/一列只盖住部分像素，露出的就是白条纹。 */
       function drawThumb(canvas, pixels, s) {
+        if (window.LWThumb) {
+          window.LWThumb.draw(canvas, pixels, s)
+          return
+        }
+        // 兜底（LWThumb 没加载时）：1:1 背板，靠 CSS 的 pixelated 放大
         const n = s === 32 || s === 64 ? s : 16
-        canvas.width = n * dpr
-        canvas.height = n * dpr
+        canvas.width = n
+        canvas.height = n
         const c = canvas.getContext('2d')
-        c.scale(dpr, dpr)
-        c.clearRect(0, 0, n, n)
+        c.fillStyle = '#ffffff'
+        c.fillRect(0, 0, n, n)
         for (let y = 0; y < n; y++) {
           for (let x = 0; x < n; x++) {
             const px = pixels && pixels[y * n + x]
-            if (!px) continue
+            if (!Array.isArray(px) || px.length < 3) continue
             c.fillStyle = `rgb(${px[0]}, ${px[1]}, ${px[2]})`
             c.fillRect(x, y, 1, 1)
           }

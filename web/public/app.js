@@ -17,6 +17,7 @@ import tasks from './views/tasks.js'
 import rank from './views/rank.js'
 import user from './views/user.js'
 import chat from './views/chat.js'
+import town from './views/town.js'
 
 const { createApp } = window.Vue
 const { createRouter, createWebHistory } = window.VueRouter
@@ -120,6 +121,9 @@ const routes = [
   { path: '/rank', component: withAutoCleanup(rank) },
   { path: '/u', component: withAutoCleanup(user) },
   { path: '/chat', component: withAutoCleanup(chat) },
+  // 小镇地图 / 个人小屋（小屋是二级页，导航会自动收起来）
+  { path: '/town', component: withAutoCleanup(town) },
+  { path: '/town/home', component: withAutoCleanup(town) },
   { path: '/avatar', component: withAutoCleanup(avatar) },
   { path: '/intro', component: withAutoCleanup(intro) },
   { path: '/settings', component: withAutoCleanup(settings) },
@@ -168,11 +172,14 @@ router.afterEach((to) => {
 })
 
 /* ---------- 导航项：顺序与位置可由设置页调整 ---------- */
+/* 尾部导航只放「一级页面」。
+   设置不再占导航位了 —— 它是配置项，不是常去的地方，
+   入口挪进「我的」页，把第四个位置让给更值得点开的板块。 */
 const NAV_ITEMS = [
   { path: '/paint', ico: '🎨', name: '画板' },
   { path: '/gallery', ico: '🌆', name: '社区' },
+  { path: '/town', ico: '🏘️', name: '小镇' },
   { path: '/mine', ico: '🌱', name: '我的' },
-  { path: '/settings', ico: '⚙️', name: '设置' },
 ]
 function readLS(k, d) {
   try {
@@ -197,16 +204,17 @@ function applyNavPosition() {
   document.documentElement.setAttribute('data-nav-pos', pos)
 }
 
-/* 什么时候不显示底部导航：
-     · 登录页是专注的单页，本来就不显示；
-     · 和好友聊天时（/chat?to=xxx）也隐藏，把屏幕整个让给消息和输入框，
-       否则键盘弹起来时导航栏会压在输入框上。
-   只有带 to 参数（正在聊天）才隐藏，好友列表照常保留导航。 */
+/* 底部导航只在下面这几个「一级页面」出现。
+   其余都是二级页 —— 信箱、好友、排行、日任务、成就、用户主页、头像、
+   简介、更新日志、条款、常见问题…… 它们左上角本来就有返回按钮，
+   再挂一条导航栏既占屏幕又容易点错。
+   和好友聊天时（/chat?to=xxx）也在这个名单之外，所以一并隐掉了 ——
+   不然键盘弹起来时导航栏会压在输入框上。 */
+const NAV_PAGES = ['/paint', '/gallery', '/town', '/mine']
+
 function hideNav(route) {
   if (!route) return false
-  if (route.path === '/login') return true
-  if (route.path === '/chat' && route.query && route.query.to) return true
-  return false
+  return NAV_PAGES.indexOf(route.path) < 0
 }
 
 const App = {

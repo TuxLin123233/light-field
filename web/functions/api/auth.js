@@ -26,6 +26,11 @@ import {
   sanitizeBio,
   BIO_COST,
   BIO_MAX,
+  sanitizeGender,
+  parseBirthday,
+  birthdayLockLeft,
+  BIRTHDAY_GIFT,
+  BIRTHDAY_COOLDOWN,
 } from './_auth.js'
 import { readBook, writeBook, publicView } from './_dust.js'
 import { ensureOffers } from './_mail.js'
@@ -192,6 +197,46 @@ export async function onRequestPost(context) {
     await writeUser(kv, user)
 
     return json({ ok: true, bio, changed: true, cost: BIO_COST, max: BIO_MAX, book: publicView(charged) })
+  }
+
+  /* ---------------- 个人资料：性别 / 生日 ----------------
+     性别随便改。生日一年只能改一次 —— 否则反复改生日就能反复领生日礼。 */
+  if (action === 'about') {
+    const who = await readToken(env, pickToken(request, body), request.headers.get('authorization'))
+    if (!who) return json({ error: '请先登录' }, 401)
+    const user = await readUser(kv, who.uid)
+    if (!user) return json({ error: '账号不存在' }, 404)
+    if (isBanned(user)) return json(BANNED_ERROR, 403)
+
+    const out = { ok: true, gift: BIRTHDAY_GIFT }
+
+    if (body.gender !== undefined) {
+      user.gender = sanitizeGender(body.gender)
+      out.gender = user.gender
+    }
+
+    if (body.birthday !== undefined) {
+      const next = parseBirthday(body.birthday)
+      if (next === null) {
+        return json({ error: '生日格式不对，要像 03-15 这样（月-日）' }, 400)
+      }
+      // 只有真的改了才走冷却，重填同一个日期不算改
+      if (next !== (user.birthday || '')) {
+        const left = birthdayLockLeft(user)
+        if (left > 0) {
+          const days = Math.ceil(left / 86400000)
+          return json({ error: '生日一年只能改一次，还要等 ' + days + ' 天', left, locked: true }, 400)
+        }
+        user.birthday = next
+        user.birthdaySetAt = next ? Date.now() : 0
+      }
+      out.birthday = user.birthday || ''
+      out.birthdayLockLeft = birthdayLockLeft(user)
+      out.cooldown = BIRTHDAY_COOLDOWN
+    }
+
+    await writeUser(kv, user)
+    return json(out)
   }
 
   /* ---------------- 注销 ---------------- */

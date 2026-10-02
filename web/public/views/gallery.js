@@ -1526,7 +1526,7 @@ export default {
 
       <section class="daily" id="dailyPanel" hidden>
         <div class="daily-head">
-          <span class="daily-title">⚡ 每日挑战</span>
+          <span class="daily-title">⚡ 今日一题</span>
           <span class="daily-day" id="dailyDay"></span>
         </div>
         <div class="daily-theme">今日题目《<b id="dailyTheme"></b>》</div>
@@ -1555,7 +1555,7 @@ export default {
 
       <section class="contest" id="contestPanel" hidden>
         <div class="contest-head">
-          <span class="contest-title">🏆 每周主题比赛</span>
+          <span class="contest-title">🏆 本周大赛</span>
           <span class="contest-badge" id="contestBadge">进行中</span>
         </div>
         <div class="contest-theme">本周主题《<b id="contestTheme"></b>》</div>
@@ -1578,7 +1578,7 @@ export default {
           <button class="discover-btn" id="discoverBtn" type="button">掷一个</button>
         </div>
         <div class="discover-body" id="discoverBody">
-          <div class="discover-empty">点「掷一个」随机看看别人以前画了什么</div>
+          <div class="discover-empty">手气不错的话，能翻出别人埋在底下的老画</div>
         </div>
       </section>
 
@@ -1602,7 +1602,7 @@ export default {
       <div class="join-card">
         <div class="join-ico">🛡️</div>
         <div class="join-body">
-          <div class="join-title">加入我们，维护社区稳定</div>
+          <div class="join-title">来当小镇的守卫</div>
           <div class="join-desc">像素小镇社区持续壮大，欢迎成为维护者：审核内容、清理违规、共建良好氛围。加入需发送正式申请书信，经作者审核通过后方可参与。</div>
         </div>
         <router-link class="join-btn" to="/admin">查看详情 →</router-link>
@@ -2582,7 +2582,7 @@ export default {
           const data = await res.json().catch(() => ({}))
           const w = data && data.work
           if (!w) {
-            discoverBody.innerHTML = '<div class="discover-empty">社区还没有作品，先去画一幅吧</div>'
+            discoverBody.innerHTML = '<div class="discover-empty">广场上还空着 —— 第一幅画等你来挂</div>'
             return
           }
           discoverBody.innerHTML = ''
@@ -2612,7 +2612,7 @@ export default {
           discoverBody.appendChild(card)
           if (window.sfx) window.sfx('pop')
         } catch (e) {
-          discoverBody.innerHTML = '<div class="discover-empty">网络不太好，稍后再试</div>'
+          discoverBody.innerHTML = '<div class="discover-empty">网线好像不太稳，待会儿再试</div>'
         } finally {
           discovering = false
           discoverBtn.disabled = false

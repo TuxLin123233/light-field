@@ -290,3 +290,52 @@ export function sanitizeBio(s) {
     .trim()
     .slice(0, BIO_MAX)
 }
+
+/* -------------------- 个人资料：性别 / 生日 --------------------
+   生日只存「月-日」，不存年份 —— 既够用来送祝福，也不去收集年龄。
+   生日一年只能改一次，避免有人靠反复改生日反复领礼。 */
+
+export const GENDERS = ['male', 'female', 'secret']
+export const GENDER_LABEL = { male: '男生', female: '女生', secret: '保密' }
+
+/** 生日当天送多少光尘 */
+export const BIRTHDAY_GIFT = 100
+/** 生日一年只能改一次 */
+export const BIRTHDAY_COOLDOWN = 365 * 86400000
+
+export function sanitizeGender(g) {
+  const s = String(g == null ? '' : g).trim()
+  return GENDERS.indexOf(s) >= 0 ? s : ''
+}
+
+/** 生日统一存成 'MM-DD'。空串＝清空；非法返回 null（调用方据此报错） */
+export function parseBirthday(v) {
+  const s = String(v == null ? '' : v).trim()
+  if (!s) return ''
+  const m = s.match(/^(\d{1,2})-(\d{1,2})$/)
+  if (!m) return null
+  const mo = Number(m[1])
+  const d = Number(m[2])
+  if (!(mo >= 1 && mo <= 12) || !(d >= 1 && d <= 31)) return null
+  // 按真实天数校验。二月给到 29：闰年出生的人也得能填 2-29
+  const max = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][mo - 1]
+  if (d > max) return null
+  return (mo < 10 ? '0' : '') + mo + '-' + (d < 10 ? '0' : '') + d
+}
+
+/** 还要等多久才能再改生日（毫秒）。0 表示现在就能改 */
+export function birthdayLockLeft(user, now) {
+  const setAt = Number(user && user.birthdaySetAt) || 0
+  if (!setAt) return 0
+  const left = setAt + BIRTHDAY_COOLDOWN - (Number(now) || Date.now())
+  return left > 0 ? left : 0
+}
+
+/** 今天是不是他的生日。按东八区算 —— 站里的用户基本都是国内的 */
+export function isBirthdayToday(birthday, now) {
+  if (!birthday) return false
+  const d = new Date((Number(now) || Date.now()) + 8 * 3600000)
+  const mm = d.getUTCMonth() + 1
+  const dd = d.getUTCDate()
+  return birthday === (mm < 10 ? '0' : '') + mm + '-' + (dd < 10 ? '0' : '') + dd
+}

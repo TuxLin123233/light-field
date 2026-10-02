@@ -164,8 +164,8 @@ export default {
         <div class="auth-logo">
           <img class="al-mark" src="/icons/icon-192.png" alt="像素小镇">
         </div>
-        <div class="auth-title" id="authTitle">欢迎回来</div>
-        <div class="auth-sub" id="authSub">登录后可跨设备同步签到、光尘与作品</div>
+        <div class="auth-title" id="authTitle">欢迎回到小镇</div>
+        <div class="auth-sub" id="authSub">登录后，你的画、光尘和连续签到都跟着账号走，换台设备也在</div>
 
         <div class="auth-tabs">
           <button class="auth-tab on" id="tabLogin" type="button">登录</button>
@@ -227,10 +227,10 @@ export default {
       $('tabLogin').classList.toggle('on', !reg)
       $('tabRegister').classList.toggle('on', reg)
       $('pw2Field').hidden = !reg
-      $('authTitle').textContent = reg ? '创建账号' : '欢迎回来'
+      $('authTitle').textContent = reg ? '创建账号' : '欢迎回到小镇'
       $('authSub').textContent = reg
         ? '一个用户名一个身份，之后作品与光尘都归它'
-        : '登录后可跨设备同步签到、光尘与作品'
+        : '登录后，你的画、光尘和连续签到都跟着账号走，换台设备也在'
       $('authGo').textContent = reg ? '注册并登录' : '登录'
       $('authPw').setAttribute('autocomplete', reg ? 'new-password' : 'current-password')
       say('')

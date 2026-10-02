@@ -35,28 +35,98 @@ window.LWAvatar = (function () {
     return [Math.round((r + m) * 255), Math.round((g + m) * 255), Math.round((b + m) * 255)]
   }
 
-  /** 默认头像：一只圆头像素人，配色由 uid 决定。与服务端 _avatar.js 保持一致 */
+  /* 精选色相：橙黄那一段（40°~80°）在 16×16 的小方块里会发闷、像土色，
+     所以不用整圈色轮，直接列一组好看的颜色。 */
+  var HUES = [352, 358, 6, 13, 20, 30, 340, 350, 330, 300, 288, 276, 262, 248, 233, 218, 208, 198, 185, 172, 161, 150, 120, 96]
+  var LIGHTS = [0.6, 0.66, 0.72]
+
+  /** 默认头像：一只圆头小兽。
+      长得像谁完全由 uid 决定 —— 色相 × 明度 × 耳型 × 眼型 × 嘴型 × 底纹
+      一共 24×3×3×2×3×3 = 3888 种组合，同一个人每次都是同一只，
+      不同人基本不会撞脸。改这里时必须同步改 functions/api/_avatar.js。 */
   function defaultPixels(seed) {
     var h = hash32(seed)
-    var hue = h % 360
-    var bg = hsl2rgb(hue, 0.42, 0.88)
-    var bg2 = hsl2rgb(hue, 0.4, 0.78)
-    var skin = [244, 214, 176]
-    var line = [58, 42, 34]
-    var hair = hsl2rgb((hue + 24) % 360, 0.5, 0.42)
+    /* 把哈希当 N 进制数拆开用，各维度互不相关。
+       直接 h%k 再 Math.floor(h/k)%m 会让相邻的 uid 长得像。 */
+    var hue = HUES[h % HUES.length]
+    var lit = LIGHTS[Math.floor(h / 24) % 3]
+    var earType = Math.floor(h / 72) % 3
+    var eyeType = Math.floor(h / 216) % 2
+    var mouthType = Math.floor(h / 432) % 3
+    var bgPat = Math.floor(h / 1296) % 3
+
+    var body = hsl2rgb(hue, 0.62, lit)
+    var bodyDark = hsl2rgb(hue, 0.56, lit - 0.18)
+    var bodyLight = hsl2rgb(hue, 0.58, Math.min(0.92, lit + 0.16))
+    // 底色取同色系的浅色：比互补色干净，整张图不至于花
+    var bg = hsl2rgb(hue, 0.34, 0.945)
+    var bgDot = hsl2rgb(hue, 0.34, 0.885)
+    var ink = [58, 44, 38]
+    var white = [255, 253, 250]
+    var blush = [246, 150, 150]
+
     var px = new Array(SIZE * SIZE)
+    var CX = 7.5
+    var CY = 8.3
+    var R = 5.3
     for (var y = 0; y < SIZE; y++) {
       for (var x = 0; x < SIZE; x++) {
-        var d = Math.hypot(x - 7.5, y - 7.2)
+        var dx = x - CX
+        var dy = y - CY
+        var d = Math.sqrt(dx * dx + dy * dy)
         var c
-        if (d > 7.4) c = (x + y) % 4 === 0 ? bg2 : bg
-        else if (d > 6.4) c = line
-        else if (d > 5.2) c = y < 5 ? hair : skin
-        else c = skin
-        if (y === 8 && (x === 5 || x === 10)) c = line
-        if (y === 11 && (x === 7 || x === 8)) c = line
+        if (d > 7.2) {
+          // 三种底纹：斜点 / 纯色 / 方格
+          if (bgPat === 0) c = (x + y) % 4 === 0 ? bgDot : bg
+          else if (bgPat === 1) c = bg
+          else c = ((x >> 1) + (y >> 1)) % 2 === 0 ? bg : bgDot
+        } else if (d > R) c = bg
+        else if (d > R - 0.7) c = bodyDark
+        else c = body
         px[y * SIZE + x] = c
       }
+    }
+    // 左上角一小片高光，看着才有体积，不然就是一坨平色
+    var hl = [[4, 5], [5, 5], [4, 6], [5, 6], [6, 6]]
+    for (var a = 0; a < hl.length; a++) px[hl[a][1] * SIZE + hl[a][0]] = bodyLight
+    // 耳型一：两只圆耳朵；耳型二：两根触角；耳型三：光滑一团，不画
+    if (earType === 0) {
+      var ears = [[4, 3], [5, 3], [4, 4], [11, 3], [10, 3], [11, 4]]
+      for (var b = 0; b < ears.length; b++) px[ears[b][1] * SIZE + ears[b][0]] = bodyDark
+    } else if (earType === 1) {
+      px[3 * SIZE + 5] = bodyDark
+      px[2 * SIZE + 5] = ink
+      px[3 * SIZE + 10] = bodyDark
+      px[2 * SIZE + 10] = ink
+    }
+    // 眼型一：实心眼 + 一点白高光；眼型二：大白眼 + 黑瞳
+    var E = [[5, 7], [6, 7], [5, 8], [6, 8], [9, 7], [10, 7], [9, 8], [10, 8]]
+    var e
+    if (eyeType === 0) {
+      for (e = 0; e < E.length; e++) px[E[e][1] * SIZE + E[e][0]] = ink
+      px[7 * SIZE + 5] = white
+      px[7 * SIZE + 9] = white
+    } else {
+      for (e = 0; e < E.length; e++) px[E[e][1] * SIZE + E[e][0]] = white
+      px[7 * SIZE + 6] = ink
+      px[8 * SIZE + 6] = ink
+      px[7 * SIZE + 9] = ink
+      px[8 * SIZE + 9] = ink
+    }
+    // 腮红
+    if (mouthType !== 2) {
+      px[10 * SIZE + 4] = blush
+      px[10 * SIZE + 11] = blush
+    }
+    // 嘴型：两点 / 带嘴角的笑 / 张开的小嘴
+    px[11 * SIZE + 7] = ink
+    px[11 * SIZE + 8] = ink
+    if (mouthType === 1) {
+      px[10 * SIZE + 6] = ink
+      px[10 * SIZE + 9] = ink
+    } else if (mouthType === 2) {
+      px[12 * SIZE + 7] = ink
+      px[12 * SIZE + 8] = ink
     }
     return px
   }

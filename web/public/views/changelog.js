@@ -258,6 +258,29 @@ export default {
       <section class="group">
         <div class="ver red">
           <div class="ver-body">
+            <div class="ver-title"><span class="ver-tag">v1.5.0</span> 像素小镇开镇 · 153 个成就 · 生日 · 一大轮修复 <span class="ver-date">2026-10</span></div>
+            <ul class="ver-list">
+              <li><span class="li-tag tag-new">新功能</span><b>像素小镇开镇了</b>：底部导航多了一个「🏘️ 小镇」。镇上一排排小屋，每户一间，点谁进谁家串门。屋里可以摆家具 —— 家具铺里有 12 件（盆栽、落地灯、小床、一只猫、钢琴…），<b>买下就永久归你，想摆几件摆几件</b>。这是光尘的第一个正经去处</li>
+              <li><span class="li-tag tag-fix">修复</span><b>光尘余额怎么都不刷新</b>（拖了很久的老问题）。根因是领信箱附件时发的是另一个事件名，而账本只认 <code>lw-dust-changed</code> —— 账本一直是旧值，而「我的」页为了省额度又故意不重新拉，于是切页也救不回来。顺手还揪出改头像、改简介两处同样的漏网，现在都补上了</li>
+              <li><span class="li-tag tag-new">新功能</span>成就从 100 个扩到 <b>153 个</b>，并补上一条很长的尾巴：全年签到、全天候满勤、单幅三百赞、五百万格、两年老友、连续百日创作……奖励上限也从 30 提到 100 光尘。<b>入门那批没动</b>，新手照样能很快拿到第一枚</li>
+              <li><span class="li-tag tag-new">新功能</span><b>生日与性别</b>：「个人信息」页（从「我的」进）可以填性别和生日。生日当天小镇会往你账本里放 <b>100 个光尘</b> + 一封贺信，一年一次。生日只存「月-日」不存年份，<b>一年只能改一次</b>，免得反复改生日反复领礼</li>
+              <li><span class="li-tag tag-new">新功能</span><b>个人信息汇总</b>：一屏看完头像、性别、生日、入住天数，以及作品数、绘制格数、收到赞、收到光尘</li>
+              <li><span class="li-tag tag-fix">修复</span><b>默认头像重做</b>。以前是一张写死米色的圆脸，所有人的脸一模一样，只有背景颜色不同。现在是一只圆头小兽，耳型、眼型、嘴型、底纹、配色全由账号决定，一共 <b>3888 种</b>，两万人里才会撞几次脸</li>
+              <li><span class="li-tag tag-fix">修复</span><b>我的作品卡片被拉伸</b>：缩略图算尺寸时会向上取整算出比格子还大的数，被 max-width 一压，正方形就变成长方形了。现在超出可用宽度时自动退一档</li>
+              <li><span class="li-tag tag-fix">修复</span><b>后台作品预览和像素喷漆的白条纹</b>：一个是因为缩略图背板尺寸和显示尺寸不是整数倍，另一个是「补缝」的重叠量写死成了 1.02（按大屏估的，窄屏上不够用）。两处都改成按实际尺寸算了</li>
+              <li><span class="li-tag tag-ui">界面</span><b>底部导航只在四个一级页面出现</b>了（画板 / 社区 / 小镇 / 我的）。信箱、好友、排行、任务、成就、设置…… 这些二级页左上角本来就有返回键，再挂一条导航栏既占屏幕又容易点错。和好友聊天时导航也会收起来，键盘不再压着输入框</li>
+              <li><span class="li-tag tag-ui">界面</span>聊天时可以整屏输入了：输入框钉在屏幕底部、自动避开 iPhone 的横条，键盘弹起会把它顶上来。<b>「清空这段对话」挪到了顶栏</b> —— 它以前贴在发送键正上方，够发送时很容易误触，而那是不可恢复的操作</li>
+              <li><span class="li-tag tag-ui">界面</span>好友列表的头像和名字<b>不再挤在一起</b>了，未读消息加了红点（1 条是小红点，多了显示数字）；画师主页的作品墙<b>只铺最近 6 件</b>，其余收在「查看更多」后面，不再一下子拉出六十张图</li>
+              <li><span class="li-tag tag-ui">界面</span>全站文案改了一轮口吻：签到叫「报到」，社区叫「小镇」，欢迎语是「欢迎回到小镇」。「我的」页新增「👤 个人信息」入口，设置也从导航栏挪到了这里</li>
+              <li><span class="li-tag tag-new">新功能</span>致谢里补上了 <b>DeepSeek Harness</b> 与 <b>Linux</b></li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="group">
+        <div class="ver red">
+          <div class="ver-body">
             <div class="ver-title"><span class="ver-tag">v1.4.0</span> 音效大扩容 · 加好友 · 后台发信 · 聊天表情 · 一键更新 <span class="ver-date">2026-10</span></div>
             <ul class="ver-list">
               <li><span class="li-tag tag-new">新功能</span>音效从 19 种扩到 <b>33 种</b>，并新增滑音、琶音、柔和噪声、颤音四种合成手法：点赞、评论发送、签到、成就解锁、获得光尘各有专属音色。同一个音效每次播放音高会轻微浮动（±3.5%），连点也不会觉得机械</li>

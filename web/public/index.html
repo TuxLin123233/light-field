@@ -1121,6 +1121,14 @@
         window.dust = {
           perSignin: DUST_PER_SIGNIN,
           cost: DUST_COST,
+          /* 服务端刚返回了一份新账本，直接喂进来。
+             各页面拿到 d.book 后调一下这个，全局账本立刻就是新的。
+             以前有的地方只更新了自己页面里的局部变量（比如改头像扣光尘），
+             全局账本还是旧值，换个页面看余额就还是老的。 */
+          take: function (book) {
+            if (book && typeof book.bal === 'number') applyBook(book)
+            return book
+          },
           /* 是否已登录（账本是否来自服务端） */
           isServer: function () {
             return server !== null
@@ -1244,16 +1252,22 @@
            但账本模块自己根本没监听，server 一直拿着签到时的旧余额。
            加上切页缓存之后这个陈旧值还会一直留着 —— 领了任务回「我的」页
            数字还是老的。 */
-        window.addEventListener('lw-dust-changed', function (e) {
+        /* 账本变化的统一入口：任何会改光尘的操作都该走这里。
+           带上新账本就直接用（省一次请求），没带就重新拉一次。
+           lw-mail-claimed 也接上 —— 领信箱附件走的是那个事件，这边以前没接，
+           于是领完光尘全局账本一直是旧值，余额怎么都不变。 */
+        function onDustChanged(e) {
           var b = e && e.detail
+          // 领附件带过来的是 { dust, title, book }，账本在 book 里
+          if (b && b.book && typeof b.book.bal === 'number') b = b.book
           if (b && typeof b.bal === 'number') {
-            // 派发方已经把新账本带上了，直接用，不用再发一次请求
             applyBook(b)
           } else {
-            // 没带账本（社区送光尘等）就重新拉一次
             sync()
           }
-        })
+        }
+        window.addEventListener('lw-dust-changed', onDustChanged)
+        window.addEventListener('lw-mail-claimed', onDustChanged)
         // 启动时静默拉一次，登录用户直接显示真实余额
         sync()
       })()

@@ -119,6 +119,24 @@ export default {
       .u-sec span { font-size: 11px; font-weight: 600; color: var(--text-faint); }
 
       .u-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); gap: 9px; }
+      /* 作品墙默认只铺最近几件，其余的收在「查看更多」后面。
+         以前是一次性把 60 件全铺出来，画师主页被拉得特别长。 */
+      .u-work.u-hidden { display: none; }
+      .u-more {
+        display: block;
+        width: 100%;
+        margin-top: 10px;
+        border: 1px dashed var(--border-strong);
+        background: var(--surface-2);
+        color: var(--accent);
+        border-radius: 12px;
+        padding: 11px;
+        font-size: 13px;
+        font-weight: 800;
+        font-family: inherit;
+        cursor: pointer;
+      }
+      .u-more:active { background: var(--border); }
       .u-grid img {
         width: 100%; aspect-ratio: 1; image-rendering: pixelated;
         border-radius: 11px; background: var(--art-bg);
@@ -197,6 +215,8 @@ export default {
 
     let achCat = 'all' // 成就分类筛选
     let works = []
+    /* 作品墙首屏只铺这么多件，其余收在「查看更多」后面 */
+    const WORKS_INIT = 6
     let profile = null
     let follow = null
     let ach = null
@@ -340,7 +360,7 @@ export default {
         '<div class="u-grid" id="uWorks">' +
         (works.length
           ? works
-              .map((w) => {
+              .map((w, wi) => {
                 const t = w.time || 0
                 /* 每幅作品上给一个送光尘的按钮。
                    以前这里只有一张图、点了开大图，主页上完全没法送光尘 ——
@@ -350,7 +370,7 @@ export default {
                    加 disabled 的话手机上点了没反应，看着就像坏了。 */
                 const noDust = w.fromImage === true
                 return (
-                  '<div class="u-work" data-t="' + t + '">' +
+                  '<div class="u-work' + (wi >= WORKS_INIT ? ' u-hidden' : '') + '" data-t="' + t + '">' +
                   '<img alt="' + esc(w.workName || '未命名') + '" data-t="' + t +
                   '" src="' + pixelsToURL(w.pixels, w.size === 32 || w.size === 64 ? w.size : 16) + '">' +
                   '<button class="u-give' + (gave ? ' on' : '') + (noDust ? ' no-dust' : '') +
@@ -362,8 +382,13 @@ export default {
                 )
               })
               .join('')
-          : '<div class="u-empty">这位画师还没有公开作品。</div>') +
+          : '<div class="u-empty">这位画师还没往墙上挂画。</div>') +
         '</div>' +
+        (works.length > WORKS_INIT
+          ? '<button class="u-more" id="uMoreBtn" type="button">查看更多（还有 ' +
+            (works.length - WORKS_INIT) +
+            ' 件）</button>'
+          : '') +
         '<div class="u-sec">🏅 成就<span>' +
         (ach && ach.ok ? (ach.unlocked || 0) + '/' + (ach.total || 0) : '—') +
         '</span></div>' +
@@ -447,6 +472,21 @@ export default {
             if (w && window.LWOpenWork) window.LWOpenWork(w)
           })
         })
+
+      /* 「查看更多」：把藏起来的作品放出来。
+         这里只是去掉 class，不重新渲染 —— 重渲染就得把上面那些
+         点击/送光尘的事件重绑一遍，容易漏。 */
+      const moreBtn = $('uMoreBtn')
+      if (moreBtn) {
+        moreBtn.addEventListener('click', () => {
+          const grid = $('uWorks')
+          if (grid) {
+            grid.querySelectorAll('.u-work.u-hidden').forEach((el) => el.classList.remove('u-hidden'))
+          }
+          moreBtn.remove()
+          if (window.sfx) window.sfx('open')
+        })
+      }
       $('uWorks') &&
         [...$('uWorks').querySelectorAll('[data-give]')].forEach((btn) => {
           btn.addEventListener('click', (e) => {

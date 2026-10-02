@@ -204,7 +204,7 @@ export default {
     function renderNoLogin() {
       $('mailSum').textContent = ''
       $('mailList').innerHTML =
-        '<div class="mail-empty">信箱和账号绑定，登录后才能收到消息。<br />' +
+        '<div class="mail-empty">信箱跟着账号走。登录之后，小镇寄给你的信才不会丢。<br />' +
         '<a class="mail-cta" href="/login">去登录 / 注册</a></div>'
     }
 
@@ -353,10 +353,12 @@ export default {
         if (d && d.ok) {
           if (window.sfx) window.sfx('coin')
           toast('收到 ' + d.dust + ' 个光尘 ✨')
-          // 账本变了，通知「我的」页刷新余额
-          if (d.book && window.dust) {
-            window.dispatchEvent(new CustomEvent('lw-mail-claimed', { detail: d }))
-          }
+          /* 账本变了：必须派发 lw-dust-changed 并带上服务端返回的新账本，
+             全局账本和所有页面才会跟着更新。以前这里发的是 lw-mail-claimed，
+             而账本模块只认 lw-dust-changed —— 这就是「领了光尘余额却不变」的根因。
+             lw-mail-claimed 继续发：「我的」页靠它重算「待领附件」的角标。 */
+          window.dispatchEvent(new CustomEvent('lw-dust-changed', { detail: d.book || null }))
+          window.dispatchEvent(new CustomEvent('lw-mail-claimed', { detail: d }))
           load()
         } else {
           btn.disabled = false

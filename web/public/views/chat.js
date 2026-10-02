@@ -89,6 +89,20 @@ export default {
         color: var(--text-muted); border-radius: 999px; padding: 6px 13px;
         font-size: 12px; font-weight: 700; text-decoration: none; flex: none;
       }
+      /* 顶栏的图标按钮（清空对话）。挪到顶栏是因为：原来它贴在发送框正上方，
+         手指够发送键时很容易点到它，而它是个不可恢复的破坏性操作。 */
+      .ch-icon-btn {
+        flex: none;
+        width: 34px; height: 30px;
+        border: 1px solid var(--border-input);
+        background: var(--surface-2);
+        color: var(--text-muted);
+        border-radius: 999px;
+        font-size: 14px; line-height: 1;
+        cursor: pointer; font-family: inherit;
+      }
+      .ch-icon-btn:active { background: var(--border); }
+      .ch-icon-btn[hidden] { display: none; }
       .ch-bar-main { flex: 1; min-width: 0; }
       .ch-title { font-size: 17px; font-weight: 800; color: var(--text); }
       .ch-sub { font-size: 11px; color: var(--text-faint); }
@@ -318,6 +332,8 @@ export default {
           <div class="ch-title" id="chTitle">💬 好友</div>
           <div class="ch-sub" id="chSub"></div>
         </div>
+        <button class="ch-icon-btn" id="chDel" type="button" hidden
+                aria-label="清空这段对话" title="清空这段对话">🗑️</button>
         <button class="lw-refresh" id="chRefresh" type="button" data-label="刷新"></button>
       </div>
       <div class="ch-note" id="chNote" hidden></div>
@@ -347,6 +363,7 @@ export default {
     let myLastAt = 0
     let peerLastAt = 0
     let peerName = ''
+    let peerUid = ''
     let hasNew = false
 
     const fmt = (t) => {
@@ -503,6 +520,9 @@ export default {
     function drawList(d) {
       setThreadMode(false)
       setBack('/mine', '← 我的')
+      // 会话列表里没有「一段对话」可清，把按钮收起来
+      const delBtn = $('chDel')
+      if (delBtn) delBtn.hidden = true
       $('chTitle').textContent = '💬 好友'
       $('chNote').hidden = false
       $('chNote').innerHTML =
@@ -747,6 +767,10 @@ export default {
       setThreadMode(true)
       setBack('/chat', '← 消息')
       peerName = (d.with && d.with.name) || ''
+      peerUid = (d.with && d.with.uid) || ''
+      // 清空按钮只在对话里出现（它在顶栏，监听是一次性绑好的）
+      const delBtn = $('chDel')
+      if (delBtn) delBtn.hidden = false
       $('chTitle').textContent = '💬 ' + peerName
       $('chNote').hidden = false
       $('chNote').innerHTML =
@@ -818,10 +842,7 @@ export default {
           '<div class="ch-mtime">' + esc(clock(m.at)) + '</div>' +
           '</div></div>'
       })
-      $('chBody').innerHTML =
-        '<div class="ch-msgs" id="chMsgs">' + rows + '</div>' +
-        '<button class="ch-del" id="chDel" type="button">🗑️ 清空这段对话</button>' +
-        sendbar
+      $('chBody').innerHTML = '<div class="ch-msgs" id="chMsgs">' + rows + '</div>' + sendbar
       $('chMsgs').scrollTop = $('chMsgs').scrollHeight
       paintAvatars()
       bindSend()
@@ -877,32 +898,8 @@ export default {
         sync()
       }
 
-      $('chDel').addEventListener('click', async () => {
-        if (!window.confirm('确定清空和 ' + peerName + ' 的这段对话吗？此操作不可恢复。')) return
-        const t = token()
-        try {
-          const res = await fetch('/api/chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t },
-            body: JSON.stringify({ action: 'del', with: d.with.uid }),
-          })
-          const r2 = await res.json().catch(() => ({}))
-          if (!res.ok || !r2 || !r2.ok) {
-            showMsg((r2 && r2.error) || '清空失败', true)
-            return
-          }
-          if (window.sfx) window.sfx('close')
-          C.drop('chat:' + d.with.uid)
-          C.drop('chatlist')
-          C.drop('chatBadge')
-          try {
-            window.dispatchEvent(new CustomEvent('lw-chat-changed'))
-          } catch (e) {}
-          load(true)
-        } catch (e) {
-          showMsg('清空失败：' + ((e && e.message) || '网络错误'), true)
-        }
-      })
+      /* 清空对话的按钮已经挪到顶栏，处理逻辑在 mounted 里统一绑一次
+         （按钮现在是模板里的固定元素，在这里绑会随每次重绘重复叠加）。 */
 
       async function doSend() {
         const t = token()
@@ -993,6 +990,44 @@ export default {
       const box = document.getElementById('chMsgs')
       if (box) box.scrollTop = box.scrollHeight
     })
+
+    /* 清空这段对话。按钮挪到了顶栏、只绑这一次 —— 它以前贴在发送框正上方，
+       手指够发送键时很容易误触，而这是不可恢复的操作，
+       所以既挪远了一点，也把确认文案写清楚。 */
+    const delBtnEl = $('chDel')
+    if (delBtnEl) {
+      delBtnEl.addEventListener('click', async () => {
+        if (!peerUid) return
+        if (!window.confirm('确定清空和 ' + (peerName || '对方') + ' 的这段对话吗？\n清空之后无法恢复。')) return
+        const t = token()
+        if (!t) {
+          showMsg('清空需要先登录', true)
+          return
+        }
+        try {
+          const res = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t },
+            body: JSON.stringify({ action: 'del', with: peerUid }),
+          })
+          const r2 = await res.json().catch(() => ({}))
+          if (!res.ok || !r2 || !r2.ok) {
+            showMsg((r2 && r2.error) || '清空失败', true)
+            return
+          }
+          if (window.sfx) window.sfx('close')
+          C.drop('chat:' + peerUid)
+          C.drop('chatlist')
+          C.drop('chatBadge')
+          try {
+            window.dispatchEvent(new CustomEvent('lw-chat-changed'))
+          } catch (e) {}
+          load(true)
+        } catch (e) {
+          showMsg('清空失败：' + ((e && e.message) || '网络错误'), true)
+        }
+      })
+    }
 
     /* 刷新按钮是这里的主要交互：非实时就靠它拉新消息 */
     C.bindRefresh($('chRefresh'), () => load(true), () => {}, true)

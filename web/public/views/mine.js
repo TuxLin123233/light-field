@@ -505,7 +505,7 @@ export default {
 
     <!-- 签到 -->
     <div class="m-card" id="signCard">
-      <div class="m-card-title">📅 每日签到<span class="m-tip" id="signTip">存在本机 · 登录可同步</span></div>
+      <div class="m-card-title">📅 今日报到<span class="m-tip" id="signTip">存在本机 · 登录可同步</span></div>
       <div class="dust-bar" id="dustBar">
         <span class="dust-ico">✨</span>
         <span class="dust-label">我的光尘</span>
@@ -515,9 +515,9 @@ export default {
       <div class="sign-top">
         <div class="sign-streak">
           <div class="sign-num"><span id="signStreak">0</span> <small>天连续</small></div>
-          <div class="sign-sub">累计签到 <span id="signTotal">0</span> 天</div>
+          <div class="sign-sub">累计报到 <span id="signTotal">0</span> 天</div>
         </div>
-        <button class="sign-btn" id="signBtn" type="button">签到</button>
+        <button class="sign-btn" id="signBtn" type="button">报到</button>
       </div>
       <div class="sign-week" id="signWeek"></div>
       <div class="medals" id="medals"></div>
@@ -525,7 +525,7 @@ export default {
 
     <!-- 创作数据 -->
     <div class="m-card" id="statCard">
-      <div class="m-card-title">📊 创作数据</div>
+      <div class="m-card-title">📊 创作账本</div>
       <div class="stat-grid" id="statGrid">
         <div class="stat"><div class="stat-num">—</div><div class="stat-lab">加载中</div></div>
       </div>
@@ -535,7 +535,7 @@ export default {
 
     <!-- 快捷入口 -->
     <div class="m-card" id="linkCard">
-      <div class="m-card-title">🔗 我的</div>
+      <div class="m-card-title">🔗 常去的地方</div>
       <div class="m-links">
         <router-link class="m-link" to="/mine/works">
           <span class="ml-ico">🖼️</span>
@@ -572,6 +572,14 @@ export default {
           <span class="ml-num" id="lnkAch">0</span>
           <span>成就</span>
         </router-link>
+        <router-link class="m-link" to="/intro">
+          <span class="ml-ico">👤</span>
+          <span>个人信息</span>
+        </router-link>
+        <router-link class="m-link" to="/settings">
+          <span class="ml-ico">⚙️</span>
+          <span>设置</span>
+        </router-link>
         <a class="m-link" href="/paint">
           <span class="ml-ico">🎨</span>
           <span>去画</span>
@@ -581,7 +589,7 @@ export default {
 
     <!-- 我的作品：页内完整列表，只显示自己的 -->
     <div class="m-card" id="mineCard">
-      <div class="m-card-title">🎨 我的作品<span class="m-tip" id="mineTip"></span><button class="lw-refresh" id="mineRefresh" type="button" data-label="刷新"></button></div>
+      <div class="m-card-title">🎨 我的画<span class="m-tip" id="mineTip"></span><button class="lw-refresh" id="mineRefresh" type="button" data-label="刷新"></button></div>
       <div class="mine-del-tip">长按任意一幅可以删掉它（删了找不回来）</div>
       <div class="mine-filter" id="mineFilter" hidden>
         <span class="mf-label">筛选</span>
@@ -694,7 +702,7 @@ export default {
         if (slot) {
           slot.innerHTML =
             '<div class="m-card" id="likedCard">\n' +
-            '      <div class="m-card-title">✨ 送过光尘的<span class="m-tip" id="likedTip"></span></div>\n' +
+            '      <div class="m-card-title">✨ 送过光尘的画<span class="m-tip" id="likedTip"></span></div>\n' +
             '      <div class="mine-grid" id="likedGrid"></div>\n' +
             '      <div id="likedEmpty"></div>\n' +
             '    </div>'
@@ -903,7 +911,7 @@ export default {
         $('signStreak').textContent = '—'
         $('signTotal').textContent = '—'
         const b0 = $('signBtn')
-        b0.textContent = '登录后签到'
+        b0.textContent = '登录后就能报到'
         b0.classList.remove('done')
         $('signWeek').innerHTML = ''
         $('medals').innerHTML = ''
@@ -958,7 +966,7 @@ export default {
     $('signBtn').addEventListener('click', () => {
       // 签到是互动行为，必须登录；未登录直接跳登录页
       if (!window.dust || !window.dust.logged()) {
-        toast('签到需要先登录')
+        toast('报到得先登录')
         if (window.sfx) window.sfx('no')
         setTimeout(() => {
           location.href = '/login'
@@ -968,7 +976,7 @@ export default {
 
       window.dust.sign().then((d) => {
         if (!d) {
-          toast('签到失败，请稍后再试')
+          toast('没签上，待会儿再试')
           return
         }
         if (d.needLogin) {
@@ -992,7 +1000,7 @@ export default {
           return
         }
         const hit = MEDALS.find((m) => m.need === d.streak)
-        toast(hit ? '获得徽章 ' + hit.ico + ' ' + hit.name + '！' : '签到成功，连续 ' + d.streak + ' 天')
+        toast(hit ? '获得徽章 ' + hit.ico + ' ' + hit.name + '！' : '报到成功，连着第 ' + d.streak + ' 天')
       })
     })
 
@@ -1217,12 +1225,13 @@ export default {
         window.LWThumb.draw(canvas, pixels, size)
         return
       }
-      const dpr = Math.min(2, window.devicePixelRatio || 1)
+      /* 兜底路径（LWThumb 没加载时）：背板用 1:1，靠 CSS 的 pixelated 放大。
+         原来写成 n*dpr，但这里没有配套设置 CSS 尺寸，
+         背板与显示宽度不是整数倍关系，会切出白条纹。 */
       const n = size === 32 || size === 64 ? size : 16
-      canvas.width = n * dpr
-      canvas.height = n * dpr
+      canvas.width = n
+      canvas.height = n
       const c = canvas.getContext('2d')
-      c.scale(dpr, dpr)
       c.fillStyle = '#ffffff'
       c.fillRect(0, 0, n, n)
       for (let y = 0; y < n; y++) {
@@ -1595,7 +1604,7 @@ export default {
       }
       if (!times.length) {
         $('likedEmpty').innerHTML =
-          '还没有送出过光尘。<br />去社区看看，<b>✨ 送光尘</b>给喜欢的作品'
+          '还没给别人的画送过光尘。<br />去社区看看，<b>✨ 送光尘</b>给喜欢的作品'
         return
       }
       // 逐个取作品；失败的不影响其余
@@ -1620,7 +1629,7 @@ export default {
           : ''
         : times.length
           ? '<div class="me-empty">送过光尘的 ' + times.length + ' 件作品这会儿都取不到<br />（对方可能已注销，或作品已被删除）</div>'
-          : '<div class="me-empty">还没有送出过光尘</div>'
+          : '<div class="me-empty">还没给别人的画送过光尘</div>'
     }
 
     $('lnkWorksBtn') &&

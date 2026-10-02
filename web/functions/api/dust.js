@@ -6,6 +6,7 @@
 //
 // 未登录返回 401，前端继续使用本地账本。
 import { readActiveUser, pickToken, BANNED_ERROR } from './_auth.js'
+import { maybeBirthdayGift } from './_birthday.js'
 import { readBook, signIn, giveDust, publicView, DUST_PER_SIGNIN, DUST_COST } from './_dust.js'
 import { incrementLikes, readAllHistory } from './_history.js'
 
@@ -34,7 +35,16 @@ export async function onRequestGet(context) {
   if (who.banned) return json(BANNED_ERROR, 403)
   if (who.gone) return json({ error: '账号不存在', code: 'gone' }, 401)
 
-  const book = await readBook(env.LIGHTFIELD_KV, who.uid)
+  /* 顺手看一眼今天是不是他的生日：是就把礼发了（一年只发一次）。
+     挂在这里是因为客户端每次打开网站都会拉一次账本，
+     省得为这件事单独加定时任务。送礼失败不能连累账本本身。 */
+  let book = await readBook(env.LIGHTFIELD_KV, who.uid)
+  try {
+    if (await maybeBirthdayGift(env.LIGHTFIELD_KV, who.user, Date.now())) {
+      book = await readBook(env.LIGHTFIELD_KV, who.uid)
+    }
+  } catch (e) {}
+
   return json({ ok: true, uid: who.uid, username: who.username, book: publicView(book) })
 }
 

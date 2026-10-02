@@ -625,7 +625,10 @@ export default {
         })
         const d = await res.json().catch(() => ({}))
         if (!res.ok || !d.ok) {
-          if (d && d.book) balance = d.book.bal
+          if (d && d.book) {
+            balance = d.book.bal
+            if (window.dust && window.dust.take) window.dust.take(d.book)
+          }
           toast(d && d.error ? d.error : '保存失败')
           btn.disabled = false
           btn.textContent = '保存头像'
@@ -633,7 +636,12 @@ export default {
           return
         }
         hasAvatar = true
-        if (d.book) balance = d.book.bal
+        if (d.book) {
+          balance = d.book.bal
+          /* 首次保存头像要扣 30 光尘：喂回全局账本，
+             否则「我的」页、别的页面显示的还是扣费前的余额 */
+          if (window.dust && window.dust.take) window.dust.take(d.book)
+        }
         dirty = false
         // 存的是服务端给的最新状态：直接覆盖缓存，切页面回来不用重新请求
         // 就看到新头像；顺带作废，避免把旧的像素留在缓存里。

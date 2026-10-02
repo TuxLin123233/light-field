@@ -976,7 +976,7 @@ export default {
         <div class="row">
           <div>
             <div class="row-label">提示音效</div>
-            <div class="row-desc">操作时的轻提示音，如保存成功的「叮」</div>
+            <div class="row-desc">点按钮时的轻响，比如保存成功那声「叮」</div>
           </div>
           <input class="switch" id="sfxSwitch" type="checkbox" role="switch">
         </div>
@@ -1001,7 +1001,7 @@ export default {
         <div class="row row-col">
           <div>
             <div class="row-label">配色主题</div>
-            <div class="row-desc">换一套画板的整体色调</div>
+            <div class="row-desc">给小镇换一身衣裳</div>
           </div>
           <div class="theme-groups" id="themePicks"></div>
           <div class="theme-hint" id="themeNameHint">点一下即可切换</div>
@@ -1025,28 +1025,28 @@ export default {
         <div class="row row-col">
           <div>
             <div class="row-label">启动时打开</div>
-            <div class="row-desc">打开网站时先进哪一个页面</div>
+            <div class="row-desc">每次打开小镇，先把你放到哪儿</div>
           </div>
           <div class="radio-row" id="entranceRow"></div>
         </div>
         <div class="row row-col">
           <div>
             <div class="row-label">导航栏位置</div>
-            <div class="row-desc">放在屏幕底部还是顶部，切换后立刻生效</div>
+            <div class="row-desc">摆在屏幕下边还是上边，切完立刻生效</div>
           </div>
           <div class="radio-row" id="navPosRow"></div>
         </div>
         <div class="row row-col">
           <div>
             <div class="row-label">导航栏样式</div>
-            <div class="row-desc">除毛玻璃外另有 5 种外观，切换后立刻生效</div>
+            <div class="row-desc">除了毛玻璃还有 5 种样子，切完立刻生效</div>
           </div>
           <div class="nav-style-row" id="navStyleRow"></div>
         </div>
         <div class="row row-col">
           <div>
             <div class="row-label">导航栏顺序</div>
-            <div class="row-desc">点一下即可调整先后次序</div>
+            <div class="row-desc">点一下换位置，怎么顺手怎么排</div>
           </div>
           <div class="order-list" id="navOrderList"></div>
         </div>
@@ -1143,6 +1143,24 @@ export default {
             <span class="entry-body">
               <span class="entry-label">OpenCode</span>
               <div class="entry-desc">本站代码编写工具</div>
+            </span>
+            <span class="entry-arrow">›</span>
+          </a>
+          <div class="entry-sep"></div>
+          <a class="entry" href="https://github.com/deepseek-ai/deepseek-harness" target="_blank" rel="noopener noreferrer">
+            <span class="entry-ico">🐋</span>
+            <span class="entry-body">
+              <span class="entry-label">DeepSeek Harness</span>
+              <div class="entry-desc">本站的开发工具链 · 开源 · DeepSeek</div>
+            </span>
+            <span class="entry-arrow">›</span>
+          </a>
+          <div class="entry-sep"></div>
+          <a class="entry" href="https://www.linux.org" target="_blank" rel="noopener noreferrer">
+            <span class="entry-ico">🐧</span>
+            <span class="entry-body">
+              <span class="entry-label">Linux</span>
+              <div class="entry-desc">本站的开发环境</div>
             </span>
             <span class="entry-arrow">›</span>
           </a>

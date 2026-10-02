@@ -51,7 +51,13 @@ window.LWThumb = (function () {
     // 每个源像素占 k 个 CSS 像素，取整数倍。
     // 用 round 而不是 floor：floor 总是往小取，64×64 的图在 101px 的格子里
     // 只能取到 96，白白浪费 5px；round 能取到更贴合的整数倍。
-    const k = Math.max(1, Math.round(css / n))
+    /* k 取整数倍。这里必须防一手：round 可能「向上」取到超过可用宽度
+       （css=105、n=16 时 round 得 7 → side=112 > 105）。
+       一旦 side 超出容器，外层的 max-width:100% 只会把宽度压回去、
+       高度仍是 112，正方形就被拉成长方形了（用户反馈「卡片被拉伸」）。
+       所以超出可用宽度时往下退一档。 */
+    let k = Math.max(1, Math.round(css / n))
+    while (k > 1 && n * k > css) k--
     const side = n * k
     const dpr = Math.min(3, window.devicePixelRatio || 1)
 

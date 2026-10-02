@@ -2,7 +2,7 @@
 // 存在服务端，公开可读；每修改一次 10 个光尘（内容没变不扣）。
 export default {
   name: 'intro',
-  title: '个人简介',
+  title: '个人信息',
   css: `
       .in-page {
         min-height: 100vh;
@@ -142,12 +142,69 @@ export default {
         color: var(--text-faint);
         margin: 12px 2px 0;
       }
+
+      /* ---------- 个人信息汇总 + 性别/生日 ---------- */
+      .in-tags { display: flex; flex-wrap: wrap; margin: 12px 0 0; }
+      .in-tag {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--text-muted);
+        background: var(--surface-2);
+        border-radius: 999px;
+        padding: 5px 11px;
+        margin: 0 7px 7px 0;
+      }
+      .in-tag.today { background: #fff3d6; color: #b8860b; }
+      .in-sum {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        margin-top: 10px;
+        padding-top: 12px;
+        border-top: 1px solid var(--border);
+      }
+      .in-sum-i { text-align: center; }
+      .in-sum-i b { display: block; font-size: 16px; font-weight: 800; color: var(--text); }
+      .in-sum-i span { font-size: 10px; color: var(--text-faint); }
+      .in-gender { display: flex; margin-top: 8px; }
+      .in-g {
+        flex: 1;
+        border: 1px solid var(--border-input);
+        background: var(--surface-2);
+        color: var(--text-muted);
+        border-radius: 10px;
+        padding: 10px 0;
+        font-size: 13px;
+        font-weight: 700;
+        font-family: inherit;
+        cursor: pointer;
+      }
+      .in-g + .in-g { margin-left: 8px; }
+      .in-g.on {
+        border-color: var(--accent);
+        background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+        color: var(--accent);
+      }
+      .in-g[disabled] { opacity: 0.6; cursor: default; }
+      .in-bd { display: flex; margin-top: 8px; }
+      .in-bd-in {
+        flex: 1;
+        min-width: 0;
+        border: 1px solid var(--border-input);
+        background: var(--surface-2);
+        color: var(--text);
+        border-radius: 10px;
+        padding: 10px 12px;
+        font-size: 14px;
+        font-family: inherit;
+      }
+      .in-bd-in[disabled] { opacity: 0.6; }
+      .in-bd > * + * { margin-left: 8px; }
     `,
   template: `
     <div class="in-page">
       <div class="in-head">
         <router-link class="in-back" to="/mine">← 我的</router-link>
-        <div class="in-title">📝 个人简介</div>
+        <div class="in-title">👤 个人信息</div>
       </div>
       <div id="inBody"><div class="in-card">正在读取…</div></div>
     </div>`,
@@ -173,6 +230,46 @@ export default {
       })
     }
     let username = ''
+
+    /* ---------- 个人信息（性别 / 生日 / 汇总） ----------
+       生日是不是「今天」、还能不能改，都由服务端算好给过来，
+       前端不重复实现一遍历法，免得两边对不上。 */
+    const GIFT = 100 // 与服务端 _auth.js 里的 BIRTHDAY_GIFT 保持一致
+    const GENDER_LABEL = { male: '🙋 男生', female: '🙋‍♀️ 女生', secret: '🕶️ 保密' }
+    const GENDER_KEYS = ['male', 'female', 'secret']
+    let gender = ''
+    let birthday = ''
+    let bdLock = 0 // 生日还要等多少毫秒才能改
+    let todayBd = false
+    let pstats = null // { works, likes, cells }
+    let joinedAt = 0
+    let received = 0
+
+    const bdText = (b) => {
+      if (!b) return ''
+      const p = String(b).split('-')
+      return Number(p[0]) + ' 月 ' + Number(p[1]) + ' 日'
+    }
+    const daysSince = (t) => (t ? Math.max(1, Math.floor((Date.now() - t) / 86400000)) : 0)
+
+    /** 改性别 / 生日都走这个 */
+    async function postAbout(payload) {
+      const t = token()
+      if (!t) {
+        toast('请先登录')
+        return null
+      }
+      try {
+        const res = await fetch('/api/auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t },
+          body: JSON.stringify({ action: 'about', ...payload }),
+        })
+        return await res.json().catch(() => ({}))
+      } catch (e) {
+        return { error: '网络错误' }
+      }
+    }
 
     let toastTimer = null
     function toast(msg) {
@@ -206,6 +303,58 @@ export default {
         '<div class="in-me-name">' + esc(username || '未登录') + '</div>' +
         '<div class="in-me-dust">当前 ' + balance + ' 个光尘</div>' +
         '</div></div>' +
+        '<div class="in-tags">' +
+        '<span class="in-tag">' + (gender ? GENDER_LABEL[gender] : '性别未填') + '</span>' +
+        '<span class="in-tag' + (todayBd ? ' today' : '') + '">' +
+        (birthday ? '🎂 ' + bdText(birthday) + (todayBd ? '　今天！' : '') : '生日未填') +
+        '</span>' +
+        (joinedAt ? '<span class="in-tag">🏠 入住 ' + daysSince(joinedAt) + ' 天</span>' : '') +
+        '</div>' +
+        (pstats
+          ? '<div class="in-sum">' +
+            '<div class="in-sum-i"><b>' + (pstats.works || 0) + '</b><span>作品</span></div>' +
+            '<div class="in-sum-i"><b>' + (pstats.cells || 0) + '</b><span>绘制格数</span></div>' +
+            '<div class="in-sum-i"><b>' + (pstats.likes || 0) + '</b><span>收到赞</span></div>' +
+            '<div class="in-sum-i"><b>' + received + '</b><span>收到光尘</span></div>' +
+            '</div>'
+          : '') +
+        '</div>' +
+
+        /* 性别 / 生日。生日一年只能改一次，锁住时输入框和按钮都置灰 */
+        '<div class="in-card">' +
+        '<div class="in-label"><span>性别</span></div>' +
+        '<div class="in-gender" id="inGender">' +
+        GENDER_KEYS.map(
+          (g) =>
+            '<button class="in-g' + (gender === g ? ' on' : '') + '" type="button" data-g="' + g + '">' +
+            GENDER_LABEL[g] +
+            '</button>'
+        ).join('') +
+        '</div>' +
+        '<div class="in-label" style="margin-top:16px"><span>生日</span>' +
+        (bdLock > 0 ? '<span class="in-count">还要 ' + Math.ceil(bdLock / 86400000) + ' 天才能改</span>' : '') +
+        '</div>' +
+        '<div class="in-bd">' +
+        '<input class="in-bd-in" id="inBd" type="text" inputmode="numeric" maxlength="5" ' +
+        'placeholder="月-日，例如 03-15" value="' +
+        esc(birthday) +
+        '"' +
+        (bdLock > 0 ? ' disabled' : '') +
+        '>' +
+        '<button class="in-btn" type="button" id="inBdSave"' +
+        (bdLock > 0 ? ' disabled' : '') +
+        '>保存</button>' +
+        '</div>' +
+        '<div class="in-cost">生日当天，小镇会往你账本里放 <b>' +
+        GIFT +
+        '</b> 个光尘。' +
+        (bdLock > 0
+          ? '生日一年只能改一次，所以这份礼物一年也只有一次。'
+          : '填下之后一年只能改一次，想清楚再填～') +
+        '</div>' +
+        '</div>' +
+
+        '<div class="in-card">' +
         '<div class="in-label"><span>简介内容</span>' +
         '<span class="in-count' + (clean(bio).length > MAX ? ' over' : '') + '" id="inCount">' +
         clean(bio).length + ' / ' + MAX + '</span></div>' +
@@ -272,14 +421,22 @@ export default {
         })
         const d = await res.json().catch(() => ({}))
         if (!res.ok || !d.ok) {
-          if (d && d.book) balance = d.book.bal
+          if (d && d.book) {
+            balance = d.book.bal
+            if (window.dust && window.dust.take) window.dust.take(d.book)
+          }
           toast(d && d.error ? d.error : '保存失败')
           render()
           return
         }
         saved = clean(d.bio)
         bio = saved
-        if (d.book) balance = d.book.bal
+        if (d.book) {
+          balance = d.book.bal
+          /* 改简介要扣 10 光尘：喂回全局账本，
+             否则切到别的页面看的还是旧的余额 */
+          if (window.dust && window.dust.take) window.dust.take(d.book)
+        }
         if (window.sfx) window.sfx('ding')
         toast(d.cost ? '简介已保存，花了 ' + d.cost + ' 个光尘 ✨' : '内容没变化，没扣光尘')
         render()
@@ -287,6 +444,51 @@ export default {
       } catch (err) {
         toast('保存失败：网络错误')
         render()
+      }
+    })
+
+    /* 性别 / 生日。挂在 #inBody 的委托上，render() 重画之后不用重绑 */
+    $('inBody').addEventListener('click', async (e) => {
+      const gb = e.target.closest ? e.target.closest('[data-g]') : null
+      if (gb) {
+        const next = gb.getAttribute('data-g')
+        if (next === gender || gb.disabled) return
+        gb.disabled = true
+        const d = await postAbout({ gender: next })
+        gb.disabled = false
+        if (!d || !d.ok) {
+          toast((d && d.error) || '保存失败')
+          return
+        }
+        gender = d.gender || ''
+        if (window.sfx) window.sfx('tick')
+        render()
+        return
+      }
+      if (e.target.id !== 'inBdSave') return
+      const inp = $('inBd')
+      const btn = e.target
+      if (!inp || btn.disabled) return
+      btn.disabled = true
+      const d = await postAbout({ birthday: (inp.value || '').trim() })
+      btn.disabled = false
+      if (!d || !d.ok) {
+        // 一年只能改一次：服务端会把「还要等多少天」写在 error 里
+        toast((d && d.error) || '保存失败')
+        return
+      }
+      birthday = d.birthday || ''
+      bdLock = Number(d.birthdayLockLeft) || 0
+      if (window.sfx) window.sfx('ding')
+      toast(birthday ? '生日记下了：' + bdText(birthday) + ' 🎂' : '生日已清空')
+      render()
+    })
+    // 生日输入框里按回车等于点「保存」
+    $('inBody').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && e.target && e.target.id === 'inBd') {
+        e.preventDefault()
+        const btn = $('inBdSave')
+        if (btn && !btn.disabled) btn.click()
       }
     })
 
@@ -316,6 +518,20 @@ export default {
         const dr = await fetch('/api/dust', { headers: { Authorization: 'Bearer ' + t }, cache: 'no-store' })
         const dd = await dr.json().catch(() => ({}))
         balance = dd && dd.book ? Number(dd.book.bal) || 0 : 0
+        // 个人信息：不带参数就是查自己，性别/生日/汇总都在这一份里
+        const pr = await fetch('/api/profile', { headers: { Authorization: 'Bearer ' + t }, cache: 'no-store' })
+        if (pr.ok) {
+          const pd = await pr.json().catch(() => ({}))
+          if (pd && pd.ok) {
+            gender = pd.gender || ''
+            birthday = pd.birthday || ''
+            bdLock = Number(pd.birthdayLockLeft) || 0
+            todayBd = !!pd.todayBirthday
+            pstats = pd.stats || null
+            joinedAt = Number(pd.createdAt) || 0
+            received = Number(pd.received) || 0
+          }
+        }
         render()
       } catch (e) {
         // 以前一律写「网络错误」，真实异常被吞掉了

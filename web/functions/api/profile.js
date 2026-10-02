@@ -5,7 +5,7 @@
 //
 // 返回头像、简介、公开统计。只读，不需要登录 —— 作品卡片上的头像、
 // 作者主页、以后的关注/评论/聊天都用它。
-import { readUser, readUserByName, isBanned } from './_auth.js'
+import { readUser, readUserByName, readActiveUser, isBanned, isBirthdayToday, birthdayLockLeft } from './_auth.js'
 import { readAvatar } from './_avatar.js'
 import { readBook } from './_dust.js'
 import { recentHistory } from './_history.js'
@@ -53,9 +53,20 @@ export async function onRequestGet(context) {
 
   const uid = (url.searchParams.get('uid') || '').trim()
   const name = (url.searchParams.get('name') || '').trim()
-  if (!uid && !name) return json({ error: '缺少 uid 或 name' }, 400)
 
-  const user = uid ? await readUser(kv, uid) : await readUserByName(kv, name)
+  /* 不带 uid/name 就是「查我自己」—— 个人信息页要显示性别、生日、
+     还有生日还能不能改，这些只对本人有意义，所以单独走这条。 */
+  let user
+  let isMe = false
+  if (!uid && !name) {
+    const who = await readActiveUser(env, '', request.headers.get('authorization'))
+    if (!who) return json({ error: '未登录', code: 'noauth' }, 401)
+    if (who.gone) return json({ error: '账号不存在', code: 'gone' }, 401)
+    user = who.user
+    isMe = true
+  } else {
+    user = uid ? await readUser(kv, uid) : await readUserByName(kv, name)
+  }
   // 查无此人与被封禁一律返回「没有这个用户」，不泄露账号是否存在
   if (!user || isBanned(user)) return json({ error: '没有这个用户' }, 404)
 
@@ -71,6 +82,14 @@ export async function onRequestGet(context) {
     bio: user.bio || '',
     avatar: av ? av.px : null,
     createdAt: user.createdAt || 0,
+    /* 性别和生日都是「填了才公开」：不填就是空串，前端不显示。
+       生日只存月-日、不含年份，所以露出去也不涉及年龄。 */
+    gender: user.gender || '',
+    birthday: user.birthday || '',
+    todayBirthday: isBirthdayToday(user.birthday, Date.now()),
+    isMe,
+    // 生日还有多久能改：只告诉本人
+    birthdayLockLeft: isMe ? birthdayLockLeft(user) : 0,
     stats,
     // 光尘余额与签到属于私密信息，不对外公开；只给「累计收到」这种汇总
     received: Number(book.got) || 0,

@@ -136,6 +136,60 @@ export const PROGRESS = [
   { id: 'cl150', ico: '🌈', name: '见过百五十色', desc: '作品里一共出现过 150 种以上颜色', cat: 'play', type: 'progress', metric: 'colors', need: 150, reward: 25 },
   { id: 'hr8', ico: '🕗', name: '早八画手', desc: '在 8 个不同时段发布过作品', cat: 'moment', type: 'progress', metric: 'hourCount', need: 8, reward: 10 },
   { id: 'hr16', ico: '🕛', name: '全日无休', desc: '在 16 个不同时段发布过作品', cat: 'moment', type: 'progress', metric: 'hourCount', need: 16, reward: 25 },
+
+
+  /* ---------- 第二期：更长的尾巴 ----------
+     上面那批是「入门到熟练」，这里是熟练之后还有得追的部分。
+     奖励也随难度抬高，最难的一档给到 100。 */
+  { id: 'w800', ico: '📜', name: '八百长卷', desc: '800 幅作品，卷轴堆成山', cat: 'works', type: 'progress', metric: 'works', need: 800, reward: 40 },
+  { id: 'w1000', ico: '🏯', name: '千幅之城', desc: '1000 幅作品，够砌一座城', cat: 'works', type: 'progress', metric: 'works', need: 1000, reward: 50 },
+  { id: 'w1500', ico: '🌠', name: '千五百幅', desc: '1500 幅，产量已入传奇', cat: 'works', type: 'progress', metric: 'works', need: 1500, reward: 60 },
+  { id: 'c2m', ico: '🌌', name: '两百万格', desc: '累计涂满 2000000 格', cat: 'cells', type: 'progress', metric: 'cells', need: 2000000, reward: 40 },
+  { id: 'c5m', ico: '🪐', name: '五百万格', desc: '累计涂满 5000000 格', cat: 'cells', type: 'progress', metric: 'cells', need: 5000000, reward: 60 },
+  { id: 'l2000', ico: '💫', name: '两千赞', desc: '累计收到 2000 个赞', cat: 'likes', type: 'progress', metric: 'likes', need: 2000, reward: 40 },
+  { id: 'l5000', ico: '🌞', name: '五千赞', desc: '累计收到 5000 个赞', cat: 'likes', type: 'progress', metric: 'likes', need: 5000, reward: 60 },
+  { id: 'bl30', ico: '📈', name: '单幅三十赞', desc: '一幅画收到 30 个赞', cat: 'likes', type: 'progress', metric: 'bestLikes', need: 30, reward: 20 },
+  { id: 'bl100', ico: '🏅', name: '单幅百赞', desc: '一幅画收到 100 个赞', cat: 'likes', type: 'progress', metric: 'bestLikes', need: 100, reward: 40 },
+  { id: 'bl300', ico: '🎇', name: '单幅三百赞', desc: '一幅画收到 300 个赞', cat: 'likes', type: 'progress', metric: 'bestLikes', need: 300, reward: 60 },
+  { id: 'dy200', ico: '🌳', name: '两百天', desc: '累计 200 天画过画', cat: 'days', type: 'progress', metric: 'days', need: 200, reward: 30 },
+  { id: 'dy365', ico: '📅', name: '一年之约', desc: '累计 365 天画过画', cat: 'days', type: 'progress', metric: 'days', need: 365, reward: 50 },
+  { id: 'dy500', ico: '🗻', name: '五百天', desc: '累计 500 天画过画', cat: 'days', type: 'progress', metric: 'days', need: 500, reward: 70 },
+  { id: 'mo6', ico: '🍃', name: '半年常客', desc: '在 6 个不同月份发布过作品', cat: 'days', type: 'progress', metric: 'monthsActive', need: 6, reward: 15 },
+  { id: 'mo12', ico: '🎡', name: '全年在线', desc: '在 12 个不同月份发布过作品', cat: 'days', type: 'progress', metric: 'monthsActive', need: 12, reward: 35 },
+  { id: 'mo24', ico: '🕰️', name: '两年老友', desc: '在 24 个不同月份发布过作品', cat: 'days', type: 'progress', metric: 'monthsActive', need: 24, reward: 60 },
+  { id: 'pw1', ico: '🌟', name: '首幅热门', desc: '有一幅作品收到 20 个以上光尘', cat: 'likes', type: 'progress', metric: 'perfectWorks', need: 1, reward: 15 },
+  { id: 'pw10', ico: '🌻', name: '十幅热门', desc: '有 10 幅作品各收到 20 个以上光尘', cat: 'likes', type: 'progress', metric: 'perfectWorks', need: 10, reward: 40 },
+  { id: 'pw50', ico: '💐', name: '五十幅热门', desc: '有 50 幅作品各收到 20 个以上光尘', cat: 'likes', type: 'progress', metric: 'perfectWorks', need: 50, reward: 70 },
+  { id: 'av10', ico: '⚖️', name: '幅幅十赞', desc: '20 幅以上作品、平均每幅 10 个赞', cat: 'likes', type: 'progress', metric: 'avgLikes', need: 10, reward: 35 },
+  { id: 'av30', ico: '💠', name: '幅幅三十赞', desc: '20 幅以上作品、平均每幅 30 个赞', cat: 'likes', type: 'progress', metric: 'avgLikes', need: 30, reward: 65 },
+  { id: 'we10', ico: '🎪', name: '周末画手', desc: '在周末发布过 10 幅作品', cat: 'moment', type: 'progress', metric: 'weekendCount', need: 10, reward: 15 },
+  { id: 'we50', ico: '🏕️', name: '周末常客', desc: '在周末发布过 50 幅作品', cat: 'moment', type: 'progress', metric: 'weekendCount', need: 50, reward: 35 },
+  { id: 'dn1', ico: '🌃', name: '凌晨两点', desc: '在凌晨 2~5 点发布过作品', cat: 'moment', type: 'progress', metric: 'deepNight', need: 1, reward: 6 },
+  { id: 'dn10', ico: '🦉', name: '深夜常客', desc: '在凌晨 2~5 点发布过 10 幅作品', cat: 'moment', type: 'progress', metric: 'deepNight', need: 10, reward: 30 },
+  { id: 'ss60', ico: '📆', name: '连续两月', desc: '连续签到 60 天', cat: 'sign', type: 'progress', metric: 'signStreak', need: 60, reward: 30 },
+  { id: 'ss100', ico: '💯', name: '百日不辍', desc: '连续签到 100 天', cat: 'sign', type: 'progress', metric: 'signStreak', need: 100, reward: 45 },
+  { id: 'ss200', ico: '🧱', name: '两百天签到', desc: '连续签到 200 天', cat: 'sign', type: 'progress', metric: 'signStreak', need: 200, reward: 70 },
+  { id: 'ss365', ico: '🎆', name: '全年签到', desc: '连续签到 365 天', cat: 'sign', type: 'progress', metric: 'signStreak', need: 365, reward: 100 },
+  { id: 'st200', ico: '🗓️', name: '签到两百次', desc: '累计签到 200 次', cat: 'sign', type: 'progress', metric: 'signTotal', need: 200, reward: 30 },
+  { id: 'st365', ico: '📖', name: '签到一年', desc: '累计签到 365 次', cat: 'sign', type: 'progress', metric: 'signTotal', need: 365, reward: 60 },
+  { id: 'gi100', ico: '🎁', name: '送出百份', desc: '给别人的作品送出 100 份光尘', cat: 'dust', type: 'progress', metric: 'gifted', need: 100, reward: 30 },
+  { id: 'gi300', ico: '🧧', name: '送出三百份', desc: '给别人的作品送出 300 份光尘', cat: 'dust', type: 'progress', metric: 'gifted', need: 300, reward: 60 },
+  { id: 'go5000', ico: '👑', name: '收到五千', desc: '累计收到 5000 个光尘', cat: 'dust', type: 'progress', metric: 'got', need: 5000, reward: 80 },
+  { id: 'md3', ico: '🌊', name: '一日三画', desc: '同一天发布 3 幅作品', cat: 'run', type: 'progress', metric: 'maxPerDay', need: 3, reward: 12 },
+  { id: 'md5', ico: '🌪️', name: '一日五画', desc: '同一天发布 5 幅作品', cat: 'run', type: 'progress', metric: 'maxPerDay', need: 5, reward: 25 },
+  { id: 'md10', ico: '☄️', name: '一日十画', desc: '同一天发布 10 幅作品', cat: 'run', type: 'progress', metric: 'maxPerDay', need: 10, reward: 55 },
+  { id: 'dr14', ico: '🔗', name: '连续半月', desc: '连续 14 天每天都有作品', cat: 'run', type: 'progress', metric: 'dayRun', need: 14, reward: 25 },
+  { id: 'dr60', ico: '⛓️', name: '连续两月创作', desc: '连续 60 天每天都有作品', cat: 'run', type: 'progress', metric: 'dayRun', need: 60, reward: 60 },
+  { id: 'dr100', ico: '🌉', name: '百日不断', desc: '连续 100 天每天都有作品', cat: 'run', type: 'progress', metric: 'dayRun', need: 100, reward: 90 },
+  { id: 'ds3', ico: '🧩', name: '三种尺寸', desc: '16 / 32 / 64 三种画布都用过', cat: 'canvas', type: 'progress', metric: 'distinctSizes', need: 3, reward: 20 },
+  { id: 'an10', ico: '🎞️', name: '十部动画', desc: '做过 10 部帧动画', cat: 'play', type: 'progress', metric: 'animCount', need: 10, reward: 20 },
+  { id: 'an30', ico: '🎬', name: '三十部动画', desc: '做过 30 部帧动画', cat: 'play', type: 'progress', metric: 'animCount', need: 30, reward: 40 },
+  { id: 'fr24', ico: '🎦', name: '二十四帧', desc: '做过 24 帧的动画', cat: 'play', type: 'progress', metric: 'maxFrames', need: 24, reward: 50 },
+  { id: 'ct20', ico: '⚔️', name: '二十次出征', desc: '报名参加 20 次主题赛', cat: 'play', type: 'progress', metric: 'contestCount', need: 20, reward: 40 },
+  { id: 'ct50', ico: '🛡️', name: '五十次出征', desc: '报名参加 50 次主题赛', cat: 'play', type: 'progress', metric: 'contestCount', need: 50, reward: 70 },
+  { id: 'cl400', ico: '🎇', name: '见过四百色', desc: '作品里一共出现过 400 种以上颜色', cat: 'play', type: 'progress', metric: 'colors', need: 400, reward: 40 },
+  { id: 'hr20', ico: '🕗', name: '二十时段', desc: '在 20 个不同时段发布过作品', cat: 'moment', type: 'progress', metric: 'hourCount', need: 20, reward: 35 },
+  { id: 'hr24', ico: '🌐', name: '全天候满勤', desc: '24 个时段全都发布过作品', cat: 'moment', type: 'progress', metric: 'hourCount', need: 24, reward: 80 },
 ]
 
 /* 里程碑型：只判断条件，不看累计数 */
@@ -153,6 +207,11 @@ export const BADGES = [
   { id: 'g_early', ico: '🐣', name: '元老成员', desc: '账号注册超过 30 天', cat: 'moment' },
   { id: 'g_senior', ico: '🧓', name: '老成员', desc: '账号注册超过 180 天', cat: 'moment' },
   { id: 'g_veteran', ico: '🗿', name: '时光旅人', desc: '第一幅与最后一幅跨越 100 天以上', cat: 'days' },
+
+  { id: 'g_weekend', ico: '🎪', name: '周末也画', desc: '在周末发布过作品', cat: 'moment' },
+  { id: 'g_allsizes', ico: '🧩', name: '尺寸全通', desc: '16 / 32 / 64 三种画布都用过', cat: 'canvas' },
+  { id: 'g_deepnight', ico: '🦉', name: '凌晨工作室', desc: '在凌晨 2~5 点发布过作品', cat: 'moment' },
+  { id: 'g_perfect', ico: '🌟', name: '热门之作', desc: '有一幅作品收到 20 个以上光尘', cat: 'likes' },
 ]
 
 export const ALL = [...PROGRESS, ...BADGES]
@@ -186,6 +245,11 @@ export function computeMetrics(entries, book, user) {
   let biggestSize = 0
   let first = 0
   let last = 0
+  // 后面这批指标是给「更耐玩」的高阶成就用的
+  let weekendCount = 0 // 周末发布的作品数
+  let deepNight = 0 // 凌晨 2~5 点发布的作品数
+  let perfectWorks = 0 // 单幅收到 20 个以上光尘的作品数
+  const months = new Set() // 有过作品的「年-月」
 
   for (const e of entries) {
     if (!e) continue
@@ -206,6 +270,7 @@ export function computeMetrics(entries, book, user) {
     if (s > biggestSize) biggestSize = s
     const lk = Number(e.likes) || 0
     if (lk > bestLikes) bestLikes = lk
+    if (lk >= 20) perfectWorks += 1
 
     const t = Number(e.time) || 0
     if (t) {
@@ -219,6 +284,10 @@ export function computeMetrics(entries, book, user) {
       // 23:00~05:00 算夜里
       const hr = d.getHours()
       if (hr >= 23 || hr < 5) night = true
+      const wd = d.getDay()
+      if (wd === 0 || wd === 6) weekendCount += 1
+      if (hr >= 2 && hr < 5) deepNight += 1
+      months.add(d.getFullYear() + '-' + d.getMonth())
     }
 
     // 纯白视为画布底色，不计入绘制量。
@@ -307,6 +376,13 @@ export function computeMetrics(entries, book, user) {
     spanDays: first && last ? Math.max(1, Math.round((last - first) / 86400000) + 1) : 0,
     maxPerDay,
     dayRun,
+    // 高阶成就用的（见文件上方 computeMetrics 里的新指标）
+    monthsActive: months.size,
+    weekendCount,
+    deepNight,
+    perfectWorks,
+    avgLikes: works > 0 ? Math.round(likes / works) : 0,
+    distinctSizes: (sizes[16] ? 1 : 0) + (sizes[32] ? 1 : 0) + (sizes[64] ? 1 : 0),
     // —— 里程碑型成就直接以同名字段被读取，所以在这里显式给出 ——
     g_twice: maxPerDay >= 2,
     g_allhours: hoursArr.length >= 12,

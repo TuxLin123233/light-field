@@ -94,6 +94,13 @@ window.LWSpray = (function () {
       c.imageSmoothingEnabled = false
       var s = canvas.width / N
       c.setTransform(s, 0, 0, s, 0, 0)
+      /* 盖住缝隙：每个格子往右下多画半个「设备像素」。
+         以前这里写死 1.02，是按 s≈37 估的；可 s = 背板 / N 会跟着屏幕宽度变，
+         窄屏上 s 可能只有 20 出头，1.02 只多出 0.4 个设备像素，
+         盖不住小数缩放产生的抗锯齿缝 —— 看上去就是一条条白线。
+         改成按当前 s 反算，屏幕多宽都刚好盖住半个像素。 */
+      var over = 0.5 / s
+      var cell = 1 + over
       // 底
       if (bg) {
         c.fillStyle = bg
@@ -102,7 +109,7 @@ window.LWSpray = (function () {
         for (var y = 0; y < N; y++) {
           for (var x = 0; x < N; x++) {
             c.fillStyle = (x + y) % 2 ? '#f2efe9' : '#e7e3db'
-            c.fillRect(x, y, 1.02, 1.02)
+            c.fillRect(x, y, cell, cell)
           }
         }
       }
@@ -110,7 +117,7 @@ window.LWSpray = (function () {
         var p = buf[i]
         if (!p) continue
         c.fillStyle = 'rgb(' + p[0] + ',' + p[1] + ',' + p[2] + ')'
-        c.fillRect(i % N, Math.floor(i / N), 1.02, 1.02)
+        c.fillRect(i % N, Math.floor(i / N), cell, cell)
       }
     }
 
