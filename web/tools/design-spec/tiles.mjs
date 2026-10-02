@@ -78,7 +78,7 @@ body { font-family: "HarmonyOS Sans SC", -apple-system, "PingFang SC", "Microsof
 .pal .sw { display: inline-block; width: 19px; height: 19px; border-radius: 5px; margin-right: 3px;
   vertical-align: middle; border: 1px solid rgba(0,0,0,.06); }
 .badges { display: flex; flex-wrap: wrap; }
-.badges > * { margin: 0 8px 8px 0; }
+.badges > * { margin: 0 6px 6px 0; transform: scale(.92); transform-origin: left center; }
 .roomwrap { margin-top: 2px; }
 .roomwrap canvas { image-rendering: pixelated; display: block; border-radius: 10px; }
 .close { background: #241f1a; color: #fff; align-items: center; justify-content: center; text-align: center; }
@@ -95,12 +95,12 @@ body { font-family: "HarmonyOS Sans SC", -apple-system, "PingFang SC", "Microsof
 <div class="foot"><span>像素小镇</span><b>light-field.pages.dev</b></div></div>
 
 <div class="tile alt"><div class="ico">🛋️</div><h3>654 件家具</h3>
-<p>摆进自己的小屋，按住就能拖着挪</p>
+<p>550 多件是配色变体，同一件换个主题就是另一件</p>
 <div class="body" id="t2"></div>
 <div class="foot"><span>像素小镇</span><b>light-field.pages.dev</b></div></div>
 
-<div class="tile"><div class="ico">🧱</div><h3>50 种墙纸地毯</h3>
-<p>贴墙上、铺地上，屋子立刻换个样子</p>
+<div class="tile"><div class="ico">🔘</div><h3>按钮与选择</h3>
+<p>重要的实心，次要的描边；多选一都用圆角小按钮</p>
 <div class="body" id="t3"></div>
 <div class="foot"><span>像素小镇</span><b>light-field.pages.dev</b></div></div>
 
@@ -124,8 +124,8 @@ body { font-family: "HarmonyOS Sans SC", -apple-system, "PingFang SC", "Microsof
 <div class="body" id="t7"></div>
 <div class="foot"><span>像素小镇</span><b>light-field.pages.dev</b></div></div>
 
-<div class="tile alt"><div class="ico">🏆</div><h3>154 个成就</h3>
-<p>签到、画画、串门都能解锁，攒光尘换家具</p>
+<div class="tile alt"><div class="ico">🃏</div><h3>卡片</h3>
+<p>作品卡、数据卡、入口卡、状态徽章</p>
 <div class="body" id="t8"></div>
 <div class="foot"><span>像素小镇</span><b>light-field.pages.dev</b></div></div>
 
@@ -153,8 +153,11 @@ const put=(id,n)=>document.getElementById(id).appendChild(n);
 /* 1 头像 25 只 */
 DATA.avatars.slice(0,25).forEach(px=>{const d=document.createElement('div');d.className='a';const c=cv(16,16);px16(c,px);d.appendChild(c);put('t1',d)});
 
-/* 2 家具 36 件 */
-DATA.furn.slice(0,36).forEach(f=>{const d=document.createElement('div');d.className='f';
+/* 2 家具 + 墙纸：上半家具，下半墙纸地毯 */
+(function(){const lab=document.createElement('div');
+ lab.style.cssText='width:100%;font-size:12.5px;color:#8c7f6b;margin:2px 0 6px';
+ lab.textContent='家具';put('t2',lab)})();
+DATA.furn.slice(0,24).forEach(f=>{const d=document.createElement('div');d.className='f';
  const aw=Math.max(...f.art.map(r=>r.length)),ah=f.art.length;
  const c=cv(aw,ah),g=c.getContext('2d'),pal=f.pal||PAL;
  for(let y=0;y<ah;y++)for(let x=0;x<f.art[y].length;x++){const ch=f.art[y][x];if(ch==='.'||!pal[ch])continue;const q=pal[ch];g.fillStyle='rgb('+q[0]+','+q[1]+','+q[2]+')';g.fillRect(x,y,1,1)}
@@ -162,10 +165,32 @@ DATA.furn.slice(0,36).forEach(f=>{const d=document.createElement('div');d.classN
  c.style.width=(aw*sc)+'px';c.style.height=(ah*sc)+'px';d.appendChild(c);put('t2',d)});
 
 /* 3 墙纸地毯 30 种 */
-DATA.surfaces.slice(0,24).forEach(s=>{const d=document.createElement('div');d.className='s';
+/* 2 下半：墙纸地毯（和第 3 格腾出来的位置换） */
+(function(){const lab=document.createElement('div');
+ lab.style.cssText='width:100%;font-size:12.5px;color:#8c7f6b;margin:6px 0 6px';
+ lab.textContent='墙纸 / 地毯';put('t2',lab)})();
+DATA.surfaces.slice(0,16).forEach(s=>{const d=document.createElement('div');d.className='s';
  const c=cv(16,16),g=c.getContext('2d');
  for(let y=0;y<16;y++)for(let x=0;x<16;x++){const q=PAL[s.tile[y][x]];if(!q)continue;g.fillStyle='rgb('+q[0]+','+q[1]+','+q[2]+')';g.fillRect(x,y,1,1)}
- d.appendChild(c);put('t3',d)});
+ d.appendChild(c);put('t2',d)});
+
+/* 3 按钮与选择 */
+(function(){
+ const rows=[
+  [['主要按钮','tw-btn'],['次要按钮','tw-btn ghost'],['保存布置','tw-btn']],
+  [['🕐 跟随现实','tw-tab'],['🌧️ 雨','tw-tab on'],['10 ✨','ch-chip'],['50 ✨','ch-chip on']],
+ ];
+ rows.forEach(list=>{
+  const r=document.createElement('div');r.style.cssText='width:100%;display:flex;flex-wrap:wrap;align-items:center;margin-bottom:16px';
+  list.forEach(([t,c])=>{const b=document.createElement('button');b.type='button';b.className=c;b.textContent=t;
+   b.style.margin='0 10px 8px 0';r.appendChild(b)});
+  put('t3',r)});
+ // 图块按钮（带像素画的那种）
+ const it=document.createElement('button');it.type='button';it.className='tw-item';it.style.margin='0 10px 8px 0';
+ const icon=document.createElement('span');icon.textContent='🪑';icon.style.cssText='font-size:26px;line-height:38px';
+ it.appendChild(icon);const nm=document.createElement('span');nm.textContent='木凳';it.appendChild(nm);
+ put('t3',it);
+})();
 
 /* 4 小屋 */
 (function(){const S=11;const tmp=cv(16,16);_roomCv=tmp;drawRoom();
@@ -212,14 +237,40 @@ DATA.themes.forEach(t=>{
   s.style.background='rgb('+q[0]+','+q[1]+','+q[2]+')';d.appendChild(s)});
  put('t7',d)});
 
-/* 8 徽章 */
+/* 8 卡片 + 徽章 */
+(function(){
+ // 作品卡片
+ const card=document.createElement('div');card.className='card';card.style.cssText='width:150px;margin:0 16px 16px 0';
+ const c=cv(16,16);px16(c,DATA.avatars[11]);
+ const im=document.createElement('img');im.className='art';im.src=c.toDataURL();im.alt='爱心';card.appendChild(im);
+ const meta=document.createElement('div');meta.className='card-meta';
+ const nm=document.createElement('span');nm.className='card-name';nm.textContent='爱心';meta.appendChild(nm);
+ const sz=document.createElement('span');sz.className='card-size';sz.textContent='16×16';meta.appendChild(sz);card.appendChild(meta);
+ const sub=document.createElement('div');sub.className='card-sub';
+ const ac=cv(20,20);ac.className='card-av';px16(ac,DATA.avatars[5]);sub.appendChild(ac);
+ const au=document.createElement('span');au.className='card-author';au.textContent='小林同学';sub.appendChild(au);
+ const tm=document.createElement('span');tm.className='card-time';tm.textContent='10-27';sub.appendChild(tm);
+ card.appendChild(sub);
+ put('t8',card);
+ // 数据卡片
+ [['发布作品','4'],['收到的光尘','46']].forEach(([l,v])=>{
+  const d=document.createElement('div');d.className='in-card';d.style.cssText='width:126px;margin:0 14px 14px 0';
+  const t=document.createElement('div');t.className='card-title';t.textContent=l;d.appendChild(t);
+  const k=document.createElement('div');k.className='in-num';k.textContent=v;d.appendChild(k);put('t8',d)});
+ // 入口卡
+ const en=document.createElement('div');en.className='entry';en.style.cssText='width:100%;margin-bottom:14px';
+ en.innerHTML='<span class="entry-ico">🎨</span><span class="entry-body"><span class="entry-label">画头像</span><span class="entry-desc">自己画，或换成系统默认的</span></span><span class="entry-arrow">›</span>';
+ put('t8',en);
+})();
+
+/* 8b 徽章 */
 [['新功能','li-tag tag-new'],['修复','li-tag tag-fix'],['更新','li-tag tag-update'],['界面','li-tag tag-ui']]
  .forEach(([t,c])=>{const s=document.createElement('span');s.className=c;s.textContent=t;put('t8',s)});
 [['🎞️ 动画','anim-badge'],['👥 多人','room-badge'],['🖼️ 来自图片','img-badge'],['像素','card-tag']]
  .forEach(([t,c])=>{const s=document.createElement('span');s.className=c;s.textContent=t;put('t8',s)});
 (function(){const s=document.createElement('span');s.className='ver-tag';s.textContent='v1.7.6';put('t8',s);
  const n=document.createElement('span');n.className='ml-num';n.textContent='3';put('t8',n);
- const l=document.createElement('button');l.className='like-btn';l.type='button';l.textContent='❤️ 12';put('t8',l)})();
+})();
 </script></body></html>`
 fs.writeFileSync('.tiles/tiles.html', html)
 console.log('  ✓ tiles.html  ' + (html.length / 1024).toFixed(0) + ' KB')
