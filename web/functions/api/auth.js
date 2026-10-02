@@ -1,3 +1,5 @@
+import { hitWords } from './_lexicon.js'
+import { hitTrade } from './_illegal.js'
 // 账号：注册 / 登录 / 改密码 / 查看当前账号
 //
 // 凭证是无状态签名令牌（见 _auth.js），不存 KV，所以：
@@ -97,6 +99,11 @@ export async function onRequestPost(context) {
   /* ---------------- 注册 ---------------- */
   if (action === 'register') {
     const username = normalizeName(body.username)
+    // 用户名是站内唯一标识，被用来做交易/引流最难清理，注册时就卡住
+    {
+      const bad = [...new Set(hitWords(username, { minLen: 2 }).concat(hitTrade(username)))]
+      if (bad.length) return json({ error: '用户名里有不合适的内容：' + bad.join('、') }, 400)
+    }
     const password = String(body.password || '')
 
     if (!validName(username)) {
@@ -192,6 +199,10 @@ export async function onRequestPost(context) {
     if (isBanned(user)) return json(BANNED_ERROR, 403)
 
     const bio = sanitizeBio(body.bio)
+    {
+      const bad = [...new Set(hitWords(bio, { minLen: 2 }).concat(hitTrade(bio)))]
+      if (bad.length) return json({ error: '简介里有不合适的内容：' + bad.join('、') }, 400)
+    }
     if (bio === (user.bio || '')) {
       // 内容没变就不该扣钱
       return json({ ok: true, bio, changed: false, cost: 0, book: publicView(await readBook(kv, who.uid)) })

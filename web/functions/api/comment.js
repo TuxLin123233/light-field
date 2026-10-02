@@ -9,6 +9,7 @@
 // 文本走和发布作品同一套敏感词过滤，但只提示、不静默丢弃。
 import { readActiveUser, readUser, BANNED_ERROR } from './_auth.js'
 import { hitWords } from './_lexicon.js'
+import { hitTrade } from './_illegal.js'
 import { recentHistory, readAllHistory } from './_history.js'
 
 const CORS_HEADERS = {
@@ -152,7 +153,7 @@ export async function onRequestPost(context) {
     if (!exists) return json({ error: '这幅作品已经不在了' }, 404)
 
     // 敏感词：命中就拒，并告诉你是哪个词
-    const hit = hitWords(text, { minLen: 2 })
+    const hit = hitWords(text, { minLen: 2 }).concat(hitTrade(text))
     if (hit && hit.length) {
       return json({ error: '不合适的内容：' + hit.join('、'), hit }, 400)
     }
