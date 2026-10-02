@@ -12,6 +12,8 @@ import {
   sanitizePixels,
   isBlank,
   defaultPixels,
+  visiblePixels,
+  setUseDefault,
   costOf,
   COST_PIXEL,
   COST_SPRAY,
@@ -51,8 +53,9 @@ export async function onRequestGet(context) {
   if (uids.length) {
     const out = {}
     for (const uid of uids) {
-      const av = await readAvatar(kv, uid)
-      out[uid] = av ? av.px : null
+        const av = await readAvatar(kv, uid)
+        // 选了默认头像的人这里给 null —— 前端会去画 uid 生成的默认头像
+        out[uid] = visiblePixels(av)
     }
     return json({ ok: true, size: SIZE, avatars: out })
   }
@@ -72,10 +75,13 @@ export async function onRequestGet(context) {
     // 两种画法各自的价格，前端按 mode 取
     cost: { pixel: COST_PIXEL, spray: COST_SPRAY },
     modes: MODES,
-    has: !!av,
-    currentMode: av ? av.mode : '',
-    pixels: av ? av.px : null,
-    default: defaultPixels(who.uid),
+      has: !!av,
+      // 自己画的那份还在不在（切了默认之后依然是 true）
+      hasDrawing: !!(av && av.px),
+      useDefault: !!(av && av.useDefault),
+      currentMode: av ? av.mode : '',
+      pixels: visiblePixels(av),
+      default: defaultPixels(who.uid),
     book: publicView(book),
   })
 }
@@ -99,11 +105,24 @@ export async function onRequestPost(context) {
   const kv = env.LIGHTFIELD_KV
   const action = (body && body.action) || ''
 
-  if (action === 'reset') {
-    // 恢复默认头像。光尘不退还 —— 已经画过一次了，返还等于变相白拿一次创作。
-    await kv.put('av:' + who.uid, JSON.stringify({ px: null, at: Date.now(), mode: '' }))
-    return json({ ok: true, pixels: null, default: defaultPixels(who.uid) })
-  }
+    /* 换成默认头像 / 换回自己画的。两个都**免费**，而且都只动「当前用哪个」
+       这一个标记 —— 自己画的那份一直留着，随时能切回来。
+       老版本的 reset 是直接把 px 抹掉，画过的东西就没了，这里改掉了。 */
+    if (action === 'default' || action === 'custom' || action === 'reset') {
+      const av = await readAvatar(kv, who.uid)
+      if (!av || !av.px) {
+        return json({ error: '你还没画过自己的头像。先画一张，之后就能在两种之间随便切了' }, 400)
+      }
+      const wantDefault = action !== 'custom'
+      const rec = await setUseDefault(kv, who.uid, wantDefault)
+      return json({
+        ok: true,
+        useDefault: !!(rec && rec.useDefault),
+        pixels: visiblePixels(rec),
+        default: defaultPixels(who.uid),
+        cost: 0,
+      })
+    }
 
   if (action !== 'save') return json({ error: '未知操作' }, 400)
 

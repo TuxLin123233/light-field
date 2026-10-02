@@ -17,6 +17,27 @@ export default {
         justify-content: space-between;
         margin-bottom: 8px;
       }
+      /* ---------- 当前头像 + 一键切换 ---------- */
+      .av-cur {
+        display: flex; align-items: center;
+        background: var(--surface); border: 1px solid var(--border);
+        border-radius: 14px; padding: 11px; margin-bottom: 10px;
+      }
+      .av-cur-cv {
+        width: 44px; height: 44px; flex: none; image-rendering: pixelated;
+        border-radius: 10px; background: var(--surface-2); display: block;
+      }
+      .av-cur-mid { flex: 1; min-width: 0; margin: 0 10px; }
+      .av-cur-t { font-size: 13px; color: var(--text-muted); }
+      .av-cur-t b { color: var(--text); font-weight: 800; }
+      .av-cur-s { font-size: 11px; color: var(--text-faint); line-height: 1.6; margin-top: 2px; }
+      .av-switch {
+        flex: none; border: 1px solid var(--border-input); background: var(--surface-2);
+        color: var(--accent); border-radius: 999px; padding: 8px 13px;
+        font-size: 12px; font-weight: 800; font-family: inherit; cursor: pointer;
+      }
+      .av-switch[disabled] { opacity: .5; cursor: default; }
+
       .av-back {
         display: inline-flex;
         align-items: center;
@@ -265,6 +286,12 @@ export default {
     let mode = 'pixel' // pixel | spray：两套完全独立的画法
     let hasAvatar = false
     let COSTS = { pixel: 20, spray: 30 }
+    /* 「现在用哪个头像」。
+       useDefault=true 表示在用系统默认头像（由 uid 生成的那 3888 种之一）；
+       hasDrawing 表示自己画过、那张还存着 —— 切来切去都不会丢。 */
+    let useDefault = false
+    let hasDrawing = false
+    let myUid = ''
     let balance = 0
     let dirty = false
     let drawing = false
@@ -387,6 +414,25 @@ export default {
         : '<span class="av-cost-warn">' + (mode === 'spray' ? '像素喷漆' : '像素画') + '要 ' + cost +
           ' 个光尘，你只有 ' + balance + ' 个，还差 ' + (cost - balance) + ' 个。</span> 去「我的」签到攒一攒吧。'
       $('avBody').innerHTML =
+        /* 当前头像 + 一键切换。
+           换默认头像和换回自绘都是免费的，而且**自己画的那张一直留着** ——
+           老版本的「恢复默认」是直接把画删掉，现在不会了。 */
+        '<div class="av-cur">' +
+        '<canvas class="av-cur-cv" id="avCurCv"></canvas>' +
+        '<div class="av-cur-mid">' +
+        '<div class="av-cur-t">现在用的是 <b>' + (useDefault ? '系统默认头像' : '我自己画的') + '</b></div>' +
+        '<div class="av-cur-s">' +
+        (hasDrawing
+          ? (useDefault
+            ? '自己画的那张还给你留着，随时能换回来'
+            : '换成默认头像不要光尘，画的那张也会留着')
+          : '你还没画过自己的头像。下面画一张，之后两种就能随便切了') +
+        '</div></div>' +
+        (hasDrawing
+          ? '<button class="av-switch" type="button" id="avSwitch">' +
+            (useDefault ? '换回我画的' : '换成默认头像') + '</button>'
+          : '') +
+        '</div>' +
         '<div class="av-cost">' + costHtml + '</div>' +
         '<div class="av-modes" id="avModes">' +
         '<button class="av-mode' + (mode === 'pixel' ? ' on' : '') + '" type="button" data-mode="pixel">' +
@@ -710,6 +756,9 @@ export default {
           }
         }
         hasAvatar = !!d.has
+        hasDrawing = !!d.hasDrawing
+        useDefault = !!d.useDefault
+        if (d.uid) myUid = d.uid
         mode = d.currentMode === 'spray' ? 'spray' : 'pixel'
         balance = d.book ? Number(d.book.bal) || 0 : 0
         px = Array.isArray(d.pixels) && d.pixels.length === CELLS ? d.pixels.map((p) => [p[0], p[1], p[2]]) : blank()
@@ -725,8 +774,60 @@ export default {
           sprayBuf = up
         }
         renderFrame()
+        paintCurrent()
       } catch (e) {
         console.error('[avatar] 绘制失败', e)
+      }
+    }
+
+    /** 左上角那张「我现在的头像」：不选默认就是自绘的那张 */
+    function paintCurrent() {
+      const cv = $('avCurCv')
+      if (!cv || !window.LWAvatar || !myUid) return
+      try {
+        window.LWAvatar.draw(cv, myUid, 44, useDefault ? null : px)
+      } catch (e) {}
+      const btn = $('avSwitch')
+      if (btn && !btn.dataset.ready) {
+        btn.dataset.ready = '1'
+        btn.addEventListener('click', toggleDefault)
+      }
+    }
+
+    /** 换默认头像 / 换回自绘。都免费，都只动一个标记，绝不碰自己画的那份 */
+    async function toggleDefault() {
+      const btn = $('avSwitch')
+      if (!window.confirm(useDefault ? '换回你自己画的那张？' : '换成系统默认头像？不要光尘，你画的会留着。')) return
+      if (btn) btn.disabled = true
+      try {
+        const t = localStorage.getItem('lw-token') || ''
+        const res = await fetch('/api/avatar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t },
+          body: JSON.stringify({ action: useDefault ? 'custom' : 'default' }),
+        })
+        const d = await res.json().catch(() => ({}))
+        if (!d || !d.ok) {
+          window.alert((d && d.error) || '换不了')
+          if (btn) btn.disabled = false
+          return
+        }
+        useDefault = !!d.useDefault
+        // 切回自绘时把那张拿回来铺进编辑器，不然画布上还是空的
+        if (!useDefault && Array.isArray(d.pixels) && d.pixels.length === CELLS) {
+          px = d.pixels.map((q) => [q[0], q[1], q[2]])
+        }
+        const C = window.LWCache || {}
+        if (C.drop) C.drop('avatar')
+        /* LWAvatar 是按 uid 缓存头像的，换完必须把「我」这一条刷新掉，
+           否则切回「我的」还是旧头像，看着像没生效。 */
+        if (window.LWAvatar && myUid) window.LWAvatar.put(myUid, useDefault ? null : px)
+        if (window.sfx) window.sfx('tick')
+        renderFrame()
+        paintCurrent()
+      } catch (e) {
+        window.alert('网络错误')
+        if (btn) btn.disabled = false
       }
     }
 

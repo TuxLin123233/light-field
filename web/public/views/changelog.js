@@ -274,6 +274,20 @@ export default {
       <section class="group">
         <div class="ver red">
           <div class="ver-body">
+            <div class="ver-title"><span class="ver-tag">v1.7.1</span> 可以在「自己画的头像」和「系统默认头像」之间随便切了 <span class="ver-date">2026-10</span></div>
+            <ul class="ver-list">
+              <li><span class="li-tag tag-new">新功能</span><b>头像能一键换成系统默认的了</b>。画头像页最上面多了一张卡片，写着「现在用的是：我自己画的 / 系统默认头像」，右边一个按钮就能换。<b>换默认头像不要光尘，换回来也不要</b></li>
+              <li><span class="li-tag tag-fix">修复</span><b>换默认头像不会再把你自己画的删掉了</b>。以前那个「恢复默认」是直接把画的像素抹掉，点一下心血就没了。现在只是切换「用哪个」，<b>你画的那张一直给你留着</b>，想换回来随时点一下，逐格都还在</li>
+              <li><span class="li-tag tag-new">新功能</span>系统默认头像是<b>按你的账号算出来的</b> —— 色相 × 明度 × 耳型 × 眼型 × 嘴型 × 底纹，一共 3888 种。同一个人永远是同一只，不同人基本不会撞脸（实测两万个账号出现 3841 种）</li>
+              <li><span class="li-tag tag-ui">界面</span>换完之后整个网站的头像会立刻跟着变，不用刷新。别人看到的是你当前选的那个</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="group">
+        <div class="ver red">
+          <div class="ver-body">
             <div class="ver-title"><span class="ver-tag">v1.7.0</span> 家具 636 件 · 家具能拖着挪 · 墙上开了扇小窗 <span class="ver-date">2026-10</span></div>
             <ul class="ver-list">
               <li><span class="li-tag tag-new">新功能</span><b>家具从 116 件扩到 636 件</b>。不是硬画五百张图，而是做了五套配色主题 —— <b>墨玉 / 深海 / 樱花 / 鎏金 / 幽林</b>，拿基础家具整体做色相与明度偏移，每件变体自带一份调色板。所以「木凳 · 墨玉」和「木凳 · 鎏金」是真的两种颜色，摆一屋子也不撞。带主题的卖得贵些（1.25~1.8 倍）</li>

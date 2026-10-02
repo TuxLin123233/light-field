@@ -59,7 +59,14 @@ export async function readAvatar(kv, uid) {
     const o = JSON.parse(raw)
     const px = sanitizePixels(o && o.px)
     if (!px || isBlank(px)) return null
-    return { px, at: Number(o.at) || 0, paid: o.paid !== false, mode: o.mode === 'spray' ? 'spray' : 'pixel' }
+    return {
+      px,
+      at: Number(o.at) || 0,
+      paid: o.paid !== false,
+      mode: o.mode === 'spray' ? 'spray' : 'pixel',
+      // 当前是不是在用「系统默认头像」。注意 px 一直留着 —— 切默认不会删掉自己画的
+      useDefault: o.useDefault === true,
+    }
   } catch (e) {
     return null
   }
@@ -68,7 +75,39 @@ export async function readAvatar(kv, uid) {
 export async function writeAvatar(kv, uid, px, paid, mode) {
   const clean = sanitizePixels(px)
   if (!clean) return null
-  const rec = { px: clean, at: Date.now(), paid: paid !== false, mode: mode === 'spray' ? 'spray' : 'pixel' }
+  /* 存了新画的就是要用新画的，顺手把「用默认」关掉 ——
+     否则用户画完保存、头像却还是默认的，看着像没保存上。 */
+  const rec = {
+    px: clean,
+    at: Date.now(),
+    paid: paid !== false,
+    mode: mode === 'spray' ? 'spray' : 'pixel',
+    useDefault: false,
+  }
+  await kv.put(KEY(uid), JSON.stringify(rec))
+  return rec
+}
+
+/**
+ * 对外**显示**用的头像像素。
+ * 选了默认头像就返回 null —— 前端拿到 null 会去画「由 uid 生成的默认头像」。
+ *
+ * 读存档请用 readAvatar 而不是这个：那个不管选没选默认，
+ * 自己画的那份都还在，切回来就能接着用。
+ */
+export function visiblePixels(av) {
+  if (!av || !av.px || av.useDefault) return null
+  return av.px
+}
+
+/**
+ * 换成默认头像 / 换回自己画的。**免费**，而且只动 useDefault 这一个标记，
+ * 绝不碰 px —— 自己画的东西不该因为点了一下开关就没了。
+ */
+export async function setUseDefault(kv, uid, on) {
+  const av = await readAvatar(kv, uid)
+  if (!av) return null
+  const rec = { ...av, useDefault: !!on }
   await kv.put(KEY(uid), JSON.stringify(rec))
   return rec
 }

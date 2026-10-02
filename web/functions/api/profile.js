@@ -6,6 +6,7 @@
 // 返回头像、简介、公开统计。只读，不需要登录 —— 作品卡片上的头像、
 // 作者主页、以后的关注/评论/聊天都用它。
 import { readUser, readUserByName, readActiveUser, isBanned, isBirthdayToday, birthdayLockLeft } from './_auth.js'
+import { visiblePixels } from './_avatar.js'
 import { readAvatar } from './_avatar.js'
 import { readBook } from './_dust.js'
 import { recentHistory } from './_history.js'
@@ -80,7 +81,8 @@ export async function onRequestGet(context) {
     uid: user.uid,
     username: user.username,
     bio: user.bio || '',
-    avatar: av ? av.px : null,
+    // 选了默认头像的人这里给 null，前端会画 uid 生成的默认头像
+    avatar: visiblePixels(av),
     createdAt: user.createdAt || 0,
     /* 性别和生日都是「填了才公开」：不填就是空串，前端不显示。
        生日只存月-日、不含年份，所以露出去也不涉及年龄。 */
