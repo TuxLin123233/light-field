@@ -79,10 +79,11 @@ body { font-family: "HarmonyOS Sans SC", -apple-system, "PingFang SC", "Microsof
 .pal b { font-size: 13px; color: #3b342c; font-weight: 700; margin-right: 8px; }
 .pal .sw { display: inline-block; width: 23px; height: 23px; border-radius: 5px; margin-right: 3px;
   vertical-align: middle; border: 1px solid rgba(0,0,0,.06); }
-.badges { display: flex; flex-wrap: wrap; justify-content: center; padding: 2px 0 14px; }
+.badges { display: flex; flex-wrap: wrap; justify-content: center; padding: 14px 0 20px; }
 /* 不要用 transform: scale —— 缩放不改变布局盒子，徽章会压住彼此的 margin，
    看着就是挤成一坨。老老实实用 margin 就行。 */
-.badges > * { margin: 0 9px 9px 0; }
+.badges > * { margin: 0 17px 12px 0; }
+.badges > *:last-child { margin-right: 0; }
 .roomwrap { margin-top: 2px; }
 .roomwrap canvas { image-rendering: pixelated; display: block; border-radius: 10px; }
 .close { background: #241f1a; color: #fff; align-items: center; justify-content: center; text-align: center; }
@@ -361,7 +362,7 @@ DATA.surfaces.slice(0,24).forEach(s=>{const d=document.createElement('div');d.cl
 /* 10 个徽章一行塞不下，精简到 6 个 */
 [['新功能','li-tag tag-new'],['修复','li-tag tag-fix'],['更新','li-tag tag-update']]
  .forEach(([t,c])=>{const s=document.createElement('span');s.className=c;s.textContent=t;put('t8',s)});
-[['🎞️ 动画','anim-badge'],['👥 多人','room-badge']]
+[['🎞️ 动画','anim-badge']]
  .forEach(([t,c])=>{const s=document.createElement('span');s.className=c;s.textContent=t;put('t8',s)});
 (function(){const s=document.createElement('span');s.className='ver-tag';s.textContent='v1.7.6';put('t8',s);})();
 </script></body></html>`
