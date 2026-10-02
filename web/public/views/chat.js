@@ -395,7 +395,7 @@ export default {
             showMsg((r2 && r2.error) || '发送失败', true)
             return
           }
-          if (window.sfx) window.sfx('ding')
+          if (window.sfx) window.sfx('send')
           C.drop('chat:' + d.with.uid)
           C.drop('chatlist')
           C.drop('chatBadge')

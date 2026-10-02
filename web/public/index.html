@@ -622,103 +622,231 @@
           osc.start(t0)
           osc.stop(t0 + dur + 0.02)
         }
+
+        /* 滑音：频率从 f1 平滑滑到 f2，做「升级 / 获得 / 弹出」的上扬感 */
+        function glide(f1, f2, at, dur, vol, type) {
+          const c = ctx()
+          if (!c) return
+          const t0 = c.currentTime + at
+          const osc = c.createOscillator()
+          const gain = c.createGain()
+          osc.type = type || 'sine'
+          osc.frequency.setValueAtTime(Math.max(20, f1), t0)
+          osc.frequency.exponentialRampToValueAtTime(Math.max(20, f2), t0 + dur)
+          gain.gain.setValueAtTime(0.0001, t0)
+          gain.gain.exponentialRampToValueAtTime(vol, t0 + 0.015)
+          gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur)
+          osc.connect(gain)
+          gain.connect(c.destination)
+          osc.start(t0)
+          osc.stop(t0 + dur + 0.02)
+        }
+
+        /* 琶音：一串音符按 step 间隔依次播放，音符比步进略长，形成连贯感 */
+        function seq(freqs, at, step, vol, type) {
+          for (let i = 0; i < freqs.length; i++) {
+            note(freqs[i], at + i * step, step * 1.8, vol, type)
+          }
+        }
+
+        /* 和弦：多个音符同时发声 */
+        function chord(freqs, at, dur, vol, type) {
+          for (let i = 0; i < freqs.length; i++) {
+            note(freqs[i], at, dur, vol, type)
+          }
+        }
+
+        /* 柔和噪声：低通滤波的白噪声，做「沙沙 / 翻页 / 扫掉」的质感 */
+        let noiseBuf = null
+        function noise(at, dur, vol, cutoff) {
+          const c = ctx()
+          if (!c) return
+          if (!noiseBuf) {
+            const len = Math.floor(c.sampleRate * 0.5)
+            noiseBuf = c.createBuffer(1, len, c.sampleRate)
+            const d = noiseBuf.getChannelData(0)
+            for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1
+          }
+          const t0 = c.currentTime + at
+          const src = c.createBufferSource()
+          src.buffer = noiseBuf
+          src.loop = true
+          const flt = c.createBiquadFilter()
+          flt.type = 'lowpass'
+          flt.frequency.value = cutoff || 1000
+          const gain = c.createGain()
+          gain.gain.setValueAtTime(0.0001, t0)
+          gain.gain.exponentialRampToValueAtTime(vol, t0 + 0.01)
+          gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur)
+          src.connect(flt)
+          flt.connect(gain)
+          gain.connect(c.destination)
+          src.start(t0)
+          src.stop(t0 + dur + 0.02)
+        }
+
+        /* 颤音：音高轻微波动，成就解锁那种「余韵」感 */
+        function vib(freq, at, dur, vol, type, depth, rate) {
+          const c = ctx()
+          if (!c) return
+          const t0 = c.currentTime + at
+          const osc = c.createOscillator()
+          const gain = c.createGain()
+          const lfo = c.createOscillator()
+          const lfoGain = c.createGain()
+          osc.type = type || 'sine'
+          osc.frequency.value = freq
+          lfo.frequency.value = rate || 6
+          lfoGain.gain.value = depth || 3
+          lfo.connect(lfoGain)
+          lfoGain.connect(osc.frequency)
+          gain.gain.setValueAtTime(0.0001, t0)
+          gain.gain.exponentialRampToValueAtTime(vol, t0 + 0.02)
+          gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur)
+          osc.connect(gain)
+          gain.connect(c.destination)
+          osc.start(t0)
+          lfo.start(t0)
+          osc.stop(t0 + dur + 0.02)
+          lfo.stop(t0 + dur + 0.02)
+        }
         const SFX = {
-          /* 轻点：短促柔和的一声 */
-          tap: function () {
+          /* ---------- 基础反馈 ---------- */
+          /* 轻点：短促柔和一声 */
+          tap: () => note(880, 0, 0.06, 0.045, 'sine'),
+          /* 切换：极短一记「咔」，用于开关、标签 */
+          tick: () => note(1046, 0, 0.035, 0.035, 'sine'),
+          /* 选中：清脆一记，带一点泛音 */
+          select: () => {
+            note(1174, 0, 0.06, 0.05, 'sine')
+            note(1760, 0, 0.04, 0.02, 'sine')
+          },
+          /* 弹出：气泡感，短促上扬 */
+          pop: () => glide(520, 920, 0, 0.07, 0.05, 'sine'),
+          /* 滑动/翻页：柔和沙沙 */
+          swish: () => noise(0, 0.12, 0.04, 1500),
+
+          /* ---------- 打开 / 关闭 ---------- */
+          /* 打开：上扬三音，像盒子打开 */
+          open: () => seq([523, 659, 784], 0, 0.05, 0.05, 'sine'),
+          /* 关闭/取消：下行两音 */
+          close: () => {
+            note(784, 0, 0.07, 0.045, 'sine')
+            note(523, 0.06, 0.09, 0.045, 'sine')
+          },
+
+          /* ---------- 成功（由弱到强） ---------- */
+          /* 一般成功：清脆双音 */
+          ding: () => {
+            note(880, 0, 0.08, 0.055, 'sine')
+            note(1174, 0.06, 0.12, 0.04, 'sine')
+          },
+          /* 较成功：上行三音 */
+          ok: () => seq([659, 784, 1046], 0, 0.06, 0.055, 'sine'),
+          /* 重大成功/升级：上行四音琶音，收在明亮处 */
+          win: () => {
+            seq([523, 659, 784, 1046], 0, 0.07, 0.055, 'sine')
+            note(1318, 0.28, 0.22, 0.05, 'sine')
+          },
+          /* 成就解锁：华丽琶音 + 颤音余韵 */
+          achieve: () => {
+            seq([523, 659, 784, 1046, 1318], 0, 0.06, 0.05, 'triangle')
+            vib(1318, 0.3, 0.28, 0.05, 'sine', 4, 6)
+          },
+
+          /* ---------- 奖励 / 获得 ---------- */
+          /* 获得光尘/奖励：上扬滑音 + 高音叮，像捡到金币但柔和 */
+          coin: () => {
+            glide(700, 1500, 0, 0.1, 0.05, 'sine')
+            note(2093, 0.09, 0.14, 0.045, 'sine')
+          },
+          /* 保存/发布成功：轻快两音上行 */
+          save: () => {
+            note(784, 0, 0.08, 0.05, 'sine')
+            note(1046, 0.06, 0.14, 0.05, 'sine')
+          },
+          /* 发送成功：短促上扬，像消息飞出 */
+          send: () => glide(600, 1000, 0, 0.07, 0.05, 'sine'),
+
+          /* ---------- 否定 / 警示 ---------- */
+          /* 否定/不可操作：柔和下行，不刺耳 */
+          no: () => {
+            note(659, 0, 0.06, 0.04, 'sine')
+            note(494, 0.05, 0.08, 0.04, 'sine')
+          },
+          /* 警示：低沉一记，用于清空等破坏性操作 */
+          warn: () => note(330, 0, 0.14, 0.05, 'triangle'),
+          /* 错误：两声低沉短促 */
+          error: () => {
+            note(233, 0, 0.08, 0.05, 'triangle')
+            note(196, 0.09, 0.12, 0.05, 'triangle')
+          },
+
+          /* ---------- 社交互动 ---------- */
+          /* 点赞：可爱上扬双音 */
+          like: () => {
             note(880, 0, 0.07, 0.05, 'sine')
+            note(1318, 0.05, 0.12, 0.045, 'sine')
           },
-          /* 成功提示：清亮的双音「叮」 */
-          ding: function () {
-            note(1318.5, 0, 0.16, 0.09, 'sine')
-            note(1760, 0.045, 0.2, 0.07, 'sine')
+          /* 关注：轻快上行三音 */
+          follow: () => seq([659, 784, 880], 0, 0.05, 0.05, 'sine'),
+          /* 收到消息/通知：两粒上行铃音 */
+          receive: () => {
+            note(988, 0, 0.08, 0.05, 'sine')
+            note(1318, 0.07, 0.16, 0.045, 'sine')
           },
+
+          /* ---------- 游戏化 / 趣味 ---------- */
+          /* 连续签到：连击感，快速上行 */
+          streak: () => seq([523, 659, 784, 1046], 0, 0.06, 0.055, 'sine'),
+          /* 任务完成：干脆双音 + 上扬 */
+          task: () => {
+            note(784, 0, 0.07, 0.05, 'sine')
+            note(988, 0.06, 0.07, 0.05, 'sine')
+            note(1174, 0.12, 0.14, 0.045, 'sine')
+          },
+          /* 投票：短促上扬 */
+          vote: () => glide(800, 1200, 0, 0.06, 0.05, 'sine'),
+          /* 上榜：上行音阶，像登顶 */
+          rank: () => seq([523, 659, 784, 880, 1046], 0, 0.06, 0.05, 'triangle'),
           /* 撤销：下行两音 */
-          undo: function () {
-            note(660, 0, 0.08, 0.05, 'triangle')
+          undo: () => {
+            note(659, 0, 0.07, 0.05, 'triangle')
             note(494, 0.06, 0.12, 0.05, 'triangle')
           },
-          /* 弹出：上扬一音 */
-          pop: function () {
-            note(587, 0, 0.07, 0.05, 'sine')
-            note(880, 0.05, 0.1, 0.05, 'sine')
-          },
-          /* 保存：轻快的一小段 */
-          save: function () {
-            note(784, 0, 0.09, 0.055, 'sine')
-            note(1046.5, 0.07, 0.14, 0.05, 'sine')
-          },
-          /* 警示：低沉一声，用于清空等破坏性操作 */
-          warn: function () {
-            note(330, 0, 0.14, 0.06, 'triangle')
+          /* 清空：下滑长音 + 轻噪声，像扫掉 */
+          clear: () => {
+            glide(900, 320, 0, 0.18, 0.05, 'sine')
+            noise(0.02, 0.12, 0.025, 900)
           },
 
-          /* ---------- 以下为扩充音效 ---------- */
-
-          /* 开局：轻快上行三音，像打开工具箱 */
-          open: function () {
-            note(523, 0, 0.07, 0.05, 'sine')
-            note(659, 0.055, 0.07, 0.05, 'sine')
-            note(784, 0.11, 0.12, 0.05, 'sine')
+          /* ---------- 导航 / 环境 / 联机 ---------- */
+          /* 切页：柔和一记，谁都能听见但不吵 */
+          nav: () => {
+            note(1046, 0, 0.05, 0.04, 'sine')
+            note(1318, 0.035, 0.09, 0.035, 'sine')
           },
-          /* 关闭：下行两音 */
-          close: function () {
-            note(659, 0, 0.07, 0.045, 'sine')
-            note(440, 0.055, 0.11, 0.045, 'sine')
-          },
-          /* 切换：极短的一点，用于开关、标签页 */
-          tick: function () {
-            note(1046, 0, 0.035, 0.035, 'square')
-          },
-          /* 错误：两声低沉短促 */
-          error: function () {
-            note(233, 0, 0.09, 0.055, 'sawtooth')
-            note(196, 0.1, 0.14, 0.055, 'sawtooth')
-          },
-          /* 成功：明亮三音，比 ding 更长一点 */
-          ok: function () {
-            note(880, 0, 0.09, 0.07, 'sine')
-            note(1108, 0.07, 0.09, 0.06, 'sine')
-            note(1318, 0.14, 0.2, 0.06, 'sine')
-          },
-          /* 新消息：两粒上行铃音 */
-          msg: function () {
+          /* 新消息（旧名，与 receive 相同） */
+          msg: () => {
             note(988, 0, 0.08, 0.05, 'sine')
-            note(1318, 0.07, 0.16, 0.05, 'sine')
+            note(1318, 0.07, 0.16, 0.045, 'sine')
           },
-          /* 载入：一小段滑上去 */
-          load: function () {
-            note(392, 0, 0.07, 0.04, 'sine')
-            note(523, 0.05, 0.07, 0.04, 'sine')
-            note(659, 0.1, 0.07, 0.04, 'sine')
-            note(880, 0.15, 0.14, 0.04, 'sine')
-          },
+          /* 载入：轻柔上行小琶音 */
+          load: () => seq([392, 523, 659, 784], 0, 0.06, 0.045, 'sine'),
           /* 倒计时：短促一声 */
-          beep: function () {
-            note(784, 0, 0.05, 0.045, 'square')
-          },
+          beep: () => note(784, 0, 0.05, 0.045, 'sine'),
           /* 加入：欢迎上行的双音 */
-          join: function () {
+          join: () => {
             note(587, 0, 0.08, 0.05, 'sine')
             note(880, 0.07, 0.14, 0.05, 'sine')
           },
           /* 离开：下行双音 */
-          leave: function () {
+          leave: () => {
             note(880, 0, 0.08, 0.045, 'sine')
             note(587, 0.07, 0.13, 0.045, 'sine')
           },
-          /* 选中：清脆一记 */
-          select: function () {
-            note(1174, 0, 0.06, 0.05, 'sine')
-          },
-          /* 导航切页：柔和的一记，谁都能听见但不吵 */
-          nav: function () {
-            note(1046, 0, 0.05, 0.04, 'sine')
-            note(1318, 0.035, 0.09, 0.035, 'sine')
-          },
           /* 心跳：低低一记，联机时有人动笔 */
-          heartbeat: function () {
-            note(196, 0, 0.16, 0.035, 'sine')
-          },
+          heartbeat: () => note(196, 0, 0.16, 0.035, 'sine'),
         }
         window.sfx = function (name) {
           if (isSilent()) return
@@ -1042,7 +1170,7 @@
           })
           if (window.sfx) {
             try {
-              window.sfx('ok')
+              window.sfx('achieve')
             } catch (e) {}
           }
           // 奖励光尘已由服务端加到账本上，通知余额刷新

@@ -351,7 +351,7 @@ export default {
         })
         const d = await res.json().catch(() => ({}))
         if (d && d.ok) {
-          if (window.sfx) window.sfx('ding')
+          if (window.sfx) window.sfx('coin')
           toast('收到 ' + d.dust + ' 个光尘 ✨')
           // 账本变了，通知「我的」页刷新余额
           if (d.book && window.dust) {

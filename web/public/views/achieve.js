@@ -423,7 +423,7 @@ export default {
           render(d)
           // 新解锁的成就弹一次提示，并刷新光尘余额
           if (Array.isArray(d.fresh) && d.fresh.length) {
-            if (window.sfx) window.sfx('ok')
+            if (window.sfx) window.sfx('achieve')
             toast('新成就 ' + d.fresh.length + ' 个' + (d.reward ? '，获得 ' + d.reward + ' 个光尘 ✨' : '！'))
             if (d.book) window.dispatchEvent(new CustomEvent('lw-dust-changed', { detail: d.book }))
           }

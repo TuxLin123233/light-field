@@ -273,7 +273,7 @@ export default {
           if (window.sfx) window.sfx('no')
           return
         }
-        if (window.sfx) window.sfx('ding')
+        if (window.sfx) window.sfx('task')
         // 通知「我的」页刷新光尘和角标
         try {
           window.dispatchEvent(new CustomEvent('lw-dust-changed', { detail: d.book || null }))

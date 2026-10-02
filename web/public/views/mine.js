@@ -959,7 +959,7 @@ export default {
       // 签到是互动行为，必须登录；未登录直接跳登录页
       if (!window.dust || !window.dust.logged()) {
         toast('签到需要先登录')
-        if (window.sfx) window.sfx('close')
+        if (window.sfx) window.sfx('no')
         setTimeout(() => {
           location.href = '/login'
         }, 700)
@@ -986,7 +986,7 @@ export default {
         renderSign()
         // 签到也会解锁「签到常客」这类成就
         if (window.achSync) window.achSync()
-        if (window.sfx) window.sfx(d.streak > 1 ? 'ok' : 'ding')
+        if (window.sfx) window.sfx(d.streak > 1 ? 'streak' : 'coin')
         if (d.bonus) {
           toast('达成连续 ' + d.streak + ' 天！额外获得 ' + d.bonus + ' 个光尘 ✨')
           return
@@ -1266,7 +1266,7 @@ export default {
           localStorage.removeItem(CLAIM_KEY)
         } catch (e) {}
         if (d.moved > 0) {
-          if (window.sfx) window.sfx('ding')
+          if (window.sfx) window.sfx('coin')
           if (window.toast) window.toast('找回了 ' + d.moved + ' 幅以前发布的作品，已计入创作数据')
           else console.log('[claim] 找回 ' + d.moved + ' 幅老作品')
         }
@@ -1559,7 +1559,7 @@ export default {
         holdTimer = setTimeout(() => {
           holdTimer = null
           stopBar()
-          if (window.sfx) window.sfx('tap')
+          if (window.sfx) window.sfx('warn')
           deleteOwnWork(w, item)
         }, HOLD_MS)
       }
@@ -1626,13 +1626,13 @@ export default {
     $('lnkWorksBtn') &&
       $('lnkWorksBtn').addEventListener('click', () => {
         $('mineCard').scrollIntoView({ behavior: 'smooth', block: 'start' })
-        if (window.sfx) window.sfx('tick')
+        if (window.sfx) window.sfx('tap')
       })
     /* 底部那张「送过光尘的」卡片已经删了，所以这个入口改成直接跳到
        /mine/gifted 过滤页 —— 以前是「加载完再滚到卡片」，卡片没了会直接报错。 */
     $('lnkLikedBtn') &&
       $('lnkLikedBtn').addEventListener('click', () => {
-        if (window.sfx) window.sfx('tick')
+        if (window.sfx) window.sfx('tap')
         if (window.__lwRouter) window.__lwRouter.push('/mine/gifted')
         else location.hash = '#/mine/gifted'
       })

@@ -1548,7 +1548,7 @@ export default {
         if (!hint || !theme) return
         hint.innerHTML =
           '当前：<b>' + theme.name + '</b> · ' + (theme.group === 'dark' ? '夜间系' : '浅色系')
-        if (!quiet && window.sfx) window.sfx('tick')
+        if (!quiet && window.sfx) window.sfx('swish')
       }
       function syncThemePicks() {
         const cur = document.documentElement.getAttribute('data-theme') || 'light'

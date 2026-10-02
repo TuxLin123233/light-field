@@ -476,13 +476,13 @@ export default {
         return
       }
       if (e.target.id === 'sprayUndo') {
-        if (spray && spray.undo() && window.sfx) window.sfx('tick')
+        if (spray && spray.undo() && window.sfx) window.sfx('undo')
         return
       }
       if (e.target.id === 'sprayMirror') {
         sprayMirror = !sprayMirror
         if (spray) spray.setMirror(sprayMirror)
-        if (window.sfx) window.sfx('tap')
+        if (window.sfx) window.sfx('tick')
         renderFrame()
         return
       }
@@ -645,7 +645,7 @@ export default {
         } catch (e) {}
         // 让别处立刻用上新头像
         if (A) A.put(d.uid || '', d.pixels)
-        if (window.sfx) window.sfx('ding')
+        if (window.sfx) window.sfx('save')
         toast(d.charged ? '头像画好啦，花了 ' + d.charged + ' 个光尘 ✨' : '头像已更新')
         renderFrame()
         window.dispatchEvent(new CustomEvent('lw-avatar-changed'))

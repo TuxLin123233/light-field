@@ -420,7 +420,7 @@ export default {
             showMsg(d.error || '赠送失败', true)
             return
           }
-          if (window.sfx) window.sfx('ding')
+          if (window.sfx) window.sfx('coin')
           ok = true
           const w = works.find((x) => (x.time || 0) === Number(t))
           if (w) w.likes = (Number(w.likes) || 0) + (Number(d.charged) || 0)
@@ -531,7 +531,7 @@ export default {
             follow = { ...f, iFollow: d.iFollow, friend: d.friend, following: d.following, followers: d.followers }
             // 缓存里也要更新，不然切回来又变回旧状态
             C.put('u:uid:' + profile.uid, { profile, ach, follow, works })
-            if (window.sfx) window.sfx(on ? 'close' : 'ding')
+            if (window.sfx) window.sfx(on ? 'close' : 'follow')
             render()
             showMsg(d.friend ? '关注成功，你们现在是好友了 🤝' : on ? '已取消关注' : '关注成功')
           } catch (e) {

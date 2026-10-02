@@ -2446,7 +2446,7 @@ export default {
         // 未登录：先引导登录，不做任何本地记账
         if (!window.dust.logged()) {
           toast('登录后才能送光尘')
-          if (window.sfx) window.sfx('close')
+          if (window.sfx) window.sfx('no')
           setTimeout(() => {
             location.href = '/login'
           }, 800)
@@ -2482,7 +2482,7 @@ export default {
           }
           likedMap.add(key)
           saveLiked()
-          if (window.sfx) window.sfx('pop')
+          if (window.sfx) window.sfx('like')
           rec.likes = Math.max(0, Number(d.likes) || 0)
           const sp = btn.querySelector('span')
           if (sp) sp.textContent = rec.likes
@@ -3250,7 +3250,7 @@ export default {
             document.execCommand('copy')
             ta.remove()
           }
-          if (window.sfx) window.sfx('tick')
+          if (window.sfx) window.sfx('select')
           toast('已复制色号 ' + hex)
         } catch (e) {
           toast('复制失败，请长按色块手动复制')
@@ -3298,7 +3298,7 @@ export default {
             palBox.hidden = false
             palBtn.setAttribute('aria-expanded', 'true')
             palBtn.classList.add('on')
-            if (window.sfx) window.sfx('tick')
+            if (window.sfx) window.sfx('select')
           } else {
             closePalette()
           }
@@ -3702,7 +3702,7 @@ export default {
             return
           }
           cmtInput.value = ''
-          if (window.sfx) window.sfx('ding')
+          if (window.sfx) window.sfx('send')
           /* 自己刚发的那条一定要看得见：把评论区展开，
              并把显示条数拉到足够包含最新一条，否则新评论留在「还没加载」里。 */
           cmtOpen = true
@@ -3881,7 +3881,7 @@ export default {
         reportHoldRaf = requestAnimationFrame(tick)
         reportHoldTimer = setTimeout(() => {
           stopHold()
-          if (window.sfx) window.sfx('ding')
+          if (window.sfx) window.sfx('open')
           if (reportNote) reportNote.value = ''
           reportReasons.querySelectorAll('.report-reason').forEach((b, i) =>
             b.classList.toggle('on', i === 0)
@@ -4023,7 +4023,7 @@ export default {
         const url = location.origin + '/gallery?t=' + currentPreview.time
         const btn = document.getElementById('previewShare')
         const done = () => {
-          if (window.sfx) window.sfx('ding')
+          if (window.sfx) window.sfx('select')
           btn.textContent = '✓ 已复制'
           btn.classList.add('copied')
           setTimeout(() => {

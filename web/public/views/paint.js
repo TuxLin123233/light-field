@@ -2710,7 +2710,6 @@ color: var(--text-muted);
         fullDirty = true
         redraw()
         updateUndoBtn()
-        if (window.sfx) window.sfx('ok')
         toast('已撤销')
       }
 
@@ -2914,7 +2913,7 @@ color: var(--text-muted);
             drawHueMarker()
             syncSprayPalette()
           }
-          if (window.sfx) window.sfx('tick')
+          if (window.sfx) window.sfx('open')
         })
       }
 
@@ -3597,7 +3596,7 @@ color: var(--text-muted);
       if (toolLock) {
         toolLock.addEventListener('click', () => {
           setPanLock(!panLock)
-          if (window.sfx) window.sfx('tap')
+          if (window.sfx) window.sfx('tick')
           toast(panLock ? '拖动锁已开启：拖动只移动画布' : '拖动锁已关闭：拖动正常涂色')
         })
         try {
@@ -3933,7 +3932,7 @@ color: var(--text-muted);
       })
 
       document.getElementById('clearBtn').addEventListener('click', () => {
-        if (window.sfx) window.sfx('warn')
+        if (window.sfx) window.sfx('clear')
         pushUndo()
         pixels = Array.from({ length: size }, () =>
           Array.from({ length: size }, () => [255, 255, 255])
@@ -4192,7 +4191,7 @@ color: var(--text-muted);
       function requireLogin() {
         if (authToken() && accountName()) return true
         toast('发布作品需要先登录')
-        if (window.sfx) window.sfx('close')
+        if (window.sfx) window.sfx('no')
         setTimeout(() => {
           location.href = '/login'
         }, 800)
@@ -4999,7 +4998,7 @@ color: var(--text-muted);
       const sprayUndo = document.getElementById('sprayUndo')
       if (sprayUndo) {
         sprayUndo.addEventListener('click', () => {
-          if (spray && spray.undo() && window.sfx) window.sfx('tick')
+          if (spray && spray.undo() && window.sfx) window.sfx('undo')
         })
       }
       const sprayClear = document.getElementById('sprayClear')
@@ -5007,7 +5006,7 @@ color: var(--text-muted);
         sprayClear.addEventListener('click', () => {
           if (!spray) return
           spray.clear()
-          if (window.sfx) window.sfx('close')
+          if (window.sfx) window.sfx('clear')
         })
       }
       const sprayMirror = document.getElementById('sprayMirror')
@@ -5016,7 +5015,7 @@ color: var(--text-muted);
           const on = sprayMirror.getAttribute('aria-pressed') !== 'true'
           sprayMirror.setAttribute('aria-pressed', String(on))
           if (spray) spray.setMirror(on)
-          if (window.sfx) window.sfx('tap')
+          if (window.sfx) window.sfx('tick')
         })
       }
 
