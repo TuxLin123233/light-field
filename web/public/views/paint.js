@@ -582,8 +582,10 @@ color: var(--text-muted);
          只有按住它时才临时接管事件，用于点击跳转 */
       .mini-wrap {
         position: fixed;
-        top: 74px;
-        right: 12px;
+        /* ★ 位置不再写死。原来固定 top:74px right:12px，
+           窄屏或顶部栏高一点就压在画布上，用户想挪也挪不动。
+           现在由 JS 写 left/top，可以拖动，位置和尺寸都存 localStorage。
+           left/top 的初值在 JS 里给（按视口算），这里不设默认。 */
         z-index: 40;
         pointer-events: none;
         background: var(--surface);
@@ -591,6 +593,24 @@ color: var(--text-muted);
         border-radius: 12px;
         padding: 4px;
         box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+        /* 整块可以按住拖 */
+        touch-action: none;
+      }
+      .mini-wrap.dragging {
+        cursor: grabbing;
+        box-shadow: 0 8px 22px rgba(0, 0, 0, .26);
+        opacity: .94;
+      }
+      /* 拖动把手：小地图边框本身可以拖，给个视觉提示 */
+      .mini-wrap::before {
+        content: '';
+        position: absolute;
+        left: 50%; top: 3px;
+        width: 18px; height: 3px;
+        margin-left: -9px;
+        border-radius: 2px;
+        background: var(--border-input, #ddd);
+        opacity: .7;
       }
 
       #miniCanvas {
@@ -617,6 +637,23 @@ color: var(--text-muted);
         z-index: 2;
         padding: 0;
       }
+      .mini-size {
+        position: absolute;
+        bottom: -9px;
+        right: -9px;
+        width: 22px; height: 22px;
+        border-radius: 50%;
+        border: 2px solid var(--border);
+        background: var(--surface);
+        color: var(--text-muted);
+        font-size: 11px;
+        line-height: 1;
+        cursor: pointer;
+        pointer-events: auto;
+        z-index: 2;
+        padding: 0;
+      }
+
       .mini-show {
         position: fixed;
         top: 74px;
@@ -2463,7 +2500,8 @@ color: var(--text-muted);
 
     <div class="mini-wrap" id="miniWrap" hidden>
       <button class="mini-hide" id="miniHide" type="button" title="收起小地图" aria-label="收起小地图">×</button>
-      <canvas id="miniCanvas" title="小地图：预览当前取景位置"></canvas>
+      <button class="mini-size" id="miniSize" type="button" title="切换大小（小/中/大）" aria-label="切换小地图大小">⤢</button>
+      <canvas id="miniCanvas" title="小地图：预览当前取景位置。按住边框可以拖动位置"></canvas>
     </div>
     <button class="mini-show" id="miniShow" type="button" title="显示小地图" aria-label="显示小地图" hidden>🗺</button>
 
@@ -2959,10 +2997,108 @@ color: var(--text-muted);
       const zoomLevel = document.getElementById('zoomLevel')
       const miniWrap = document.getElementById('miniWrap')
       const miniCanvas = document.getElementById('miniCanvas')
-      const MINI = 120
+
+      /* ---------- 小地图：可拖动 + 三档大小 + 记住设置 ----------
+         原来位置和尺寸都写死（120px / top:74px right:12px）。
+         窄屏或者顶部栏一高就压在画布上，用户想躲开也没有办法。 */
+      const MINI_SIZES = [96, 120, 156]
+      const MINI_KEY = 'lw-mini-pref'
+      let miniSize = 1      // MINI_SIZES 的下标
+      let miniPos = null    // { x, y }，null 表示还没定过，用默认位置
+
+      function readMiniPref() {
+        try {
+          const o = JSON.parse(localStorage.getItem(MINI_KEY) || '{}')
+          if (typeof o.i === 'number' && o.i >= 0 && o.i < MINI_SIZES.length) miniSize = o.i
+          if (o.p && typeof o.p.x === 'number' && typeof o.p.y === 'number') miniPos = o.p
+        } catch (e) {}
+      }
+      function writeMiniPref() {
+        try {
+          localStorage.setItem(MINI_KEY, JSON.stringify({ i: miniSize, p: miniPos }))
+        } catch (e) {}
+      }
+      readMiniPref()
+
+      const MINI = MINI_SIZES[miniSize]
       miniCanvas.width = miniCanvas.height = MINI * dpr
       miniCanvas.style.width = MINI + 'px'
       miniCanvas.style.height = MINI + 'px'
+
+      /* 把位置夹在视口内，别让小地图被拖到看不见的地方 */
+      function clampMiniPos(x, y) {
+        const w = MINI + 12
+        const h = MINI + 12
+        const maxX = Math.max(4, window.innerWidth - w - 4)
+        const maxY = Math.max(4, window.innerHeight - h - 4)
+        return { x: Math.max(4, Math.min(maxX, x)), y: Math.max(4, Math.min(maxY, y)) }
+      }
+      function applyMiniPos() {
+        if (!miniPos) {
+          // 默认：右上角，但要避开顶部栏和缩放条
+          miniPos = clampMiniPos(window.innerWidth - (MINI + 12) - 12, 96)
+        } else {
+          miniPos = clampMiniPos(miniPos.x, miniPos.y)
+        }
+        miniWrap.style.left = miniPos.x + 'px'
+        miniWrap.style.top = miniPos.y + 'px'
+        miniWrap.style.right = 'auto'
+        miniWrap.style.bottom = 'auto'
+      }
+      applyMiniPos()
+      window.addEventListener('resize', () => {
+        // 转屏 / 改窗口后重新夹一次，但别覆盖用户拖过的位置
+        if (miniPos) applyMiniPos()
+      })
+
+      /* 拖动：按在小地图上（不是两个按钮上）就能拖 */
+      ;(function bindMiniDrag() {
+        let drag = null
+        miniWrap.addEventListener('pointerdown', (ev) => {
+          /* 两个按钮上按下时不拖 —— 用 closest 而不是比变量，
+             那两个元素是后面才取的，这里引用会 TDZ。 */
+          if (ev.target && ev.target.closest && ev.target.closest('.mini-hide, .mini-size')) return
+          ev.preventDefault()
+          drag = { dx: ev.clientX - miniPos.x, dy: ev.clientY - miniPos.y, moved: false }
+          miniWrap.classList.add('dragging')
+          miniWrap.style.pointerEvents = 'auto'
+          try { miniWrap.setPointerCapture(ev.pointerId) } catch (e) {}
+        })
+        miniWrap.addEventListener('pointermove', (ev) => {
+          if (!drag) return
+          drag.moved = true
+          miniPos = clampMiniPos(ev.clientX - drag.dx, ev.clientY - drag.dy)
+          miniWrap.style.left = miniPos.x + 'px'
+          miniWrap.style.top = miniPos.y + 'px'
+        })
+        const end = () => {
+          if (!drag) return
+          const moved = drag.moved
+          drag = null
+          miniWrap.classList.remove('dragging')
+          miniWrap.style.pointerEvents = ''
+          if (moved) {
+            writeMiniPref()
+            if (window.sfx) window.sfx('tick')
+            /* 记一下「刚拖过」。小地图的点击跳转是绑在 pointerdown 上的，
+               拖完松手会被当成点击，所以让后面的 click 拦一次。 */
+            miniWrap.dataset.justDragged = '1'
+            setTimeout(() => { delete miniWrap.dataset.justDragged }, 320)
+          }
+        }
+        miniWrap.addEventListener('pointerup', end)
+        miniWrap.addEventListener('pointercancel', end)
+        /* 拖动时不要触发点击跳转 —— renderMini 里那边靠 pointerdown 起手。
+           这里把拖过的标记留在 dataset 上，跳转逻辑看到就跳过。 */
+        miniWrap.addEventListener('click', (ev) => {
+          if (miniWrap.dataset.justDragged === '1') {
+            ev.stopPropagation()
+            ev.preventDefault()
+            delete miniWrap.dataset.justDragged
+          }
+        }, true)
+      })()
+
       const miniCtx = miniCanvas.getContext('2d')
       const fullCanvas = document.createElement('canvas')
       fullCanvas.width = fullCanvas.height = 512 * dpr
@@ -4004,6 +4140,24 @@ color: var(--text-muted);
         miniHide.addEventListener('click', () => {
           miniOpen = false
           updateMiniVis()
+        })
+
+      /* 尺寸按钮：小 → 中 → 大 循环。切换时重建背板尺寸并重画。 */
+      const miniSizeBtn = document.getElementById('miniSize')
+      if (miniSizeBtn)
+        miniSizeBtn.addEventListener('click', () => {
+          miniSize = (miniSize + 1) % MINI_SIZES.length
+          const px = MINI_SIZES[miniSize]
+          miniCanvas.width = miniCanvas.height = px * dpr
+          miniCanvas.style.width = px + 'px'
+          miniCanvas.style.height = px + 'px'
+          // 位置要跟着重夹一次，变大后可能越界
+          miniPos = null
+          try { applyMiniPos() } catch (e) {}
+          writeMiniPref()
+          try { renderMini() } catch (e) {}
+          if (window.sfx) window.sfx('tick')
+          toast('小地图：' + ['小', '中', '大'][miniSize])
         })
 
       function updateZoomUI() {
