@@ -36,16 +36,35 @@ export default {
         background-image:
           repeating-linear-gradient(90deg, rgba(255,255,255,.06) 0 6px, transparent 6px 12px),
           repeating-linear-gradient(0deg, rgba(0,0,0,.05) 0 14px, transparent 14px 28px);
-        padding: 10px 10px 6px;
         box-shadow: inset 0 0 34px rgba(40,80,20,.22);
+        /* ★ 地图不能无限往下长。
+           原来 3 列住户网格，30 户就是 10 行 ≈ 900px，
+           一进小镇页要滑好几屏才看到底下的按钮。
+           现在整个地图限高，住户区在内部自己滚，
+           村口土路和底下的提示牌固定不动 —— 这才像个「地图」而不是「长列表」。 */
+        display: flex; flex-direction: column;
+        max-height: 340px;
+        padding: 0;
       }
-      /* 村口那条土路 */
+      /* 住户区：唯一的滚动容器 */
+      .tw-map-scroll {
+        flex: 1; min-height: 0;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 8px 10px 4px;
+      }
+      /* 村口那条土路：贴在地图顶部，不随住户区滚动 */
       .tw-road {
-        height: 12px; margin: 0 -10px 8px;
+        flex: none; height: 12px;
         background: repeating-linear-gradient(90deg, #c9a870 0 7px, #be9c64 7px 14px);
         border-top: 1px solid #a9884f; border-bottom: 1px solid #a9884f;
       }
-      .tw-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+            /* 4 列而不是 3 列：同样的户数少三分之一的行数。
+         窄屏下用容器查询不行（兼容性），所以给个下限保护。 */
+      .tw-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+      @media (max-width: 340px) {
+        .tw-grid { grid-template-columns: repeat(3, 1fr); }
+      }
       .tw-plot {
         border: 0; background: transparent; padding: 5px 2px 3px;
         display: flex; flex-direction: column; align-items: center;
@@ -65,6 +84,7 @@ export default {
         padding: 30px 14px; font-weight: 600;
       }
       .tw-sign {
+        flex: none;
         margin-top: 8px; padding: 8px 10px;
         background: #7a5a34; border: 2px solid #5d431f; border-radius: 8px;
         color: #f6ecd8; font-size: 11px; line-height: 1.7; text-align: center;
@@ -725,13 +745,17 @@ export default {
         .join('')
 
       $('twTitle').textContent = '🏘️ 像素小镇'
-      $('twSub').textContent = list.length ? list.length + ' 户人家' : '还没有人盖房子'
+      $('twSub').textContent = list.length
+        ? list.length + ' 户人家' + (list.length > 8 ? ' · 地图可以上下滑' : '')
+        : '还没有人盖房子'
       $('twBody').innerHTML =
         '<div class="tw-map">' +
         '<div class="tw-road"></div>' +
+        '<div class="tw-map-scroll">' +
         (list.length
           ? '<div class="tw-grid">' + grid + '</div>'
           : '<div class="tw-empty">镇上还空着。<br />回自己的小屋摆几件家具，<br />你就是这里的第一户人家。</div>') +
+        '</div>' +
         '<div class="tw-sign">🏠 点谁家的房子，就去谁家串门<br />串门只能看，动不了人家的东西</div>' +
         '</div>' +
         '<div class="tw-acts">' +
