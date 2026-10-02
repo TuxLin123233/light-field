@@ -4281,18 +4281,41 @@ color: var(--text-muted);
         const cRow = document.getElementById('contestRow')
         if (joinCard) joinCard.hidden = !((dRow && !dRow.hidden) || (cRow && !cRow.hidden))
       }
-      document.querySelectorAll('.join-opt input').forEach((inp) => {
-        inp.addEventListener('change', syncJoinHighlight)
-      })
-      // 再点一次已选中的活动即取消选择
-      document.querySelectorAll('.join-opt').forEach((el) => {
-        el.addEventListener('click', (e) => {
-          e.preventDefault()
-          const inp = el.querySelector('input')
-          if (!inp) return
-          inp.checked = !inp.checked
+      /* 参赛两张卡片：切换「再点一次即取消」+ 高亮 + 「作品名是否被冻住」。
+
+         这里踩过两个坑，都跟事件时机有关：
+
+         1) 切换以前挂在 <label> 的 click 上。这两个 <label> 既有 for=，
+            内部又内嵌着那个 input：点一下 label 先触发 label 自己的 click，
+            紧接着 label 的激活行为把一次合成点击转发给 input，
+            而这次转发同样会冒泡回 label —— 切换逻辑一次点击跑两遍，
+            两遍正好互相抵消，表现为「点了没反应 / 状态乱跳」。
+            所以切换改挂到 input 自己的 click 上。
+
+         2) 不能在 click 里读 inp.checked 来判断「这次是要选中还是取消」。
+            radio 的选中是在 click 派发**之前**就置好的（HTML 规范的
+            pre-click activation steps），事件跑到的时候已经是新状态，
+            读出来永远是「已选中」，于是每次点击都误判成「取消」。
+            而且浏览器本来就不允许点掉已选中的 radio（那种点击不触发
+            change），要取消只能自己改 checked 再补一个 change。
+            所以「上一次是什么状态」得靠 change 记下来。 */
+      const joinInputs = Array.prototype.slice.call(document.querySelectorAll('.join-opt input'))
+      const joinWasOn = new WeakMap()
+      joinInputs.forEach((inp) => joinWasOn.set(inp, inp.checked))
+      joinInputs.forEach((inp) => {
+        inp.addEventListener('click', () => {
+          if (!joinWasOn.get(inp)) return // 本来没选 → 交给浏览器置上
+          inp.checked = false // 本来就选中 → 这次是取消，浏览器不管，得自己来
           inp.dispatchEvent(new Event('change'))
-          wantDaily = inp.checked && inp.value === 'daily'
+        })
+        inp.addEventListener('change', () => {
+          // 整组一起对齐：同名 radio 被浏览器取消选中时，那个 input
+          // 自己收不到 change（只通知新选中的那个），不统一刷新的话
+          // 它的「上一次状态」就过期了，下次点它会没反应
+          joinInputs.forEach((i) => joinWasOn.set(i, i.checked))
+          syncJoinHighlight()
+          syncContestFields()
+          wantDaily = dailyCheck.checked
         })
       })
 
