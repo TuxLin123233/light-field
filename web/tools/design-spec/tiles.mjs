@@ -58,14 +58,16 @@ body { font-family: "HarmonyOS Sans SC", -apple-system, "PingFang SC", "Microsof
 .tile h3 { margin: 8px 0 0; font-size: 30px; font-weight: 900; color: #3b342c; letter-spacing: .5px; }
 .tile p { margin: 6px 0 0; font-size: 15px; color: #8c7f6b; line-height: 1.55; }
 /* 底部留 56px 给页脚，不留的话内容会压到「像素小镇」那一行上 */
-.tile .body { flex: 1; margin-top: 14px; padding-bottom: 56px; display: flex; flex-wrap: wrap; align-content: flex-start; overflow: hidden; }
+/* 水平和垂直都居中，否则内容会堆在左上角，右下留一大片空 */
+.tile .body { flex: 1; margin-top: 12px; padding-bottom: 52px; display: flex; flex-wrap: wrap;
+  align-content: center; justify-content: center; overflow: hidden; }
 .tile .foot { position: absolute; left: 32px; right: 32px; bottom: 20px; font-size: 12.5px; color: #b0a697;
   display: flex; align-items: center; justify-content: space-between; }
 .tile .foot b { color: #5b8def; font-weight: 700; }
-.a { width: 46px; height: 46px; border-radius: 9px; background: #f4f1ec; display: flex; align-items: center;
+.a { width: 47px; height: 47px; border-radius: 9px; background: #f4f1ec; display: flex; align-items: center;
   justify-content: center; margin: 0 5px 5px 0; }
-.a canvas { width: 38px; height: 38px; image-rendering: pixelated; display: block; }
-.f { width: 40px; height: 40px; border-radius: 8px; background: #f4f1ec; display: flex; align-items: center;
+.a canvas { width: 39px; height: 39px; image-rendering: pixelated; display: block; }
+.f { width: 43px; height: 43px; border-radius: 8px; background: #f4f1ec; display: flex; align-items: center;
   justify-content: center; margin: 0 5px 5px 0; }
 .f canvas { image-rendering: pixelated; display: block; }
 .s { width: 38px; height: 38px; border-radius: 8px; overflow: hidden; margin: 0 5px 5px 0; }
@@ -75,7 +77,7 @@ body { font-family: "HarmonyOS Sans SC", -apple-system, "PingFang SC", "Microsof
 .w span { display: block; font-size: 10px; color: #8c7f6b; text-align: center; margin-top: 3px; }
 .pal { margin: 0 0 9px; }
 .pal b { font-size: 13px; color: #3b342c; font-weight: 700; margin-right: 8px; }
-.pal .sw { display: inline-block; width: 19px; height: 19px; border-radius: 5px; margin-right: 3px;
+.pal .sw { display: inline-block; width: 23px; height: 23px; border-radius: 5px; margin-right: 3px;
   vertical-align: middle; border: 1px solid rgba(0,0,0,.06); }
 .badges { display: flex; flex-wrap: wrap; }
 .badges > * { margin: 0 6px 6px 0; transform: scale(.92); transform-origin: left center; }
@@ -151,13 +153,13 @@ function px16(c,px){const g=c.getContext('2d');for(let y=0;y<16;y++)for(let x=0;
 const put=(id,n)=>document.getElementById(id).appendChild(n);
 
 /* 1 头像 25 只 */
-DATA.avatars.slice(0,25).forEach(px=>{const d=document.createElement('div');d.className='a';const c=cv(16,16);px16(c,px);d.appendChild(c);put('t1',d)});
+DATA.avatars.slice(0,48).forEach(px=>{const d=document.createElement('div');d.className='a';const c=cv(16,16);px16(c,px);d.appendChild(c);put('t1',d)});
 
 /* 2 家具 + 墙纸：上半家具，下半墙纸地毯 */
 (function(){const lab=document.createElement('div');
- lab.style.cssText='width:100%;font-size:12.5px;color:#8c7f6b;margin:2px 0 6px';
+ lab.style.cssText='width:100%;text-align:center;font-size:12.5px;color:#8c7f6b;margin:2px 0 6px';
  lab.textContent='家具';put('t2',lab)})();
-DATA.furn.slice(0,24).forEach(f=>{const d=document.createElement('div');d.className='f';
+DATA.furn.slice(0,32).forEach(f=>{const d=document.createElement('div');d.className='f';
  const aw=Math.max(...f.art.map(r=>r.length)),ah=f.art.length;
  const c=cv(aw,ah),g=c.getContext('2d'),pal=f.pal||PAL;
  for(let y=0;y<ah;y++)for(let x=0;x<f.art[y].length;x++){const ch=f.art[y][x];if(ch==='.'||!pal[ch])continue;const q=pal[ch];g.fillStyle='rgb('+q[0]+','+q[1]+','+q[2]+')';g.fillRect(x,y,1,1)}
@@ -167,9 +169,9 @@ DATA.furn.slice(0,24).forEach(f=>{const d=document.createElement('div');d.classN
 /* 3 墙纸地毯 30 种 */
 /* 2 下半：墙纸地毯（和第 3 格腾出来的位置换） */
 (function(){const lab=document.createElement('div');
- lab.style.cssText='width:100%;font-size:12.5px;color:#8c7f6b;margin:6px 0 6px';
+ lab.style.cssText='width:100%;text-align:center;font-size:12.5px;color:#8c7f6b;margin:8px 0 6px';
  lab.textContent='墙纸 / 地毯';put('t2',lab)})();
-DATA.surfaces.slice(0,16).forEach(s=>{const d=document.createElement('div');d.className='s';
+DATA.surfaces.slice(0,24).forEach(s=>{const d=document.createElement('div');d.className='s';
  const c=cv(16,16),g=c.getContext('2d');
  for(let y=0;y<16;y++)for(let x=0;x<16;x++){const q=PAL[s.tile[y][x]];if(!q)continue;g.fillStyle='rgb('+q[0]+','+q[1]+','+q[2]+')';g.fillRect(x,y,1,1)}
  d.appendChild(c);put('t2',d)});
@@ -178,7 +180,9 @@ DATA.surfaces.slice(0,16).forEach(s=>{const d=document.createElement('div');d.cl
 (function(){
  const rows=[
   [['主要按钮','tw-btn'],['次要按钮','tw-btn ghost'],['保存布置','tw-btn']],
-  [['🕐 跟随现实','tw-tab'],['🌧️ 雨','tw-tab on'],['10 ✨','ch-chip'],['50 ✨','ch-chip on']],
+  [['🕐 跟随现实','tw-tab'],['🌧️ 雨','tw-tab on'],['☀️ 晴','tw-tab']],
+  [['16×16','tw-tab on'],['32×32','tw-tab'],['64×64','tw-tab']],
+  [['10 ✨','ch-chip'],['50 ✨','ch-chip on'],['100 ✨','ch-chip']],
  ];
  rows.forEach(list=>{
   const r=document.createElement('div');r.style.cssText='width:100%;display:flex;flex-wrap:wrap;align-items:center;margin-bottom:16px';
@@ -193,7 +197,7 @@ DATA.surfaces.slice(0,16).forEach(s=>{const d=document.createElement('div');d.cl
 })();
 
 /* 4 小屋 */
-(function(){const S=11;const tmp=cv(16,16);_roomCv=tmp;drawRoom();
+(function(){const S=20;const tmp=cv(16,16);_roomCv=tmp;drawRoom();
  const big=cv(16*S,16*S),g=big.getContext('2d');g.imageSmoothingEnabled=false;
  g.drawImage(tmp,0,0,16,16,0,0,16*S,16*S);
  big.style.width=(16*S)+'px';big.style.height=(16*S)+'px';
@@ -202,7 +206,7 @@ DATA.surfaces.slice(0,16).forEach(s=>{const d=document.createElement('div');d.cl
 /* 5 天气 8 种 */
 ['sunny','cloudy','rain','snow','dawn','dusk','night'].forEach((k,i)=>{
  const N={sunny:'晴',cloudy:'多云',rain:'雨',snow:'雪',dawn:'清晨',dusk:'黄昏',night:'夜'};
- const d=document.createElement('div');d.className='w';const S=9;
+ const d=document.createElement('div');d.className='w';const S=12;
  const tmp=cv(16,16),tg=tmp.getContext('2d');drawWindow(tg,k);
  const wr=windowRect();
  const c=cv(wr.w+2,wr.h+2),g=c.getContext('2d');
@@ -220,8 +224,8 @@ DATA.surfaces.slice(0,16).forEach(s=>{const d=document.createElement('div');d.cl
   g.fillStyle='#e3d9c8';
   const st=n<=16?4:n<=32?8:16;
   for(let k=0;k<n;k+=st){g.fillRect(k,0,1,n);g.fillRect(0,k,n,1)}
-  const box=document.createElement('div');box.style.cssText='width:86px;height:86px;border:1px solid #efe7da;border-radius:12px;display:flex;align-items:center;justify-content:center;background:#fff;flex:none';
-  c.style.cssText='width:68px;height:68px;image-rendering:pixelated';
+  const box=document.createElement('div');box.style.cssText='width:104px;height:104px;border:1px solid #efe7da;border-radius:12px;display:flex;align-items:center;justify-content:center;background:#fff;flex:none';
+  c.style.cssText='width:84px;height:84px;image-rendering:pixelated';
   box.appendChild(c);d.appendChild(box);
   const t=document.createElement('div');t.style.cssText='margin-left:18px;font-size:20px;font-weight:700;color:#3b342c';
   t.textContent=label;d.appendChild(t);
