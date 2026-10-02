@@ -1,2 +1,7 @@
 build/
-wifi_secret.h__pycache__/
+wifi_secret.h
+__pycache__/
+*_secret.h
+*secret*.h
+*.ino
+secrets.h
