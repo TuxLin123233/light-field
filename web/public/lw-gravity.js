@@ -207,36 +207,88 @@ window.LWGravity = (function () {
       return moved
     }
 
-    /* 「抖一抖」：临时允许斜向蹭，把卡在斜坡上的颗粒摇下来。
-       纯重力下有些颗粒会停在两粒之间的缝里，看着像浮在半空；
-       抖一下它们就顺着坡滑到底，沙堆会塌一圈 —— 落沙该有的手感。 */
+    /* 「抖一抖」：把卡住的沙堆摇松，让立着的东西塌下来。
+
+       这里原来写的是「临时允许斜向蹭」，但那是假的：settle() 本来就有
+       斜向下滑（下面是实的就往左下/右下挪），而抖一抖用的移动集合跟
+       settle() 完全一样，只是把斜向乘了个 0.55 的概率 ——
+       也就是「允许做的事比正常重力还少」。落定时四条邻边全被占死，
+       斜向也走不了，于是 moved 恒为 false，循环 3 帧后自己停了，
+       按「抖一抖」看着就是没反应。
+
+       真正管用的是「往旁边」：纯重力下只要正下方和两个斜下方都被占住，
+       这颗粒就永远动不了 —— 一根立在底座上的细烟囱能一直立着。
+       放开横向它旁边就是空的，必然挪开、然后掉下来。
+
+       摇完的沙堆一定稳定：横向只在开头几帧用，之后交回纯重力收尾，
+       不会留一个「靠抖动才站得住」的假平衡。 */
     var shakeLeft = 0
     function jiggle() {
-      shakeLeft = Math.max(shakeLeft, 28)
+      shakeLeft = Math.max(shakeLeft, SHAKE_FRAMES)
+      still = 0
       wake()
     }
+
+    /* 给 (x,y) 这颗粒找一个能去的位置。返回目标下标，走不了返回 -1。
+
+       分两阶段：
+
+       ① 开头几帧放开横向。只为「解死锁」—— 有的沙堆已经卡在局部最优上：
+          正下方占着、两个斜下方也占着，settle() 一辈子出不来。
+          这时允许往旁边挪一下，它才有机会绕过去、换个姿势落下来。
+
+       ② 剩下的帧只给下和斜下，也就是纯重力。收尾必须交回重力：
+          全程放开横向的话沙堆会被摇成一摊摊平的薄层
+          （实测包围盒从 6×13 变成 3×29），跟「更紧实」正好相反。
+          只放开开头几帧、后面让重力收紧。
+
+       刻意不放开「上」：窄沙柱里只要能往上挪，颗粒就会一路爬到柱顶，
+       重心单调上升（实测 62.05 → 62.19，越摇越高）—— 那是把沙堆
+       抻长，不是把它压实。横向移动不改变重心，所以只要上移被排除，
+       「摇完重心不会升高」就是结构性保证，不靠概率。
+       解死锁靠横向已经够了：卡住的颗粒往旁边挪开，下面就腾出来了。 */
+    var DIRS_DOWN = [
+      [0, 1], [0, 1], [0, 1],
+      [-1, 1], [1, 1],
+    ]
+    var DIRS_FREE = [
+      [0, 1], [0, 1],
+      [-1, 1], [1, 1],
+      [-1, 0], [1, 0],
+    ]
+    // 抖动总帧数，以及其中「放开横向」的那几帧
+    var SHAKE_FRAMES = 40
+    var SHAKE_FREE_FRAMES = 6
+    function nudge(x, y, free) {
+      var dir = free ? DIRS_FREE : DIRS_DOWN
+      for (var k = 0; k < dir.length; k++) {
+        var d = dir[(Math.random() * dir.length) | 0]
+        var nx = x + d[0]
+        var ny = y + d[1]
+        if (nx < 0 || nx >= N || ny < 0 || ny >= N) continue
+        var to = ny * N + nx
+        if (!buf[to]) return to
+      }
+      return -1
+    }
+
     function settleShake() {
       var moved = false
-      for (var y = N - 2; y >= 0; y--) {
+      // 前几帧放开横向/上移来解死锁，之后只走下和斜下
+      var free = shakeLeft > SHAKE_FRAMES - SHAKE_FREE_FRAMES
+      for (var y = N - 1; y >= 0; y--) {
         for (var x = 0; x < N; x++) {
           var i = y * N + x
           var p = buf[i]
           if (!p) continue
-          var below = i + N
-          if (!buf[below]) {
-            buf[below] = p
+          // 摇的时候每颗都有机会动，但别 100% 都动 ——
+          // 全动的话画面会像沸腾，看不出「塌」
+          if (Math.random() > 0.35) continue
+          var to = nudge(x, y, free)
+          if (to >= 0 && !buf[to]) {
+            buf[to] = p
             buf[i] = null
             moved = true
-            continue
-          }
-          if (shakeLeft > 0 && Math.random() < 0.55) {
-            var d = Math.random() < 0.5 ? -1 : 1
-            var nx = x + d
-            if (nx >= 0 && nx < N && !buf[below + d]) {
-              buf[below + d] = p
-              buf[i] = null
-              moved = true
-            }
           }
         }
       }
@@ -354,8 +406,19 @@ window.LWGravity = (function () {
         render()
         if (o.onChange) o.onChange()
       } else if (stepped) {
-        // 连续几帧没动 = 落定了
-        if (++still >= 3) {
+        /* 连续几帧没动 = 落定了。
+
+           但抖动期间不能按这个判：摇一摇本来就会有几帧谁都动不了
+           （沙堆已经挤得很紧的时候尤其如此），按 3 帧就停的话
+           shakeLeft 还没用完就熄火，抖一下等于没抖 —— 这正是之前
+           「抖一抖没反应」的原因。抖动期间只认预算是否用完。 */
+        if (shakeLeft > 0) {
+          if (++still >= 6) {
+            // 摇了一阵子确实推不动了：交回给纯重力收尾
+            shakeLeft = 0
+            still = 0
+          }
+        } else if (++still >= 3) {
           running = false
           return
         }

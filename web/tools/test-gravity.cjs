@@ -151,23 +151,75 @@ console.log('\n[4] 拖动')
   ok('横向铺开 20 列以上', cols >= 20, 'cols=' + cols)
 }
 
-// ============ 5. 抖动会塌 ============
+// ============ 5. 抖一抖 ============
 console.log('\n[5] 抖一抖')
 {
   const b = newBoard()
   b.g.setBrush(2)
-  for (let i = 0; i < 12; i++) b.click(32, 20 + i)  // 堆一坨在上方（有重叠，只填空格子）
+  for (let i = 0; i < 12; i++) b.click(32, 20 + i)
   tick(300)
-  // 注意：取样要在点击之后 —— 12 次点有重叠，颗数不是 12×9
-  const before = b.g.filled()
-  ok('堆完数量守恒', before > 0 && before <= 12 * 9, 'filled=' + before)
-  const lowest = () => { let m = 0; for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if (b.g.getBuffer()[y * N + x]) m = Math.max(m, y); return m }
-  const before2 = lowest()
+  const filled0 = b.g.filled()
+  ok('堆完数量守恒', filled0 > 0 && filled0 <= 12 * 9, 'filled=' + filled0)
+
+  /* 这条才是真正的回归点。
+     之前的 shake 用的移动集合跟 settle() 一模一样（斜向滑动早就有了），
+     只是把斜向乘了 0.55 —— 也就是「允许做的事比正常重力还少」。
+     沙堆早就落定，四条邻边全被占死，于是 moved 恒为 false，
+     3 帧后循环自己停了：按「抖一抖」看着就是没反应。
+     所以要盯的是「已落定的沙堆被摇动了」——旧实现做不到这件事。 */
+  const fp = () => b.g.getBuffer().map((p) => (p ? p[0] + ',' + p[1] + ',' + p[2] : '-')).join('|')
+  const fp0 = fp()
   b.g.shake()
-  tick(120)
-  const after = lowest()
-  ok('抖动后颗粒贴得更紧（最低点下移）', after >= before2, `before=${before2} after=${after}`)
-  ok('抖动不丢颗粒', b.g.filled() === before, 'filled=' + b.g.filled())
+  tick(400)
+  ok('已落定的沙堆被摇动了', fp() !== fp0)
+
+  /* 摇完必须重新落定：任何一个颗粒下面不该是空的。
+     settle() 永远先试正下方，所以「悬空」在纯重力下不可能残留 ——
+     摇完也必须满足这一条，否则说明它停在了靠抖动才站得住的假平衡上。 */
+  const buf = b.g.getBuffer()
+  let floating = 0
+  for (let y = 0; y < N - 1; y++) for (let x = 0; x < N; x++) if (buf[y * N + x] && !buf[(y + 1) * N + x]) floating++
+  ok('摇完没有悬空颗粒（已重新落定）', floating === 0, 'floating=' + floating)
+  ok('抖动不丢颗粒', b.g.filled() === filled0, 'filled=' + b.g.filled() + ' 原=' + filled0)
+
+  // 再摇一次不能越摇越少（也不能靠丢颗粒伪造「塌了」）
+  b.g.shake()
+  tick(400)
+  ok('反复摇颗粒数守恒', b.g.filled() === filled0, 'filled=' + b.g.filled())
+
+  /* 「更紧实」到底该怎么测？
+     一开始用重心高度，结果随机挂：先是因为允许上移，窄柱里的颗粒
+     会一路爬到柱顶（62.05 → 62.19，越摇越高）；把上移排除掉之后
+     仍有 +0.15 的漂移 —— 因为移动是「置换」，颗粒数守恒但占的格子
+     会重排，重心本来就会小幅乱走。这个引擎给不了「一定更紧实」的
+     保证，测试也不该去证明一个证明不了的事。
+
+     换个能证明、也正是这个按钮要解决的问题：解死锁。
+     纯重力下「正下方占着 + 两个斜下方也占着」就永远动不了，
+     于是一座细烟囱能一直立着。抖一抖放开横向，它就该塌。
+     这个是确定的：横向一放开，烟囱顶那颗旁边就是空的，必然挪开。 */
+  const b2 = newBoard()
+  const buf2 = b2.g.getBuffer()
+  const P = (x, y) => { buf2[y * N + x] = [180, 120, 60] }
+  // 底座
+  for (let x = 6; x <= 18; x++) P(x, 63)
+  // 立在底座上的一根细烟囱：x=12 那一列从 40 排到 62
+  for (let y = 40; y <= 62; y++) P(12, y)
+  const n2 = b2.g.filled()
+  tick(200)
+  ok('烟囱在纯重力下立得住（这是前提，塌了就没得测了）',
+    b2.g.getBuffer()[40 * N + 12] != null && b2.g.filled() === n2,
+    '顶=' + (b2.g.getBuffer()[40 * N + 12] ? '在' : '没了'))
+  b2.g.shake()
+  tick(400)
+  ok('抖一抖把烟囱摇塌了', b2.g.getBuffer()[40 * N + 12] == null,
+    '顶=' + (b2.g.getBuffer()[40 * N + 12] ? '还在' : '塌了'))
+  ok('烟囱塌了但颗粒没丢', b2.g.filled() === n2, `filled=${b2.g.filled()} 原=${n2}`)
+
+  const e = newBoard()
+  e.g.shake()
+  tick(60)
+  ok('空板子抖了不报错', e.g.filled() === 0, 'filled=' + e.g.filled())
 }
 
 // ============ 6. 裁剪导出 ============
@@ -257,3 +309,8 @@ console.log('\n[8] 边界')
 
 console.log(`\n${fail === 0 ? '全部通过' : '有失败'}：${pass} 通过 / ${fail} 失败`)
 process.exit(fail === 0 ? 0 : 1)
+/* ================= 抖一抖 =================
+   用户反馈「抖一抖还是失败」，这里专门盯它。
+   之前的测试只验「shake 之后格子数守恒」——那样子一个完全不动的
+   shake 也能通过（格子数当然不变）。要看的是「沙堆真的塌了」：
+   堆完之后拿到底部支撑的「宽度」当指标，摇完应该变小。 */

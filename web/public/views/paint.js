@@ -2240,7 +2240,7 @@ color: var(--text-muted);
                    aria-label="每次撒多少">
             <span class="start-spray-num" id="startGravityNum">2</span>
           </div>
-          <p class="start-note">在画布上点一下或拖着划，颗粒会一颗颗落到下面，堆出沙坡。堆稳了可以抖一抖，让它塌得更紧实。</p>
+          <p class="start-note">在画布上点一下或拖着划，颗粒会一颗颗落到下面，堆出沙坡。堆稳了可以抖一抖，把卡住、立着的部分摇塌。</p>
         </div>
 
         <div class="start-sec" data-for="pixel">
@@ -2419,7 +2419,7 @@ color: var(--text-muted);
         <button class="gtool" type="button" id="gravityUndo" title="撤销">
           <span class="gtool-ico">↩️</span><span class="gtool-tx">撤销</span>
         </button>
-        <button class="gtool" type="button" id="gravityShake" title="抖一抖：让沙堆塌得更紧实">
+        <button class="gtool" type="button" id="gravityShake" title="抖一抖：把卡住、立着的沙摇塌">
           <span class="gtool-ico">🫂</span><span class="gtool-tx">抖一抖</span>
         </button>
         <button class="gtool" type="button" id="gravityClear" title="清空">
