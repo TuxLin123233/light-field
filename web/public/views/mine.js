@@ -984,9 +984,15 @@ export default {
         const router = window.__lwRouter
         const cur = router && router.currentRoute ? router.currentRoute.value.path : location.pathname
         if (home && router && cur !== home) {
+          /* ★ 不能在这里 setTimeout 之后再跑。
+             这里注册的定时器属于**当前视图**，而路由一切换，
+             withAutoCleanup 就会把旧视图的定时器全清掉 ——
+             那个 setTimeout 根本不会触发，表现就是
+             「页面跳过去了，引导没出来」。
+             改成把要跑的引导预约给 lw-guides，
+             由 app.js 在新页面挂载完成后触发。 */
+          G.request(key)
           router.push(home)
-          // 等页面渲染完再跑，否则高亮不到目标元素
-          setTimeout(() => G.run(key), 700)
         } else {
           G.run(key)
         }
@@ -1875,14 +1881,10 @@ export default {
        「我的作品」是个 <router-link to="/mine/works">，自带跳转。
        所以那段代码从来没生效过（$() 返回 null，&& 直接短路）。
        现在主页也不显示那张卡片了，整段一并删掉。 */
-    /* 底部那张「送过光尘的」卡片已经删了，所以这个入口改成直接跳到
-       /mine/gifted 过滤页 —— 以前是「加载完再滚到卡片」，卡片没了会直接报错。 */
-    $('lnkLikedBtn') &&
-      $('lnkLikedBtn').addEventListener('click', () => {
-        if (window.sfx) window.sfx('tap')
-        if (window.__lwRouter) window.__lwRouter.push('/mine/gifted')
-        else location.hash = '#/mine/gifted'
-      })
+    /* 「送出的」入口和「我的作品」一样，是个 <router-link to="/mine/gifted">，
+       自带跳转，不需要额外绑点击。
+       （这里原本还有一段 $('lnkLikedBtn') 的监听，
+        那个 id 页面上同样不存在 —— 又是一段从没生效过的死代码，一并删了。） */
 
     /* ---------- 送出的光尘数量 ---------- */
     $('lnkLiked').textContent = window.dust ? window.dust.giftedCount() : 0

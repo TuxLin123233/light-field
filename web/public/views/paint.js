@@ -4784,6 +4784,10 @@ color: var(--text-muted);
         return `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
       }
 
+      /* ⚠️ 这个元素在当前模板里不存在。
+         下面的用法都有 `if (!recordList) return` 兜着，所以不会报错，
+         但这块「撤销记录列表」的界面是没有的 —— 代码留着是为了
+         以后要把记录列表做出来时能直接接上。 */
       const recordList = document.getElementById('recordList')
       const moreBtn = document.getElementById('moreBtn')
 

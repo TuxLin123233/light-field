@@ -254,6 +254,36 @@
 
   var running = null
 
+  /* ================= 跨页预约 =================
+     ★ 为什么需要这个：
+     想「跳到某一页再跑那一页的引导」时，最自然的写法是
+       router.push(home); setTimeout(() => run(key), 700)
+     但这行代码是在**当前视图**里注册的 setTimeout，
+     而 app.js 的 withAutoCleanup 会在路由切换时把旧视图注册的
+     定时器全部清掉 —— 于是那个 setTimeout 根本不会触发，
+     表现就是「页面跳过去了，引导没出来」。
+
+     正解不是绕开清理，而是**换个地方记**：
+     把要跑的引导先记下来，等路由切换完成之后由 app.js 触发。
+     这样既不受清理影响，时机也更准（是「新页面渲染完」而不是「猜 700ms」）。 */
+  var pendingKey = null
+
+  function request(key) {
+    if (!GUIDES[key]) return false
+    pendingKey = key
+    return true
+  }
+
+  /** app.js 在每次路由切换后调用；有预约就把它跑掉 */
+  function flushPending() {
+    if (!pendingKey) return false
+    var k = pendingKey
+    pendingKey = null
+    // 目标页面这时还没渲染完（afterEach 早于 DOM 更新），让一帧
+    setTimeout(function () { run(k) }, 60)
+    return true
+  }
+
   function run(key, opts) {
     var g = GUIDES[key]
     if (!g) return
@@ -266,7 +296,21 @@
       return !!el
     })
     if (!steps.length) {
-      // 这一步都没有就别弹空框
+      /* ★ 以前这里是静默 return ——
+         用户点了引导、页面也没跳错，就是「什么都没发生」，
+         完全不知道是为什么。现在给一句话。
+         最常见的原因是：引导里的元素在这台设备上不存在
+         （比如某个模块没加载、或页面结构变了）。 */
+      try {
+        /* floatText 的第一个参数是**锚点元素**，不是文案 ——
+           传字符串进去它会去读 .getBoundingClientRect 然后抛错。 */
+        if (window.LWDialog && window.LWDialog.floatText) {
+          window.LWDialog.floatText(document.body, '这一步在本页没有对应内容')
+        } else if (window.toast) {
+          window.toast('这一步在本页没有对应内容')
+        }
+      } catch (e) {}
+      running = null
       return
     }
     window.LWDeco.guide(steps, {
@@ -321,6 +365,8 @@
 
   window.LWGuides = {
     run: run,
+    request: request,
+    flushPending: flushPending,
     list: list,
     seen: seen,
     markSeen: markSeen,

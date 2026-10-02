@@ -1940,11 +1940,16 @@ export default {
               (g.seen ? '已看过' : g.steps + ' 步') + '</span>'
             b.addEventListener('click', () => {
               if (window.sfx) window.sfx('open')
-              // 引导要在目标页面上才能高亮到对应元素，所以先跳过去再跑
+              /* 引导要在目标页面上才能高亮到对应元素，所以先跳过去再跑。
+                 ★ 但**不能**在这里 setTimeout 之后跑：
+                 这里注册的定时器属于设置页这个视图，路由一切换，
+                 withAutoCleanup 就会把它清掉 —— 结果就是
+                 「页面跳过去了，引导没出来」。改成预约给 lw-guides。 */
               const home = { paint: '/paint', gallery: '/gallery', town: '/town', mine: '/mine', chat: '/chat' }[g.key]
               if (home && window.__lwRouter && window.__lwRouter.currentRoute.value.path !== home) {
+                if (G.request) G.request(g.key)
+                else G.run(g.key)
                 window.__lwRouter.push(home)
-                setTimeout(() => G.run(g.key), 700)
               } else {
                 G.run(g.key)
               }
