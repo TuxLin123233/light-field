@@ -79,7 +79,7 @@ body { font-family: "HarmonyOS Sans SC", -apple-system, "PingFang SC", "Microsof
 .pal b { font-size: 13px; color: #3b342c; font-weight: 700; margin-right: 8px; }
 .pal .sw { display: inline-block; width: 23px; height: 23px; border-radius: 5px; margin-right: 3px;
   vertical-align: middle; border: 1px solid rgba(0,0,0,.06); }
-.badges { display: flex; flex-wrap: wrap; }
+.badges { display: flex; flex-wrap: wrap; padding-bottom: 8px; }
 .badges > * { margin: 0 6px 6px 0; transform: scale(.92); transform-origin: left center; }
 .roomwrap { margin-top: 2px; }
 .roomwrap canvas { image-rendering: pixelated; display: block; border-radius: 10px; }
@@ -88,6 +88,7 @@ body { font-family: "HarmonyOS Sans SC", -apple-system, "PingFang SC", "Microsof
 .close p { color: #c5baa7; font-size: 17px; margin: 12px 0 0; }
 .close .u { display: inline-block; margin-top: 20px; color: #96b9ff; border: 2px solid #5b8def;
   border-radius: 999px; padding: 9px 24px; font-size: 17px; }
+.close .by { margin-top: 28px; font-size: 15px; color: #8c7f6b; letter-spacing: 1.5px; }
 </style></head>
 <body><div class="grid">
 
@@ -135,6 +136,7 @@ body { font-family: "HarmonyOS Sans SC", -apple-system, "PingFang SC", "Microsof
 <h3>完全免费<br>没有广告</h3>
 <p>不用邮箱，不用手机号<br>浏览器打开就能画</p>
 <span class="u">light-field.pages.dev</span>
+<div class="by">作者：Lin Sifan</div>
 </div></div>
 
 </div>
@@ -266,10 +268,10 @@ DATA.surfaces.slice(0,24).forEach(s=>{const d=document.createElement('div');d.cl
 /* 8 卡片 —— 3 张作品卡 + 4 张数据卡 + 徽章行 */
 (function(){
  const row=document.createElement('div');
- row.style.cssText='width:100%;display:flex;justify-content:center;align-items:flex-start;margin-bottom:16px';
+ row.style.cssText='width:100%;display:flex;justify-content:center;align-items:flex-start;margin-bottom:13px';
  [['爱心',16,11],['小树',16,20],['蘑菇',16,33]].forEach(([nm,sz,av])=>{
   const card=document.createElement('div');card.className='card';
-  card.style.cssText='width:118px;margin:0 7px;flex:none';
+  card.style.cssText='width:106px;margin:0 6px;flex:none';
   const c=cv(16,16);px16(c,DATA.avatars[av]);
   const im=document.createElement('img');im.className='art';im.src=c.toDataURL();im.alt=nm;card.appendChild(im);
   const meta=document.createElement('div');meta.className='card-meta';
@@ -285,14 +287,14 @@ DATA.surfaces.slice(0,24).forEach(s=>{const d=document.createElement('div');d.cl
  put('t8',row);
  // 数据卡 4 张
  const row2=document.createElement('div');
- row2.style.cssText='width:100%;display:flex;justify-content:center;margin-bottom:16px';
+ row2.style.cssText='width:100%;display:flex;justify-content:center;margin-bottom:14px';
  [['发布作品','4'],['收到的光尘','46'],['创作天数','7'],['成就','42']].forEach(([l,v])=>{
   const d=document.createElement('div');d.className='in-card';
-  d.style.cssText='width:106px;margin:0 6px;padding:14px 12px;flex:none';
+  d.style.cssText='width:100px;margin:0 5px;padding:11px 10px;flex:none';
   const t=document.createElement('div');t.className='card-title';t.textContent=l;
   t.style.fontSize='13px';d.appendChild(t);
   const k=document.createElement('div');k.className='in-num';k.textContent=v;
-  k.style.fontSize='30px';d.appendChild(k);
+  k.style.fontSize='26px';d.appendChild(k);
   row2.appendChild(d)});
  put('t8',row2);
 })();
