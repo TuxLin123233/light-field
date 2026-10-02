@@ -563,7 +563,18 @@ html[data-theme='dark'] .lwdeco-grid {
     if (!steps || !steps.length) return
     var o = opts || {}
 
-    // 上一次没关干净就先收掉，避免两层浮层叠着
+    /* ★ 上一次没关干净要先**走完整的关闭流程**，不能只删元素。
+       只 removeChild 的话：
+         · 它挂在 document 上的 click 监听（capture）不会被摘掉
+         · 它自己的定时器还在跑
+       结果每弹一次就多留一个野监听。跨页总引导连着弹七八次之后，
+       点一下「下一站」会同时触发好几个旧浮层的监听，
+       每个都调自己的 onDone —— 引导就跳到别的站去了，看起来就是「断开」。
+       所以这里存一个全局的清理函数，新建之前先把它执行掉。 */
+    try {
+      if (window.__lwGuideCleanup) window.__lwGuideCleanup()
+      window.__lwGuideCleanup = null
+    } catch (e) {}
     var old = document.getElementById('lwdecoGuide')
     if (old && old.parentNode) old.parentNode.removeChild(old)
 
@@ -609,21 +620,37 @@ html[data-theme='dark'] .lwdeco-grid {
     function onDocClick(e) {
       if (closed) return
       if (bubble.contains(e.target)) return
-      close()
+      close('outside')
     }
 
-    function close() {
+    function close(reason) {
       if (closed) return
       closed = true
       if (pendingTimer) clearTimeout(pendingTimer)
       document.removeEventListener('click', onDocClick, true)
+      if (window.__lwGuideCleanup === hardCleanup) window.__lwGuideCleanup = null
       clearHL()
       wrap.classList.remove('on')
       setTimeout(function () {
         if (wrap.parentNode) wrap.parentNode.removeChild(wrap)
       }, 220)
-      if (o.onDone) o.onDone()
+      /* reason 让调用方能分清「用户点完了」和「用户退出了」——
+         两者都走 onDone，但后续动作完全相反：
+         一个是去下一站，一个是收工。 */
+      if (o.onDone) o.onDone(reason || 'next')
     }
+
+    /* 不走 onDone 的强制清理：只拆自己，不通知外部。
+       被新浮层顶掉时用这个，避免旧浮层的 onDone 把引导跳乱。 */
+    function hardCleanup() {
+      closed = true
+      if (pendingTimer) clearTimeout(pendingTimer)
+      document.removeEventListener('click', onDocClick, true)
+      clearHL()
+      if (wrap.parentNode) wrap.parentNode.removeChild(wrap)
+      if (window.__lwGuideCleanup === hardCleanup) window.__lwGuideCleanup = null
+    }
+    window.__lwGuideCleanup = hardCleanup
 
     function next() {
       if (closed) return
@@ -716,7 +743,7 @@ html[data-theme='dark'] .lwdeco-grid {
     btnSkip.addEventListener('click', function (e) {
       e.stopPropagation()
       e.preventDefault()
-      close()
+      close('skip')
     })
     /* 点气泡以外的地方也跳过。
        浮层本身不能吃 pointer-events（否则挡住画布），所以不挂在浮层上，

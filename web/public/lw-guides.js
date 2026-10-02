@@ -358,12 +358,25 @@
 
   var pendingStop = -1
 
-  function runStop(i) {
+  function runStop(i, tries) {
     if (!window.LWDeco || !window.LWDeco.guide) return endTour()
     var st = IMMERSIVE[i]
+    if (!st) return endTour()
     var el = typeof st.el === 'function' ? st.el() : document.querySelector(st.el)
-    /* 这一站的目标在当前页面上找不到就跳过，不要让整趟断掉 */
-    if (!el) return showStop(i + 1)
+    if (!el) {
+      /* ★ 目标还没出现，先**重试**几次再跳过。
+         跨页之后是等 120ms 就跑，但有些页面要等接口回来才把元素渲染出来
+         （社区要拉作品、信箱要拉信件）——直接跳过的话，用户看到的就是
+         「上一站讲完，下一站没了」，也就是「引导断开」。
+         重试 6 次（约 1.8 秒）还找不到，才认定这一站在本设备上确实没有。 */
+      var t = tries || 0
+      if (t < 6) {
+        tourAt = i
+        setTimeout(function () { runStop(i, t + 1) }, [120, 200, 300, 400, 500, 600][t] || 600)
+        return
+      }
+      return showStop(i + 1)
+    }
 
     tourAt = i
     window.LWDeco.guide([st], {
@@ -372,9 +385,16 @@
       nextText: i === 0 ? '开始逛' : '下一站',
       doneText: '逛完了',
       onPrev: () => showStop(i - 1),
-      onDone: () => {
-        // 用户按了「下一站」或右上角跳过
-        if (tourAt === i) showStop(i + 1)
+      /* onDone 的 reason 是 lw-deco 传过来的关闭原因：
+           next     点完了这一步（含最后一步的「逛完了」）
+           skip     点了「退出」
+           outside  点了气泡外面
+         只有 next 才继续走；另外两种都算用户想收工 ——
+         以前不区分，点「退出」反而会跳到下一站，等于退不出去。 */
+      onDone: (reason) => {
+        if (tourAt !== i) return
+        if (reason && reason !== 'next') return endTour()
+        showStop(i + 1)
       },
     })
   }
@@ -382,6 +402,10 @@
   function startImmersive(from) {
     tourAt = -1
     pendingStop = -1
+    /* 上一趟如果没收干净（比如用户中途刷新）先兜一下 */
+    try {
+      if (window.__lwGuideCleanup) window.__lwGuideCleanup()
+    } catch (e) {}
     showStop(typeof from === 'number' ? from : 0)
   }
 
@@ -449,8 +473,10 @@
     }
     window.LWDeco.guide(steps, {
       doneText: o.doneText || '知道了',
-      onDone: function () {
+      onDone: function (reason) {
         running = null
+        // 点了退出/点外面就不算看过，下次进来还会自动弹
+        if (reason && reason !== 'next' && reason !== 'outside') return
         markSeen(key)
         if (o.onDone) o.onDone()
       },
