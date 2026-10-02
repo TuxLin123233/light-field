@@ -284,11 +284,28 @@ export default {
       render()
     }
 
-    function achHtml() {
+    /* 成就墙。
+
+         服务端 view() 返回的是**全部**成就（153 条）外加 got 标记，
+         列表这里只渲染 got 为真的 —— 看别人的主页时，他没拿到的成就
+         一条都不该露出来。
+
+         但光过滤列表还不够，有两处会顺带把「还差多少」抖出来：
+           · 页头的「12/153」—— 分母就是没拿到的数量
+           · 全部分类页签—— 点进去是个空列表，等于在预告这里有什么
+         所以看别人时这两处也一起收掉；看自己时照旧留着当待办清单。 */
+    function achHtml(onlyGot) {
       if (!ach || !ach.ok || !Array.isArray(ach.items)) return ''
+      const all = ach.items || []
+      const got = all.filter((a) => a.got)
+      // 看别人时，一个没解锁的分类页签就没必要出现
       const cats = [{ id: 'all', name: '全部' }].concat(ach.categories || [])
-      const got = (ach.items || []).filter((a) => a.got)
-      const list = (ach.items || []).filter((a) => (achCat === 'all' ? a.got : (a.cat === achCat && a.got)))
+      const shown = onlyGot
+        ? cats.filter((c) => c.id === 'all' || got.some((a) => a.cat === c.id))
+        : cats
+      // 选了分类、但那个分类里其实没东西（页签刚从别人页切过来时可能发生）
+      if (onlyGot && achCat !== 'all' && !shown.some((c) => c.id === achCat)) achCat = 'all'
+      const list = all.filter((a) => (achCat === 'all' ? a.got : (a.cat === achCat && a.got)))
       const pct = ach.total ? Math.round((got.length / ach.total) * 100) : 0
       const rows = list
         .map(
@@ -304,7 +321,7 @@ export default {
       return (
         '<div class="u-ach-bar"><i style="width:' + pct + '%"></i></div>' +
         '<div class="u-cats">' +
-        cats
+        shown
           .map(
             (c) =>
               '<button class="u-cat' + (c.id === achCat ? ' on' : '') +
@@ -312,7 +329,7 @@ export default {
           )
           .join('') +
         '</div>' +
-        '<div class="u-ach-list">' + (rows || '<div class="u-empty">这个分类下还没有解锁的成就。</div>') + '</div>'
+        '<div class="u-ach-list">' + (rows || '<div class="u-empty">这里还没有解锁的成就。</div>') + '</div>'
       )
     }
 
@@ -423,9 +440,13 @@ export default {
             ' 件）</button>'
           : '') +
         '<div class="u-sec">🏅 成就<span>' +
-        (ach && ach.ok ? (ach.unlocked || 0) + '/' + (ach.total || 0) : '—') +
+        /* 看别人时只报拿到了几个：写成「12/153」等于把人家还差多少也说了。
+           看自己才需要分母 —— 那是我该去追的清单。 */
+        (ach && ach.ok
+          ? (isMe ? (ach.unlocked || 0) + '/' + (ach.total || 0) : String(ach.unlocked || 0))
+          : '—') +
         '</span></div>' +
-        achHtml()
+        achHtml(!isMe)
 
       // 头像
       const cv = $('uAvCanvas')
