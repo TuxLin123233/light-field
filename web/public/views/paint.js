@@ -310,6 +310,26 @@ color: var(--text-muted);
       body.gravity-on #miniWrap,
       body.gravity-on .anim-wrap { display: none; }
 
+      /* 喷漆/重力模式下把「像素画专属」的操作藏掉，但保留下载与上传。
+
+         .actions 那一行在喷漆模式下仍然要留着（⬇️下载 和 上传 对这三个方向都有用），
+         可它开头的 ↩️ 和 🗑️ 改的是像素画的 pixels 数组，
+         喷漆画布用的是 lw-spray.js / lw-gravity.js 里另外两套缓冲 ——
+         点这两个键画面上不会有任何变化，看着就像按钮坏了；
+         而且它们和 .spray-bar / .gravity-bar 里的 ↩️ 🗑️ 长得一模一样，
+         同一个动作在屏幕上并排出现两次。
+
+         像素相机（只对像素画有意义）和镜像也一样：镜像在喷漆有自己的
+         一份（#sprayMirror），重力模式压根没有镜像这回事。 */
+      body.spray-on #undoBtn,
+      body.spray-on #clearBtn,
+      body.spray-on #imgBtn,
+      body.spray-on #mirrorBtn,
+      body.gravity-on #undoBtn,
+      body.gravity-on #clearBtn,
+      body.gravity-on #imgBtn,
+      body.gravity-on #mirrorBtn { display: none; }
+
       /* 喷漆模式下把像素画专属的行藏起来 */
       body.spray-on .size-row,
       body.spray-on .tools,
