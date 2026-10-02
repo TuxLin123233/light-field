@@ -274,6 +274,20 @@ export default {
       <section class="group">
         <div class="ver red">
           <div class="ver-body">
+            <div class="ver-title"><span class="ver-tag">v1.5.4</span> 在别人的主页上能看见性别和生日了 <span class="ver-date">2026-10</span></div>
+            <ul class="ver-list">
+              <li><span class="li-tag tag-fix">修复</span><b>性别和生日填了没地方看</b>。上一版只把这两样显示在「个人信息」里，也就是<b>只有你自己看得见</b>；画师主页压根没渲染过它们，所以别人的性别在哪儿都找不到。现在画师主页的名字下面会多一行标签：<code>🙋‍♀️ 女生　🎂 3 月 15 日</code>，<b>没填就整行不显示</b>，不占地方</li>
+              <li><span class="li-tag tag-new">新功能</span>生日那天，对方主页的名字旁边会挂一个 🎂，标签也会变成高亮的「🎂 今天生日！」</li>
+              <li><span class="li-tag tag-ui">界面</span><b>和好友聊天时，点上面的名字就能进他的主页</b>。以前想看看跟你说话的人是谁，只有「社区 → 翻到他的作品 → 点作者」这一条路，绕得有点远</li>
+              <li><span class="li-tag tag-fix">修复</span>顺手加固了一处：生日的格式只认服务端给的 <code>MM-DD</code>，格式不对就整条不显示，免得画出「NaN 月 undefined 日」这种东西</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="group">
+        <div class="ver red">
+          <div class="ver-body">
             <div class="ver-title"><span class="ver-tag">v1.5.3</span> 补上「设置 / 更新日志 / 常见问题」的返回键 <span class="ver-date">2026-10</span></div>
             <ul class="ver-list">
               <li><span class="li-tag tag-fix">修复</span><b>设置页进去就出不来</b>。这三个页面既不在底部导航里，自己又没有返回按钮 —— 进去之后只能按浏览器的后退键。上一版把「常见问题」和「更新日志」右上角的齿轮按钮删掉之后，这两个页面连那条退路也没了。现在都补上了：设置页左上角「← 我的」，更新日志和常见问题「← 设置」</li>

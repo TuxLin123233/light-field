@@ -105,6 +105,9 @@ export default {
       .ch-icon-btn[hidden] { display: none; }
       .ch-bar-main { flex: 1; min-width: 0; }
       .ch-title { font-size: 17px; font-weight: 800; color: var(--text); }
+      /* 对话里的名字可以点：去对方主页看资料（性别、生日、作品墙都那儿） */
+      .ch-title.link { cursor: pointer; text-decoration: underline; text-decoration-style: dotted;
+        text-underline-offset: 4px; text-decoration-thickness: 1px; }
       .ch-sub { font-size: 11px; color: var(--text-faint); }
       .ch-note {
         font-size: 11px; color: var(--text-faint); background: var(--surface-2);
@@ -667,6 +670,9 @@ export default {
       const delBtn = $('chDel')
       if (delBtn) delBtn.hidden = true
       $('chTitle').textContent = '💬 好友'
+      $('chTitle').classList.remove('link')
+      $('chTitle').onclick = null
+      $('chTitle').removeAttribute('title')
       $('chNote').hidden = false
       $('chNote').innerHTML =
         '这里是你的<b>好友</b>。两个人要<b>互相加好友</b>才能聊天；' +
@@ -915,9 +921,19 @@ export default {
       const delBtn = $('chDel')
       if (delBtn) delBtn.hidden = false
       $('chTitle').textContent = '💬 ' + peerName
+      /* 名字点一下去对方主页 —— 那里才有性别、生日、作品墙这些资料。
+         以前只有「社区 → 某幅作品 → 点作者」这一条路能进主页。 */
+      const titleEl = $('chTitle')
+      titleEl.classList.add('link')
+      titleEl.title = '看看 ' + peerName + ' 的主页'
+      titleEl.onclick = () => {
+        const to = '/u?uid=' + encodeURIComponent(d.with.uid)
+        if (window.__lwRouter) window.__lwRouter.push(to)
+        else location.href = to
+      }
       $('chNote').hidden = false
       $('chNote').innerHTML =
-        '和好友 <b>' + esc(peerName) + '</b> 聊天。' +
+        '和好友 <b>' + esc(peerName) + '</b> 聊天。点上面的名字可以看他的主页。' +
         '<b>非实时</b>：对方发了新消息要自己点<b>刷新</b>。'
 
       const items = d.items || []

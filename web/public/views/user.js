@@ -59,6 +59,18 @@ export default {
       .u-id { flex: 1; min-width: 0; }
       .u-name { font-size: 17px; font-weight: 800; color: var(--text); }
       .u-joined { font-size: 11px; color: var(--text-faint); margin-top: 2px; }
+      /* 性别 / 生日标签。填了才显示 —— 没填就不占地方 */
+      .u-tags { display: flex; flex-wrap: wrap; margin-top: 6px; }
+      .u-tag {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--text-muted);
+        background: var(--surface-2);
+        border-radius: 999px;
+        padding: 3px 9px;
+        margin: 0 6px 5px 0;
+      }
+      .u-tag.today { background: #fff3d6; color: #b8860b; }
       .u-bio {
         font-size: 12px; color: var(--text-muted); line-height: 1.6; margin-top: 6px;
         white-space: pre-wrap; word-break: break-word;
@@ -321,12 +333,33 @@ export default {
         ? '加入于 ' + new Date(profile.createdAt).toLocaleDateString('zh-CN')
         : ''
 
+      /* 性别和生日都是「填了才公开」，没填就整行不显示。
+         生日只存月-日、不含年份，所以露出来也不涉及年龄。 */
+      const GENDER_LABEL = { male: '🙋 男生', female: '🙋‍♀️ 女生', secret: '🕶️ 保密' }
+      const tags = []
+      if (profile.gender && GENDER_LABEL[profile.gender]) tags.push(GENDER_LABEL[profile.gender])
+      // 只认服务端给的 MM-DD。格式不对就整条不显示，别画出「NaN 月 undefined 日」
+      const bd = String(profile.birthday || '')
+      if (/^\d{2}-\d{2}$/.test(bd)) {
+        tags.push(
+          profile.todayBirthday
+            ? '🎂 今天生日！'
+            : '🎂 ' + Number(bd.slice(0, 2)) + ' 月 ' + Number(bd.slice(3, 5)) + ' 日'
+        )
+      }
+      const tagHtml = tags.length
+        ? '<div class="u-tags">' +
+          tags.map((x) => '<span class="u-tag' + (x.indexOf('今天生日') >= 0 ? ' today' : '') + '">' + x + '</span>').join('') +
+          '</div>'
+        : ''
+
       $('uBody').innerHTML =
         '<div class="u-hero">' +
         '<div class="u-av" id="uAv">' + avBox + '</div>' +
         '<div class="u-id">' +
-        '<div class="u-name">' + esc(profile.username) + '</div>' +
+        '<div class="u-name">' + esc(profile.username) + (profile.todayBirthday ? ' 🎂' : '') + '</div>' +
         (joined ? '<div class="u-joined">' + esc(joined) + '</div>' : '') +
+        tagHtml +
         (profile.bio ? '<div class="u-bio">' + esc(profile.bio) + '</div>' : '') +
         (f.friend ? '<div class="u-friend-tip">🤝 你们是好友</div>' : '') +
         '</div>' +
