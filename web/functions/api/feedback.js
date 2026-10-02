@@ -101,7 +101,10 @@ async function whoOf(request, env) {
   if (!/^Bearer\s+/i.test(auth.trim())) return null
   try {
     const { readToken } = await import('./_auth.js')
-    const t = readToken(env, '', auth)
+    // await 不能少：readToken 是 async，少了的话 t 是个 Promise，
+    // t.uid 恒为 undefined，于是所有登录用户的 uid 全丢 ——
+    // 反馈全都记成游客，后台按 uid 找人时一条都对不上
+    const t = await readToken(env, '', auth)
     if (!t || !t.uid) return null
     return { uid: t.uid, username: String(t.username || '') }
   } catch (e) {
@@ -210,7 +213,13 @@ export async function onRequestPost(context) {
   } catch {}
 
   const who = await whoOf(request, env)
-  const uname = String((body && body.name) || '').trim().slice(0, 20) || (who && who.username) || ''
+  /* 名字的取值顺序：登录了就用自己的，不吃前端传的。
+     原来是 body.name 排前面，那样任何登录用户改一下请求体就能把
+     name 写成「管理员本人」—— 后台看反馈列表时显示的就是这个名字，
+     等于随便就能冒充。uid 本来就不受影响（只从令牌取），但显示层
+     被伪造就足以骗到人工判断。 */
+  const uname =
+    (who && who.username) || String((body && body.name) || '').trim().slice(0, 20) || ''
 
   const pending = await readList(env.LIGHTFIELD_KV, PENDING_KEY)
   // 同一个人连着提一样的，别刷出一堆重复条目
