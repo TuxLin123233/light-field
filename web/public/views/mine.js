@@ -215,6 +215,83 @@ export default {
       }
       .best-work b { color: var(--text); }
 
+      /* ---------- 新手引导（我的页里的入口） ---------- */
+      .guide-start {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        margin-top: 4px;
+        padding: 12px;
+        border: 1px solid var(--accent);
+        border-radius: 12px;
+        background: var(--accent-soft, rgba(91, 141, 239, .1));
+        color: var(--text);
+        font-family: inherit;
+        text-align: left;
+        cursor: pointer;
+      }
+      .guide-start:active { transform: scale(.98); }
+      .guide-start .gs-ico { font-size: 22px; line-height: 1; flex: none; }
+      .guide-start .gs-tx { flex: 1; min-width: 0; }
+      .guide-start .gs-tx b { display: block; font-size: 14px; }
+      .guide-start .gs-tx i {
+        display: block;
+        margin-top: 2px;
+        font-style: normal;
+        font-size: 11.5px;
+        color: var(--text-muted);
+        line-height: 1.6;
+      }
+      .guide-start .gs-go { color: var(--accent); font-weight: 800; flex: none; }
+
+      .guide-mini {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 7px;
+        margin-top: 10px;
+      }
+      .guide-mini button {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        padding: 6px 11px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: var(--surface-2);
+        color: var(--text-muted);
+        font-family: inherit;
+        font-size: 12px;
+        cursor: pointer;
+      }
+      .guide-mini button:active { transform: scale(.94); }
+      .guide-mini button .gm-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--border-strong, #ccc);
+        flex: none;
+      }
+      .guide-mini button.done .gm-dot { background: var(--ok, #4caf7d); }
+      .guide-mini button.done { color: var(--text-faint); }
+      .guide-foot {
+        margin-top: 9px;
+        font-size: 11.5px;
+        color: var(--text-faint);
+        line-height: 1.7;
+      }
+      .guide-foot button {
+        padding: 3px 10px;
+        margin-left: 6px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: none;
+        color: var(--text-faint);
+        font-family: inherit;
+        font-size: 11.5px;
+        cursor: pointer;
+      }
+
       /* ---------- 我的作品 ---------- */
       .mine-grid {
         display: grid;
@@ -612,6 +689,21 @@ export default {
       </div>
     </div>
 
+    <!-- 新手引导：从「我的」直接进，不用绕去设置页 -->
+    <div class="m-card" id="guideCard">
+      <div class="m-card-title">🧭 新手引导<span class="m-tip" id="guideTip"></span></div>
+      <button class="guide-start" id="guideStart" type="button">
+        <span class="gs-ico">✨</span>
+        <span class="gs-tx">
+          <b>从头逛一遍</b>
+          <i>六站走下来大概一分钟，看完就知道都能干啥</i>
+        </span>
+        <span class="gs-go">→</span>
+      </button>
+      <div class="guide-mini" id="guideMini"></div>
+      <div class="guide-foot" id="guideFoot"></div>
+    </div>
+
     <!-- 我的作品：页内完整列表，只显示自己的 -->
     <div class="m-card" id="mineCard">
       <div class="m-card-title">🎨 我的画<span class="m-tip" id="mineTip"></span><button class="lw-refresh" id="mineRefresh" type="button" data-label="刷新"></button></div>
@@ -709,7 +801,7 @@ export default {
       : path.endsWith('/gifted')
         ? 'gifted'
         : 'home'
-    const CARDS = ['signCard', 'statCard', 'linkCard', 'mineCard', 'likedCard']
+    const CARDS = ['signCard', 'statCard', 'linkCard', 'guideCard', 'mineCard', 'likedCard']
     function applyMode() {
       const back = $('mineBack')
       if (MODE === 'home') {
@@ -863,6 +955,89 @@ export default {
         }
       })
     }
+
+    /* ---------- 新手引导入口 ----------
+       引导平时是「第一次进某个页面自动弹一次」，错过了就没入口了。
+       这里给一个随时能进来的地方：点哪一条，先跳到那一页再把引导跑起来
+       —— 引导要高亮页面上的元素，不在那一页上是跑不了的。 */
+    ;(function () {
+      const host = document.getElementById('guideMini')
+      const foot = document.getElementById('guideFoot')
+      const startBtn = document.getElementById('guideStart')
+      const tip = document.getElementById('guideTip')
+      const G = window.LWGuides
+      if (!host) return
+      if (!G) {
+        host.innerHTML = '<span style="font-size:12px;color:var(--text-faint)">引导模块没加载上，刷新一下试试</span>'
+        return
+      }
+
+      /* 每条引导要在哪一页上跑 */
+      const HOME = {
+        tour: '', paint: '/paint', gallery: '/gallery',
+        town: '/town', mine: '/mine', chat: '/chat',
+      }
+
+      function go(key) {
+        if (window.sfx) window.sfx('open')
+        const home = HOME[key]
+        const router = window.__lwRouter
+        const cur = router && router.currentRoute ? router.currentRoute.value.path : location.pathname
+        if (home && router && cur !== home) {
+          router.push(home)
+          // 等页面渲染完再跑，否则高亮不到目标元素
+          setTimeout(() => G.run(key), 700)
+        } else {
+          G.run(key)
+        }
+      }
+
+      function render() {
+        const all = G.list()
+        const tour = all.find((g) => g.key === 'tour')
+        /* 总引导留着上面那个大按钮，这里列其余的 */
+        const items = all.filter((g) => g.key !== 'tour')
+
+        host.innerHTML = ''
+        items.forEach((g) => {
+          const b = document.createElement('button')
+          b.type = 'button'
+          if (g.seen) b.classList.add('done')
+          b.innerHTML = '<span class="gm-dot"></span>' + g.icon + ' ' + g.name
+          b.title = g.seen ? '已看过 · 点一下重看' : g.desc + '（' + g.steps + ' 步）'
+          b.addEventListener('click', () => go(g.key))
+          host.appendChild(b)
+        })
+
+        const seenN = items.filter((g) => g.seen).length
+        if (tip) tip.textContent = seenN + ' / ' + items.length + ' 看过'
+        if (startBtn && tour) {
+          const label = startBtn.querySelector('.gs-tx b')
+          if (label) label.textContent = tour.seen ? '再逛一遍' : '从头逛一遍'
+        }
+        if (foot) {
+          foot.innerHTML = ''
+          const t = document.createElement('span')
+          t.textContent = '点上面任意一条可以单独重看。'
+          foot.appendChild(t)
+          if (seenN > 0) {
+            const r = document.createElement('button')
+            r.type = 'button'
+            r.textContent = '全部标记为未读'
+            r.addEventListener('click', () => {
+              items.forEach((g) => G.reset(g.key))
+              if (tour) G.reset('tour')
+              render()
+              if (window.sfx) window.sfx('tick')
+            })
+            foot.appendChild(r)
+          }
+        }
+      }
+
+      if (startBtn) startBtn.addEventListener('click', () => go('tour'))
+      render()
+    })()
 
     /* ---------- 头像渲染 ----------
        头像按 uid 索引，而本机只存了用户名（令牌是签名串，解不出 uid），
