@@ -514,6 +514,166 @@
       ],
     },
 
+    /* ---------- 下面这批是为「把界面里的 emoji 换掉」补的 ---------- */
+
+    /* 箭头（左/右/下）：会「推」出去一下 */
+    arrowRight: { frames: [
+      ['............','............','.....b......','......b.....','.......b....','bbbbbbbbbb..','.......b....','......b.....','.....b......','............'],
+      ['............','............','............','......b.....','.......b....','.bbbbbbbbbb.','.......b....','......b.....','............','............'],
+    ]},
+    arrowLeft: { frames: [
+      ['............','............','......b.....','.....b......','....b.......','..bbbbbbbbbb','....b.......','.....b......','......b.....','............'],
+      ['............','............','............','.....b......','....b.......','.bbbbbbbbbb.','....b.......','.....b......','............','............'],
+    ]},
+    arrowDown: { frames: [
+      ['.....b......','.....b......','.....b......','.....b......','.....b......','.....b......','..bbbbbbb...','...bbbbb....','....bbb.....','.....b......'],
+      ['............','.....b......','.....b......','.....b......','.....b......','..bbbbbbb...','...bbbbb....','....bbb.....','.....b......','............'],
+    ]},
+
+    /* 星星：亮一下暗一下 */
+    star: { frames: [
+      ['.....y......','.....y......','....yYy.....','yYYYYYYYYYy.','.yYYYYYYYy..','..yYYYYYy...','.yYYy.yYYy..','.yYy...yYy..','yy......yy..','............'],
+      ['............','.....y......','....yYy.....','.yYYYYYYYYy.','..yYYYYYYy..','...yYYYYy...','..yYYy.yYYy.','..yYy...yYy.','.yy......yy.','............'],
+    ]},
+
+    /* 对勾：勾勒出来的过程 */
+    check: { frames: [
+      ['............','............','............','..........ee','.........ee.','........ee..','.......ee...','..ee..ee....','...eeee.....','....ee......'],
+      ['............','............','..........ee','.........ee.','........ee..','.......ee...','..ee..ee....','...eeee.....','....ee......','............'],
+    ]},
+
+    /* 叉：两条笔画】
+    cross: { frames: [
+      ['rr........rr','.rr......rr.','..rr....rr..','...rr..rr...','....rrrr....','....rrrr....','...rr..rr...','..rr....rr..','.rr......rr.','rr........rr'],
+      ['............','rr........rr','.rr......rr.','..rr....rr..','...rrrrrr...','...rrrrrr...','..rr....rr..','.rr......rr.','rr........rr','............'],
+    ]},
+
+    /* 问号：上下浮 */
+    question: { frames: [
+      ['...bbbb.....','..bb..bb....','.bb....bb...','........bb..','.......bb...','......bb....','.....bb.....','............','.....bb.....','.....bb.....'],
+      ['............','...bbbb.....','..bb..bb....','.bb....bb...','........bb..','.......bb...','......bb....','.....bb.....','.....bb.....','............'],
+    ]},
+
+    /* 铅笔：写字时抖 */
+    pencil: { frames: [
+      ['.........yy.','........yYYy','.......yYYy.','......yYYy..','.....yYYy...','....yYYy....','...yYYy.....','..yYYy......','.yYYy.......','yyy........'],
+      ['..........y.','.........yYy','........yYy.','.......yYy..','......yYy...','.....yYy....','....yYy.....','...yYy......','..yYy.......','.yyy........'],
+    ]},
+
+    /* 垃圾桶：盖子掀一下 */
+    trash: { frames: [
+      ['...gggg.....','..gggggg....','.gggggggg...','..kkkkkk....','..kWWWWk....','..kWkkWk....','..kWWWWk....','..kWWWWk....','..kkkkkk....','............'],
+      ['...gggg.....','..gggggg....','.gggggggg...','............','..kkkkkk....','..kWWWWk....','..kWkkWk....','..kWWWWk....','..kkkkkk....','............'],
+    ]},
+
+    /* 礼物盒：丝带闪 */
+    gift: { frames: [
+      ['...rr.rr....','..rrrrrrr...','.rrrrrrrrr..','rrrrrrrrrrr.','..yYYYYYy...','..Yyy.yyY...','..yYYYYYy...','..yYYYYYy...','..yYYYYYy...','..yyyyyyy...'],
+      ['...rr.rr....','..rrrrrrr...','.yyrrrrryy..','rrrrrrrrrrr.','..yYYYYYy...','..Yyy.yyY...','..yYYYYYy...','..yYYYYYy...','..yYYYYYy...','..yyyyyyy...'],
+    ]},
+
+    /* 奖牌：缎带晃 */
+    medal: { frames: [
+      ['..bb....bb..','..bb....bb..','..bb....bb..','..bbb..bbb..','...YYYYYY...','..YYyYYyYY..','..YYYYYYYY..','..YYyYYyYY..','...YYYYYY...','....YYYY....'],
+      ['...bb..bb...','...bb..bb...','...bb..bb...','..bbb..bbb..','...YYYYYY...','..YYyYYyYY..','..YYYYYYYY..','..YYyYYyYY..','...YYYYYY...','....YYYY....'],
+    ]},
+
+    /* 盾牌：纹章亮一下 */
+    shield: { frames: [
+      ['.bbbbbbbbbb.','.bssssssssb.','.bsbssssbsb.','.bssbbbbssb.','.bssbbbbssb.','.bsssbbsssb.','..bsssssssb.','...bsssssb..','....bsssb...','.....bbb....'],
+      ['.bbbbbbbbbb.','.bwwwwwwwwb.','.bwbwwwwbwb.','.bwwbbbbwwb.','.bwwbbbbwwb.','.bwwwbbwwwb.','..bwwwwwwwb.','...bwwwwwb..','....bwwwb...','.....bbb....'],
+    ]},
+
+    /* 撤销：箭头回转 */
+    undo: { frames: [
+      ['............','....bbbb....','...bb..bb...','..bb....bb..','.bb......b..','.b........b.','.bb......bb.','..bbbbbbbb..','............','............'],
+      ['............','...bbbb.....','..bb..bb....','.bb....bb...','bb......b...','b........b..','bb......bb..','.bbbbbbbb...','............','............'],
+    ]},
+
+    /* 胶片：齿孔走动 */
+    film: { frames: [
+      ['kkkkkkkkkkkk','k.k.k.k.k.kk','kWbbbbbbbWWk','kWbWWWWWbWWk','kWbbbbbbbWWk','kWWWWWWWWWWk','kWcccccccWWk','kWcWWWWWcWWk','k.k.k.k.k.kk','kkkkkkkkkkkk'],
+      ['kkkkkkkkkkkk','kk.k.k.k.k.k','kWbbbbbbbWWk','kWbWWWWWbWWk','kWbbbbbbbWWk','kWWWWWWWWWWk','kWcccccccWWk','kWcWWWWWcWWk','kk.k.k.k.k.k','kkkkkkkkkkkk'],
+    ]},
+
+    /* 蝴蝶：翅膀扇 */
+    butterfly: { frames: [
+      ['............','.pp.....pp..','pppp...pppp.','ppppp.ppppp.','.ppppppppp..','...ppppp....','.ppppppppp..','ppppp.ppppp.','pppp...pppp.','.pp.....pp..'],
+      ['............','pp.......pp.','.ppp...ppp..','.pppp.pppp..','..ppppppp...','...ppppp....','..ppppppp...','.pppp.pppp..','.ppp...ppp..','pp.......pp.'],
+    ]},
+
+    /* 骰子：点数跳 */
+    dice: { frames: [
+      ['kkkkkkkk....','kWWWWWWk....','kWkWWkWk....','kWWWWWWk....','kWWkkWWk....','kWWWWWWk....','kWWkWWkk....','kkkkkkkk....','............','............'],
+      ['kkkkkkkk....','kWkWWkWk....','kWWWWWWk....','kWWkWWkk....','kWWWWWWk....','kWkWWkWk....','kWWWWWWk....','kkkkkkkk....','............','............'],
+    ]},
+
+    /* 下载：箭头往下走 */
+    download: { frames: [
+      ['....bbbb....','....b..b....','....b..b....','....bbbb....','............','...bbbbbb...','....bbbb....','.....bb.....','............','..bbbbbbbb..'],
+      ['............','....bbbb....','....b..b....','....b..b....','....bbbb....','...bbbbbb...','....bbbb....','.....bb.....','..bbbbbbbb..','............'],
+    ]},
+
+    /* 蛋糕：蜡烛火苗跳 */
+    cake: { frames: [
+      ['.....y......','....yoy.....','.....t......','..nnnnnn....','.nWnWnWnn...','.nnnnnnnn...','.nnnnnnnn...','nnnnnnnnnn..','............','............'],
+      ['.....o......','....yoy.....','.....t......','..nnnnnn....','.nWnWnWnn...','.nnnnnnnn...','.nnnnnnnn...','nnnnnnnnnn..','............','............'],
+    ]},
+
+    /* 喇叭：声波扩散 */
+    announce: { frames: [
+      ['............','......yy....','.....yyy....','..yyyyyy....','yyyyyyyyy...','yyyyyyyyy...','..yyyyyy....','.....yyy....','......yy....','............'],
+      ['............','......yy....','.....yyy....','..yyyyyy.b..','yyyyyyyyyb.b','yyyyyyyyyb.b','..yyyyyy.b..','.....yyy....','......yy....','............'],
+    ]},
+
+    /* 握手：上下摇 */
+    handshake: { frames: [
+      ['............','..tt........','.tnnt.ttt...','tnnnnttnnt..','.tnnnnnnnt..','..tnnnnnnt..','...ttnnntt..','.....ttt....','............','............'],
+      ['............','..tt........','.tnnt.ttt...','tnnnnttnnt..','.tnnnnnnnt..','..tnnnnnnt..','...ttnnntt..','....ttt.....','............','............'],
+    ]},
+
+    /* 礼花：彩纸飘 */
+    party: { frames: [
+      ['...r...y....','..r.r.y.y...','...r...y....','.....b......','..bbbbbbb...','...b...b....','..b.....b...','.g.......g..','............','............'],
+      ['..r.....y...','...r...y....','..r...y.y...','.....b......','..bbbbbbb...','...b...b....','..b.....b...','.g.......g..','............','............'],
+    ]},
+
+    /* 链接：两个环扣上 */
+    link: { frames: [
+      ['............','..bb....bb..','.b..b..b..b.','.b..b..b..b.','..bb.bb.bb..','...bbbbbb...','..bb.bb.bb..','.b..b..b..b.','.b..b..b..b.','..bb....bb..'],
+      ['............','..bb....bb..','.b..b..b..b.','.b..bbbbb.b.','..bbbbbbbb..','...bbbbbb...','..bbbbbbbb..','.b.bbbbb..b.','.b..b..b..b.','..bb....bb..'],
+    ]},
+
+    /* 举手：上下摆 */
+    raise: { frames: [
+      ['...nn.......','..nnnn......','...nn.......','..tttt......','.tttttt.....','.tttttt.....','..tttt......','..t..t......','..t..t......','.tt..tt.....'],
+      ['...nn.......','..nnnn......','...nn.......','..tttt......','.tttttt.....','.tttttt.....','..tttt......','..t..t......','.tt..tt.....','tt....tt....'],
+    ]},
+
+    /* 小镇：两间屋一条路 */
+    town: { frames: [
+      ['...rr.......','..rrrr......','.rrrrrr.....','.tttttt.....','.t.kk.t.....','.t.kW.t.....','.tttttt.....','...cc.......','..cccc......','.cccccc.....'],
+      ['....rr......','...rrrr.....','..rrrrrr....','..tttttt....','..t.kk.t....','..t.kW.t....','..tttttt....','...cc.......','..cccc......','.cccccc.....'],
+    ]},
+
+    /* 闪电：能量脉冲 */
+    bolt: { frames: [
+      ['.....yy.....','....yy......','...yy.......','..yyyyyy....','.....yy.....','....yy......','...yy.......','..yy........','............','............'],
+      ['.....yy.....','....yy......','...yy.......','..yyyyyy....','.....yy.....','....yy......','...yy.......','..yy........','.yy........','............'],
+    ]},
+
+    /* 旗帜：飘动 */
+    flag: { frames: [
+      ['rr..........','rrrrrrrr....','rr.rr..rr...','rr.rr..rr...','rrrrrrrr....','rr..........','rr..........','rr..........','rr..........','............'],
+      ['rr..........','.rrrrrrrr...','rr..rr.rr...','rr..rr.rr...','.rrrrrrrr...','rr..........','rr..........','rr..........','rr..........','............'],
+    ]},
+
+    /* 禁止：斜杠转 */
+    ban: { frames: [
+      ['...rrrrrr...','..rr....rr..','.rr.rr...rr.','.r...rr...r.','rr....rr..rr','rr.....rr.rr','rr......rrrr','.r........r.','.rr......rr.','..rr....rr..'],
+      ['...rrrrrr...','..rr....rr..','.rr......rr.','.r.......rr.','rr......rrrr','rr.....rr.rr','rr....rr..rr','.r...rr...r.','.rr.rr...rr.','..rr....rr..'],
+    ]},
+
     /* 画框：画作挂在墙上，光从左扫过 */
     frame: {
       frames: [
@@ -899,6 +1059,207 @@
     return cv
   }
 
+  /* ================= emoji → 像素图标 =================
+     把界面里的 emoji 换掉，但**不是全换**：
+       · 设置页整个不动（用户明确要求）
+       · 更新日志不动 —— 那是历史记录
+       · 聊天里的表情选择器不动 —— 那是用户主动发的贴纸，
+         换成图标等于把这个功能删了
+       · <input> / <textarea> / <option> 里的不动 —— 那里不是图标是文本
+     替换发生在**文本节点**上，只认整颗 emoji，不动周围的文字。
+
+     on 指定这些图标怎么动：界面图标默认 active（选中/悬停才动），
+     避免一屏几十个东西一起动。 */
+  var EMOJI_MAP = {
+    '✨': ['dust', 'idle'],
+    '🎨': ['palette', 'hover'],
+    '🏆': ['trophy', 'hover'],
+    '🏠': ['house', 'hover'],
+    '🏘': ['town', 'hover'],
+    '💬': ['chat', 'hover'],
+    '🖼': ['frame', 'hover'],
+    '🛡': ['shield', 'hover'],
+    '🏅': ['medal', 'hover'],
+    '👤': ['user', 'hover'],
+    '🖌': ['brush', 'hover'],
+    '✏': ['pencil', 'hover'],
+    '✍': ['pencil', 'hover'],
+    '✒': ['pencil', 'hover'],
+    '🗑': ['trash', 'press'],
+    '♻': ['undo', 'press'],
+    '↩': ['undo', 'press'],
+    '↺': ['undo', 'press'],
+    '🔄': ['undo', 'press'],
+    '✅': ['check', 'press'],
+    '✔': ['check', 'press'],
+    '☑': ['check', 'press'],
+    '❌': ['cross', 'press'],
+    '✖': ['cross', 'press'],
+    '✕': ['cross', 'press'],
+    '⚠': ['question', 'hover'],
+    '❓': ['question', 'hover'],
+    '❔': ['question', 'hover'],
+    '🎞': ['film', 'hover'],
+    '🎬': ['film', 'hover'],
+    '🦋': ['butterfly', 'idle'],
+    '🎁': ['gift', 'hover'],
+    '🎲': ['dice', 'press'],
+    '🎂': ['cake', 'idle'],
+    '📢': ['announce', 'press'],
+    '📣': ['announce', 'press'],
+    '🤝': ['handshake', 'hover'],
+    '🙋': ['raise', 'hover'],
+    '🎉': ['party', 'press'],
+    '🎊': ['party', 'press'],
+    '🔗': ['link', 'press'],
+    '🔍': ['question', 'hover'],
+    '⬇': ['download', 'press'],
+    '📥': ['download', 'press'],
+    '⚡': ['bolt', 'idle'],
+    '🔥': ['fire', 'idle'],
+    '🚩': ['flag', 'hover'],
+    '🏳': ['flag', 'hover'],
+    '🚫': ['ban', 'hover'],
+    '⛔': ['ban', 'hover'],
+    '🚪': ['arrowRight', 'hover'],
+    '♡': ['heart', 'idle'],
+    '♥': ['heart', 'idle'],
+    '❤': ['heart', 'idle'],
+    '💛': ['heart', 'idle'],
+    '💙': ['heart', 'idle'],
+    '💚': ['heart', 'idle'],
+    '💜': ['heart', 'idle'],
+    '🤍': ['heart', 'idle'],
+    '🖤': ['heart', 'idle'],
+    '🧡': ['heart', 'idle'],
+    '☀': ['sun', 'idle'],
+    '🌤': ['sun', 'idle'],
+    '🌞': ['sun', 'idle'],
+    '⛅': ['sun', 'idle'],
+    '🌧': ['sun', 'idle'],
+    '❄': ['sun', 'idle'],
+    '🔒': ['lock', 'hover'],
+    '🔓': ['lock', 'hover'],
+    '✉': ['mail', 'hover'],
+    '📧': ['mail', 'hover'],
+    '📬': ['mail', 'hover'],
+    '📩': ['mail', 'hover'],
+    '🗺': ['map', 'hover'],
+    '📷': ['frame', 'press'],
+    '🎯': ['frame', 'press'],
+    '📌': ['flag', 'hover'],
+    '📋': ['frame', 'hover'],
+    '📄': ['frame', 'hover'],
+    '📜': ['frame', 'hover'],
+    '📦': ['gift', 'hover'],
+    '⑦': ['bolt', 'none'],
+    '→': ['arrowRight', 'hover'],
+    '←': ['arrowLeft', 'hover'],
+    '↓': ['arrowDown', 'hover'],
+    '↑': ['arrowDown', 'hover'],
+    '➡': ['arrowRight', 'hover'],
+    '⬅': ['arrowLeft', 'hover'],
+    '⬆': ['arrowDown', 'hover'],
+    '▶': ['arrowRight', 'hover'],
+    '◀': ['arrowLeft', 'hover'],
+    '▸': ['arrowRight', 'hover'],
+    '◂': ['arrowLeft', 'hover'],
+    '›': ['arrowRight', 'hover'],
+    '‹': ['arrowLeft', 'hover'],
+    '…': ['question', 'none'],
+    '★': ['star', 'idle'],
+    '☆': ['star', 'idle'],
+    '⭑': ['star', 'idle'],
+  }
+
+  /* 这些容器下面的 emoji 一律不换 —— 加了 data-px-skip 也可以 */
+  var SKIP_SELECTOR = '[data-px-skip], input, textarea, select, option, code, pre, .ch-emoji, .emoji-pick, .ch-sticker'
+  var SKIP_PATH = ['/settings', '/changelog']
+
+  function shouldSkipTextNode(node) {
+    var el = node.parentNode
+    if (!el || el.nodeType !== 1) return true
+    if (el.closest && el.closest(SKIP_SELECTOR)) return true
+    // 已经在图标宿主里了
+    if (el.closest && el.closest('[data-px-done]')) return true
+    return false
+  }
+
+  function pathSkipped() {
+    var p = location.pathname || ''
+    for (var i = 0; i < SKIP_PATH.length; i++) {
+      if (p.indexOf(SKIP_PATH[i]) === 0) return true
+    }
+    return false
+  }
+
+  var EMOJI_RE = null
+  function buildRe() {
+    if (EMOJI_RE) return EMOJI_RE
+    var keys = Object.keys(EMOJI_MAP)
+    // 长的排前面，避免「🖼️」被「🖼」先吃掉
+    keys.sort(function (a, b) { return b.length - a.length })
+    var esc = keys.map(function (k) {
+      return k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    })
+    EMOJI_RE = new RegExp('(' + esc.join('|') + ')\\uFE0F?', 'g')
+    return EMOJI_RE
+  }
+
+  /**
+   * 把一段范围内的 emoji 换成像素图标。
+   * 只处理文本节点，不动 input 的值和代码块。
+   */
+  function swapEmoji(root) {
+    if (pathSkipped()) return 0
+    var scope = root || document.body
+    if (!scope) return 0
+    var re = buildRe()
+    var walker = document.createTreeWalker(scope, NodeFilter.SHOW_TEXT, {
+      acceptNode: function (n) {
+        if (!n.nodeValue || !/[\u2000-\uFFFF]/.test(n.nodeValue)) return NodeFilter.FILTER_REJECT
+        if (shouldSkipTextNode(n)) return NodeFilter.FILTER_REJECT
+        re.lastIndex = 0
+        return re.test(n.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT
+      },
+    })
+    var targets = []
+    while (walker.nextNode()) targets.push(walker.currentNode)
+    if (!targets.length) return 0
+
+    var count = 0
+    for (var i = 0; i < targets.length; i++) {
+      var node = targets[i]
+      var text = node.nodeValue
+      re.lastIndex = 0
+      if (!re.test(text)) continue
+      var frag = document.createDocumentFragment()
+      var last = 0
+      var m
+      re.lastIndex = 0
+      while ((m = re.exec(text))) {
+        if (m.index > last) frag.appendChild(document.createTextNode(text.slice(last, m.index)))
+        var hit = EMOJI_MAP[m[1]]
+        if (hit) {
+          var ic = document.createElement('i')
+          ic.className = 'px-ico-host px-ico-inline'
+          ic.setAttribute('data-px', hit[0])
+          ic.setAttribute('data-px-size', '16')
+          ic.setAttribute('data-px-on', hit[1])
+          ic.setAttribute('aria-hidden', 'true')
+          frag.appendChild(ic)
+          count++
+        } else {
+          frag.appendChild(document.createTextNode(m[0]))
+        }
+        last = m.index + m[0].length
+      }
+      if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)))
+      if (node.parentNode) node.parentNode.replaceChild(frag, node)
+    }
+    return count
+  }
+
   /* ================= 自动替换 =================
      页面上写 <i class="px-ico" data-px="dust"></i> 就会被换成图标。
      size 从 data-px-size 取，默认 20。 */
@@ -928,6 +1289,8 @@
   window.LWIcon = {
     make: make,
     apply: apply,
+    swapEmoji: swapEmoji,
+    emojiMap: EMOJI_MAP,
     names: function () {
       var out = []
       for (var k in ICONS) if (Object.prototype.hasOwnProperty.call(ICONS, k)) out.push(k)

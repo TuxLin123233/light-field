@@ -292,7 +292,10 @@ createApp(App).use(router).mount('#app')
    路由一变、DOM 一变就扫一遍，没画过的补上（LWIcon 自己用
    data-px-done 记着，重复扫不会重画）。 */
 function paintIcons() {
-  if (window.LWIcon) window.LWIcon.apply(document)
+  if (!window.LWIcon) return
+  // 先把文本里的 emoji 换成像素图标的占位元素，再把占位元素画成 canvas
+  try { window.LWIcon.swapEmoji(document.body) } catch (e) {}
+  window.LWIcon.apply(document)
 }
 paintIcons()
 router.afterEach(function () {
