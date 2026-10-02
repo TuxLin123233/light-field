@@ -195,6 +195,23 @@ async function decorate(kv, list, meUid) {
   return out
 }
 
+/* 正在输入。
+   存成一个带 TTL 的短命键，过期自动消失 —— 不需要任何清理任务。
+   键按「谁对谁说」分，A 对 B 打字不该让 B 看到（那是 A 的输入状态）。 */
+const TYPING_TTL = 6 // 秒
+function TYPING_KEY(from, to) {
+  return 'typing:' + from + ':' + to
+}
+
+/** 对方最近有没有在打字（6 秒内） */
+async function peerTyping(kv, from, to) {
+  try {
+    return !!(await kv.get(TYPING_KEY(from, to)))
+  } catch (e) {
+    return false
+  }
+}
+
 export async function onRequestGet(context) {
   const { request, env } = context
   if (!env.LIGHTFIELD_KV) return json({ error: 'LIGHTFIELD_KV is not configured' }, 500)
@@ -275,6 +292,8 @@ export async function onRequestGet(context) {
     rpsLabel: RPS_LABEL,
     // 对方最后一条的时间，前端可以据此提示「你有新消息，刷新看看」
     peerLastAt: list.length ? Number(list[list.length - 1].at) || 0 : 0,
+    // 对方是不是正在打字（6 秒内有动静）
+    peerTyping: await peerTyping(kv, withUid, who.uid),
   })
 }
 
@@ -300,6 +319,19 @@ export async function onRequestPost(context) {
 
   const kv = env.LIGHTFIELD_KV
   const action = String((body && body.action) || '')
+
+  /* ---------------- 正在输入 ----------------
+     前端节流后调（大概每几秒一次），不是每敲一个字都发。
+     失败也无所谓 —— 这只是个提示，不该影响聊天本身。 */
+  if (action === 'typing') {
+    const to = String((body && body.to) || '').trim()
+    if (!RE.test(to)) return json({ ok: false })
+    if (!(await isFriend(kv, who.uid, to))) return json({ ok: false })
+    try {
+      await kv.put(TYPING_KEY(who.uid, to), String(Date.now()), { expirationTtl: TYPING_TTL })
+    } catch (e) {}
+    return json({ ok: true })
+  }
 
   /* ---------------- 发消息 ---------------- */
   if (action === 'send') {

@@ -227,6 +227,19 @@ export default {
          overflow-wrap:anywhere 比 word-break:break-word 兼容性好 ——
          后者在老 Safari / WebView 上不被支持，会退化成 normal，
          一条长网址就能把气泡顶出屏幕（用户反馈「消息框溢出到右边」）。 */
+      /* 「对方正在输入」：跟在消息列表末尾，不占固定高度 */
+      .ch-typing {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 12px 2px;
+        animation: lwa-fade .22s ease-out both;
+      }
+      .ch-typing-t {
+        font-size: 11.5px;
+        color: var(--text-faint);
+      }
+
       .ch-msg {
         display: flex; align-items: flex-start; max-width: 88%; min-width: 0;
         animation: chIn 0.18s ease-out;
@@ -952,6 +965,9 @@ export default {
           if (jd && jd.ok) drawThread(jd)
         } catch (e) {}
       }
+      /* 「对方正在输入」：服务端给的是 6 秒内的活跃标记 */
+      try { renderTyping(!!d.peerTyping) } catch (e) {}
+
       // 算「有没有我还没看到的新消息」：对方最后一条比我这边最后一条新
       const mine = items.filter((m) => m.mine)
       myLastAt = mine.length ? Number(mine[mine.length - 1].at) || 0 : 0
@@ -1480,6 +1496,87 @@ export default {
           return null
         }
       }
+      /* ---------- 正在输入上报 ----------
+         节流到 3 秒一次。每敲一个字都发的话，KV 写入量会很难看，
+         而且对方也看不出区别（提示本来就是「大概在打字」）。 */
+      let lastTypingAt = 0
+      let typingTimer = 0
+      function reportTyping() {
+        const now = Date.now()
+        if (now - lastTypingAt < 3000) return
+        const uid = peerUid || ''
+        if (!uid) return
+        lastTypingAt = now
+        // 不 await、不弹错误 —— 这只是个提示，失败就算了
+        fetch('/api/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer ' + (localStorage.getItem('lw-token') || ''),
+          },
+          body: JSON.stringify({ action: 'typing', to: uid }),
+        }).catch(() => {})
+      }
+
+      /* ---------- 「对方正在输入」提示条 ----------
+         放在消息列表末尾。有就显示、没有就移除 —— 不占固定高度，
+         免得把消息挤来挤去。 */
+      function renderTyping(on) {
+        const box = $('chMsgs')
+        if (!box) return
+        let el = box.querySelector('.ch-typing')
+        if (!on) {
+          if (el) el.remove()
+          return
+        }
+        if (el) return // 已经有了就不重画，免得动画一直重放
+        el = document.createElement('div')
+        el.className = 'ch-typing'
+        el.innerHTML =
+          '<span class="lwdeco-typing"><i></i><i></i><i></i></span>' +
+          '<span class="ch-typing-t">' + (peerName || '对方') + ' 正在输入…</span>'
+        box.appendChild(el)
+        box.scrollTop = box.scrollHeight
+      }
+
+      /* ---------- 轻量轮询 ----------
+         只为了看到「对方正在输入」和「有新消息」。
+         不重画整个对话 —— 那样会把用户正在打的字、滚动位置、
+         展开的表情面板全部重置。4 秒一次，够用且省流量。 */
+      let pollTimer = 0
+      function startPoll() {
+        stopPoll()
+        pollTimer = setInterval(async () => {
+          if (!peerUid) return
+          // 页面切到后台就不轮了，省电
+          if (document.hidden) return
+          try {
+            const tk = localStorage.getItem('lw-token') || ''
+            const res = await fetch('/api/chat?with=' + encodeURIComponent(peerUid), {
+              headers: { Authorization: 'Bearer ' + tk },
+              cache: 'no-store',
+            })
+            const jd = await res.json().catch(() => ({}))
+            if (!jd || !jd.ok) return
+            renderTyping(!!jd.peerTyping)
+            /* 对方发了新消息才整段重画 —— 那说明内容变了，
+               不重画用户看不到。仅仅是在打字的话只动提示条。 */
+            const lastAt = jd.items && jd.items.length ? Number(jd.items[jd.items.length - 1].at) || 0 : 0
+            if (lastAt && lastAt !== peerLastAt) {
+              peerLastAt = lastAt
+              drawThread(jd)
+            }
+          } catch (e) {}
+        }, 4000)
+      }
+      function stopPoll() {
+        if (pollTimer) clearInterval(pollTimer)
+        pollTimer = 0
+      }
+      /* 离开这一页时不用手动停 —— withAutoCleanup 会接管 window.setInterval，
+         切换路由时自动清掉。页面切到后台由上面的 document.hidden 判断兜住。 */
+      startPoll()
+
       async function sendMsg(payload) {
         if (replyTo) {
           payload.reply = {
@@ -1696,7 +1793,11 @@ export default {
         inp = $('chIn')
         send = $('chSend')
         if (!inp || !send) return
-        inp.addEventListener('input', sync)
+        inp.addEventListener('input', () => {
+          sync()
+          // 顺手告诉对方「我在打字」。内部有 3 秒节流
+          try { reportTyping() } catch (e) {}
+        })
         inp.addEventListener('keydown', (e) => {
           if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault()
