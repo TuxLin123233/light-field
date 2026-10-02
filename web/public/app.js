@@ -144,10 +144,7 @@ const router = createRouter({
   linkExactActiveClass: 'active',
 })
 
-const VIEWPORT_LOOSE = 'width=device-width, initial-scale=1.0'
-const VIEWPORT_LOCKED = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no'
-
-// 切页：换样式、换标题、换 viewport 缩放策略、导航果冻弹一下
+// 切页：换样式、换标题、导航果冻弹一下
 router.afterEach((to) => {
   /* 账本是全局的，但各页只在自己挂载时读它。
      切页时统一喊一嗓子：「余额可能变了，重画一下」——
@@ -162,9 +159,13 @@ router.afterEach((to) => {
   const vs = document.getElementById('view-style')
   if (vs) vs.textContent = (comp && comp.css) || ''
   document.title = (comp && comp.title ? comp.title + ' · ' : '') + '像素小镇'
-  // 画板/联机在迁移前就是锁死缩放的，按页还原，避免手机按记忆的缩放级别渲染
-  const vp = document.querySelector('meta[name="viewport"]')
-  if (vp) vp.setAttribute('content', comp && comp.noZoom ? VIEWPORT_LOCKED : VIEWPORT_LOOSE)
+  /* 缩放策略不再按页切换：全站统一锁死，直接写在 index.html 的 meta 里。
+     以前只有画板（noZoom）锁着、其余页面可捏合放大，荣耀畅玩60 这类安卓机上
+     手指一捏就把整页放大偏出屏幕；而 html/body 都有 overflow-x:clip，
+     放大后边缘内容被裁掉又滚不回去，看起来像「页面溢出」。
+     放在 index.html 而不是这里还有个好处：首屏就是锁定状态，
+     不会出现「先按可缩放渲染、路由切完再锁」的闪一下。
+     （iOS Safari 10 起会忽略 user-scalable，这条只对安卓浏览器生效。） */
   const nav = document.getElementById('appNav')
   if (nav) {
     nav.classList.remove('jelly')

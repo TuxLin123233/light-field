@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-title" content="像素小镇">
     <link rel="apple-touch-icon" href="/icons/icon-192.png">
     <link rel="icon" href="/icons/icon-192.png">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>像素小镇</title>
     <script>
       /* 前端版本号。设置页的「检查更新」靠它和服务器上 index.html 里的值对比，
@@ -384,6 +384,30 @@
         display: flex;
         flex-direction: column;
         align-items: center;
+      }
+
+      /* 关键补丁：把视图根元素钉成可视宽度。
+
+         #siteRoot 是 display:contents，所以视图的根元素在 DOM 上确实是
+         #siteRoot 的子元素，在布局上则是 **#app 的 flex 子项**。
+         而 flex 子项有两处默认值会咬人：
+           · width:auto —— 对普通块级元素是「撑满」，对 flex 子项却是
+             「按内容收缩」，于是根元素被锁死在内容的 max-content 宽度上
+           · min-width —— 默认 auto（=min-content），不许缩得比内容更窄
+         两者合起来就是：根元素宽度只跟内容走，跟屏幕宽度无关。
+         之前 8 个视图的中文容器漏了 width:100%（.u-wrap/.ch-wrap/.rk-wrap/
+         .tk-wrap，以及靠 min-height:100vh 撑满的 .ach-page/.av-page/
+         .in-page/.mail-page），在窄屏上整页横向溢出 —— 又因为 html/body
+         都有 overflow-x:clip，溢出部分既看不见、也滚不回去，
+         表现就跟「内容被吃掉了」一样。
+
+         这里只在 #siteRoot 直接子元素上补 width/min-width，不动 max-width：
+         max-width 得留给各视图自己（社区 .container 是 760px、
+         日志/设置是 560px），用 id 选择器压过去会把它们全改成窄版。
+         视图自己的 .xxx-wrap { width:100% } 仍然保留，两者一致不冲突。 */
+      #siteRoot > * {
+        width: 100%;
+        min-width: 0;
       }
 
       /* 兜底：极老浏览器不支持 display:contents 时，用 block+100% 保持同样宽度 */
