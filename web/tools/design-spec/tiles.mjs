@@ -176,24 +176,34 @@ DATA.surfaces.slice(0,24).forEach(s=>{const d=document.createElement('div');d.cl
  for(let y=0;y<16;y++)for(let x=0;x<16;x++){const q=PAL[s.tile[y][x]];if(!q)continue;g.fillStyle='rgb('+q[0]+','+q[1]+','+q[2]+')';g.fillRect(x,y,1,1)}
  d.appendChild(c);put('t2',d)});
 
-/* 3 按钮与选择 */
+/* 3 按钮与选择 —— 分 5 组，每组一个小标题，摆满整格 */
 (function(){
- const rows=[
-  [['主要按钮','tw-btn'],['次要按钮','tw-btn ghost'],['保存布置','tw-btn']],
-  [['🕐 跟随现实','tw-tab'],['🌧️ 雨','tw-tab on'],['☀️ 晴','tw-tab']],
-  [['16×16','tw-tab on'],['32×32','tw-tab'],['64×64','tw-tab']],
-  [['10 ✨','ch-chip'],['50 ✨','ch-chip on'],['100 ✨','ch-chip']],
- ];
- rows.forEach(list=>{
-  const r=document.createElement('div');r.style.cssText='width:100%;display:flex;flex-wrap:wrap;align-items:center;margin-bottom:16px';
-  list.forEach(([t,c])=>{const b=document.createElement('button');b.type='button';b.className=c;b.textContent=t;
-   b.style.margin='0 10px 8px 0';r.appendChild(b)});
-  put('t3',r)});
- // 图块按钮（带像素画的那种）
- const it=document.createElement('button');it.type='button';it.className='tw-item';it.style.margin='0 10px 8px 0';
- const icon=document.createElement('span');icon.textContent='🪑';icon.style.cssText='font-size:26px;line-height:38px';
- it.appendChild(icon);const nm=document.createElement('span');nm.textContent='木凳';it.appendChild(nm);
- put('t3',it);
+ const group=(title,list,cls)=>{
+  const lab=document.createElement('div');
+  lab.style.cssText='width:100%;text-align:center;font-size:12px;color:#8c7f6b;margin:0 0 6px';
+  lab.textContent=title; put('t3',lab);
+  const r=document.createElement('div');
+  r.style.cssText='width:100%;display:flex;flex-wrap:wrap;justify-content:center;margin-bottom:13px';
+  list.forEach(([t,c])=>{const el=document.createElement('button');el.type='button';el.className=c;el.textContent=t;
+   el.style.margin='0 7px 7px 0';r.appendChild(el)});
+  put('t3',r);
+ };
+ group('按钮', [['主要按钮','tw-btn'],['次要按钮','tw-btn ghost'],['保存布置','tw-btn']]);
+ group('天气', [['🕐 跟随现实','tw-tab'],['🌧️ 雨','tw-tab on'],['☀️ 晴','tw-tab']]);
+ group('画布尺寸', [['16×16','tw-tab on'],['32×32','tw-tab'],['64×64','tw-tab']]);
+ // 图块按钮三个
+ const lab2=document.createElement('div');
+ lab2.style.cssText='width:100%;text-align:center;font-size:12px;color:#8c7f6b;margin:0 0 7px';
+ lab2.textContent='家具'; put('t3',lab2);
+ const row=document.createElement('div');row.style.cssText='width:100%;display:flex;justify-content:center';
+ [['🪑','木凳'],['💡','台灯'],['🌿','盆栽']].forEach(([ico,nm])=>{
+  const it=document.createElement('button');it.type='button';it.className='tw-item';
+  it.style.margin='0 7px'; 
+  const i=document.createElement('span');i.textContent=ico;i.style.cssText='font-size:24px;line-height:34px';
+  it.appendChild(i);
+  const t=document.createElement('span');t.textContent=nm;it.appendChild(t);
+  row.appendChild(it)});
+ put('t3',row);
 })();
 
 /* 4 小屋 */
@@ -233,38 +243,58 @@ DATA.surfaces.slice(0,24).forEach(s=>{const d=document.createElement('div');d.cl
   t2.textContent=n+'×'+n;d.appendChild(t2);
   put('t6',d)})})();
 
-/* 7 五套配色 */
-DATA.themes.forEach(t=>{
- const d=document.createElement('div');d.className='pal';d.style.width='100%';
- const b=document.createElement('b');b.textContent=t.name;d.appendChild(b);
- Object.keys(t.pal).forEach(k=>{const q=t.pal[k];const s=document.createElement('i');s.className='sw';
-  s.style.background='rgb('+q[0]+','+q[1]+','+q[2]+')';d.appendChild(s)});
- put('t7',d)});
-
-/* 8 卡片 + 徽章 */
+/* 7 五套配色 —— 每套 16 色，色块放大到 27px，一行放得下 */
 (function(){
- // 作品卡片
- const card=document.createElement('div');card.className='card';card.style.cssText='width:150px;margin:0 16px 16px 0';
- const c=cv(16,16);px16(c,DATA.avatars[11]);
- const im=document.createElement('img');im.className='art';im.src=c.toDataURL();im.alt='爱心';card.appendChild(im);
- const meta=document.createElement('div');meta.className='card-meta';
- const nm=document.createElement('span');nm.className='card-name';nm.textContent='爱心';meta.appendChild(nm);
- const sz=document.createElement('span');sz.className='card-size';sz.textContent='16×16';meta.appendChild(sz);card.appendChild(meta);
- const sub=document.createElement('div');sub.className='card-sub';
- const ac=cv(20,20);ac.className='card-av';px16(ac,DATA.avatars[5]);sub.appendChild(ac);
- const au=document.createElement('span');au.className='card-author';au.textContent='小林同学';sub.appendChild(au);
- const tm=document.createElement('span');tm.className='card-time';tm.textContent='10-27';sub.appendChild(tm);
- card.appendChild(sub);
- put('t8',card);
- // 数据卡片
- [['发布作品','4'],['收到的光尘','46']].forEach(([l,v])=>{
-  const d=document.createElement('div');d.className='in-card';d.style.cssText='width:126px;margin:0 14px 14px 0';
-  const t=document.createElement('div');t.className='card-title';t.textContent=l;d.appendChild(t);
-  const k=document.createElement('div');k.className='in-num';k.textContent=v;d.appendChild(k);put('t8',d)});
- // 入口卡
- const en=document.createElement('div');en.className='entry';en.style.cssText='width:100%;margin-bottom:14px';
- en.innerHTML='<span class="entry-ico">🎨</span><span class="entry-body"><span class="entry-label">画头像</span><span class="entry-desc">自己画，或换成系统默认的</span></span><span class="entry-arrow">›</span>';
- put('t8',en);
+ const box=document.createElement('div');
+ box.style.cssText='width:100%;display:flex;flex-direction:column;gap:11px';
+ DATA.themes.forEach(t=>{
+  const d=document.createElement('div');
+  d.style.cssText='display:flex;align-items:center;justify-content:center';
+  const b=document.createElement('b');
+  b.style.cssText='font-size:15px;color:#3b342c;font-weight:700;width:46px;flex:none;text-align:right;padding-right:8px';
+  b.textContent=t.name; d.appendChild(b);
+  const sw=document.createElement('div');
+  sw.style.cssText='display:flex;flex-wrap:nowrap';
+  Object.keys(t.pal).forEach(k=>{const q=t.pal[k];const i=document.createElement('i');
+   i.style.cssText='display:block;width:22px;height:22px;border-radius:6px;margin-right:2px;border:1px solid rgba(0,0,0,.06);background:rgb('+q[0]+','+q[1]+','+q[2]+')';
+   sw.appendChild(i)});
+  d.appendChild(sw); box.appendChild(d);
+ });
+ put('t7',box);
+})();
+
+/* 8 卡片 —— 3 张作品卡 + 4 张数据卡 + 徽章行 */
+(function(){
+ const row=document.createElement('div');
+ row.style.cssText='width:100%;display:flex;justify-content:center;align-items:flex-start;margin-bottom:16px';
+ [['爱心',16,11],['小树',16,20],['蘑菇',16,33]].forEach(([nm,sz,av])=>{
+  const card=document.createElement('div');card.className='card';
+  card.style.cssText='width:118px;margin:0 7px;flex:none';
+  const c=cv(16,16);px16(c,DATA.avatars[av]);
+  const im=document.createElement('img');im.className='art';im.src=c.toDataURL();im.alt=nm;card.appendChild(im);
+  const meta=document.createElement('div');meta.className='card-meta';
+  const a1=document.createElement('span');a1.className='card-name';a1.textContent=nm;meta.appendChild(a1);
+  const a2=document.createElement('span');a2.className='card-size';a2.textContent=sz+'×'+sz;meta.appendChild(a2);
+  card.appendChild(meta);
+  const sub=document.createElement('div');sub.className='card-sub';
+  const ac=cv(20,20);ac.className='card-av';px16(ac,DATA.avatars[av+3]);sub.appendChild(ac);
+  const au=document.createElement('span');au.className='card-author';au.textContent='小林';sub.appendChild(au);
+  card.appendChild(sub);
+  row.appendChild(card);
+ });
+ put('t8',row);
+ // 数据卡 4 张
+ const row2=document.createElement('div');
+ row2.style.cssText='width:100%;display:flex;justify-content:center;margin-bottom:16px';
+ [['发布作品','4'],['收到的光尘','46'],['创作天数','7'],['成就','42']].forEach(([l,v])=>{
+  const d=document.createElement('div');d.className='in-card';
+  d.style.cssText='width:106px;margin:0 6px;padding:14px 12px;flex:none';
+  const t=document.createElement('div');t.className='card-title';t.textContent=l;
+  t.style.fontSize='13px';d.appendChild(t);
+  const k=document.createElement('div');k.className='in-num';k.textContent=v;
+  k.style.fontSize='30px';d.appendChild(k);
+  row2.appendChild(d)});
+ put('t8',row2);
 })();
 
 /* 8b 徽章 */
