@@ -87,7 +87,7 @@ export default {
         font-size: 12px;
         color: var(--text-faint);
       }`,
-  template: `<div class="page">
+  template: `<div class="page legal">
       <h1>用户协议</h1>
       <ol>
         <li>

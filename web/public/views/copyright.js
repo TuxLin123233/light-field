@@ -51,7 +51,7 @@ export default {
   `,
 
   template: `
-    <div class="page">
+    <div class="page legal">
       <h1>版权声明与侵权投诉</h1>
       <div class="lead">最后更新：2026 年 · 如你是权利人，请先看第 3 节</div>
 

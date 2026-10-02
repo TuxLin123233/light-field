@@ -679,6 +679,45 @@
         background: var(--accent, #5b8def); transition: width .25s linear;
       }
     </style>
+    <style id="global-noselect">
+      /* ---------- 全站禁止选中文字 ----------
+         起因：按钮、卡片这些交互元素上，手指按下去稍微一划就选中了一片文字，
+         手机上还会弹出「拷贝 / 查询 / 翻译」那个系统菜单，非常干扰。
+
+         ★ 输入框必须保留选中能力 —— 不然改错字、选中重输都做不到。
+         ★ 法律页面（用户协议、版权声明）也保留 —— 那两页的内容
+           用户有理由复制留存，禁掉不合理。 */
+      html, body, #app {
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        /* iOS 长按元素时弹出的系统菜单（拷贝/共享/查询） */
+        -webkit-touch-callout: none;
+      }
+      /* 点击时那层灰色高亮，手机上一闪一闪的很难看 */
+      * { -webkit-tap-highlight-color: transparent; }
+
+      /* 以下这些地方恢复可以选中 */
+      input,
+      textarea,
+      select,
+      [contenteditable="true"],
+      .selectable,
+      /* 法律文本：用户有理由复制留存 */
+      .page.legal,
+      .page.legal * {
+        -webkit-user-select: text;
+        -moz-user-select: text;
+        -ms-user-select: text;
+        user-select: text;
+        -webkit-touch-callout: default;
+      }
+      /* 输入框里当然也要能选 */
+      input, textarea, select, [contenteditable="true"] {
+        -webkit-touch-callout: default;
+      }
+    </style>
     <style id="view-style"></style>
     <script>
       /* ---------- 轻量音效（WebAudio 实时合成，无音频文件） ---------- */
