@@ -79,6 +79,7 @@ export async function onRequestGet(context) {
   return json({
     ok: true,
     uid: user.uid,
+    isMod: await (async () => { try { const { isMod } = await import('./_mod.js'); return await isMod(env.LIGHTFIELD_KV, user.uid) } catch (e) { return false } })(),
     username: user.username,
     bio: user.bio || '',
     // 选了默认头像的人这里给 null，前端会画 uid 生成的默认头像

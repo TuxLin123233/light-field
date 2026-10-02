@@ -58,6 +58,11 @@ export default {
       .u-av canvas { width: 100%; height: 100%; image-rendering: pixelated; display: block; }
       .u-id { flex: 1; min-width: 0; }
       .u-name { font-size: 17px; font-weight: 800; color: var(--text); }
+      .u-name .mod-badge {
+        font-size: 11px; font-weight: 700; color: #2f6b3f; background: #e8f5ec;
+        border: 1px solid #cbe6d4; border-radius: 999px; padding: 2px 8px;
+        vertical-align: 2px; white-space: nowrap;
+      }
       .u-joined { font-size: 11px; color: var(--text-faint); margin-top: 2px; }
       /* 性别 / 生日标签。填了才显示 —— 没填就不占地方 */
       .u-tags { display: flex; flex-wrap: wrap; margin-top: 6px; }
@@ -382,7 +387,7 @@ export default {
         '<div class="u-hero">' +
         '<div class="u-av" id="uAv">' + avBox + '</div>' +
         '<div class="u-id">' +
-        '<div class="u-name">' + esc(profile.username) + (profile.todayBirthday ? ' 🎂' : '') + '</div>' +
+        '<div class="u-name">' + esc(profile.username) + (profile.isMod ? ' <span class="mod-badge">🛡️ 审核员</span>' : '') + (profile.todayBirthday ? ' 🎂' : '') + '</div>' +
         (joined ? '<div class="u-joined">' + esc(joined) + '</div>' : '') +
         tagHtml +
         (profile.bio ? '<div class="u-bio">' + esc(profile.bio) + '</div>' : '') +

@@ -1242,6 +1242,7 @@ export default {
       .cmt-main { flex: 1; min-width: 0; }
       .cmt-row { display: flex; align-items: baseline; gap: 6px; }
       .cmt-name { font-size: 12px; font-weight: 800; color: var(--text); }
+      .cmt-name .mod-badge { font-size: 9px; padding: 0 5px; vertical-align: 1px; }
       .cmt-item.owner .cmt-name { color: var(--accent); }
       .cmt-time { font-size: 10px; color: var(--text-faint); }
       .cmt-row { display: flex; align-items: baseline; gap: 6px; }
@@ -3599,7 +3600,7 @@ export default {
               '<span class="cmt-av" data-uid="' + esc(c.uid) + '"></span>' +
               '<span class="cmt-main">' +
               '<span class="cmt-row">' +
-              '<span class="cmt-name">' + esc(c.name) + (isAuthor ? '（作者）' : '') + '</span>' +
+              '<span class="cmt-name">' + esc(c.name) + (c.isMod ? ' <span class="mod-badge">🛡️ 审核员</span>' : '') + (isAuthor ? '（作者）' : '') + '</span>' +
               '<span class="cmt-time">' + esc(cmtFmt(c.at)) + '</span>' +
               (canDel ? '<button class="cmt-del" data-del="' + esc(c.id) + '" type="button">删除</button>' : '') +
               '</span>' +

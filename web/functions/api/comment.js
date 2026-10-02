@@ -53,18 +53,31 @@ async function writeComments(kv, work, list) {
    作品作者的身份变了以后就再也对不上了。 */
 async function decorate(kv, list, workOwnerUid) {
   const out = []
+  // 审核员名单循环外读一次 —— 放循环里的话，N 条评论就要读 N 次 KV
+  let modSet = new Set()
+  try {
+    const { readMods, readModBan } = await import('./_mod.js')
+    const mods = await readMods(kv)
+    for (const m of mods) {
+      if (!(await readModBan(kv, m.uid))) modSet.add(m.uid)
+    }
+  } catch (e) {}
   for (const c of list) {
     if (!c || typeof c.id !== 'string') continue
     let name = '已注销'
+    let isMod = false
     const uid = c.uid || ''
     if (uid) {
       const u = await readUser(kv, uid)
       if (u) name = u.username
+      // 评论者是审核员就带个标记，前端在名字旁边挂勋章
+      isMod = modSet.has(uid)
     }
     out.push({
       id: c.id,
       uid,
       name,
+      isMod,
       text: String(c.text || '').slice(0, MAX_LEN),
       at: Number(c.at) || 0,
       owner: !!(workOwnerUid && uid && uid === workOwnerUid),
