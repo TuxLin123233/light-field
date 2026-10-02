@@ -737,42 +737,7 @@ export default {
         cursor: pointer;
       }
 
-      .join-card {
-        margin-top: 16px;
-        padding: 14px 16px;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 16px;
-      }
-
-      .join-ico { font-size: 26px; line-height: 1; flex: 0 0 auto; }
-
-      .join-body { flex: 1; min-width: 0; }
-
-      .join-title { font-size: 14px; font-weight: 700; color: var(--text); }
-
-      .join-desc {
-        font-size: 11px;
-        color: var(--text-faint);
-        margin-top: 3px;
-        line-height: 1.5;
-      }
-
-      .join-btn {
-        flex: 0 0 auto;
-        text-decoration: none;
-        border: none;
-        border-radius: 999px;
-        background: var(--accent);
-        color: #fff;
-        font-size: 13px;
-        font-weight: 600;
-        padding: 9px 14px;
-        cursor: pointer;
-      }
+      
 
       .disclaimer {
         margin-top: 28px;
@@ -1604,15 +1569,6 @@ export default {
       <div id="gallery" class="gallery-grid"></div>
       <div id="sentinel" class="status">加载中…</div>
       <div id="status" class="status" hidden></div>
-
-      <div class="join-card">
-        <div class="join-ico">🛡️</div>
-        <div class="join-body">
-          <div class="join-title">来当小镇的守卫</div>
-          <div class="join-desc">像素小镇社区持续壮大，欢迎成为维护者：审核内容、清理违规、共建良好氛围。加入需发送正式申请书信，经作者审核通过后方可参与。</div>
-        </div>
-        <router-link class="join-btn" to="/admin">查看详情 →</router-link>
-      </div>
 
       <div class="disclaimer">
         以下作品均来自全网上传。全部作品仅支持预览，不可载入作画，请尊重原作者，切勿抄袭或直接提交他人作品。

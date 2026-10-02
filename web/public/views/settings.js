@@ -1117,7 +1117,7 @@ export default {
             <span class="entry-ico">🛡️</span>
             <span class="entry-body">
               <span class="entry-label">维护社区稳定</span>
-              <div class="entry-desc">维护者计划 · 发送正式申请书信后可加入</div>
+              <div class="entry-desc">审核社区内容 · 由作者在后台添加</div>
             </span>
             <span class="entry-arrow">›</span>
           </router-link>

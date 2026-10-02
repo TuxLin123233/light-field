@@ -491,33 +491,14 @@ export default {
     </div>
 
     <div class="card">
-      <div class="card-title">为什么需要维护者</div>
-      <div class="card-text">
-        随着社区不断壮大，作品数量持续增长。为了让社区始终<b>清朗、安全、友善</b>，
-        像素小镇面向全体用户招募维护者，与作者一起审核内容、清理违规、守护社区风气。
-      </div>
-    </div>
-
-    <div class="card">
       <div class="card-title">维护者的职责</div>
       <ul class="roles">
-        <li>审核社区作品，及时删除色情、暴力、涉政敏感、赌博、侵权等违规内容</li>
-        <li>处理其他用户的举报，维护良好的创作与交流氛围</li>
-        <li>定期向作者反馈社区情况，共同优化体验</li>
-        <li>维护者须遵守法律法规与社区规范，滥用职权者将被立即撤销资格</li>
+        <li>在社区作品列表里直接审核，发现违规内容点<b>「暂时下架」</b>并填一句原因</li>
+        <li><b>不能直接删除作品</b> —— 下架只是暂时不显示，作品本体不动，由作者决定是否真删</li>
+        <li>可以<b>恢复</b>自己或其他审核员误下架的作品</li>
+        <li>发现其他审核员滥用职权，可以直接<b>举报</b></li>
+        <li>审核员<b>没有封号权力</b>；滥用职权会被暂停审核资格</li>
       </ul>
-    </div>
-
-    <div class="card">
-      <div class="card-title">如何加入维护者计划</div>
-      <ol class="steps">
-        <li>写一封<b>正式申请书信</b>：须符合书信格式（称谓、正文、落款、日期齐全）。<b>格式不正式、内容敷衍的一律不通过</b>。</li>
-        <li>信中必须写明两点：<b>① 你为什么要成为维护者</b>（加入的动机）；<b>② 成为维护者后你打算做什么</b>（具体的职责承诺）。</li>
-        <li>将书信发送至作者邮箱：<b>linsifan123233@petalmail.com</b>（也可微信联系 Tux123233）。</li>
-        <li>作者审核通过后，会回复<b>维护者口令</b>。凭口令即可进入下方的维护面板。</li>
-      </ol>
-      <a class="mail-go" id="mailBtn" href="mailto:linsifan123233@petalmail.com?subject=%E5%85%89%E5%9F%9F%E7%94%BB%E6%9D%BF%E7%BB%B4%E6%8A%A4%E8%80%85%E7%94%B3%E8%AF%B7%E4%B9%A6">✉️ 发送申请书信</a>
-      <div class="contact">微信：Tux123233 · 邮箱：linsifan123233@petalmail.com</div>
     </div>
 
     <div class="card login" id="loginCard">
