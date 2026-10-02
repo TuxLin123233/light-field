@@ -3,6 +3,22 @@ export default {
   name: 'faq',
   title: '常见问题',
   css: `
+      /* 返回键：以前这三个页面既没有底部导航、也没有返回按钮，
+         进去了只能按浏览器的后退。齿轮按钮删掉之后更是彻底出不去。 */
+      .faq-back {
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid var(--border-strong);
+        background: var(--surface-2);
+        color: var(--text-muted);
+        border-radius: 999px;
+        padding: 6px 13px;
+        font-size: 12px;
+        font-weight: 700;
+        text-decoration: none;
+        margin-bottom: 12px;
+      }
+
       .faq-wrap { width: 100%; max-width: 560px; margin: 0 auto; }
 
       .faq-head { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
@@ -76,6 +92,7 @@ export default {
   `,
   template: `
     <div class="faq-wrap">
+      <router-link class="faq-back" to="/settings">← 设置</router-link>
       <div class="faq-head">
         <div class="header-text">
           <h1>常见问题</h1>

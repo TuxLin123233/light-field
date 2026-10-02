@@ -2,7 +2,23 @@
 export default {
   name: 'changelog',
   title: '更新日志',
-  css: `      /* hidden 属性兜底：避免类选择器里的 display 覆盖 UA 的 [hidden]{display:none} */
+  css: `
+      /* 返回键：以前这三个页面既没有底部导航、也没有返回按钮，
+         进去了只能按浏览器的后退。齿轮按钮删掉之后更是彻底出不去。 */
+      .cl-back {
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid var(--border-strong);
+        background: var(--surface-2);
+        color: var(--text-muted);
+        border-radius: 999px;
+        padding: 6px 13px;
+        font-size: 12px;
+        font-weight: 700;
+        text-decoration: none;
+        margin-bottom: 12px;
+      }
+      /* hidden 属性兜底：避免类选择器里的 display 覆盖 UA 的 [hidden]{display:none} */
       [hidden] { display: none !important; }
 
       :root {
@@ -247,6 +263,7 @@ export default {
       }
 `,
   template: `<div class="container">
+      <router-link class="cl-back" to="/settings">← 设置</router-link>
       <div class="header">
         <div class="header-text">
           <h1>更新日志</h1>
