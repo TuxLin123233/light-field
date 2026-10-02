@@ -29,8 +29,11 @@ window.LWWorkMenu = (function () {
        就永远铺在页面上，把后面所有点击都吃掉（表现是菜单关不掉、页面点不动）。 */
     '.lwwm-mask[hidden]{display:none}',
     '.lwwm-box{width:100%;max-width:280px;background:#f7f7f7;border-radius:14px;overflow:hidden;',
-    'box-shadow:0 18px 50px rgba(0,0,0,.32);animation:lwwm-in .15s ease-out;}',
-    '@keyframes lwwm-in{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:none}}',
+    'box-shadow:0 18px 50px rgba(0,0,0,.32);' +
+    'animation:lwwm-in .2s cubic-bezier(.2,1.3,.4,1);transform-origin:var(--lwwm-o,50% 50%);}',
+    '@keyframes lwwm-in{from{opacity:0;transform:scale(.9) translateY(6px)}' +
+    '60%{opacity:1;transform:scale(1.015)}to{opacity:1;transform:none}}' +
+    '@media (prefers-reduced-motion:reduce){.lwwm{animation:none}}',
     /* 深色模式下别变成一块白板 */
     '@media (prefers-color-scheme:dark){.lwwm-box{background:#2c2a28}}',
     'html[data-theme="dark"] .lwwm-box{background:#2c2a28}',

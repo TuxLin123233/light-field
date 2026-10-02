@@ -1266,6 +1266,12 @@ export default {
       liked = true
       if (d.book && window.dust && window.dust.take) window.dust.take(d.book)
       if (window.sfx) window.sfx('coin')
+      /* 送出后从「送光尘」按钮上飘一个 -N，给一个明确的「扣掉了」的反馈。
+         光尘账本那个数字本身也会跳一下（在 dust 组件里）。 */
+      if (window.LWDialog && window.LWDialog.floatText) {
+        const btn = document.querySelector('[data-gifthome]') || document.querySelector('.tw-gift')
+        window.LWDialog.floatText(btn || document.body, '-' + giftCost + ' ✨', { color: '#c0392b' })
+      }
       msg('光尘送到了，' + who + ' 会看到的 ✨')
       renderHome()
     }

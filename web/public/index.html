@@ -606,7 +606,9 @@
         position: fixed;
         left: 50%;
         bottom: 96px;
-        transform: translate(-50%, 0);
+        /* 收起状态：往下沉一点、缩一点、透明 */
+        transform: translate(-50%, 14px) scale(.94);
+        transform-origin: 50% 100%;
         z-index: 120;
         max-width: 86vw;
         padding: 10px 18px;
@@ -616,11 +618,20 @@
         font-size: 13px;
         font-weight: 600;
         text-align: center;
+        word-break: break-word;
         opacity: 0;
         pointer-events: none;
-        transition: opacity 0.25s, transform 0.25s;
+        /* 消失用短促的 ease-in；出现时换成弹性曲线（见 .show） */
+        transition: opacity .18s ease-in, transform .18s ease-in;
       }
-      #toast.show { opacity: 1; transform: translate(-50%, 0); }
+      #toast.show {
+        opacity: 1;
+        transform: translate(-50%, 0) scale(1);
+        transition: opacity .22s ease-out, transform .34s cubic-bezier(.2, 1.35, .4, 1);
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #toast, #toast.show { transition: opacity .12s linear; transform: translate(-50%, 0); }
+      }
       /* ---------- 首次访问的重要提示（只跳一次，须读满 20 秒） ---------- */
       #firstNotice {
         position: fixed; inset: 0; z-index: 9999;
@@ -634,6 +645,15 @@
         background: var(--surface, #fff); color: var(--text, #3b342c);
         border-radius: 18px; padding: 26px 22px 20px;
         box-shadow: 0 20px 60px rgba(0, 0, 0, .3);
+        animation: fnBoxIn .34s cubic-bezier(.2, 1.25, .4, 1);
+      }
+      @keyframes fnBoxIn {
+        from { opacity: 0; transform: translateY(22px) scale(.94) }
+        65%  { opacity: 1; transform: translateY(-3px) scale(1.008) }
+        to   { opacity: 1; transform: none }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #firstNotice, .fn-box { animation: none }
       }
       .fn-box h2 { margin: 0 0 6px; font-size: 20px; font-weight: 900; }
       .fn-box .fn-sub { font-size: 13px; color: var(--text-faint, #b0a697); margin-bottom: 16px; }
@@ -1201,11 +1221,23 @@
         }
         var listeners = []
         function applyBook(book) {
+          var prevBal = server && typeof server.bal === 'number' ? server.bal : null
           server = book && typeof book.bal === 'number' ? book : null
           for (var i = 0; i < listeners.length; i++) {
             try {
               listeners[i](server)
             } catch (e) {}
+          }
+          /* 余额变了就把页面上显示光尘的地方弹一下。
+             各页面用的类名不统一，所以列一组常见选择器一起找。
+             金额没变（比如只是刷新了一次账本）就不弹，免得无意义的动效 */
+          var nowBal = server ? server.bal : null
+          if (nowBal !== null && prevBal !== null && nowBal !== prevBal && window.LWDialog && window.LWDialog.pop) {
+            var sels = ['.dust-bal', '.tw-dust', '.mine-dust', '[data-dust]', '.aw-num', '.dh-dust']
+            for (var si = 0; si < sels.length; si++) {
+              var els = document.querySelectorAll(sels[si])
+              for (var ei = 0; ei < els.length; ei++) window.LWDialog.pop(els[ei])
+            }
           }
         }
 

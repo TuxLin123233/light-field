@@ -18,12 +18,23 @@
   var CSS =
     '.lwd-mask{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;' +
     'justify-content:center;padding:22px;background:rgba(20,14,8,.42);' +
-    '-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);}' +
+    '-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);' +
+    'animation:lwd-mask-in .18s ease-out;}' +
+    '@keyframes lwd-mask-in{from{opacity:0}to{opacity:1}}' +
+    '.lwd-mask.lwd-out{animation:lwd-mask-out .16s ease-in forwards;}' +
+    '@keyframes lwd-mask-out{to{opacity:0}}' +
     '.lwd-box{width:100%;max-width:330px;background:var(--surface,#fff);' +
     'border:1px solid var(--border-strong,#d8cfc0);border-radius:16px;padding:18px 16px 14px;' +
-    'box-shadow:0 16px 44px rgba(0,0,0,.28);animation:lwd-in .16s ease-out;}' +
+    'box-shadow:0 16px 44px rgba(0,0,0,.28);' +
+    /* 弹性曲线：稍微过冲一点再落回来，比 ease-out 有生气 */
+    'animation:lwd-in .26s cubic-bezier(.2,1.3,.4,1);}' +
     '@keyframes lwd-in{from{opacity:0;transform:translateY(10px) scale(.97)}' +
+    '60%{opacity:1;transform:translateY(-2px) scale(1.012)}' +
     'to{opacity:1;transform:none}}' +
+    '.lwd-mask.lwd-out .lwd-box{animation:lwd-box-out .16s ease-in forwards;}' +
+    '@keyframes lwd-box-out{to{opacity:0;transform:translateY(6px) scale(.97)}}' +
+    '@media (prefers-reduced-motion:reduce){.lwd-mask,.lwd-mask.lwd-out,' +
+    '.lwd-mask .lwd-box,.lwd-mask.lwd-out .lwd-box{animation:none!important}}' +
     '.lwd-ico{font-size:30px;text-align:center;line-height:1.1;margin-bottom:8px;}' +
     '.lwd-title{font-size:15px;font-weight:800;color:var(--text,#2b2b2b);' +
     'text-align:center;margin-bottom:8px;}' +
@@ -40,7 +51,17 @@
     '.lwd-cancel{background:var(--surface-2,#f0ece4);color:var(--text-muted,#6b6b6b);' +
     'border:1px solid var(--border-input,#ccc)!important;}' +
     '.lwd-ok{background:var(--accent,#5b8def);color:#fff;}' +
-    '.lwd-ok.danger{background:#c0392b;}'
+    '.lwd-ok.danger{background:#c0392b;}' +
+    /* 飘字：上浮 + 淡出，末尾保持透明 */
+    '@keyframes lwd-float{0%{opacity:0;transform:translate(-50%,6px) scale(.8)}' +
+    '18%{opacity:1;transform:translate(-50%,-2px) scale(1.12)}' +
+    '34%{transform:translate(-50%,-6px) scale(1)}' +
+    '100%{opacity:0;transform:translate(-50%,-42px) scale(1)}}' +
+    /* 弹一下 */
+    '@keyframes lwd-pop{0%{transform:scale(1)}35%{transform:scale(1.28)}' +
+    '70%{transform:scale(.96)}100%{transform:scale(1)}}' +
+    '@media (prefers-reduced-motion:reduce){' +
+    '.lwd-float,.lwd-pop{animation:none!important}}'
 
   function injectStyle() {
     if (document.getElementById(STYLE_ID)) return
@@ -48,6 +69,54 @@
     st.id = STYLE_ID
     st.textContent = CSS
     document.head.appendChild(st)
+  }
+
+  /* ---------- 通用小动画工具 ----------
+     放在这里是因为 lw-dialog 每页都加载，不用再引一个新文件。 */
+
+  /* 在某个元素上方飘一个「+12 ✨」然后淡出上移。
+     用法：LWDialog.floatText(el, '+12 ✨', { color: '#5b8def' }) */
+  function floatText(anchorEl, text, opts) {
+    if (!anchorEl) return
+    var o = opts || {}
+    var reduced = false
+    try {
+      reduced = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+    } catch (e) {}
+    var r = anchorEl.getBoundingClientRect()
+    var tip = document.createElement('div')
+    tip.textContent = String(text == null ? '' : text)
+    tip.style.cssText =
+      'position:fixed;left:' + (r.left + r.width / 2) + 'px;top:' + (r.top + r.height / 4) + 'px;' +
+      'transform:translate(-50%,0);z-index:99998;pointer-events:none;' +
+      'font-size:' + (o.size || 15) + 'px;font-weight:800;font-family:inherit;' +
+      'color:' + (o.color || '#5b8def') + ';text-shadow:0 1px 3px rgba(0,0,0,.18);' +
+      'white-space:nowrap;'
+    if (reduced) {
+      tip.style.transition = 'opacity .4s'
+    } else {
+      tip.style.animation = 'lwd-float ' + (o.duration || 1100) + 'ms cubic-bezier(.2,.9,.3,1) forwards'
+    }
+    document.body.appendChild(tip)
+    setTimeout(function () {
+      if (tip.parentNode) tip.parentNode.removeChild(tip)
+    }, (o.duration || 1100) + 60)
+  }
+
+  /* 让元素弹一下，用来提示「这个数字变了」。
+     用法：LWDialog.pop(el) */
+  function pop(el) {
+    if (!el) return
+    var reduced = false
+    try {
+      reduced = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+    } catch (e) {}
+    if (reduced) return
+    el.style.animation = 'none'
+    // 强制回流，否则连续调用时动画不会重播
+    void el.offsetWidth
+    el.style.animation = 'lwd-pop .42s cubic-bezier(.2,1.4,.4,1)'
+    setTimeout(function () { el.style.animation = '' }, 460)
   }
 
   var esc = function (s) {
@@ -102,12 +171,28 @@
       if (done) return
       done = true
       document.removeEventListener('keydown', onKey, true)
-      if (layer && layer.parentNode) layer.parentNode.removeChild(layer)
+      var el = layer
       layer = null
       showing = false
       job.resolve(val)
+
+      /* 出场动画：挂 .lwd-out 让它缩回去淡掉，动画结束再移除节点。
+         直接 removeChild 是「啪」地一下消失，很生硬。
+         计时用 setTimeout 而不是 animationend —— 系统开了「减弱动态效果」
+         时动画不跑、animationend 永不触发，那样节点就留在页面上了。 */
+      var reduced = false
+      try {
+        reduced = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+      } catch (e) {}
+      var wait = reduced ? 0 : 170
+      if (el && el.parentNode) {
+        if (!reduced) el.classList.add('lwd-out')
+        setTimeout(function () {
+          if (el && el.parentNode) el.parentNode.removeChild(el)
+        }, wait)
+      }
       // 下一个稍等一下再弹，免得两次点击穿透到新对话框上
-      setTimeout(pump, 60)
+      setTimeout(pump, wait + 60)
     }
     function onKey(e) {
       if (e.key === 'Escape') {
@@ -168,7 +253,9 @@
     return open(o).then(function (v) { return v === null ? null : String(v) })
   }
 
-  window.LWDialog = { confirm: confirmBox, alert: alertBox, prompt: promptBox, open: open }
+  window.LWDialog = {
+    floatText: floatText,
+    pop: pop, confirm: confirmBox, alert: alertBox, prompt: promptBox, open: open }
   window.lwConfirm = confirmBox
   window.lwAlert = alertBox
   window.lwPrompt = promptBox
