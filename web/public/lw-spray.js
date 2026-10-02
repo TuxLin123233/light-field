@@ -3,11 +3,27 @@
 // 像素画是「逐格上色」，喷漆是「按住拖着喷」——两套交互、两套代码，
 // 互不影响。喷漆画布是 64×64，需要发布或存头像时再降采样。
 //
+// 工具：画笔 / 直线 / 矩形 / 圆 / 橡皮 / 吸管，外加四向对称。
+// 直线、矩形、圆按下记一个起点、拖着预览、抬手才真正落笔 ——
+// 形状类工具不预览的话根本没法用（不知道会画出多长一条线）。
+//
 // 供两处使用：
 //   画板「像素喷漆」创作模式 → 直接用 64×64 发布
 //   头像编辑器「喷漆」选项   → 降采样到 16×16
 window.LWSpray = (function () {
   var UNDO_MAX = 24
+
+  /* 可选工具。头像编辑器只用到「画笔」，所以默认值必须是 brush，
+     老调用方（setTool 之前就存在的那些）不受影响。 */
+  var TOOLS = ['brush', 'line', 'rect', 'circle', 'eraser', 'picker']
+  var TOOL_LABEL = {
+    brush: '画笔',
+    line: '直线',
+    rect: '矩形',
+    circle: '圆',
+    eraser: '橡皮',
+    picker: '吸管',
+  }
 
   /**
    * create(canvas, opts) -> controller
@@ -26,8 +42,12 @@ window.LWSpray = (function () {
     var lastX = -1
     var lastY = -1
     var brush = o.brush || 3
-    var mirror = false
     var bg = o.bg || null
+    var tool = 'brush'
+    /* 对称：位掩码，1=左右、2=上下、3=四角。
+       原先是个布尔量（只做左右），setMirror(true) 仍映射到左右。 */
+    var sym = 0
+    var anchor = null
     // 底层像素缓冲：只存已画的格子，null 表示空
     var buf = new Array(N * N).fill(null)
 
@@ -121,12 +141,29 @@ window.LWSpray = (function () {
       }
     }
 
+    /* 写一格。col 为 null 表示擦掉（橡皮工具）。 */
     function put(x, y, col) {
       if (x < 0 || y < 0 || x >= N || y >= N) return
-      buf[y * N + x] = [col[0], col[1], col[2]]
+      var i = y * N + x
+      if (col) buf[i] = [col[0], col[1], col[2]]
+      else buf[i] = null
     }
 
-    /** 圆头笔刷：半径 r 内填色；开镜像时左右同时落 */
+    /* 按当前对称设置写一格。位掩码：1 左右镜像、2 上下镜像、3 四角。 */
+    function putSym(x, y, col) {
+      if (x < 0 || y < 0 || x >= N || y >= N) return
+      put(x, y, col)
+      if (sym === 3) {
+        put(N - 1 - x, y, col)
+        put(x, N - 1 - y, col)
+        put(N - 1 - x, N - 1 - y, col)
+        return
+      }
+      if (sym === 1) put(N - 1 - x, y, col)
+      else if (sym === 2) put(x, N - 1 - y, col)
+    }
+
+    /** 圆头笔刷：半径 r 内填色；开对称时各镜像位置同时落 */
     function dabFull(cx, cy, r, col) {
       var ri = Math.max(0, Math.round(r) - 1)
       for (var dy = -ri; dy <= ri; dy++) {
@@ -134,8 +171,76 @@ window.LWSpray = (function () {
           var d = Math.hypot(dx, dy)
           if (d > r) continue
           if (d > r - 1 && d <= r && ((dx + dy) & 1)) continue
-          put(cx + dx, cy + dy, col)
-          if (mirror) put(N - 1 - (cx + dx), cy + dy, col)
+          putSym(cx + dx, cy + dy, col)
+        }
+      }
+    }
+
+    /* ---- 形状：全部按 putSym 落笔，所以对称对形状一样生效 ---- */
+
+    /** 两点之间用笔刷连成线（Bresenham）。画直线工具用。 */
+    function stampLine(x0, y0, x1, y1, r, col) {
+      var dx = Math.abs(x1 - x0)
+      var dy = -Math.abs(y1 - y0)
+      var sx = x0 < x1 ? 1 : -1
+      var sy = y0 < y1 ? 1 : -1
+      var err = dx + dy
+      for (;;) {
+        dabFull(x0, y0, r, col)
+        if (x0 === x1 && y0 === y1) break
+        var e2 = 2 * err
+        if (e2 >= dy) { err += dy; x0 += sx }
+        if (e2 <= dx) { err += dx; y0 += sy }
+      }
+    }
+
+    /** 矩形边框。filled 为真时填满。 */
+    function stampRect(x0, y0, x1, y1, r, col, filled) {
+      var ax = Math.min(x0, x1), bx = Math.max(x0, x1)
+      var ay = Math.min(y0, y1), by = Math.max(y0, y1)
+      for (var y = ay; y <= by; y++) {
+        for (var x = ax; x <= bx; x++) {
+          var edge = x === ax || x === bx || y === ay || y === by
+          if (edge || filled) dabFull(x, y, r, col)
+        }
+      }
+    }
+
+    /** 以 (x0,y0)-(x1,y1) 为外接框的椭圆。画「圆」时框是正方形，
+        看起来就是正圆；拖成扁的也允许。
+
+        逐行扫、每行算左右两个边界 x —— 不要改成「按角度均匀采样」：
+        采样的步长在左右两极最大（那里 x 几乎不变、y 一跳两三格），
+        圆环上就会缺两格。像素画宁可多画也不要断口。 */
+    function stampEllipse(x0, y0, x1, y1, r, col, filled) {
+      var ax = Math.min(x0, x1), bx = Math.max(x0, x1)
+      var ay = Math.min(y0, y1), by = Math.max(y0, y1)
+      var rx = (bx - ax) / 2
+      var ry = (by - ay) / 2
+      var cx = ax + rx
+      var cy = ay + ry
+      if (rx < 0.5 || ry < 0.5) {
+        dabFull(Math.round(cx), Math.round(cy), r, col)
+        return
+      }
+      var yA = Math.round(cy - ry)
+      var yB = Math.round(cy + ry)
+      for (var y = yA; y <= yB; y++) {
+        var ny = (y - cy) / ry
+        var s = 1 - ny * ny
+        if (s < 0) continue
+        var dx = rx * Math.sqrt(s)
+        var xl = Math.round(cx - dx)
+        var xr = Math.round(cx + dx)
+        if (filled) {
+          for (var x = xl; x <= xr; x++) dabFull(x, y, r, col)
+        } else if (xr - xl <= 1) {
+          // 最宽那一行左右两点挨在一起，直接连着画，
+          // 否则正圆的正左正右各断一格
+          for (var x2 = xl; x2 <= xr; x2++) dabFull(x2, y, r, col)
+        } else {
+          dabFull(xl, y, r, col)
+          dabFull(xr, y, r, col)
         }
       }
     }
@@ -163,34 +268,80 @@ window.LWSpray = (function () {
       }
     }
 
+    /* 形状类工具：返回 true 表示走的是「预览 → 抬手落笔」这条路 */
+    function isShapeTool(t) {
+      return t === 'line' || t === 'rect' || t === 'circle'
+    }
+
+    /* 形状工具拖动期间 buf 本身就是「预览缓冲」——每帧从起点快照 base
+       重新复制一份再画形状，而不是在上一帧结果上继续叠加：
+       叠加会让先前画过的那条线越拖越粗。抬手只清 base，不动 buf，
+       因为 buf 里已经是最终结果了。 */
+    var base = null
+
+    function repaintShape(x1, y1, col) {
+      if (!base || !anchor) return
+      buf = base.map(function (q) { return q ? q.slice() : null })
+      if (tool === 'line') stampLine(anchor.x, anchor.y, x1, y1, brush, col)
+      else if (tool === 'rect') stampRect(anchor.x, anchor.y, x1, y1, brush, col, o && o.fillShape)
+      else if (tool === 'circle') stampEllipse(anchor.x, anchor.y, x1, y1, brush, col, o && o.fillShape)
+      render()
+    }
+
     function onDown(ev) {
-      ev.preventDefault()
       var p = at(ev)
       if (!p) return
+      if (tool === 'picker') {
+        // 吸管：取那一格的颜色交给调用方，不动画面
+        var c = buf[p.y * N + p.x]
+        if (c && o.onPick) o.onPick([c[0], c[1], c[2]])
+        if (window.sfx) { try { window.sfx('tick') } catch (e) {} }
+        return
+      }
+      ev.preventDefault()
       drawing = true
       snapshot()
-      var col = o.getColor ? o.getColor() : [0, 0, 0]
-      dabFull(p.x, p.y, brush, col)
+      var col = tool === 'eraser' ? null : (o.getColor ? o.getColor() : [0, 0, 0])
       lastX = p.x
       lastY = p.y
-      render()
+      if (isShapeTool(tool)) {
+        anchor = { x: p.x, y: p.y }
+        base = buf.map(function (q) { return q ? q.slice() : null })
+        // 按下这一帧就画一次，拖不动也能看到一个点
+        repaintShape(p.x, p.y, col)
+      } else {
+        dabFull(p.x, p.y, brush, col)
+        render()
+      }
       if (o.onChange) o.onChange()
     }
+
     function onMove(ev) {
       if (!drawing) return
       var p = at(ev)
       if (!p) return
       if (p.x === lastX && p.y === lastY) return
-      var col = o.getColor ? o.getColor() : [0, 0, 0]
-      line(lastX, lastY, p.x, p.y, brush, col)
       lastX = p.x
       lastY = p.y
-      render()
+      var col = tool === 'eraser' ? null : (o.getColor ? o.getColor() : [0, 0, 0])
+      if (isShapeTool(tool)) {
+        repaintShape(p.x, p.y, col)
+      } else {
+        line(lastX, lastY, p.x, p.y, brush, col)
+        render()
+      }
       if (o.onChange) o.onChange()
     }
+
     function onUp() {
+      if (!drawing) return
       drawing = false
       lastX = lastY = -1
+      if (base) {
+        // buf 里已经是最终结果，只要把起点快照丢掉就行
+        base = null
+        anchor = null
+      }
     }
 
     canvas.addEventListener('pointerdown', onDown)
@@ -207,14 +358,22 @@ window.LWSpray = (function () {
       size: N,
       setBrush: function (v) { brush = Math.max(1, Math.min(8, Math.round(v) || 1)) },
       getBrush: function () { return brush },
-      setMirror: function (v) { mirror = !!v },
-      getMirror: function () { return mirror },
+      setMirror: function (v) { sym = v ? 1 : 0 },
+      getMirror: function () { return sym === 1 },
+      /* 对称档位：0 关 / 1 左右 / 2 上下 / 3 四角（位掩码） */
+      setSym: function (v) { sym = Math.max(0, Math.min(3, Math.round(Number(v)) || 0)) },
+      getSym: function () { return sym },
+      /* 选工具。传不在名单里的值一律退回画笔，别把画板弄成不能画的状态 */
+      setTool: function (t) { tool = TOOLS.indexOf(t) >= 0 ? t : 'brush' },
+      getTool: function () { return tool },
       setColor: function () { render() },
       clear: function () { snapshot(); buf = new Array(N * N).fill(null); render(); if (o.onChange) o.onChange() },
       undo: function () {
         var prev = undoStack.pop()
         if (!prev) return false
         buf = prev
+        base = null
+        anchor = null
         render()
         if (o.onChange) o.onChange()
         return true
@@ -234,6 +393,8 @@ window.LWSpray = (function () {
       load: function (arr) {
         snapshot()
         buf = new Array(N * N).fill(null)
+        base = null
+        anchor = null
         if (Array.isArray(arr)) {
           for (var i = 0; i < Math.min(arr.length, buf.length); i++) {
             var p = arr[i]
@@ -297,5 +458,9 @@ window.LWSpray = (function () {
     }
   }
 
-  return { create: create }
+  return {
+    create: create,
+    TOOLS: TOOLS,
+    TOOL_LABEL: TOOL_LABEL,
+  }
 })()

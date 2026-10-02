@@ -113,8 +113,23 @@ export async function onRequestPost(context) {
   const author = (rawAuthor || legacyName).trim().slice(0, 20) || '匿名'
   const name = workName || author
 
+  /* 客户端声明这幅画是哪个方向的画板产出的（目前只有重力）。
+     作品里也留一份，以后做数据统计时能分清。
+     注意：这个字段由客户端自称，所以它只用来「排除」，
+     绝不用来给什么好处 —— 好处一律服务端自己判。 */
+  const ink = body && body.ink === 'gravity' ? 'gravity' : ''
+
+  /* 重力绘画不参加本周主题比赛。
+
+     前端已经藏了入口、也不往 payload 里带 contest，但这里还要拦一道：
+     客户端说什么都不算数，改个参数就能绕过 UI。
+     直接拒收而不是静默忽略 —— 静默忽略的话，用户的作品会发出去却没进榜，
+     他只会看到「明明勾了比赛却没进」，比报错更难查。 */
   const rawContest = body && typeof body.contest === 'string' ? body.contest.trim() : ''
   if (rawContest) {
+    if (ink === 'gravity') {
+      return json({ error: '像素重力的画不参加本周主题比赛，换个方向画就能报名了' }, 400)
+    }
     const cinfo = contestInfo()
     if (cinfo.week !== rawContest) {
       return json({ error: 'contest 只能报名本周主题（当前为 ' + cinfo.week + '）' }, 400)
@@ -159,6 +174,8 @@ export async function onRequestPost(context) {
   if (animObj) entry.type = 'anim'
   if (animObj) entry.anim = animObj
   if (rawContest) entry.contest = rawContest
+  // 方向标记：统计时可分清是哪套画板产出的
+  if (ink) entry.ink = ink
   if (body && body.room === true) entry.room = true
 
   // 标签：最多 3 个，每个最多 6 字，只保留安全字符

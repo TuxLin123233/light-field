@@ -212,7 +212,7 @@ window.LWGravity = (function () {
        抖一下它们就顺着坡滑到底，沙堆会塌一圈 —— 落沙该有的手感。 */
     var shakeLeft = 0
     function jiggle() {
-      shakeLeft = Math.max(shakeLeft, 14)
+      shakeLeft = Math.max(shakeLeft, 28)
       wake()
     }
     function settleShake() {
@@ -229,7 +229,7 @@ window.LWGravity = (function () {
             moved = true
             continue
           }
-          if (shakeLeft > 0 && Math.random() < 0.35) {
+          if (shakeLeft > 0 && Math.random() < 0.55) {
             var d = Math.random() < 0.5 ? -1 : 1
             var nx = x + d
             if (nx >= 0 && nx < N && !buf[below + d]) {

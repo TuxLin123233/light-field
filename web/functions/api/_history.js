@@ -220,6 +220,21 @@ export async function incrementContestVotes(kv, time) {
   return { found: res.found, votes: res.entry ? res.entry.contestVotes : 0 }
 }
 
+/** 只读地查一条作品，不做任何写入。
+    markByTime 是直接落盘的：先用它打标记、等跑完再判断合不合法，
+    就撤不回来了（要撤得再写一次，等于白给 KV 加一次写）。
+    所以「先看一眼再决定写不写」的场景都用这个。
+    返回 { found, last }，last 是这一条的完整记录。 */
+export async function findByTime(kv, time) {
+  const meta = await ensureIndexed(kv)
+  for (let i = meta.chunks.length - 1; i >= 0; i--) {
+    const arr = await readChunk(kv, meta.chunks[i])
+    const j = arr.findIndex((e) => e && (e.time || 0) === time)
+    if (j !== -1) return { found: true, entry: arr[j], last: arr[j] }
+  }
+  return { found: false, entry: null, last: null }
+}
+
 // 删除某条作品；返回删除后的最新一条（用于修正 pixels）
 // 给单条记录打/撤一个字段（用于每日挑战报名等）
 export async function markByTime(kv, time, key, value) {

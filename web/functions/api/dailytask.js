@@ -76,7 +76,10 @@ async function metricsFor(kv, uid, user) {
   const ownedFurn = (house.owned || []).filter((x) => x && !isSurfaceId(x)).length
   m.furnOwned = ownedFurn
   m.furnPlaced = (house.items || []).length
-  m.houseSize = (house.items || []).length
+  // 房子多大看的是 size（格数），跟摆了几件家具没关系。
+  // 之前这里复制粘贴成了 items.length，于是「把房子升级到 24 格」
+  // 和「摆 24 件家具」永远同时完成，升级任务形同虚设。
+  m.houseSize = house.size
   m.hasWallpaper = hasCustomSurface(house) ? 1 : 0
 
   /* 材料：累计捡到过多少。背包只存「当前持有」，

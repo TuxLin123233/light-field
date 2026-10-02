@@ -229,6 +229,53 @@ color: var(--text-muted);
         color: #fff;
         border-color: var(--accent, #5b8def);
       }
+
+      /* ---------- 工具按钮：图标在上、文字在下 ----------
+         和 .actions 里那排「像素相机 / 下载」是同一套版式（那边叫 .abtn），
+         这边另起一个名字是因为那些规则都挂在 .actions 下面，
+         直接套到工具条上不生效。
+
+         为什么必须有下方文字：光有 🫂 这样的图标，看不出是干什么的 ——
+         玩家不知道「抖一抖」是什么，也就不敢按。工具条上的每个键
+         都是一次性功能、没有文字提示就等于没有。 */
+      .spray-tools .gtool,
+      .gravity-tools .gtool {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        line-height: 1;
+        padding: 5px 4px 4px;
+        min-width: 46px;
+        background: var(--surface-2);
+        border: 1px solid var(--border-input);
+        border-radius: 12px;
+        color: var(--text);
+        font-family: inherit;
+        cursor: pointer;
+      }
+      .spray-tools .gtool:active,
+      .gravity-tools .gtool:active { transform: scale(0.95); }
+      .spray-tools .gtool[aria-pressed='true'],
+      .gravity-tools .gtool[aria-pressed='true'] {
+        background: var(--accent, #5b8def);
+        color: #fff;
+        border-color: var(--accent, #5b8def);
+      }
+      .spray-tools .gtool-ico,
+      .gravity-tools .gtool-ico { font-size: 17px; line-height: 1; display: block; height: 17px; }
+      .spray-tools .gtool-tx,
+      .gravity-tools .gtool-tx {
+        font-size: 10px;
+        font-weight: 700;
+        color: var(--text-muted2);
+        white-space: nowrap;
+      }
+      .spray-tools .gtool[aria-pressed='true'] .gtool-tx,
+      .gravity-tools .gtool[aria-pressed='true'] .gtool-tx { color: #fff; }
+      /* 工具多起来会换行，这一行靠左并自动换行，不留半截 */
+      .spray-tools, .gravity-tools { display: flex; gap: 6px; flex-wrap: wrap; }
       .spray-size {
         display: flex;
         align-items: center;
@@ -253,6 +300,24 @@ color: var(--text-muted);
         width: 18px;
         text-align: right;
         flex: none;
+      }
+      /* 对称档位按钮 */
+      .spray-sym-btn {
+        padding: 5px 10px;
+        border-radius: 999px;
+        border: 1px solid var(--border-input);
+        background: var(--surface-2);
+        color: var(--text-muted);
+        font-size: 12px;
+        font-weight: 700;
+        font-family: inherit;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      .spray-sym-btn.active {
+        background: var(--accent, #5b8def);
+        color: #fff;
+        border-color: var(--accent, #5b8def);
       }
       /* ---------- 像素重力（落沙，与像素画/喷漆并列的第三套） ---------- */
       #gravityBoard {
@@ -319,8 +384,8 @@ color: var(--text-muted);
          而且它们和 .spray-bar / .gravity-bar 里的 ↩️ 🗑️ 长得一模一样，
          同一个动作在屏幕上并排出现两次。
 
-         像素相机（只对像素画有意义）和镜像也一样：镜像在喷漆有自己的
-         一份（#sprayMirror），重力模式压根没有镜像这回事。 */
+         像素相机（只对像素画有意义）和镜像也一样：镜像在喷漆有自己的一组
+         对称档位（工具条上的 关/左右/上下/四角），重力模式压根没有对称这回事。 */
       body.spray-on #undoBtn,
       body.spray-on #clearBtn,
       body.spray-on #imgBtn,
@@ -329,6 +394,18 @@ color: var(--text-muted);
       body.gravity-on #clearBtn,
       body.gravity-on #imgBtn,
       body.gravity-on #mirrorBtn { display: none; }
+
+      /* 重力绘画不参加任何比赛：每日挑战与本周主题比赛都跟它不搭 ——
+         颗粒是往下堆的，裁剪后的构图随机得没法跟主题对应，
+         硬参加只会给两边添麻烦（榜单上一堆看不出主题的沙堆）。
+
+         这里只藏入口。真正的拦截有三道，都在别处：
+           · applyStartChoices —— 从启动页进来时就不勾
+           · 发布那一段       —— payload 里不带 contest、不 joinDaily
+           · set.js          —— 服务端见到 ink=gravity 直接拒收 contest
+         光靠藏 UI 挡不住 payload：画板可能先在像素画下勾了比赛、
+         再切到重力方向，那时 contestCheck.checked 仍然是 true。 */
+      body.gravity-on #joinCard { display: none; }
 
       /* 喷漆模式下把像素画专属的行藏起来 */
       body.spray-on .size-row,
@@ -2226,7 +2303,7 @@ color: var(--text-muted);
           </div>
           <label class="start-toggle">
             <input type="checkbox" id="startSprayMirror">
-            <span class="start-body"><b>🦋 左右镜像</b><i>只喷一半，另一边自动对称</i></span>
+            <span class="start-body"><b>🦋 左右镜像</b><i>只喷一半，另一边自动对称（进画板后还能改成上下或四角）</i></span>
           </label>
         </div>
 
@@ -2283,10 +2360,41 @@ color: var(--text-muted);
           <span class="spray-cur-tx" id="sprayCurTx">#e53935</span>
         </span>
       </div>
-      <div class="spray-tools">
-        <button class="spray-tool" type="button" id="sprayUndo" title="撤销">↩️</button>
-        <button class="spray-tool" type="button" id="sprayClear" title="清空">🗑️</button>
-        <button class="spray-tool" type="button" id="sprayMirror" title="左右镜像" aria-pressed="false">🦋</button>
+      <!-- 选工具：铅笔 / 直线 / 矩形 / 圆 / 橡皮 / 吸管。
+           默认是铅笔，和以前一样 —— 不用挑就能画。 -->
+      <div class="spray-tools" id="sprayTools">
+        <button class="gtool" type="button" data-tool="brush" aria-pressed="true" title="画笔">
+          <span class="gtool-ico">✏️</span><span class="gtool-tx">画笔</span>
+        </button>
+        <button class="gtool" type="button" data-tool="line" aria-pressed="false" title="直线：按住拖出一条线">
+          <span class="gtool-ico">📏</span><span class="gtool-tx">直线</span>
+        </button>
+        <button class="gtool" type="button" data-tool="rect" aria-pressed="false" title="矩形：按住拖出一个框">
+          <span class="gtool-ico">▭</span><span class="gtool-tx">矩形</span>
+        </button>
+        <button class="gtool" type="button" data-tool="circle" aria-pressed="false" title="圆：按住拖出一个圆">
+          <span class="gtool-ico">◯</span><span class="gtool-tx">圆</span>
+        </button>
+        <button class="gtool" type="button" data-tool="eraser" aria-pressed="false" title="橡皮：擦掉涂过的地方">
+          <span class="gtool-ico">🧽</span><span class="gtool-tx">橡皮</span>
+        </button>
+        <button class="gtool" type="button" data-tool="picker" aria-pressed="false" title="吸管：取画布上的颜色">
+          <span class="gtool-ico">💧</span><span class="gtool-tx">吸管</span>
+        </button>
+        <button class="gtool" type="button" id="sprayUndo" title="撤销">
+          <span class="gtool-ico">↩️</span><span class="gtool-tx">撤销</span>
+        </button>
+        <button class="gtool" type="button" id="sprayClear" title="清空">
+          <span class="gtool-ico">🗑️</span><span class="gtool-tx">清空</span>
+        </button>
+      </div>
+      <!-- 对称：不开 / 左右 / 上下 / 四角。 -->
+      <div class="spray-size" id="spraySym">
+        <span class="spray-size-label">对称</span>
+        <button class="spray-sym-btn active" type="button" data-sym="0">关</button>
+        <button class="spray-sym-btn" type="button" data-sym="1">左右</button>
+        <button class="spray-sym-btn" type="button" data-sym="2">上下</button>
+        <button class="spray-sym-btn" type="button" data-sym="3">四角</button>
       </div>
       <div class="spray-size">
         <span class="spray-size-label">笔刷</span>
@@ -2308,9 +2416,15 @@ color: var(--text-muted);
         </span>
       </div>
       <div class="gravity-tools">
-        <button class="spray-tool" type="button" id="gravityUndo" title="撤销">↩️</button>
-        <button class="spray-tool" type="button" id="gravityShake" title="抖一抖">🫂</button>
-        <button class="spray-tool" type="button" id="gravityClear" title="清空">🗑️</button>
+        <button class="gtool" type="button" id="gravityUndo" title="撤销">
+          <span class="gtool-ico">↩️</span><span class="gtool-tx">撤销</span>
+        </button>
+        <button class="gtool" type="button" id="gravityShake" title="抖一抖：让沙堆塌得更紧实">
+          <span class="gtool-ico">🫂</span><span class="gtool-tx">抖一抖</span>
+        </button>
+        <button class="gtool" type="button" id="gravityClear" title="清空">
+          <span class="gtool-ico">🗑️</span><span class="gtool-tx">清空</span>
+        </button>
       </div>
       <div class="spray-size">
         <span class="spray-size-label">一把</span>
@@ -4984,16 +5098,29 @@ color: var(--text-muted);
           for (const row of pixels) for (const px of row) flat.push(normalizePixel(px))
         }
         const payload = { pixels: flat, size: pubSize, token: authToken() }
+        // 告诉服务端这幅画是重力画的。比赛那道拦截在服务端也有一道，
+        // 靠这个字段识别 —— 前端藏了 UI 不算数
+        if (gravityOn) payload.ink = 'gravity'
         if (author) payload.author = author
-        const workName = (contestCheck.checked && contestTheme) ? '《' + contestTheme + '》' : titleInput.value.trim()
-        if (workName) payload.workName = workName
-        if (contestCheck.checked && contestWeek) payload.contest = contestWeek
-        if (fromImage) payload.fromImage = true
+
+        /* 重力绘画不参加任何比赛。
+           这里必须真的把 contest / 每日挑战拦掉，不能只靠 CSS 把入口藏起来：
+           藏了 UI 但 payload 里还带着 contest，服务端照样会把它记进本周榜单。
+           （画板可能先在像素画下勾了比赛，再切到重力方向 —— 那时
+             contestCheck.checked 仍然是 true，光藏按钮根本拦不住。） */
+        const joinContest = !gravityOn && contestCheck.checked && !!contestTheme
+        if (joinContest && contestWeek) payload.contest = contestWeek
+        if (joinContest) {
+          payload.workName = '《' + contestTheme + '》'
+        } else if (titleInput.value.trim()) {
+          payload.workName = titleInput.value.trim()
+        }
+        if (fromImage && !gravityOn) payload.fromImage = true
         const tg = readTags()
         if (tg.length) payload.tags = tg
 
         const done = await doPublish(payload, uploadBtn)
-        if (done && wantDaily && dailyId) joinDaily(done.time)
+        if (done && wantDaily && dailyId && !gravityOn) joinDaily(done.time)
       })
 
       const animPublishBtn = document.getElementById('animPublish')
@@ -5129,15 +5256,19 @@ color: var(--text-muted);
 
       function applyStartChoices() {
         if (startSize !== size) switchSize(startSize)
+        /* 重力绘画不参加任何比赛 —— 启动页里就已经不勾了，
+           别让从上一次残留的勾选状态跟过来（那段 UI 是 data-for="pixel"，
+           选重力时不显示，但状态可能还留着）。 */
+        const allowJoin = startDir !== 'gravity'
         // 活动选择同步到画板上的勾选框
         const dc = document.getElementById('dailyCheck')
         const cc = document.getElementById('contestCheck')
-        if (dc) dc.checked = startJoin === 'daily'
+        if (dc) dc.checked = allowJoin && startJoin === 'daily'
         if (cc) {
-          cc.checked = startJoin === 'contest'
+          cc.checked = allowJoin && startJoin === 'contest'
           syncContestFields()
         }
-        wantDaily = startJoin === 'daily'
+        wantDaily = allowJoin && startJoin === 'daily'
         // 图片工具
         const imgBtnEl = document.getElementById('imgBtn')
         const startImg = document.getElementById('startImage')
@@ -5164,6 +5295,11 @@ color: var(--text-muted);
                 try { window.sfx('tick') } catch (e) {}
               }
             }
+          },
+          /* 吸管：取画布上的颜色，和预设色对得上就直接点亮那一格 */
+          onPick: (rgb) => {
+            setFromRgb(rgb)
+            if (window.sfx) window.sfx('select')
           },
         })
       }
@@ -5203,7 +5339,15 @@ color: var(--text-muted);
             const b = document.getElementById('startSprayBrush')
             if (b) spray.setBrush(Number(b.value) || 3)
             const m = document.getElementById('startSprayMirror')
-            if (m) spray.setMirror(!!m.checked)
+            if (m) spray.setSym(m.checked ? 1 : 0)
+            // 工具条上的对称高亮要跟着引擎的实际状态走
+            if (typeof paintSym === 'function') paintSym()
+            // 工具也重置成画笔：免得从上一轮留下来一个吸管，
+            // 进画板想画一笔却只取到了颜色
+            spray.setTool('brush')
+            document.querySelectorAll('#sprayTools [data-tool]').forEach((x) => {
+              x.setAttribute('aria-pressed', String(x.getAttribute('data-tool') === 'brush'))
+            })
             spray.render()
           }
         }
@@ -5335,15 +5479,34 @@ color: var(--text-muted);
           if (window.sfx) window.sfx('clear')
         })
       }
-      const sprayMirror = document.getElementById('sprayMirror')
-      if (sprayMirror) {
-        sprayMirror.addEventListener('click', () => {
-          const on = sprayMirror.getAttribute('aria-pressed') !== 'true'
-          sprayMirror.setAttribute('aria-pressed', String(on))
-          if (spray) spray.setMirror(on)
+      /* 选工具 + 对称档位。
+
+         工具条上每个键都是「一次性动作、没有文字提示就等于没有」，
+         所以按钮一律带下方文字；选中态用 aria-pressed 表达，
+         样式和键盘可达性都跟原来的 checkbox 方案一致。 */
+      document.querySelectorAll('#sprayTools [data-tool]').forEach((b) => {
+        b.addEventListener('click', () => {
+          const t = b.getAttribute('data-tool')
+          document.querySelectorAll('#sprayTools [data-tool]').forEach((x) => {
+            x.setAttribute('aria-pressed', String(x === b))
+          })
+          if (spray) spray.setTool(t)
           if (window.sfx) window.sfx('tick')
         })
+      })
+      const symBtns = Array.prototype.slice.call(document.querySelectorAll('#spraySym [data-sym]'))
+      function paintSym() {
+        const cur = spray ? spray.getSym() : 0
+        symBtns.forEach((b) => b.classList.toggle('active', Number(b.getAttribute('data-sym')) === cur))
       }
+      symBtns.forEach((b) => {
+        b.addEventListener('click', () => {
+          const v = Number(b.getAttribute('data-sym'))
+          if (spray) spray.setSym(v)
+          paintSym()
+          if (window.sfx) window.sfx('tick')
+        })
+      })
 
       /* 重力工具条 */
       const gravityBrush = document.getElementById('gravityBrush')

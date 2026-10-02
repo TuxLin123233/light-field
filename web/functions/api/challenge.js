@@ -1,5 +1,5 @@
 // 每日挑战 API：GET 看今日题目与当日榜；POST 报名（写入 daily 字段）
-import { readAllHistory, markByTime } from './_history.js'
+import { readAllHistory, markByTime, findByTime } from './_history.js'
 import { dailyInfo, todayId } from './_daily.js'
 
 const CORS_HEADERS = {
@@ -57,6 +57,11 @@ export async function onRequestGet(context) {
   })
 }
 
+/* 重力绘画不参加任何比赛，每日挑战也一样（与 set.js 里拦 contest 同理：
+   颗粒往下堆，裁剪后构图随机，跟每日题目对不上）。
+   前端本来就不发这个请求，这里再挡一道 —— 改个请求就绕过去了。 */
+const INK_BLOCKED = new Set(['gravity'])
+
 export async function onRequestPost(context) {
   const { request, env } = context
   if (!env.LIGHTFIELD_KV) return json({ error: 'LIGHTFIELD_KV is not configured' }, 500)
@@ -72,9 +77,22 @@ export async function onRequestPost(context) {
   if (!Number.isFinite(time) || time <= 0) return json({ error: '缺少作品时间戳' }, 400)
 
   const day = todayId()
+
+  /* 先查这幅画是什么方向画的，确认能报名了再写 daily 标记。
+
+     不能反过来：markByTime 是直接写入的，跑完再判断就撤不回来了
+     （要撤还得再写一次，等于给 KV 加一次无谓的写）。
+     所以这里先用 findByTime 只读地看一眼。 */
+  const peek = await findByTime(env.LIGHTFIELD_KV, time)
+  if (!peek.found) return json({ error: '作品不存在' }, 404)
+  const ink = peek.last && peek.last.ink
+  if (ink && INK_BLOCKED.has(ink)) {
+    return json({ error: '像素重力的画不参加每日挑战，换个方向画就能报名了' }, 400)
+  }
+  if (peek.last && peek.last.daily) return json({ error: '这件作品已经参加过挑战了' }, 409)
+
   const res = await markByTime(env.LIGHTFIELD_KV, time, 'daily', day)
   if (!res.found) return json({ error: '作品不存在' }, 404)
-  if (res.last && res.last.daily) return json({ error: '这件作品已经参加过挑战了' }, 409)
 
   return json({ ok: true, day })
 }
