@@ -191,6 +191,15 @@ export default {
         cursor: pointer;
       }
 
+      /* ---------- 动画强度 ---------- */
+      .anim-lv-tip {
+        font-size: 11.5px;
+        color: var(--text-faint);
+        line-height: 1.7;
+        margin-top: 8px;
+      }
+      .anim-lv-tip b { color: var(--text-muted); }
+
       /* ---------- 新手引导（引导中心） ---------- */
       .guide-list { display: flex; flex-direction: column; gap: 8px; }
       .guide-row {
@@ -999,6 +1008,25 @@ export default {
             <div class="row-desc">适合在夜里画画，保护眼睛</div>
           </div>
           <input class="switch" id="darkSwitch" type="checkbox" role="switch">
+        </div>
+
+        <div class="row row-col">
+          <div class="slider-head">
+            <div>
+              <div class="row-label">动画强度</div>
+              <div class="row-desc">
+                动效越多越费电、低端机上越容易掉帧。卡就往左调
+              </div>
+            </div>
+            <span class="slider-val" id="animLvVal">标准</span>
+          </div>
+          <div class="radio-row" id="animLvRow">
+            <button class="radio-chip" type="button" data-animlv="off">关闭</button>
+            <button class="radio-chip" type="button" data-animlv="low">省电</button>
+            <button class="radio-chip" type="button" data-animlv="std">标准</button>
+            <button class="radio-chip" type="button" data-animlv="rich">丰富</button>
+          </div>
+          <div class="anim-lv-tip" id="animLvTip"></div>
         </div>
         <div class="row row-col">
           <div class="slider-head">
@@ -1851,6 +1879,40 @@ export default {
           if (window.sfx) window.sfx('tick')
         })
       }
+
+      /* ---------- 动画强度 ----------
+         四个档位，写到 <html data-anim-level>，CSS 统一开关。
+         「关闭」还会顺手停掉像素图标的定时器 —— 那些是 JS 循环，
+         光靠 CSS 停不掉。 */
+      ;(function () {
+        const row = document.getElementById('animLvRow')
+        const val = document.getElementById('animLvVal')
+        const tip = document.getElementById('animLvTip')
+        if (!row || !window.LWIcon) return
+        const LABEL = { off: '关闭', low: '省电', std: '标准', rich: '丰富' }
+        const TIP = {
+          off: '所有动画和过渡都停掉。最省电，界面会显得比较硬。',
+          low: '只停掉一直循环的装饰动效（脉冲、呼吸、闪光），入场动画保留。',
+          std: '默认。该动的地方都会动。',
+          rich: '效果更明显：循环动效更快，图标播得更勤。<b>老手机可能会卡</b>。',
+        }
+        function render() {
+          const cur = window.LWIcon.getLevel()
+          if (val) val.textContent = LABEL[cur] || cur
+          if (tip) tip.innerHTML = TIP[cur] || ''
+          row.querySelectorAll('[data-animlv]').forEach((b) => {
+            b.classList.toggle('on', b.getAttribute('data-animlv') === cur)
+          })
+        }
+        row.addEventListener('click', (e) => {
+          const b = e.target.closest('[data-animlv]')
+          if (!b) return
+          window.LWIcon.setLevel(b.getAttribute('data-animlv'))
+          if (window.sfx) window.sfx('tick')
+          render()
+        })
+        render()
+      })()
 
       /* ---------- 新手引导中心 ----------
          列表由 lw-guides.js 提供内容，这里只负责渲染和触发。

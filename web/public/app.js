@@ -183,11 +183,14 @@ router.afterEach((to) => {
 /* 尾部导航只放「一级页面」。
    设置不再占导航位了 —— 它是配置项，不是常去的地方，
    入口挪进「我的」页，把第四个位置让给更值得点开的板块。 */
+/* 底部导航。ico 里写 emoji 是给「像素图标没加载出来」时的兜底，
+   px 是自绘像素图标的名字 —— 站本身就是像素画站，导航用像素图标更合身，
+   而且 emoji 在各平台长得不一样、还动不了。 */
 const NAV_ITEMS = [
-  { path: '/paint', ico: '🎨', name: '画板' },
-  { path: '/gallery', ico: '🌆', name: '社区' },
-  { path: '/town', ico: '🏘️', name: '小镇' },
-  { path: '/mine', ico: '🌱', name: '我的' },
+  { path: '/paint', ico: '🎨', px: 'palette', name: '画板' },
+  { path: '/gallery', ico: '🌆', px: 'frame', name: '社区' },
+  { path: '/town', ico: '🏘️', px: 'house', name: '小镇' },
+  { path: '/mine', ico: '🌱', px: 'user', name: '我的' },
 ]
 function readLS(k, d) {
   try {
@@ -227,7 +230,12 @@ function hideNav(route) {
 
 const App = {
   data() {
-    return { navItems: navOrder(), showNav: !hideNav(this.$route) }
+    return {
+      navItems: navOrder(),
+      showNav: !hideNav(this.$route),
+      // 导航图标尺寸。小屏用小一号，免得挤掉文字
+      pxIconSize: (typeof window !== 'undefined' && window.innerWidth < 360) ? 20 : 22,
+    }
   },
   watch: {
     $route(to) {
@@ -253,7 +261,9 @@ const App = {
     </div>
     <nav class="bottom-nav" id="appNav" v-show="showNav">
       <router-link v-for="it in navItems" :key="it.path" :to="it.path">
-        <span class="nav-icon">{{ it.ico }}</span>{{ it.name }}
+        <span class="nav-icon" v-if="!it.px">{{ it.ico }}</span>
+        <i class="nav-icon nav-px" v-else :data-px="it.px" :data-px-size="pxIconSize" aria-hidden="true"></i>
+        {{ it.name }}
       </router-link>
     </nav>
   `,
@@ -275,3 +285,30 @@ document.addEventListener('pointerdown', (e) => {
 window.__lwRouter = router
 
 createApp(App).use(router).mount('#app')
+
+/* ---------- 自绘像素图标 ----------
+   Vue 是运行时编译的，v-for 渲染出来的 <i data-px> 要等 DOM 出来才有。
+   与其在每个组件的 updated 钩子里调一次，不如在这里统一：
+   路由一变、DOM 一变就扫一遍，没画过的补上（LWIcon 自己用
+   data-px-done 记着，重复扫不会重画）。 */
+function paintIcons() {
+  if (window.LWIcon) window.LWIcon.apply(document)
+}
+paintIcons()
+router.afterEach(function () {
+  // 换页后 DOM 才建好，等一帧再扫
+  requestAnimationFrame(paintIcons)
+  setTimeout(paintIcons, 120)
+})
+// 视图内部动态插内容（列表、弹层）时也能补上
+try {
+  new MutationObserver(function () {
+    if (paintIcons._t) return
+    paintIcons._t = setTimeout(function () {
+      paintIcons._t = 0
+      paintIcons()
+    }, 80)
+  }).observe(document.body, { childList: true, subtree: true })
+} catch (e) {}
+
+window.lwPaintIcons = paintIcons

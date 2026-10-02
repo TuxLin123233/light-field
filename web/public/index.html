@@ -593,6 +593,14 @@
         transition: color 0.2s, background 0.2s;
       }
       .bottom-nav a .nav-icon { font-size: 18px; line-height: 1; }
+      /* 像素图标版的导航图标。emoji 的兜底 span 保持原样 */
+      .bottom-nav a .nav-px {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 22px;
+        min-height: 22px;
+      }
       /* 高亮项不再用 surface-2（深色下比导航条亮很多，会浮出一个方块），
          改用同底色的淡强调色，透不透明都协调 */
       .bottom-nav a.active {
@@ -678,6 +686,69 @@
         [class*='lwfx-unread']::after {
           animation: none !important;
         }
+      }
+    </style>
+    <style id="lw-anim-level">
+      /* ---------- 动画档位 ----------
+         动效越多越费电、越容易在低端机上掉帧，所以给个用户可控的开关。
+         档位写在 <html data-anim-level="..."> 上（由 lw-pxicon.js 维护），
+         这里用 CSS 统一开关，几层动画不用各写一遍判断。 */
+
+      /* 关闭：动画和过渡全停 */
+      html[data-anim-level='off'] *,
+      html[data-anim-level='off'] *::before,
+      html[data-anim-level='off'] *::after {
+        animation: none !important;
+        transition: none !important;
+      }
+
+      /* 省电：只停「无限循环」和「一直闪」的装饰动画。
+         入场动画保留 —— 那是一次性的，不影响性能和电量。 */
+      html[data-anim-level='low'] [class*='lwa-pulse'],
+      html[data-anim-level='low'] [class*='lwa-beat'],
+      html[data-anim-level='low'] [class*='lwa-float'],
+      html[data-anim-level='low'] [class*='lwa-glow'],
+      html[data-anim-level='low'] [class*='lwa-breathe'],
+      html[data-anim-level='low'] [class*='lwa-shine'],
+      html[data-anim-level='low'] [class*='lwa-ring'],
+      html[data-anim-level='low'] [class*='lwa-heartbeat'],
+      html[data-anim-level='low'] .anim-badge,
+      html[data-anim-level='low'] .room-badge,
+      html[data-anim-level='low'] .img-badge,
+      html[data-anim-level='low'] .card-tag,
+      html[data-anim-level='low'] [class*='lwdeco-wave'] i,
+      html[data-anim-level='low'] [class*='lwfx-unread']::after,
+      html[data-anim-level='low'] [class*='lwdeco-lv-bar'] i::after {
+        animation: none !important;
+      }
+
+      /* 丰富：循环动画快一点，入场稍长（更有存在感） */
+      html[data-anim-level='rich'] [class*='lwa-pulse'],
+      html[data-anim-level='rich'] [class*='lwa-beat'],
+      html[data-anim-level='rich'] [class*='lwa-float'],
+      html[data-anim-level='rich'] [class*='lwa-breathe'] {
+        animation-duration: .7s !important;
+      }
+    </style>
+    <style id="lw-pxicon-style">
+      /* 自绘像素图标的宿主。用 <i data-px="名字"> 会被 LWIcon 换成 canvas。 */
+      .px-ico-host {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        vertical-align: -0.15em;
+        line-height: 1;
+        flex: none;
+      }
+      .px-ico-host canvas.lwicon {
+        display: block;
+        image-rendering: pixelated;
+        image-rendering: crisp-edges;
+      }
+      /* 作为单独一行的大图标时给点入场 */
+      .px-ico-hero .px-ico-host { animation: lwa-pop .4s cubic-bezier(.2,1.3,.4,1) both }
+      @media (prefers-reduced-motion: reduce) {
+        .px-ico-hero .px-ico-host { animation: none }
       }
     </style>
     <style id="global-noselect">
@@ -1183,6 +1254,7 @@
     <script src="/lw-anim.js"></script>
     <script src="/lw-polish.js"></script>
     <script src="/lw-fx.js"></script>
+    <script src="/lw-pxicon.js"></script>
     <script src="/lw-deco.js"></script>
     <script src="/lw-guides.js"></script>
     <script src="/lw-dialog.js"></script>
