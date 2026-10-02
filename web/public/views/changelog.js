@@ -274,6 +274,19 @@ export default {
       <section class="group">
         <div class="ver red">
           <div class="ver-body">
+            <div class="ver-title"><span class="ver-tag">v1.6.1</span> 小屋能留言了 · 也能给屋主送光尘 <span class="ver-date">2026-10</span></div>
+            <ul class="ver-list">
+              <li><span class="li-tag tag-new">新功能</span><b>小屋留言板</b>：去别人家串门时，下面多了一块留言板，可以留一句话（最多 60 字）。屋主在自己家里能看到，也能<b>删掉自己板子上的留言</b>。同一个人只保留最新一条，免得一个人把板子刷满</li>
+              <li><span class="li-tag tag-new">新功能</span><b>送光尘给屋主</b>：在别人家点「✨ 送 1 个光尘给某某」，光尘会<b>真的进对方账本</b>。同一间屋子只能送一次，送过之后按钮会变成「✅ 已经送过」</li>
+              <li><span class="li-tag tag-ui">界面</span>送作品和送小屋<b>是两套记录</b>，互不影响 —— 你可以既给一个人的画送过光尘，再给他的屋子送一份</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="group">
+        <div class="ver red">
+          <div class="ver-body">
             <div class="ver-title"><span class="ver-tag">v1.6.0</span> 背包与合成台开张 · 12 件店里买不到的家具 <span class="ver-date">2026-10</span></div>
             <ul class="ver-list">
               <li><span class="li-tag tag-new">新功能</span><b>背包和合成台来了</b>，入口在小镇页面上的「🎒 背包与合成台」，小屋里也放了一个。上半是背包，下半是合成台</li>

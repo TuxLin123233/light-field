@@ -200,6 +200,56 @@ export function loadItems(items, room) {
   return out.slice(0, MAX_ITEMS)
 }
 
+/* -------------------- 小屋留言板 --------------------
+   存在单独的键上，**不塞进 house 里** —— house 会被「保存布置」
+   整个覆盖写掉，留言跟着一起没了就糟了。 */
+export const MSG_KEY = (uid) => 'housemsg:' + uid
+export const MAX_MSG = 30
+export const MSG_LEN = 60
+
+export async function readMsgs(kv, uid) {
+  if (!kv || !uid) return []
+  const raw = await kv.get(MSG_KEY(uid))
+  try {
+    const a = JSON.parse(raw || '[]')
+    return Array.isArray(a) ? a : []
+  } catch (e) {
+    return []
+  }
+}
+
+export async function writeMsgs(kv, uid, list) {
+  const clean = (Array.isArray(list) ? list : []).slice(-MAX_MSG)
+  await kv.put(MSG_KEY(uid), JSON.stringify(clean))
+  return clean
+}
+
+/** 留一句。同一个人只保留最新一条，免得一个人把留言板刷满 */
+export async function addMsg(kv, uid, from, name, text) {
+  const t = String(text == null ? '' : text)
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, MSG_LEN)
+  if (!t) return null
+  const list = (await readMsgs(kv, uid)).filter((m) => m && m.from !== from)
+  list.push({
+    id: 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
+    from: String(from || ''),
+    name: String(name || '镇民').slice(0, 24),
+    text: t,
+    at: Date.now(),
+  })
+  await writeMsgs(kv, uid, list)
+  return list
+}
+
+/** 删一条留言。只有屋主本人能删（在接口那边判断） */
+export async function delMsg(kv, uid, id) {
+  const list = (await readMsgs(kv, uid)).filter((m) => !m || m.id !== id)
+  await writeMsgs(kv, uid, list)
+  return list
+}
+
 /**
  * 屋里的布置变了，把索引里的「门面」信息同步一下。
  * 地图只读 town:list 这一个键，靠的就是这里把结果存进索引 ——

@@ -5,7 +5,7 @@
 //   POST {action:'buy',  id}          买一件家具（花光尘，买过就不再收费）
 //   POST {action:'save', items}       保存屋里的布置
 import { readActiveUser, pickToken, BANNED_ERROR } from './_auth.js'
-import { readBook, writeBook } from './_dust.js'
+import { readBook, writeBook, giveHome, DUST_COST, publicView } from './_dust.js'
 import {
   FURNITURE,
   SURFACES,
@@ -25,6 +25,11 @@ import {
   refreshEntry,
   readList,
   MAX_ITEMS,
+  readMsgs,
+  addMsg,
+  delMsg,
+  MAX_MSG,
+  MSG_LEN,
 } from './_town.js'
 
 const CORS_HEADERS = {
@@ -32,6 +37,9 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 }
+
+/* uid 的合法形状。留言和送光尘都要先过这一关，免得把乱七八糟的 key 拼进 KV */
+const RE = /^[A-Za-z0-9_-]{1,40}$/
 
 const json = (body, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -63,6 +71,17 @@ const catalog = () => ({
 
 /** 房间尺寸和地板线一起下发：前端画房间、判「有没有站在地上」都要用 */
 const roomInfo = (house) => ({ room: house.size, floor: floorLine(house.size) })
+
+/** 留言板 + 「我给这间屋子送过光尘没有」。看自己家时 liked 恒为 false */
+async function msgInfo(kv, houseUid, meUid) {
+  const msgs = await readMsgs(kv, houseUid)
+  let liked = false
+  if (meUid && meUid !== houseUid) {
+    const book = await readBook(kv, meUid)
+    liked = (book.homes || []).indexOf(houseUid) >= 0
+  }
+  return { msgs, maxMsg: MAX_MSG, msgLen: MSG_LEN, liked, cost: DUST_COST }
+}
 
 export async function onRequestGet(context) {
   const { request, env } = context
@@ -99,6 +118,7 @@ export async function onRequestGet(context) {
     return json({
       ok: true, uid: who.uid, name: who.username, mine: true,
       ...roomInfo(house), pal: PAL, catalog: catalog(), house,
+      ...(await msgInfo(kv, who.uid, who.uid)),
     })
   }
 
@@ -109,6 +129,7 @@ export async function onRequestGet(context) {
   return json({
     ok: true, uid: wantUid, name: entry.name || '镇民', mine: !!(who && who.uid === wantUid),
     ...roomInfo(house), pal: PAL, catalog: catalog(), house,
+    ...(await msgInfo(kv, wantUid, who ? who.uid : '')),
   })
 }
 
@@ -166,6 +187,39 @@ export async function onRequestPost(context) {
     await writeHouse(kv, who.uid, house)
     await refreshEntry(kv, who.uid, who.username, house)
     return json({ ok: true, items: house.items, savedAt: house.updatedAt })
+  }
+
+  /* 给别人的小屋送光尘。和「给作品送」是两套记录，各送各的 */
+  if (action === 'like') {
+    const to = String((body && body.to) || '').trim()
+    if (!RE.test(to)) return json({ error: '参数不对' }, 400)
+    const r = await giveHome(kv, who.uid, to)
+    if (!r.ok) {
+      const m =
+        r.reason === 'self' ? '给自己家送光尘就不必了' :
+        r.reason === 'already' ? '你已经给这间屋子送过光尘了' :
+        r.reason === 'poor' ? '光尘不够了，去「我的」签到领一些吧' :
+        '送不出去'
+      return json({ error: m, reason: r.reason, book: r.book ? publicView(r.book) : null }, 400)
+    }
+    return json({ ok: true, credited: r.credited, book: publicView(r.book) })
+  }
+
+  /* 在小屋留言板上留一句 */
+  if (action === 'msg') {
+    const to = String((body && body.to) || '').trim()
+    if (!RE.test(to)) return json({ error: '参数不对' }, 400)
+    const list = await addMsg(kv, to, who.uid, who.username, body && body.text)
+    if (!list) return json({ error: '说点什么再留吧' }, 400)
+    return json({ ok: true, msgs: list })
+  }
+
+  /* 删留言：只有屋主能删自己家的 */
+  if (action === 'delmsg') {
+    const id = String((body && body.id) || '').trim()
+    if (!id) return json({ error: '参数不对' }, 400)
+    const list = await delMsg(kv, who.uid, id)
+    return json({ ok: true, msgs: list })
   }
 
   /* 扩建：屋子越住越大，家具原地不动。

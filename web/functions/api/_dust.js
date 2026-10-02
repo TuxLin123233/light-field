@@ -25,7 +25,10 @@ export function dayStamp(ms = Date.now()) {
 }
 
 function emptyBook() {
-  return { bal: 0, streak: 0, total: 0, last: 0, gifted: [], got: 0 }
+  /* gifted 是「送过光尘的作品」（按作品时间戳记），
+     homes 是「送过光尘的小屋」（按屋主 uid 记）。
+     两套分开记：同一个人可能既送过你的画，也想给你的屋子送一份。 */
+  return { bal: 0, streak: 0, total: 0, last: 0, gifted: [], homes: [], got: 0 }
 }
 
 function sanitize(raw) {
@@ -40,6 +43,7 @@ function sanitize(raw) {
     b.last = Math.max(0, Math.floor(Number(o.last) || 0))
     b.got = Math.max(0, Math.floor(Number(o.got) || 0))
     b.gifted = Array.isArray(o.gifted) ? o.gifted.map(String).slice(-MAX_GIFTED) : []
+    b.homes = Array.isArray(o.homes) ? o.homes.map(String).slice(-MAX_GIFTED) : []
     return b
   } catch (e) {
     return b
@@ -91,6 +95,29 @@ export async function signIn(kv, uid) {
  * 给某个账号加光尘（别人送光尘到他的作品、信箱附件发放都走这里）。
  * amount 为负数表示扣除，但不会让余额变负。
  */
+/**
+ * 给某个人的小屋送光尘。
+ * 和「给作品送」是两套记录：作品按时间戳记，小屋按屋主 uid 记，
+ * 所以同一幅画和同一间屋子可以各送一次，互不影响。
+ * 给自己送不算（不然可以凭空刷光尘）。
+ */
+export async function giveHome(kv, uid, hostUid) {
+  const to = String(hostUid || '')
+  if (!/^[A-Za-z0-9_-]{1,40}$/.test(to)) return { ok: false, reason: 'bad_to' }
+  if (to === uid) return { ok: false, reason: 'self' }
+
+  const book = await readBook(kv, uid)
+  if ((book.homes || []).indexOf(to) >= 0) return { ok: false, reason: 'already', book }
+  if (book.bal < DUST_COST) return { ok: false, reason: 'poor', book }
+
+  book.bal -= DUST_COST
+  book.homes = (book.homes || []).concat([to]).slice(-MAX_GIFTED)
+  const saved = await writeBook(kv, uid, book)
+
+  const got = await creditDust(kv, to, DUST_COST)
+  return { ok: true, book: saved, credited: got ? DUST_COST : 0 }
+}
+
 export async function creditDust(kv, uid, amount) {
   const n = Math.floor(Number(amount) || 0)
   if (!uid || n === 0) return null
@@ -140,6 +167,7 @@ export function publicView(book) {
     got: book.got || 0,
     signedToday: book.last === dayStamp(),
     gifted: book.gifted,
+    homes: book.homes || [],
     giftedCount: book.gifted.length,
   }
 }

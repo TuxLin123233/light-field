@@ -122,6 +122,40 @@ export default {
       }
       .tw-tab.on { background: var(--accent); border-color: var(--accent); color: #fff; }
       .tw-hint { font-size: 12px; color: var(--text-faint); line-height: 1.8; padding: 2px 0; }
+
+      /* ---------- 留言板 ---------- */
+      .tw-gift { display: flex; align-items: center; margin-top: 12px; }
+      .tw-gift .tw-btn { flex: 1; }
+      .tw-gift .tw-btn.on { background: var(--surface-2); color: #2e7d32; border: 1px solid var(--border-input); }
+      .tw-board {
+        margin-top: 14px; padding: 12px;
+        background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+      }
+      .tw-board-h { font-size: 13px; font-weight: 800; color: var(--text); margin-bottom: 9px; }
+      .tw-board-h span { font-weight: 600; color: var(--text-faint); font-size: 11px; }
+      .tw-post { display: flex; margin-bottom: 10px; }
+      .tw-post input {
+        flex: 1; min-width: 0; border: 1px solid var(--border-input);
+        background: var(--surface-2); color: var(--text);
+        border-radius: 10px; padding: 9px 11px; font-size: 13px; font-family: inherit;
+      }
+      .tw-post button {
+        flex: none; margin-left: 8px; border: 0; border-radius: 10px;
+        padding: 9px 14px; background: var(--accent); color: #fff;
+        font-size: 12px; font-weight: 800; font-family: inherit; cursor: pointer;
+      }
+      .tw-post button[disabled] { background: var(--surface-2); color: var(--text-faint); cursor: default; }
+      .tw-msg {
+        display: flex; align-items: flex-start; padding: 7px 0;
+        border-top: 1px solid var(--border); font-size: 12px; line-height: 1.7;
+      }
+      .tw-msg:first-of-type { border-top: 0; }
+      .tw-msg-n { flex: none; font-weight: 800; color: var(--text-muted); margin-right: 7px; }
+      .tw-msg-t { flex: 1; min-width: 0; color: var(--text); word-break: break-word; }
+      .tw-msg-x {
+        flex: none; border: 0; background: transparent; color: var(--text-faint);
+        font-size: 12px; cursor: pointer; font-family: inherit; padding: 0 0 0 8px;
+      }
     `,
   template: `
     <div class="tw-wrap">
@@ -165,6 +199,11 @@ export default {
     let woodName = ''
     let picked = '' // 手上拿着哪件家具，'' 表示空手
     let dirty = false
+    /* 留言板与「送光尘给屋主」。liked 是「我给这间屋子送过没有」 */
+    let msgs = []
+    let liked = false
+    let giftCost = 1
+    let msgLen = 60
 
     const findItem = (id) => cat.furniture.find((x) => x.id === id) || cat.surfaces.find((x) => x.id === id)
     /** 下一档房间尺寸；已经是最大的就返回 null */
@@ -505,6 +544,38 @@ export default {
       })
     }
 
+    /* ---------- 留言板 ---------- */
+    function boardHtml() {
+      // 兜一道：msgs 正常都是数组（load 里写死 d.msgs || []），
+      // 但这里是拼 HTML，真拿到脏数据也不能整页白掉
+      const src = Array.isArray(msgs) ? msgs : []
+      const rows = src
+        .filter((m) => m && typeof m === 'object')
+        .sort((a, b) => (Number(b.at) || 0) - (Number(a.at) || 0))
+      const list = rows
+        .map((m) =>
+          '<div class="tw-msg">' +
+          '<span class="tw-msg-n">' + esc(m.name) + '</span>' +
+          '<span class="tw-msg-t">' + esc(m.text) + '</span>' +
+          // 只有屋主能删自己板子上的留言（接口那边也只删自己的）
+          (mine ? '<button class="tw-msg-x" type="button" data-delmsg="' + esc(m.id) + '">删</button>' : '') +
+          '</div>')
+        .join('')
+      return (
+        '<div class="tw-board">' +
+        '<div class="tw-board-h">💬 留言板 <span>' + rows.length + ' 条' +
+        (mine ? ' · 来你家的人可以留一句' : ' · 给屋主留一句') + '</span></div>' +
+        (mine
+          ? ''
+          : '<div class="tw-post">' +
+            '<input id="twMsgIn" type="text" maxlength="' + msgLen + '" placeholder="说点什么…">' +
+            '<button type="button" id="twMsgGo">留一句</button>' +
+            '</div>') +
+        (list || '<div class="tw-hint">还没有人留言。</div>') +
+        '</div>'
+      )
+    }
+
     /* ---------- 小屋 ---------- */
     function renderHome() {
       $('twTitle').textContent = mine ? '🏠 我的小屋' : '🏠 ' + (woodName || '镇民') + '的家'
@@ -533,8 +604,18 @@ export default {
         '<div class="tw-note">' +
         (mine
           ? '拿在手上的家具，点房间就能放下；空手时点屋里的家具可以收起来。<br />墙纸和地板在铺子的「🧱 墙纸 / 🟫 地板」里换。'
-          : '这是人家的屋子，只能看看。回自己的小屋去布置吧。') +
+          : '这是人家的屋子，只能看，动不了人家的东西。') +
         '</div>' +
+        (mine
+          ? ''
+          : '<div class="tw-gift">' +
+            '<button class="tw-btn' + (liked ? ' on' : '') + '" type="button" id="twGift"' +
+            (liked ? ' disabled' : '') + '>' +
+            (liked
+              ? '✅ 已经给这间屋子送过光尘了'
+              : '✨ 送 ' + giftCost + ' 个光尘给 ' + esc(woodName || '屋主')) +
+            '</button></div>') +
+        boardHtml() +
         (mine ? trayHtml() : '')
       drawRoom()
       if (mine) bindTray()
@@ -621,6 +702,25 @@ export default {
           renderHome()
         })
       }
+      const gift = $('twGift')
+      if (gift) gift.addEventListener('click', doGiftHome)
+
+      const go = $('twMsgGo')
+      const inp2 = $('twMsgIn')
+      if (go && inp2) {
+        const submit = () => doPostMsg(inp2.value)
+        go.addEventListener('click', submit)
+        inp2.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            submit()
+          }
+        })
+      }
+      $('twBody').querySelectorAll('[data-delmsg]').forEach((b) => {
+        b.addEventListener('click', () => doDelMsg(b.getAttribute('data-delmsg')))
+      })
+
       const up = $('twUp')
       if (up) up.addEventListener('click', upgrade)
 
@@ -693,6 +793,54 @@ export default {
       renderHome()
     }
 
+    /** 给这间屋子的主人送光尘。和「给作品送」是两套记录，各送各的 */
+    async function doGiftHome() {
+      if (liked || mine) return
+      const who = woodName || '屋主'
+      if (!window.confirm('送 ' + giftCost + ' 个光尘给 ' + who + '？送出就从你账上扣掉了。')) return
+      const d = await post({ action: 'like', to: wantUid })
+      if (!d || !d.ok) {
+        msg((d && d.error) || '送不出去', true)
+        return
+      }
+      liked = true
+      if (d.book && window.dust && window.dust.take) window.dust.take(d.book)
+      if (window.sfx) window.sfx('coin')
+      msg('光尘送到了，' + who + ' 会看到的 ✨')
+      renderHome()
+    }
+
+    /** 在留言板上留一句 */
+    async function doPostMsg(text) {
+      const t = String(text == null ? '' : text).trim()
+      if (!t) {
+        msg('说点什么再留吧', true)
+        return
+      }
+      const d = await post({ action: 'msg', to: wantUid, text: t })
+      if (!d || !d.ok) {
+        msg((d && d.error) || '留不了', true)
+        return
+      }
+      msgs = d.msgs || msgs
+      if (window.sfx) window.sfx('ding')
+      msg('留好了')
+      renderHome()
+    }
+
+    /** 删自己家的一条留言 */
+    async function doDelMsg(id) {
+      if (!window.confirm('删掉这条留言？')) return
+      const d = await post({ action: 'delmsg', id })
+      if (!d || !d.ok) {
+        msg((d && d.error) || '删不掉', true)
+        return
+      }
+      msgs = d.msgs || []
+      if (window.sfx) window.sfx('clear')
+      renderHome()
+    }
+
     /** 扩建屋子。只升不降 —— 降级要把放不下的家具挪走，那是给人找麻烦 */
     async function upgrade() {
       const nx = nextSizeOf()
@@ -755,6 +903,10 @@ export default {
           house = d.house || { wall: '', floor: '', items: [], owned: [] }
           mine = !!d.mine
           woodName = d.name || ''
+          msgs = d.msgs || []
+          liked = !!d.liked
+          giftCost = Number(d.cost) || 1
+          msgLen = Number(d.msgLen) || 60
           dirty = false
           picked = ''
           renderHome()
