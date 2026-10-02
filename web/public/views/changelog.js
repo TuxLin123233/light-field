@@ -274,6 +274,20 @@ export default {
       <section class="group">
         <div class="ver red">
           <div class="ver-body">
+            <div class="ver-title"><span class="ver-tag">v1.7.2</span> 窗外的天气可以自己挑了 <span class="ver-date">2026-10</span></div>
+            <ul class="ver-list">
+              <li><span class="li-tag tag-new">新功能</span><b>小屋的天气能自己挑了</b>。屋子下面多了一排按钮：跟随现实 / ☀️晴 / ☁️多云 / 🌧️雨 / ❄️雪 / 🌅清晨 / 🌇黄昏 / 🌙夜，点一下墙上那扇小窗立刻跟着变</li>
+              <li><span class="li-tag tag-new">新功能</span><b>别人来串门，看到的也是你挑的天气</b>。屋子是你的，天气也归你 —— 想给朋友看你家下雪，就挂一场雪在那儿</li>
+              <li><span class="li-tag tag-free">免费</span>换天气<b>不要光尘</b>，想换几次换几次。这只是自家窗子上的一片天，不占地方也不值钱</li>
+              <li><span class="li-tag tag-ui">界面</span>不挑就还是老样子：<b>跟随现实</b>，按时间自己变（白天晴或多云，冬天可能下雪，入夜就是星星）</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="group">
+        <div class="ver red">
+          <div class="ver-body">
             <div class="ver-title"><span class="ver-tag">v1.7.1</span> 可以在「自己画的头像」和「系统默认头像」之间随便切了 <span class="ver-date">2026-10</span></div>
             <ul class="ver-list">
               <li><span class="li-tag tag-new">新功能</span><b>头像能一键换成系统默认的了</b>。画头像页最上面多了一张卡片，写着「现在用的是：我自己画的 / 系统默认头像」，右边一个按钮就能换。<b>换默认头像不要光尘，换回来也不要</b></li>

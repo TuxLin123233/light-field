@@ -60,11 +60,32 @@ export function sizeOf(f) {
   return { w, h: f.art.length }
 }
 
+/* 窗外天气。
+   空串 = **跟随现实**（按北京时间的小时 + 当天日期算，同一天全镇一样）；
+   其余是屋主自己挑的，别人来串门看到的也是这个 —— 屋子是你的，天气也归你。 */
+export const WEATHERS = [
+  { key: '', name: '跟随现实', ico: '🕐' },
+  { key: 'sunny', name: '晴', ico: '☀️' },
+  { key: 'cloudy', name: '多云', ico: '☁️' },
+  { key: 'rain', name: '雨', ico: '🌧️' },
+  { key: 'snow', name: '雪', ico: '❄️' },
+  { key: 'dawn', name: '清晨', ico: '🌅' },
+  { key: 'dusk', name: '黄昏', ico: '🌇' },
+  { key: 'night', name: '夜', ico: '🌙' },
+]
+
+export function weatherInfo(k) {
+  const key = String(k || '')
+  for (const w of WEATHERS) if (w.key === key) return w
+  return WEATHERS[0]
+}
+
 export function emptyHouse() {
   return {
     size: DEFAULT_SIZE,
     wall: DEFAULT_WALL,
     floor: DEFAULT_FLOOR,
+    weather: '',
     items: [],
     owned: [DEFAULT_WALL, DEFAULT_FLOOR],
     updatedAt: 0,
@@ -107,6 +128,8 @@ export async function readHouse(kv, uid) {
       size,
       wall,
       floor,
+      // 认不出来的天气一律当「跟随现实」，不让脏数据把窗子搞黑
+      weather: weatherInfo(o.weather).key,
       items: loadItems(o.items, size),
       owned,
       updatedAt: Number(o.updatedAt) || 0,

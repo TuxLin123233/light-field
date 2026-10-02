@@ -114,6 +114,10 @@ export default {
       .tw-item.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, var(--surface)); }
       .tw-item[disabled] { opacity: .45; cursor: default; }
       .tw-item-price { font-size: 10px; font-weight: 800; color: #b8860b; }
+      /* 「窗外的天气」那一栏 */
+      .tw-weather { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+      .tw-weather-h { font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 7px; }
+
       .tw-tabs { display: flex; flex-wrap: wrap; margin: 0 0 9px; }
       .tw-tab {
         border: 1px solid var(--border-input); background: var(--surface-2);
@@ -397,6 +401,52 @@ export default {
        算出来，所以同一天里大家看到的是同一种，过一天会换。 */
     const WEATHER_NAME = { sunny: '晴', cloudy: '多云', rain: '雨', snow: '雪', dawn: '清晨', dusk: '黄昏', night: '夜' }
 
+    /* 屋主自己挑的窗外天气。空串 = 跟随现实（按时间算）。
+       别人来串门看到的也是屋主挑的那个。 */
+    let myWeather = ''
+    let WEATHER_LIST = []
+
+    /** 现在该给窗子画哪种天气：屋主挑过就听屋主的，没挑过按现实时间算 */
+    function curWeather() {
+      return myWeather || weatherNow(Date.now())
+    }
+
+    /** 换窗外天气。免费，而且只改自己屋子那一个字段 */
+    async function setWeather(key) {
+      if (!mine || key === myWeather) return
+      const before = myWeather
+      myWeather = String(key || '')
+      renderHome() // 先变给人看，不用等网络
+      try {
+        const t = token()
+        const res = await fetch('/api/town', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t },
+          body: JSON.stringify({ token: t, action: 'weather', weather: myWeather }),
+        })
+        const d = await res.json().catch(() => ({}))
+        if (!d || !d.ok) throw new Error((d && d.error) || '换不了')
+        myWeather = d.weather || ''
+        house.weather = myWeather
+        const C = window.LWCache || {}
+        if (C.drop) C.drop('town')
+        if (window.sfx) window.sfx('tick')
+      } catch (e) {
+        // 失败就退回原来那个，别让人以为换上了
+        myWeather = before
+        msg((e && e.message) || '网络错误', true)
+      }
+
+    /* 天气按钮走事件委托：renderHome 每次重画都会换掉一批 DOM，
+       一个一个绑容易漏，直接挂容器上。app.js 会自动清理这些监听。 */
+    document.addEventListener('click', (e) => {
+      const b = e.target && e.target.closest ? e.target.closest('[data-weather]') : null
+      if (!b) return
+      setWeather(b.getAttribute('data-weather'))
+    })
+      renderHome()
+    }
+
     function hashStr(str) {
       let h = 2166136261
       const t = String(str)
@@ -504,7 +554,7 @@ export default {
         }
       }
       // 小窗（画在家具之前，挂墙的家具可以盖在上面）
-      drawWindow(c, weatherNow(Date.now()))
+      drawWindow(c, curWeather())
 
       // 墙脚线：一条深色横线，房间立刻有了纵深
       c.fillStyle = 'rgba(0,0,0,.20)'
@@ -765,7 +815,7 @@ export default {
     function renderHome() {
       $('twTitle').textContent = mine ? '🏠 我的小屋' : '🏠 ' + (woodName || '镇民') + '的家'
       const nx = nextSizeOf()
-      const wname = WEATHER_NAME[weatherNow(Date.now())] || ''
+      const wname = WEATHER_NAME[curWeather()] || (myWeather ? '自定义' : '')
       $('twSub').textContent = mine
         ? ROOM + '×' + ROOM + ' · ' + (house.items || []).length + ' 件摆出来 · ' + (house.owned || []).length + ' 件收藏 · ' + wname
         : ROOM + '×' + ROOM + ' · 来串门看看 · ' + wname
@@ -785,7 +835,16 @@ export default {
               ? '<button class="tw-btn ghost" type="button" id="twUp">📐 扩建成' + esc(nx.name) +
                 '（' + nx.size + '×' + nx.size + '，' + nx.price + ' ✨）</button>'
               : '<span class="tw-hint">🏆 这已经是你家最大的院子了</span>') +
-            '</div>'
+            '</div>' +
+        '<div class="tw-weather">' +
+        '<div class="tw-weather-h">🌤️ 窗外的天气</div>' +
+        '<div class="tw-tabs">' +
+        WEATHER_LIST.map((w) =>
+          '<button class="tw-tab' + (myWeather === w.key ? ' on' : '') + '" type="button" data-weather="' +
+          esc(w.key) + '">' + esc(w.ico) + ' ' + esc(w.name) + '</button>').join('') +
+        '</div>' +
+        '<div class="tw-hint">挑一个，窗外立刻变。你自己看到的和别人来串门看到的都是这个 —— 屋子是你的，天气也归你。</div>' +
+        '</div>'
           : '') +
         '<div class="tw-note">' +
         (mine
@@ -1157,9 +1216,13 @@ export default {
           surfaces: c.surfaces || [],
           cats: c.cats || {},
           sizes: c.sizes || [],
+          weathers: c.weathers || [],
         }
         if (isHome) {
           house = d.house || { wall: '', floor: '', items: [], owned: [] }
+          // 屋主挑的天气；空串 = 跟随现实
+          myWeather = house.weather || ''
+          WEATHER_LIST = isHome ? (cat.weathers || []) : WEATHER_LIST
           mine = !!d.mine
           woodName = d.name || ''
           msgs = d.msgs || []

@@ -13,6 +13,8 @@ import {
   SURFACES,
   CAT_NAMES,
   SIZES,
+  WEATHERS,
+  weatherInfo,
   ROOM,
   floorLine,
   nextSize,
@@ -72,6 +74,7 @@ const catalog = () => ({
   surfaces: SURFACES.map((s) => ({ id: s.id, name: s.name, price: s.price, kind: s.kind, pat: s.pat, colors: s.colors })),
   cats: CAT_NAMES,
   sizes: SIZES,
+  weathers: WEATHERS,
 })
 
 /** 房间尺寸和地板线一起下发：前端画房间、判「有没有站在地上」都要用 */
@@ -259,6 +262,16 @@ export async function onRequestPost(context) {
   }
 
   /* 换墙纸 / 换地板：只认已经买下的 */
+  /* 换窗外的天气。免费 —— 这只是自家窗子上的一片天，不占地方也不值钱。
+     别人来串门看到的就是你挑的这个。 */
+  if (action === 'weather') {
+    const w = weatherInfo(body.weather)
+    house.weather = w.key
+    house.updatedAt = Date.now()
+    await writeHouse(kv, who.uid, house)
+    return json({ ok: true, weather: house.weather, name: w.name })
+  }
+
   if (action === 'surface') {
     const s = surfaceById(body.id)
     if (!s) return json({ error: '没有这款贴面' }, 400)
