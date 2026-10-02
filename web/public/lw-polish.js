@@ -251,6 +251,148 @@ html[data-theme='dark'] .lwp-skel-card {
   100% { background-position: 340px 0 }
 }
 
+/* ============ 14b. 加载时预留空间（防布局跳动） ============
+   组件「先空后填」时页面会往下跳，读起来很难受。
+   解决办法不是加动画，而是**按真实内容的高度把位置先占住** ——
+   加载完成后内容填进同样大小的框里，位置一点不动。
+
+   高度按各类内容的真实尺寸给的，不是瞎写的：
+     作品卡  约 190px（图 1:1 + 标题 + 作者行）
+     精选卡  约 96px
+     数据格  约 74px
+     评论条  约 58px
+     邮件行  约 72px
+     家具格  约 84px  */
+.lwp-hold { min-height: 12px; }
+
+/* 作品网格：占两行卡位。加载完填进去正好，不会把下面的内容顶走 */
+#gallery.lwp-hold,
+.mine-grid.lwp-hold,
+.u-grid.lwp-hold,
+.tw-grid.lwp-hold,
+.bag-grid.lwp-hold { min-height: 400px; }
+/* 精选那一排（横滑） */
+#featuredRow.lwp-hold,
+.featured-row.lwp-hold { min-height: 96px; }
+
+/* 统计格：2×2 */
+#statGrid.lwp-hold { min-height: 150px; }
+
+/* 评论列表 */
+#cmtList.lwp-hold, .cmt-list.lwp-hold { min-height: 180px; }
+
+/* 聊天消息区（本身是 flex 撑满，不用管，但首屏那条占位要有高度） */
+#chMsgs.lwp-hold { min-height: 200px; }
+
+/* 邮件 / 通知列表：占三行 */
+#mailList.lwp-hold, .adm-mail-list.lwp-hold, #banList.lwp-hold,
+.mod-list.lwp-hold, .tk-list.lwp-hold, .u-ach-list.lwp-hold {
+  min-height: 220px;
+}
+
+/* 小镇地图（已经有 max-height，这里给 min 免得加载时是 0 高） */
+#twBody.lwp-hold { min-height: 340px; }
+
+/* 成就 / 背包 / 图鉴这类格子墙 */
+#achBody.lwp-hold, #bgBody.lwp-hold { min-height: 320px; }
+
+/* ============ 14c. 按内容类型配骨架形状 ============
+   骨架不该千篇一律都是三条灰杠 —— 形状和真实内容对不上，
+   填进去的时候还是会觉得「跳了一下」。
+   给几种预设，用 data-skel 指定。 */
+.lwp-sk { display: flex; flex-direction: column; gap: 10px; }
+.lwp-sk-row {
+  height: 14px; border-radius: 7px;
+  background: linear-gradient(90deg, rgba(60,48,36,.06) 25%, rgba(60,48,36,.12) 37%, rgba(60,48,36,.06) 63%);
+  background-size: 340px 100%;
+  animation: lwp-shimmer 1.3s linear infinite;
+}
+html[data-theme='dark'] .lwp-sk-row {
+  background: linear-gradient(90deg, rgba(255,255,255,.07) 25%, rgba(255,255,255,.15) 37%, rgba(255,255,255,.07) 63%);
+  background-size: 340px 100%;
+}
+
+/* 卡片网格：两列，每张卡都是「方形图 + 两行字」 */
+.lwp-sk-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+.lwp-sk-card { display: flex; flex-direction: column; gap: 7px; }
+.lwp-sk-card .pic {
+  aspect-ratio: 1;
+  border-radius: var(--lwp-r-sm, 9px);
+  background: linear-gradient(90deg, rgba(60,48,36,.06) 25%, rgba(60,48,36,.12) 37%, rgba(60,48,36,.06) 63%);
+  background-size: 340px 100%;
+  animation: lwp-shimmer 1.3s linear infinite;
+}
+html[data-theme='dark'] .lwp-sk-card .pic {
+  background: linear-gradient(90deg, rgba(255,255,255,.07) 25%, rgba(255,255,255,.15) 37%, rgba(255,255,255,.07) 63%);
+  background-size: 340px 100%;
+}
+.lwp-sk-card .t1 { height: 13px; width: 78%; border-radius: 6px }
+.lwp-sk-card .t2 { height: 11px; width: 46%; border-radius: 6px }
+
+/* 列表行：左边一个方块（头像/缩略图）+ 右边两行字 */
+.lwp-sk-rows { display: flex; flex-direction: column; gap: 10px; }
+.lwp-sk-rowitem { display: flex; align-items: center; gap: 10px; }
+.lwp-sk-rowitem .av {
+  width: 42px; height: 42px; flex: none;
+  border-radius: var(--lwp-r-sm, 9px);
+  background: linear-gradient(90deg, rgba(60,48,36,.06) 25%, rgba(60,48,36,.12) 37%, rgba(60,48,36,.06) 63%);
+  background-size: 340px 100%;
+  animation: lwp-shimmer 1.3s linear infinite;
+}
+html[data-theme='dark'] .lwp-sk-rowitem .av {
+  background: linear-gradient(90deg, rgba(255,255,255,.07) 25%, rgba(255,255,255,.15) 37%, rgba(255,255,255,.07) 63%);
+  background-size: 340px 100%;
+}
+.lwp-sk-rowitem .ln { flex: 1; display: flex; flex-direction: column; gap: 7px }
+.lwp-sk-rowitem .ln i {
+  display: block; height: 12px; border-radius: 6px;
+  background: linear-gradient(90deg, rgba(60,48,36,.06) 25%, rgba(60,48,36,.12) 37%, rgba(60,48,36,.06) 63%);
+  background-size: 340px 100%;
+  animation: lwp-shimmer 1.3s linear infinite;
+}
+html[data-theme='dark'] .lwp-sk-rowitem .ln i {
+  background: linear-gradient(90deg, rgba(255,255,255,.07) 25%, rgba(255,255,255,.15) 37%, rgba(255,255,255,.07) 63%);
+  background-size: 340px 100%;
+}
+.lwp-sk-rowitem .ln i:first-child { width: 62% }
+.lwp-sk-rowitem .ln i:last-child { width: 38% }
+
+/* 数据格 2×2 */
+.lwp-sk-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.lwp-sk-stat {
+  height: 74px; border-radius: var(--lwp-r, 13px);
+  background: linear-gradient(90deg, rgba(60,48,36,.06) 25%, rgba(60,48,36,.12) 37%, rgba(60,48,36,.06) 63%);
+  background-size: 340px 100%;
+  animation: lwp-shimmer 1.3s linear infinite;
+}
+html[data-theme='dark'] .lwp-sk-stat {
+  background: linear-gradient(90deg, rgba(255,255,255,.07) 25%, rgba(255,255,255,.15) 37%, rgba(255,255,255,.07) 63%);
+  background-size: 340px 100%;
+}
+
+/* 精选横滑：五张窄卡 */
+.lwp-sk-feat { display: flex; gap: 8px; overflow: hidden }
+.lwp-sk-feat div {
+  width: 72px; height: 88px; flex: none;
+  border-radius: var(--lwp-r-sm, 9px);
+  background: linear-gradient(90deg, rgba(60,48,36,.06) 25%, rgba(60,48,36,.12) 37%, rgba(60,48,36,.06) 63%);
+  background-size: 340px 100%;
+  animation: lwp-shimmer 1.3s linear infinite;
+}
+html[data-theme='dark'] .lwp-sk-feat div {
+  background: linear-gradient(90deg, rgba(255,255,255,.07) 25%, rgba(255,255,255,.15) 37%, rgba(255,255,255,.07) 63%);
+  background-size: 340px 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lwp-sk-row, .lwp-sk-card .pic, .lwp-sk-rowitem .av,
+  .lwp-sk-rowitem .ln i, .lwp-sk-stat, .lwp-sk-feat div { animation: none }
+}
+
 /* ============ 15. 像素风空状态 ============ */
 .lwp-empty {
   display: flex;
@@ -526,21 +668,85 @@ img.lwp-fadein.lwp-on { opacity: 1 }
   /* ================= 把「加载中…」换成骨架屏 ================= */
   var LOADING_RE = /^(加载中|读取中|载入中|请稍候)[.…·]*$/
 
+  /* 骨架的形状要和真实内容对得上，不然填进去还是会觉得「跳了一下」。
+     几种预设：
+       cards  两列卡片墙（社区、我的作品、成就、图鉴）
+       rows   带头像/缩略图的列表行（评论、邮件、通知、好友）
+       stats  2×2 数据格
+       feat   横滑的精选条
+       text   兜底：三行字 */
   function skeletonHTML(kind) {
-    if (kind === 'grid') {
-      var s = '<div class="lwp-skel-wrap" style="flex-direction:row;flex-wrap:wrap">'
-      for (var i = 0; i < 6; i++) {
-        s += '<div class="lwp-skel-card" style="width:calc(33.3% - 8px)"></div>'
+    var i
+    if (kind === 'cards') {
+      var cs = '<div class="lwp-sk lwp-sk-cards">'
+      for (i = 0; i < 6; i++) {
+        cs += '<div class="lwp-sk-card"><div class="pic"></div><div class="t1 lwp-sk-row"></div><div class="t2 lwp-sk-row"></div></div>'
       }
-      return s + '</div>'
+      return cs + '</div>'
+    }
+    if (kind === 'rows') {
+      var rs = '<div class="lwp-sk lwp-sk-rows">'
+      for (i = 0; i < 4; i++) {
+        rs += '<div class="lwp-sk-rowitem"><div class="av"></div><div class="ln"><i></i><i></i></div></div>'
+      }
+      return rs + '</div>'
+    }
+    if (kind === 'stats') {
+      var ss = '<div class="lwp-sk lwp-sk-stats">'
+      for (i = 0; i < 4; i++) ss += '<div class="lwp-sk-stat"></div>'
+      return ss + '</div>'
+    }
+    if (kind === 'feat') {
+      var fs = '<div class="lwp-sk lwp-sk-feat">'
+      for (i = 0; i < 5; i++) fs += '<div></div>'
+      return fs + '</div>'
     }
     return (
-      '<div class="lwp-skel-wrap">' +
-      '<div class="lwp-skel-row w60"></div>' +
-      '<div class="lwp-skel-row w80"></div>' +
-      '<div class="lwp-skel-row w40"></div>' +
+      '<div class="lwp-sk">' +
+      '<div class="lwp-sk-row" style="width:60%"></div>' +
+      '<div class="lwp-sk-row" style="width:80%"></div>' +
+      '<div class="lwp-sk-row" style="width:40%"></div>' +
       '</div>'
     )
+  }
+
+  /* 按容器 id / class 猜该用哪种骨架 */
+  function kindFor(el) {
+    var hay = ((el.id || '') + ' ' + (el.className || '') + ' ' +
+      (el.parentNode ? (el.parentNode.id || '') + ' ' + (el.parentNode.className || '') : '')).toLowerCase()
+    if (/gallery|mine-?grid|u-grid|bag|ach|bg-?body|tw-grid/.test(hay)) return 'cards'
+    if (/stat/.test(hay)) return 'stats'
+    if (/featured/.test(hay)) return 'feat'
+    if (/cmt|mail|ban|mod-list|tk-list|chat|ch-|rank|list/.test(hay)) return 'rows'
+    return 'text'
+  }
+
+  /* 给「先空后填」的容器预留高度。
+     这一步不写内容，只是把位置占住 ——
+     加载完成后内容填进同样大小的框里，页面不会往下跳。 */
+  var HOLD_SEL = '#gallery, .mine-grid, .u-grid, .tw-grid, .bag-grid, #featuredRow, ' +
+    '.featured-row, #statGrid, #cmtList, .cmt-list, #chMsgs, #mailList, .adm-mail-list, ' +
+    '#banList, .mod-list, .tk-list, .u-ach-list, #twBody, #achBody, #bgBody'
+  function reserveSpace() {
+    var els = document.querySelectorAll(HOLD_SEL)
+    for (var i = 0; i < els.length; i++) {
+      var el = els[i]
+      var hasSk = !!el.querySelector('.lwp-sk')
+      var empty = !el.children.length
+      /* ★ 只在「还没内容」或「只显示骨架」时占位。
+         内容填进来就把占位撤掉 ——
+         不然内容比预留高度矮的时候，页面会往回缩一下，
+         那是另一种跳动，一样难受。 */
+      if (hasSk || empty) {
+        if (el.dataset.lwpHold !== '1') {
+          el.dataset.lwpHold = '1'
+          el.classList.add('lwp-hold')
+        }
+      } else if (el.dataset.lwpHold === '1') {
+        el.dataset.lwpHold = ''
+        el.classList.remove('lwp-hold')
+      }
+    }
   }
 
   function upgradeLoading() {
@@ -558,8 +764,7 @@ img.lwp-fadein.lwp-on { opacity: 1 }
       }
       if (el.dataset.lwpSkel === '1') continue
       el.dataset.lwpSkel = '1'
-      var inGrid = el.parentNode && /grid/i.test(el.parentNode.className || '')
-      el.innerHTML = skeletonHTML(inGrid ? 'grid' : 'text')
+      el.innerHTML = skeletonHTML(kindFor(el))
     }
   }
 
@@ -806,6 +1011,7 @@ img.lwp-fadein.lwp-on { opacity: 1 }
   var timer = 0
   function scan() {
     try {
+      reserveSpace()
       upgradeLoading()
       upgradeEmpty()
       fadeImages()
