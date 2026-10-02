@@ -143,6 +143,81 @@ export default {
         color: var(--text-faint);
         margin: 10px 0 0;
       }
+      /* ---------- 信箱发布 ---------- */
+      .mail-form {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+      .mail-form .mail-row {
+        display: flex;
+        gap: 8px;
+      }
+      .mail-form input,
+      .mail-form textarea {
+        flex: 1;
+        min-width: 0;
+        border: 1px solid var(--border-input);
+        background: var(--surface);
+        color: var(--text);
+        border-radius: 10px;
+        padding: 9px 12px;
+        font-size: 14px;
+        font-family: inherit;
+      }
+      .mail-form textarea {
+        resize: vertical;
+        line-height: 1.6;
+      }
+      .mail-form button {
+        border: 0;
+        border-radius: 10px;
+        padding: 9px 16px;
+        font-size: 13px;
+        font-weight: 700;
+        color: #fff;
+        background: var(--accent, #5b8def);
+        cursor: pointer;
+        font-family: inherit;
+        flex: none;
+      }
+      .mail-form button[disabled] { opacity: 0.6; cursor: default; }
+      #mailOut {
+        font-size: 13px;
+        line-height: 1.7;
+        color: var(--text-muted);
+        margin-bottom: 10px;
+      }
+      #mailOut:empty { display: none; }
+      .adm-mail-list { margin-top: 4px; }
+      .adm-mail {
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 9px 11px;
+        margin-bottom: 8px;
+        font-size: 13px;
+        line-height: 1.6;
+      }
+      .adm-mail-ico { font-size: 20px; flex: none; line-height: 1.2; }
+      .adm-mail-b { flex: 1; min-width: 0; }
+      .adm-mail-t { font-weight: 700; color: var(--text); }
+      .adm-mail-d { color: var(--text-faint); font-size: 11px; margin-top: 3px; }
+      .adm-mail-dust { color: #b8860b; font-weight: 700; }
+      .adm-mail-x {
+        flex: none;
+        border: 1px solid var(--border-strong);
+        background: var(--surface-2);
+        color: var(--text-muted);
+        border-radius: 8px;
+        padding: 5px 9px;
+        font-size: 12px;
+        cursor: pointer;
+        font-family: inherit;
+      }
       .ban-target {
         margin-top: 10px;
         padding: 10px 12px;
@@ -492,6 +567,25 @@ export default {
       </div>
 
       <div class="card">
+        <div class="card-title">信箱发布（公告 / 奖励）</div>
+        <div class="mail-form">
+          <div class="mail-row">
+            <input id="mailIcon" type="text" value="📢" maxlength="4" style="flex:0 0 56px;text-align:center" aria-label="图标">
+            <input id="mailTitle" type="text" maxlength="40" placeholder="标题，例如：国庆活动开启" aria-label="标题">
+          </div>
+          <textarea id="mailBody" maxlength="300" rows="4" placeholder="正文，可以写多行" aria-label="正文"></textarea>
+          <div class="mail-row">
+            <input id="mailDust" type="number" value="0" min="0" step="1" style="flex:0 0 88px" aria-label="光尘数量">
+            <input id="mailTo" type="text" placeholder="收件人用户名（留空 = 全体）" autocomplete="off" aria-label="收件人">
+            <button id="mailPubBtn" type="button">发布</button>
+          </div>
+        </div>
+        <div id="mailOut"></div>
+        <div id="admMailList" class="adm-mail-list"><div class="empty">加载中…</div></div>
+        <p class="ban-hint">留空收件人就是<b>广播</b>：所有人下次打开信箱时收到，<b>之后注册的新号也会收到</b>，每人每封只收一次。填用户名则只投给那一个人。光尘填 0 是纯公告，填数字就是可领取的奖励。</p>
+      </div>
+
+      <div class="card">
         <div class="card-title">紧急处置</div>
         <div class="card-text" style="margin-bottom:12px">若社区出现大面积违规内容，可一键清空全部作品。此操作不可恢复，请务必慎重。</div>
         <button class="clear" id="clearAllBtn" type="button">一键清空全部作品</button>
@@ -598,6 +692,7 @@ export default {
         // 举报、封号与作品列表互不影响：任何一边失败另一边照样能看
         loadReports()
         loadBanned()
+        loadAdminMails()
         try {
           const res = await fetch('/api/get?limit=30&t=' + Date.now(), { cache: 'no-store' })
           if (!res.ok) {
@@ -1098,6 +1193,146 @@ export default {
           } finally {
             grantBtn.disabled = false
             grantBtn.textContent = old
+          }
+        })
+      }
+
+      /* ---------- 信箱发布（公告 / 奖励） ---------- */
+      function esc(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
+          ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]
+        )
+      }
+
+      function renderAdminMails(list) {
+        if (!admMailList) return
+        if (!list || !list.length) {
+          admMailList.innerHTML = '<div class="empty">还没有发布过广播信</div>'
+          return
+        }
+        admMailList.innerHTML = list
+          .map(
+            (m) =>
+              '<div class="adm-mail">' +
+              '<div class="adm-mail-ico">' + esc(m.icon || '📢') + '</div>' +
+              '<div class="adm-mail-b">' +
+              '<div class="adm-mail-t">' + esc(m.title) + '</div>' +
+              '<div class="adm-mail-d">' + esc(formatTime(m.time)) +
+              (m.dust > 0 ? ' · <span class="adm-mail-dust">+' + m.dust + ' 光尘</span>' : ' · 纯公告') +
+              '</div></div>' +
+              '<button class="adm-mail-x" type="button" data-revoke="' + esc(m.id) + '">撤回</button>' +
+              '</div>'
+          )
+          .join('')
+      }
+
+      async function loadAdminMails() {
+        const key = getKey()
+        if (!key || !admMailList) return
+        try {
+          const res = await fetch('/api/admin/mail', {
+            headers: { 'x-admin-key': key },
+            cache: 'no-store',
+          })
+          const d = await res.json().catch(() => ({}))
+          renderAdminMails((d && d.mails) || [])
+        } catch (e) {
+          admMailList.innerHTML = '<div class="empty">读取失败</div>'
+        }
+      }
+
+      const mailIcon = document.getElementById('mailIcon')
+      const mailTitle = document.getElementById('mailTitle')
+      const mailBody = document.getElementById('mailBody')
+      const mailDust = document.getElementById('mailDust')
+      const mailTo = document.getElementById('mailTo')
+      const mailPubBtn = document.getElementById('mailPubBtn')
+      const mailOut = document.getElementById('mailOut')
+      const admMailList = document.getElementById('admMailList')
+
+      if (admMailList) {
+        admMailList.addEventListener('click', async (e) => {
+          const btn = e.target && e.target.closest ? e.target.closest('[data-revoke]') : null
+          if (!btn) return
+          if (!window.confirm('撤回这封广播信？之后打开信箱的人不再收到（已经收到的不会收回）')) return
+          try {
+            const res = await fetch('/api/admin/mail', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'x-admin-key': getKey() },
+              body: JSON.stringify({ action: 'revoke', id: btn.getAttribute('data-revoke') }),
+            })
+            const d = await res.json().catch(() => ({}))
+            if (!res.ok || !d.ok) {
+              toast((d && d.error) || '撤回失败')
+              return
+            }
+            renderAdminMails(d.mails || [])
+            if (window.sfx) window.sfx('close')
+            toast('已撤回')
+          } catch (err) {
+            toast('撤回失败：网络错误')
+          }
+        })
+      }
+
+      if (mailPubBtn) {
+        mailPubBtn.addEventListener('click', async () => {
+          const key = getKey()
+          if (!key) {
+            toast('请先登录维护面板')
+            return
+          }
+          const title = (mailTitle.value || '').trim()
+          if (!title) {
+            toast('请填写信件标题')
+            return
+          }
+          const payload = {
+            action: 'publish',
+            icon: (mailIcon.value || '📢').trim() || '📢',
+            title,
+            body: (mailBody.value || '').trim(),
+            dust: Math.max(0, Math.trunc(Number(mailDust.value) || 0)),
+            to: (mailTo.value || '').trim(),
+          }
+          const who = payload.to ? '「' + payload.to + '」' : '全体用户'
+          const kind = payload.dust > 0 ? '奖励（' + payload.dust + ' 光尘）' : '公告'
+          if (!window.confirm('确定把' + kind + '发给 ' + who + ' 吗？')) return
+          mailPubBtn.disabled = true
+          const old = mailPubBtn.textContent
+          mailPubBtn.textContent = '发布中'
+          try {
+            const res = await fetch('/api/admin/mail', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'x-admin-key': key },
+              body: JSON.stringify(payload),
+            })
+            const d = await res.json().catch(() => ({}))
+            if (!res.ok || !d.ok) {
+              toast((d && d.error) || '发布失败')
+              return
+            }
+            if (mailOut) {
+              mailOut.className = ''
+              mailOut.textContent = d.targeted
+                ? '✅ 已投递给「' + d.to + '」，对方打开信箱即可看到'
+                : '✅ 广播已发布，所有人下次打开信箱时收到（之后注册的新号也会收到）'
+            }
+            if (window.sfx) window.sfx('ding')
+            toast('发布成功')
+            if (d.targeted) {
+              mailTo.value = ''
+            } else {
+              mailTitle.value = ''
+              mailBody.value = ''
+              mailDust.value = '0'
+              renderAdminMails(d.mails || [])
+            }
+          } catch (err) {
+            toast('发布失败：网络错误')
+          } finally {
+            mailPubBtn.disabled = false
+            mailPubBtn.textContent = old
           }
         })
       }

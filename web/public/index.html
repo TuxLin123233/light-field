@@ -584,11 +584,29 @@
       /* ---------- 轻量音效（WebAudio 实时合成，无音频文件） ---------- */
       ;(function () {
         let ac = null
+        /* 主音量节点：所有音效都先汇到这里再去扬声器，
+           这样音量滑块改一处就能整体生效（0~1）。 */
+        let master = null
+        const VOL_KEY = 'lw-sfx-vol'
+        function readVol() {
+          try {
+            const raw = localStorage.getItem(VOL_KEY)
+            if (raw === null || raw === '') return 0.8
+            const n = Number(raw)
+            return Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : 0.8
+          } catch (e) {
+            return 0.8
+          }
+        }
+        let volume = readVol()
         function ctx() {
           if (!ac) {
             const C = window.AudioContext || window.webkitAudioContext
             if (!C) return null
             ac = new C()
+            master = ac.createGain()
+            master.gain.value = volume
+            master.connect(ac.destination)
           }
           if (ac.state === 'suspended') ac.resume().catch(function () {})
           return ac
@@ -626,7 +644,7 @@
           gain.gain.exponentialRampToValueAtTime(vol, t0 + 0.012)
           gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur)
           osc.connect(gain)
-          gain.connect(c.destination)
+          gain.connect(master || c.destination)
           osc.start(t0)
           osc.stop(t0 + dur + 0.02)
         }
@@ -645,7 +663,7 @@
           gain.gain.exponentialRampToValueAtTime(vol, t0 + 0.015)
           gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur)
           osc.connect(gain)
-          gain.connect(c.destination)
+          gain.connect(master || c.destination)
           osc.start(t0)
           osc.stop(t0 + dur + 0.02)
         }
@@ -688,7 +706,7 @@
           gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur)
           src.connect(flt)
           flt.connect(gain)
-          gain.connect(c.destination)
+          gain.connect(master || c.destination)
           src.start(t0)
           src.stop(t0 + dur + 0.02)
         }
@@ -712,7 +730,7 @@
           gain.gain.exponentialRampToValueAtTime(vol, t0 + 0.02)
           gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur)
           osc.connect(gain)
-          gain.connect(c.destination)
+          gain.connect(master || c.destination)
           osc.start(t0)
           lfo.start(t0)
           osc.stop(t0 + dur + 0.02)
@@ -878,6 +896,22 @@
         }
         window.getSfx = function () {
           return !isSilent()
+        }
+        /* 音量：0~1，存 localStorage，下次打开还是这个值 */
+        window.getSfxVolume = function () {
+          return volume
+        }
+        window.setSfxVolume = function (v) {
+          const n = Number(v)
+          if (Number.isFinite(n)) volume = Math.max(0, Math.min(1, n))
+          try {
+            localStorage.setItem(VOL_KEY, String(volume))
+          } catch (e) {}
+          if (master) {
+            try {
+              master.gain.value = volume
+            } catch (e) {}
+          }
         }
 
         /* ---------- 全局按钮音效：让站里每个按钮都有反馈 ----------

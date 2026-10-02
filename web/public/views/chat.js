@@ -84,27 +84,47 @@ export default {
          overflow-wrap:anywhere 比 word-break:break-word 兼容性好 ——
          后者在老 Safari / WebView 上不被支持，会退化成 normal，
          一条长网址就能把气泡顶出屏幕（用户反馈「消息框溢出到右边」）。 */
-      .ch-msg { display: flex; max-width: 82%; min-width: 0; }
+      .ch-msg {
+        display: flex; align-items: flex-start; max-width: 88%; min-width: 0;
+        animation: chIn 0.18s ease-out;
+      }
+      @keyframes chIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+      @media (prefers-reduced-motion: reduce) { .ch-msg { animation: none; } }
       .ch-msg.mine { align-self: flex-end; flex-direction: row-reverse; }
+      .ch-msg-av {
+        width: 28px; height: 28px; flex: 0 0 28px; border-radius: 9px; overflow: hidden;
+        background: var(--surface-2); border: 1px solid var(--border-strong);
+        margin-right: 7px; margin-top: 2px;
+      }
+      .ch-msg-av canvas { width: 100%; height: 100%; image-rendering: pixelated; display: block; }
+      .ch-bubble-col { min-width: 0; display: flex; flex-direction: column; }
+      .ch-msg.mine .ch-bubble-col { align-items: flex-end; }
       .ch-bubble {
-        padding: 9px 12px; border-radius: 14px; font-size: 13px; line-height: 1.6;
+        padding: 9px 13px; border-radius: 16px; font-size: 13.5px; line-height: 1.65;
         max-width: 100%; min-width: 0;
         overflow-wrap: anywhere; word-break: break-word; white-space: pre-wrap;
         background: var(--surface); border: 1px solid var(--border); color: var(--text);
+        box-shadow: 0 1px 2px rgba(80, 60, 40, 0.06);
       }
       .ch-msg.mine .ch-bubble {
         background: var(--accent); color: #fff; border-color: var(--accent);
-        border-bottom-right-radius: 4px;
+        border-bottom-right-radius: 5px;
       }
-      .ch-msg:not(.mine) .ch-bubble { border-bottom-left-radius: 4px; }
-      .ch-mtime { font-size: 10px; color: var(--text-faint); margin-top: 3px; }
+      .ch-msg:not(.mine) .ch-bubble { border-bottom-left-radius: 5px; }
+      .ch-mtime { font-size: 10px; color: var(--text-faint); margin-top: 4px; padding: 0 3px; }
       .ch-msg.mine .ch-mtime { text-align: right; }
+      /* 跨天时插一条日期分隔 */
+      .ch-day {
+        align-self: center; font-size: 10.5px; color: var(--text-faint);
+        background: var(--surface-2); border-radius: 999px; padding: 3px 11px;
+        margin: 4px 0 2px;
+      }
       .ch-new {
         align-self: center; font-size: 11px; color: var(--accent);
         background: color-mix(in srgb, var(--accent) 12%, var(--surface));
         border-radius: 999px; padding: 4px 11px; font-weight: 700;
       }
-      .ch-sendbar { display: flex; margin-top: 10px; min-width: 0; }
+      .ch-sendbar { display: flex; margin-top: 10px; min-width: 0; position: relative; }
       .ch-in {
         /* min-width: 0 必须写：<input> 有 size 属性带来的固有宽度，
            作为 flex 子项默认 min-width:auto 缩不下去，窄屏会把「发送」挤出屏幕。 */
@@ -128,6 +148,41 @@ export default {
       }
       .ch-msg-box.bad { background: #fdecea; color: #c0392b; }
       .ch-del { margin-left: auto; font-size: 11px; }
+
+      /* ---------- 表情面板 ---------- */
+      .ch-emoji-btn {
+        flex: 0 0 auto; width: 42px;
+        border: 1px solid var(--border-input); background: var(--surface-2);
+        color: var(--text); border-radius: 12px; font-size: 18px; line-height: 1;
+        cursor: pointer; font-family: inherit;
+      }
+      .ch-emoji-btn.on {
+        border-color: var(--accent);
+        background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+      }
+      .ch-emoji {
+        position: absolute; left: 0; right: 0; bottom: calc(100% + 8px);
+        background: var(--surface); border: 1px solid var(--border-strong);
+        border-radius: 14px; box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
+        padding: 8px; z-index: 30;
+      }
+      .ch-emoji[hidden] { display: none; }
+      .ch-emoji-tabs { display: flex; margin-bottom: 6px; }
+      .ch-emoji-tabs button {
+        flex: 1; border: 0; background: transparent; color: var(--text-muted);
+        font-size: 12px; font-weight: 700; font-family: inherit;
+        padding: 5px 0; border-radius: 8px; cursor: pointer;
+      }
+      .ch-emoji-tabs button.on { background: var(--surface-2); color: var(--text); }
+      .ch-emoji-grid {
+        display: grid; grid-template-columns: repeat(8, 1fr);
+        max-height: 170px; overflow-y: auto; -webkit-overflow-scrolling: touch;
+      }
+      .ch-emoji-grid button {
+        border: 0; background: transparent; font-size: 20px; line-height: 1;
+        padding: 6px 0; border-radius: 8px; cursor: pointer;
+      }
+      .ch-emoji-grid button:active { background: var(--surface-2); }
     `,
   template: `
     <div class="ch-wrap">
@@ -178,6 +233,89 @@ export default {
       const p = (n) => String(n).padStart(2, '0')
       return p(d.getHours()) + ':' + p(d.getMinutes())
     }
+    const dayOf = (t) => {
+      const d = new Date(Number(t) || 0)
+      return d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate()
+    }
+    const dayLabel = (t) => {
+      const d = new Date(Number(t) || 0)
+      const now = new Date()
+      const same = (a, b) =>
+        a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
+      if (same(d, now)) return '今天'
+      if (same(d, new Date(now.getTime() - 86400000))) return '昨天'
+      return d.getMonth() + 1 + ' 月 ' + d.getDate() + ' 日'
+    }
+
+    /* ---------- 表情 ----------
+       按分组列出来，点一下插到输入框的光标处，可以连着点好几个。 */
+    const EMOJI_GROUPS = [
+      {
+        name: '常用',
+        list: ['😀','😄','😂','🤣','😊','🥰','😍','😘','😜','🤔','😅','😭','😡','🥺','😴','🤗','👍','👎','👏','🙏','💪','✌️','👌','🫶','❤️','💔','✨','🔥','🎉','🌟','✅','❌'],
+      },
+      {
+        name: '表情',
+        list: ['😃','😁','😆','🙂','🙃','😉','😇','😋','😛','🤪','😝','🤭','🤫','😐','😑','😶','😏','😒','🙄','😬','😮','😯','😲','😳','😢','😤','😠','🤯','😱','😨','😰','😥','😓','🤤','😪','🥱','😷','🥳','😎','🤓','🧐','😕','😟','😔','😞','😖','😫','😩'],
+      },
+      {
+        name: '手势',
+        list: ['👋','🤚','✋','🖐️','👌','🤌','🤏','✌️','🤞','🫰','🤟','🤘','🤙','👈','👉','👆','👇','☝️','👍','👎','✊','👊','🤛','🤜','👏','🙌','🫶','🙏','🤝','💪','🦾','✍️','💅','🫡'],
+      },
+      {
+        name: '物品',
+        list: ['🎨','🖌️','🖼️','📷','📸','🎮','🎵','🎧','🎤','🏆','🥇','🎁','🎈','🎂','🍰','🍕','🍔','🍎','🍺','☕','⚽','🏀','🚀','✈️','🚗','🏠','💡','🔔','📌','📢','🔍','🔑','💎','🪙','🎯'],
+      },
+      {
+        name: '符号',
+        list: ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','💖','💗','💓','💞','💕','💔','❣️','💯','✨','⭐','🌟','🔥','💫','⚡','🌈','☀️','🌙','⛅','🌧️','❄️','🍀','🌸','🌺','🌻','🌹','🌵','🌊','✅','❌','❓','❗','💤','💬','👀'],
+      },
+    ]
+
+    function setupEmojiPanel(tabsEl, gridEl, onPick) {
+      let cur = 0
+      const drawTabs = () => {
+        tabsEl.innerHTML = EMOJI_GROUPS.map(
+          (g, i) =>
+            '<button type="button" data-g="' + i + '"' + (i === cur ? ' class="on"' : '') + '>' +
+            esc(g.name) + '</button>'
+        ).join('')
+      }
+      const drawGrid = () => {
+        gridEl.innerHTML = EMOJI_GROUPS[cur].list
+          .map((e) => '<button type="button" data-e="' + esc(e) + '">' + esc(e) + '</button>')
+          .join('')
+      }
+      tabsEl.addEventListener('click', (ev) => {
+        const b = ev.target.closest ? ev.target.closest('button[data-g]') : null
+        if (!b) return
+        cur = Number(b.getAttribute('data-g')) || 0
+        drawTabs()
+        drawGrid()
+        if (window.sfx) window.sfx('tick')
+      })
+      gridEl.addEventListener('click', (ev) => {
+        const b = ev.target.closest ? ev.target.closest('button[data-e]') : null
+        if (!b) return
+        onPick(b.getAttribute('data-e'))
+      })
+      drawTabs()
+      drawGrid()
+    }
+
+    /* 插到光标处（而不是无脑追加到末尾），在一句话中间补表情也顺手 */
+    function insertAtCursor(input, text) {
+      const v = input.value
+      const start = input.selectionStart == null ? v.length : input.selectionStart
+      const end = input.selectionEnd == null ? v.length : input.selectionEnd
+      input.value = v.slice(0, start) + text + v.slice(end)
+      const pos = start + text.length
+      try {
+        input.setSelectionRange(pos, pos)
+      } catch (e) {}
+      input.dispatchEvent(new Event('input'))
+      input.focus()
+    }
 
     function showMsg(text, bad) {
       const el = $('chMsg')
@@ -227,8 +365,11 @@ export default {
       })
     }
 
+    /* 会话列表头像是 38px，消息气泡旁的是 28px */
+    const avSize = (el) => (el.classList.contains('ch-msg-av') ? 28 : 38)
+
     function paintAvatars() {
-      const boxes = document.querySelectorAll('.ch-av[data-uid]')
+      const boxes = document.querySelectorAll('.ch-av[data-uid], .ch-msg-av[data-uid]')
       if (!window.LWAvatar) return
       const uids = []
       boxes.forEach((el) => {
@@ -236,7 +377,7 @@ export default {
         if (!uid) return
         const c = document.createElement('canvas')
         el.appendChild(c)
-        window.LWAvatar.draw(c, uid, 38)
+        window.LWAvatar.draw(c, uid, avSize(el))
         uids.push(uid)
       })
       if (uids.length && window.LWAvatar.load) {
@@ -245,7 +386,7 @@ export default {
           .then(() => {
             boxes.forEach((el) => {
               const c = el.querySelector('canvas')
-              if (c) window.LWAvatar.draw(c, el.getAttribute('data-uid'), 38)
+              if (c) window.LWAvatar.draw(c, el.getAttribute('data-uid'), avSize(el))
             })
           })
           .catch(() => {})
@@ -288,8 +429,13 @@ export default {
          根本没法开口（用户反馈）。空对话只清空消息区，输入栏照常渲染。 */
       const sendbar =
         '<div class="ch-sendbar">' +
+        '<button class="ch-emoji-btn" id="chEmojiBtn" type="button" aria-label="表情">😊</button>' +
         '<input class="ch-in" id="chIn" size="1" maxlength="300" placeholder="说点什么…">' +
         '<button class="ch-send" id="chSend" type="button" disabled>发送</button>' +
+        '<div class="ch-emoji" id="chEmoji" hidden>' +
+        '<div class="ch-emoji-tabs" id="chEmojiTabs"></div>' +
+        '<div class="ch-emoji-grid" id="chEmojiGrid"></div>' +
+        '</div>' +
         '</div>'
       if (!items.length) {
         $('chBody').innerHTML =
@@ -301,14 +447,23 @@ export default {
       const showNew = hasNew
       let rows = ''
       let flagged = false
-      items.forEach((m, i) => {
+      let lastDay = ''
+      items.forEach((m) => {
+        // 跨天插一条日期分隔，长对话里更好认
+        const dk = dayOf(m.at)
+        if (dk !== lastDay) {
+          rows += '<div class="ch-day">' + esc(dayLabel(m.at)) + '</div>'
+          lastDay = dk
+        }
         if (!flagged && showNew && m.at > myLastAt && !m.mine) {
           rows += '<div class="ch-new">以下是你刷新后看到的新消息</div>'
           flagged = true
         }
         rows +=
           '<div class="ch-msg' + (m.mine ? ' mine' : '') + '">' +
-          '<div class="ch-bubble">' + esc(m.text) +
+          (m.mine ? '' : '<span class="ch-msg-av" data-uid="' + esc(d.with.uid) + '"></span>') +
+          '<div class="ch-bubble-col">' +
+          '<div class="ch-bubble">' + esc(m.text) + '</div>' +
           '<div class="ch-mtime">' + esc(clock(m.at)) + '</div>' +
           '</div></div>'
       })
@@ -317,6 +472,7 @@ export default {
         '<button class="ch-del" id="chDel" type="button">🗑️ 清空这段对话</button>' +
         sendbar
       $('chMsgs').scrollTop = $('chMsgs').scrollHeight
+      paintAvatars()
       bindSend()
 
       // 看过就标已读
@@ -344,6 +500,20 @@ export default {
           }
         })
         send.addEventListener('click', doSend)
+
+        // 表情面板。每轮渲染都是新节点，用 dataset 标记避免重复初始化
+        const emojiBtn = $('chEmojiBtn')
+        const emojiPanel = $('chEmoji')
+        if (emojiBtn && emojiPanel && !emojiPanel.dataset.ready) {
+          emojiPanel.dataset.ready = '1'
+          setupEmojiPanel($('chEmojiTabs'), $('chEmojiGrid'), (e) => insertAtCursor(inp, e))
+          emojiBtn.addEventListener('click', () => {
+            const willOpen = emojiPanel.hidden
+            emojiPanel.hidden = !willOpen
+            emojiBtn.classList.toggle('on', willOpen)
+            if (window.sfx) window.sfx(willOpen ? 'open' : 'close')
+          })
+        }
         sync()
       }
 
@@ -442,6 +612,19 @@ export default {
         $('chBody').innerHTML = '<div class="ch-empty">读取失败：' + esc((e && e.message) || '网络错误') + '</div>'
       }
     }
+
+    /* 点空白处收起表情面板。
+       注册在 window 上而不是 document：app.js 的 withAutoCleanup 只接管
+       window 上的监听，挂在 document 上的会在切页后残留。
+       面板每轮渲染都会重建，所以这里每次现查元素，不闭包住旧节点。 */
+    window.addEventListener('pointerdown', (ev) => {
+      const panel = document.getElementById('chEmoji')
+      const btn = document.getElementById('chEmojiBtn')
+      if (!panel || panel.hidden) return
+      if (panel.contains(ev.target) || (btn && btn.contains(ev.target))) return
+      panel.hidden = true
+      if (btn) btn.classList.remove('on')
+    })
 
     /* 刷新按钮是这里的主要交互：非实时就靠它拉新消息 */
     C.bindRefresh($('chRefresh'), () => load(true), () => {}, true)

@@ -954,6 +954,24 @@ export default {
           <input class="switch" id="sfxSwitch" type="checkbox" role="switch">
         </div>
         <div class="row row-col">
+          <div class="slider-head">
+            <div>
+              <div class="row-label">音效音量</div>
+              <div class="row-desc">松开手指试听一下，嫌吵就调小</div>
+            </div>
+            <span class="slider-val" id="sfxVolVal">80%</span>
+          </div>
+          <input class="slider" id="sfxVolSlider" type="range" min="0" max="100" step="5" value="80"
+                 aria-label="音效音量">
+          <div class="slider-presets" id="sfxVolPresets">
+            <button type="button" data-v="0">静音</button>
+            <button type="button" data-v="30">轻</button>
+            <button type="button" data-v="60">适中</button>
+            <button type="button" data-v="80">默认</button>
+            <button type="button" data-v="100">最大</button>
+          </div>
+        </div>
+        <div class="row row-col">
           <div>
             <div class="row-label">配色主题</div>
             <div class="row-desc">换一套画板的整体色调</div>
@@ -1687,6 +1705,35 @@ export default {
           if (window.setSfx) window.setSfx(sfxSwitch.checked)
           toast(sfxSwitch.checked ? '音效已开启' : '音效已关闭')
         })
+      }
+
+      /* 音效音量。拖动时不发声（拖一路响一路太吵），
+         松手（change）才放一记「叮」当作试听。 */
+      const sfxVolSlider = document.getElementById('sfxVolSlider')
+      const sfxVolVal = document.getElementById('sfxVolVal')
+      if (sfxVolSlider) {
+        const paintVol = (n) => {
+          sfxVolSlider.value = String(n)
+          if (sfxVolVal) sfxVolVal.textContent = n + '%'
+        }
+        const applyVol = (v, preview) => {
+          const n = Math.max(0, Math.min(100, Math.round(Number(v) || 0)))
+          paintVol(n)
+          if (window.setSfxVolume) window.setSfxVolume(n / 100)
+          if (preview && n > 0 && window.sfx) window.sfx('ding')
+        }
+        const startVol = Math.round((window.getSfxVolume ? window.getSfxVolume() : 0.8) * 100)
+        paintVol(startVol)
+        sfxVolSlider.addEventListener('input', () => applyVol(sfxVolSlider.value, false))
+        sfxVolSlider.addEventListener('change', () => applyVol(sfxVolSlider.value, true))
+        const volPresets = document.getElementById('sfxVolPresets')
+        if (volPresets) {
+          volPresets.addEventListener('click', (e) => {
+            const b = e.target.closest ? e.target.closest('button[data-v]') : null
+            if (!b) return
+            applyVol(b.getAttribute('data-v'), true)
+          })
+        }
       }
 
       function setTheme(dark) {

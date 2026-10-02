@@ -220,3 +220,52 @@ export async function ensureOffers(kv, uid) {
   }
   return n
 }
+
+/* -------------------- 后台发布的信件（广播） --------------------
+   维护者在后台写一封公告或奖励，存进 admail 这个列表。
+   所有账号下次打开信箱时会自动收到 —— **包括这封信发布之后才注册的新号**，
+   所以发布时不需要遍历全部用户（那样既慢，又会漏掉后来的人）。
+   每封信的 claimId 就是它的 id，同一个人只会收到一次，重复调用安全。 */
+
+export const ADMIN_MAIL_KEY = 'admail'
+export const MAX_ADMIN_MAILS = 30
+
+export async function readAdminMails(kv) {
+  if (!kv) return []
+  const raw = await kv.get(ADMIN_MAIL_KEY)
+  try {
+    const a = JSON.parse(raw || '[]')
+    return Array.isArray(a) ? a : []
+  } catch (e) {
+    return []
+  }
+}
+
+export async function writeAdminMails(kv, list) {
+  const clean = (Array.isArray(list) ? list : []).slice(0, MAX_ADMIN_MAILS)
+  await kv.put(ADMIN_MAIL_KEY, JSON.stringify(clean))
+  return clean
+}
+
+/** 把这批广播信投进指定用户的信箱；已经收到过的会跳过 */
+export async function ensureAdminMails(kv, uid) {
+  if (!kv || !uid) return 0
+  const list = await readAdminMails(kv)
+  if (!list.length) return 0
+  let n = 0
+  for (const m of list) {
+    if (!m || !m.id) continue
+    const got = await deliver(kv, uid, {
+      id: 'adm-' + m.id,
+      claimId: 'adm-' + m.id,
+      kind: Number(m.dust) > 0 ? 'attach' : 'text',
+      icon: m.icon || '📢',
+      title: m.title,
+      body: m.body,
+      dust: Number(m.dust) || 0,
+      time: Number(m.time) || Date.now(),
+    })
+    if (got > 0) n += got
+  }
+  return n
+}

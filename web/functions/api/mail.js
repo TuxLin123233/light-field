@@ -3,7 +3,7 @@
 //   GET                    取信箱列表与可领附件统计
 //   POST {action:'claim', id}  领取附件（光尘直接进账本）
 import { readActiveUser, pickToken, BANNED_ERROR } from './_auth.js'
-import { readBox, claim, clearBox, stats, ensureOffers, ATTACH_DUST } from './_mail.js'
+import { readBox, claim, clearBox, stats, ensureOffers, ensureAdminMails, ATTACH_DUST } from './_mail.js'
 import { readBook, writeBook, publicView } from './_dust.js'
 
 const CORS_HEADERS = {
@@ -36,6 +36,8 @@ export async function onRequestGet(context) {
   // 之前只在注册/登录时投递，账号如果是那次上线之前建的，
   // 用户直接点信箱进来就一直是空的。claimId 保证不会重复收到。
   await ensureOffers(kv, who.uid).catch(() => {})
+  // 后台发布的公告 / 奖励，也是打开信箱时补投（每人每封只投一次）
+  await ensureAdminMails(kv, who.uid).catch(() => {})
   const box = await readBox(kv, who.uid)
   const st = await stats(kv, who.uid)
   return json({ ok: true, mails: box, ...st })
