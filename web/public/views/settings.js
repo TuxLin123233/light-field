@@ -677,6 +677,33 @@ export default {
       .entry-desc { font-size: 11px; color: var(--text-faint); margin-top: 2px; }
 
       .entry-arrow { color: var(--text-faint); }
+      /* ---------- 版本与更新 ---------- */
+      .upd-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 14px;
+      }
+      .upd-top { display: flex; align-items: center; }
+      .upd-top > .upd-main { flex: 1; min-width: 0; }
+      .upd-label { font-size: 12px; color: var(--text-faint); }
+      .upd-ver { font-size: 15px; font-weight: 800; color: var(--text); margin-top: 2px; }
+      .upd-btn {
+        flex: none;
+        margin-left: 12px;
+        border: 0;
+        border-radius: 999px;
+        padding: 10px 16px;
+        font-size: 13px;
+        font-weight: 800;
+        font-family: inherit;
+        color: #fff;
+        background: var(--accent);
+        cursor: pointer;
+      }
+      .upd-btn[disabled] { opacity: 0.6; cursor: default; }
+      .upd-note { margin-top: 10px; font-size: 12px; line-height: 1.7; color: var(--text-faint); }
+      .upd-note.fresh { color: #b8860b; font-weight: 700; }
 
       .qr-row { display: flex; flex-direction: column; align-items: center; gap: 10px; }
 
@@ -1027,6 +1054,20 @@ export default {
       </section>
 
       <section class="group">
+        <div class="group-title">版本与更新</div>
+        <div class="upd-card">
+          <div class="upd-top">
+            <div class="upd-main">
+              <div class="upd-label">当前版本</div>
+              <div class="upd-ver" id="updVer">读取中…</div>
+            </div>
+            <button class="upd-btn" id="updBtn" type="button">刷新到最新版</button>
+          </div>
+          <div class="upd-note" id="updNote">界面还是老样子、新功能没出现？点右边重新拉取一次最新代码。草稿、登录和设置都不会丢。</div>
+        </div>
+      </section>
+
+      <section class="group">
         <div class="group-title">更多</div>
         <router-link class="entry" to="/terms">
           <span class="entry-ico">📄</span>
@@ -1049,7 +1090,7 @@ export default {
           <span class="entry-body">
             <span class="entry-label">常见问题</span>
             <div class="entry-desc">为什么没有 128×128？以及其他说明</div>
-          </div>
+          </span>
           <span class="entry-arrow">›</span>
         </router-link>
       </section>
@@ -1742,6 +1783,88 @@ export default {
       }
 
       darkSwitch.addEventListener('change', () => setTheme(darkSwitch.checked))
+
+      /* ---------- 版本与更新 ----------
+         这个站的资源是「网络优先 + Service Worker 兜底」，正常刷新本来就能拿到新版。
+         但用户可能一直停在页面里（SPA 切页不会重新加载 index.html），
+         也可能被 SW 的壳缓存兜住，于是一直看着旧界面、以为作者没更新。
+         这里给一个「刷新到最新版」：清掉 SW 缓存 → 注销 Service Worker →
+         重新加载，强制从网络拿最新代码。
+         只动缓存，不碰 localStorage —— 草稿、登录、设置都留着。 */
+      const updBtn = document.getElementById('updBtn')
+      const updVer = document.getElementById('updVer')
+      const updNote = document.getElementById('updNote')
+      const runningVer = window.__LW_VER || '未知'
+
+      const paintUpdNote = (text, fresh) => {
+        if (!updNote) return
+        updNote.textContent = text
+        updNote.className = fresh ? 'upd-note fresh' : 'upd-note'
+      }
+
+      /* 绕开所有缓存，读服务器上 index.html 里的版本号 */
+      async function fetchServerVer() {
+        const res = await fetch('/index.html?t=' + Date.now(), { cache: 'no-store' })
+        if (!res.ok) return ''
+        const txt = await res.text()
+        const m = txt.match(/__LW_VER\s*=\s*['"]([^'"]+)['"]/)
+        return m ? m[1] : ''
+      }
+
+      async function checkUpdate(byUser) {
+        if (updVer) updVer.textContent = 'v' + runningVer
+        try {
+          const srv = await fetchServerVer()
+          if (srv && srv !== runningVer) {
+            paintUpdNote('发现新版本 v' + srv + '，点右边「刷新到最新版」即可更新。', true)
+            if (byUser && window.sfx) window.sfx('ding')
+            return true
+          }
+          paintUpdNote('已经是最新版本 v' + runningVer + '。刷新不会丢草稿、登录和设置。', false)
+          if (byUser && window.toast) window.toast('已经是最新版本 v' + runningVer)
+          return false
+        } catch (e) {
+          paintUpdNote('暂时连不上服务器，等联网后再试。本来是最新版的话，不刷新也没关系。', false)
+          if (byUser && window.toast) window.toast('检查更新失败：网络错误')
+          return false
+        }
+      }
+
+      if (updBtn) {
+        updBtn.addEventListener('click', async () => {
+          if (updBtn.disabled) return
+          if (navigator.onLine === false) {
+            toast('现在没有网络，联网后再试')
+            return
+          }
+          updBtn.disabled = true
+          const old = updBtn.textContent
+          updBtn.textContent = '更新中…'
+          try {
+            // 1) 删掉 Service Worker 的壳缓存
+            if (window.caches && caches.keys) {
+              const keys = await caches.keys()
+              await Promise.all(keys.map((k) => caches.delete(k)))
+            }
+            // 2) 注销 Service Worker：重新加载时直接走网络，顺便拿到最新 sw.js
+            if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+              const regs = await navigator.serviceWorker.getRegistrations()
+              await Promise.all(regs.map((r) => r.unregister()))
+            }
+            // 3) 清掉切页缓存（内存里的，重载本来也会没，这里图个干净）
+            if (window.__lwCache) window.__lwCache = {}
+            // 4) 重新加载
+            location.reload()
+          } catch (e) {
+            updBtn.disabled = false
+            updBtn.textContent = old
+            toast('更新失败，请手动长按浏览器的刷新按钮')
+          }
+        })
+      }
+
+      // 进设置页时静默查一次，有新版本就直接写在下方的说明里
+      if (updVer) checkUpdate(false)
 
       syncThemeUI()
   },

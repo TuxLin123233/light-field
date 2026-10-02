@@ -197,14 +197,25 @@ function applyNavPosition() {
   document.documentElement.setAttribute('data-nav-pos', pos)
 }
 
+/* 什么时候不显示底部导航：
+     · 登录页是专注的单页，本来就不显示；
+     · 私信对话中（/chat?to=xxx）也隐藏，把屏幕整个让给消息和输入框，
+       否则键盘弹起来时导航栏会压在输入框上。
+   只有带 to 参数的私信才隐藏，会话列表照常保留导航。 */
+function hideNav(route) {
+  if (!route) return false
+  if (route.path === '/login') return true
+  if (route.path === '/chat' && route.query && route.query.to) return true
+  return false
+}
+
 const App = {
   data() {
-    // 登录页是专注的单页，不显示底部导航
-    return { navItems: navOrder(), showNav: this.$route.path !== '/login' }
+    return { navItems: navOrder(), showNav: !hideNav(this.$route) }
   },
   watch: {
     $route(to) {
-      this.showNav = to.path !== '/login'
+      this.showNav = !hideNav(to)
     },
   },
   mounted() {

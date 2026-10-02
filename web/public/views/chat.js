@@ -25,6 +25,43 @@ export default {
         --ok: #4caf7d;
       }
       .ch-wrap { max-width: 460px; margin: 0 auto; padding: 14px 16px 96px; }
+      /* ---------- 对话模式：整屏 flex，消息滚动、输入框钉在底部 ----------
+         高度优先用 dvh（会随键盘收缩），JS 里再用 visualViewport 兜一层 ——
+         有些老浏览器不认 dvh，键盘弹起来时输入框会被挡住。
+         padding-bottom 补上安全区，iPhone 的横条不会盖住输入框。 */
+      .ch-wrap.thread {
+        padding: 0;
+        height: 100vh;
+        height: 100dvh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .ch-wrap.thread .ch-bar { padding: 14px 16px 0; flex: none; }
+      .ch-wrap.thread .ch-note { margin: 8px 16px 0; flex: none; }
+      .ch-wrap.thread #chBody {
+        flex: 1 1 auto;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        padding: 0 16px;
+      }
+      .ch-wrap.thread .ch-empty {
+        flex: 1 1 auto;
+        display: flex; flex-direction: column; justify-content: center;
+      }
+      .ch-wrap.thread .ch-msgs {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+      }
+      .ch-wrap.thread .ch-del { flex: none; }
+      .ch-wrap.thread .ch-sendbar {
+        flex: none;
+        padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+      }
       .ch-bar { display: flex; align-items: center; margin-bottom: 4px; }
       .ch-bar > * + * { margin-left: 10px; }
       .ch-back {
@@ -44,29 +81,46 @@ export default {
 
       .ch-list { display: flex; flex-direction: column; margin-top: 10px; }
       .ch-list > * + * { margin-top: 8px; }
+      /* 不用 flex 的 gap：微信 X5 内核不支持，间距会整个塌成 0，
+         所以头像和文字之间一律靠 margin 撑开。 */
       .ch-row {
         display: flex; align-items: center; text-decoration: none;
         background: var(--surface); border: 1px solid var(--border);
         border-radius: 13px; padding: 10px 12px; color: inherit;
       }
       .ch-av {
-        width: 38px; height: 38px; flex: 0 0 38px; border-radius: 11px; overflow: hidden;
+        position: relative;
+        width: 42px; height: 42px; flex: 0 0 42px; border-radius: 12px; overflow: hidden;
         background: var(--surface-2); border: 1px solid var(--border-strong);
+        margin-right: 11px;   /* ← 头像和「名字 + 最新消息」之间的间距，之前漏了 */
       }
       .ch-av canvas { width: 100%; height: 100%; image-rendering: pixelated; display: block; }
       .ch-main { flex: 1; min-width: 0; }
-      .ch-name { font-size: 14px; font-weight: 700; color: var(--text); display: block; }
+      .ch-name {
+        font-size: 14px; font-weight: 700; color: var(--text);
+        display: block; line-height: 1.35;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      }
       .ch-last {
         font-size: 12px; color: var(--text-faint); display: block;
+        margin-top: 3px; line-height: 1.45;
         white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
       }
       .ch-last.mine { color: var(--text-muted); }
-      .ch-unread {
-        flex: none; min-width: 20px; height: 20px; padding: 0 6px;
-        border-radius: 999px; background: var(--accent); color: #fff;
-        font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center;
+      /* 右侧一列：时间在上，未读在下 */
+      .ch-side {
+        flex: none; margin-left: 9px; min-height: 42px;
+        display: flex; flex-direction: column; align-items: flex-end; justify-content: center;
       }
-      .ch-time { flex: none; font-size: 10px; color: var(--text-faint); }
+      .ch-time { font-size: 10px; color: var(--text-faint); white-space: nowrap; }
+      /* 未读：红点 + 条数。1 条时是一个小圆点，多了才显示数字 */
+      .ch-unread {
+        margin-top: 5px;
+        min-width: 18px; height: 18px; padding: 0 5px; box-sizing: border-box;
+        border-radius: 999px; background: #e5574b; color: #fff;
+        font-size: 11px; font-weight: 800; line-height: 18px; text-align: center;
+      }
+      .ch-unread.dot { min-width: 10px; width: 10px; height: 10px; padding: 0; }
 
 
       /* 这里用子元素 margin 而不是 flex 的 gap。
@@ -187,7 +241,7 @@ export default {
   template: `
     <div class="ch-wrap">
       <div class="ch-bar">
-        <router-link class="ch-back" to="/mine">← 我的</router-link>
+        <a class="ch-back" id="chBack" href="/mine">← 我的</a>
         <div class="ch-bar-main">
           <div class="ch-title" id="chTitle">💬 私信</div>
           <div class="ch-sub" id="chSub"></div>
@@ -213,6 +267,9 @@ export default {
     const C = window.LWCache || {}
     const q = new URLSearchParams(location.search)
     const wantUid = (q.get('to') || '').trim()
+    /* 一进对话就先切成整屏布局，否则要等数据回来才「跳」一下。
+       setThreadMode 是函数声明，会被提升，所以这里能提前调。 */
+    if (wantUid) setThreadMode(true)
 
     // 记住自己这边最后一条的时间，用来判断「对方是不是有新消息」
     let myLastAt = 0
@@ -324,8 +381,41 @@ export default {
       el.classList.toggle('bad', !!bad)
     }
 
+    /* ---------- 对话模式的整屏适配 ----------
+       键盘弹起时 visualViewport.height 会缩小，把容器高度跟着调，
+       输入框才会贴在键盘上方而不是被挡住（老浏览器不认 100dvh，得靠这层）。 */
+    function fitThread() {
+      const wrap = document.querySelector('.ch-wrap.thread')
+      if (!wrap) return
+      const vv = window.visualViewport
+      const h = vv && vv.height ? vv.height : window.innerHeight
+      wrap.style.height = Math.round(h) + 'px'
+    }
+
+    function setThreadMode(on) {
+      const wrap = document.querySelector('.ch-wrap')
+      if (wrap) wrap.classList.toggle('thread', !!on)
+      if (on) fitThread()
+    }
+
+    /* 返回按钮：会话列表回「我的」，对话里回会话列表
+       （对话中底部导航是隐藏的，所以必须有个回来的入口）。 */
+    function setBack(to, label) {
+      const el = $('chBack')
+      if (!el) return
+      el.textContent = label
+      el.setAttribute('href', to)
+      el.onclick = (e) => {
+        e.preventDefault()
+        if (window.__lwRouter) window.__lwRouter.push(to)
+        else location.href = to
+      }
+    }
+
     /* ---------- 会话列表 ---------- */
     function drawList(d) {
+      setThreadMode(false)
+      setBack('/mine', '← 我的')
       $('chTitle').textContent = '💬 私信'
       $('chNote').hidden = false
       $('chNote').innerHTML =
@@ -343,6 +433,13 @@ export default {
         rows
           .map((r) => {
             const last = r.last ? (r.lastMine ? '我：' + r.last : r.last) : '还没有消息'
+            const n = Math.max(0, Number(r.unread) || 0)
+            /* 未读提示：1 条就是一个小红点，多条才显示数字（超过 99 记 99+） */
+            const badge = n
+              ? '<span class="ch-unread' + (n === 1 ? ' dot' : '') + '">' +
+                (n === 1 ? '' : n > 99 ? '99+' : String(n)) +
+                '</span>'
+              : ''
             return (
               '<a class="ch-row" data-to="' + esc(r.uid) + '">' +
               '<span class="ch-av" data-uid="' + esc(r.uid) + '"></span>' +
@@ -350,8 +447,10 @@ export default {
               '<span class="ch-name">' + esc(r.name) + '</span>' +
               '<span class="ch-last' + (r.lastMine ? ' mine' : '') + '">' + esc(last) + '</span>' +
               '</span>' +
-              (r.unread ? '<span class="ch-unread">' + r.unread + '</span>' : '') +
+              '<span class="ch-side">' +
               '<span class="ch-time">' + esc(r.lastAt ? fmt(r.lastAt) : '') + '</span>' +
+              badge +
+              '</span>' +
               '</a>'
             )
           })
@@ -365,8 +464,8 @@ export default {
       })
     }
 
-    /* 会话列表头像是 38px，消息气泡旁的是 28px */
-    const avSize = (el) => (el.classList.contains('ch-msg-av') ? 28 : 38)
+    /* 会话列表头像是 42px，消息气泡旁的是 28px */
+    const avSize = (el) => (el.classList.contains('ch-msg-av') ? 28 : 42)
 
     function paintAvatars() {
       const boxes = document.querySelectorAll('.ch-av[data-uid], .ch-msg-av[data-uid]')
@@ -395,6 +494,8 @@ export default {
 
     /* ---------- 对话 ---------- */
     function drawThread(d) {
+      setThreadMode(true)
+      setBack('/chat', '← 消息')
       peerName = (d.with && d.with.name) || ''
       $('chTitle').textContent = '💬 ' + peerName
       $('chNote').hidden = false
@@ -500,6 +601,15 @@ export default {
           }
         })
         send.addEventListener('click', doSend)
+        /* 点输入框 → 键盘弹起来。等它稳定后再贴合一次视口并把消息滚到最新，
+           否则刚聚焦时算出来的高度还是键盘弹出前的。 */
+        inp.addEventListener('focus', () => {
+          setTimeout(() => {
+            fitThread()
+            const box = $('chMsgs')
+            if (box) box.scrollTop = box.scrollHeight
+          }, 260)
+        })
 
         // 表情面板。每轮渲染都是新节点，用 dataset 标记避免重复初始化
         const emojiBtn = $('chEmojiBtn')
@@ -624,6 +734,14 @@ export default {
       if (panel.contains(ev.target) || (btn && btn.contains(ev.target))) return
       panel.hidden = true
       if (btn) btn.classList.remove('on')
+    })
+
+    /* 键盘弹出/收起、横竖屏切换时重新贴合视口，并把消息滚到最新一条。
+       注册在 window 上，切页时由 app.js 的 withAutoCleanup 统一回收。 */
+    window.addEventListener('resize', () => {
+      fitThread()
+      const box = document.getElementById('chMsgs')
+      if (box) box.scrollTop = box.scrollHeight
     })
 
     /* 刷新按钮是这里的主要交互：非实时就靠它拉新消息 */

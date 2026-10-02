@@ -13,6 +13,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>像素小镇</title>
     <script>
+      /* 前端版本号。设置页的「检查更新」靠它和服务器上 index.html 里的值对比，
+         判断当前这个页面是不是旧版；每次发版记得同时改这里和更新日志。 */
+      window.__LW_VER = '1.4.0'
+    </script>
+    <script>
       ;(function () {
         try {
           var t = localStorage.getItem('lw-theme')

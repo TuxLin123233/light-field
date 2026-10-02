@@ -258,6 +258,26 @@ export default {
       <section class="group">
         <div class="ver red">
           <div class="ver-body">
+            <div class="ver-title"><span class="ver-tag">v1.4.0</span> 音效大扩容 · 后台发信 · 私信表情 · 一键更新 <span class="ver-date">2026-10</span></div>
+            <ul class="ver-list">
+              <li><span class="li-tag tag-new">新功能</span>音效从 19 种扩到 <b>33 种</b>，并新增滑音、琶音、柔和噪声、颤音四种合成手法：点赞、评论发送、签到、成就解锁、获得光尘各有专属音色。同一个音效每次播放音高会轻微浮动（±3.5%），连点也不会觉得机械</li>
+              <li><span class="li-tag tag-new">新功能</span><b>全站按钮都有音效了</b>：按钮按语义自动配音 —— 删除/清空是警示音、关闭/取消是下行音、标签页切换是轻响、保存发布是上行双音、灰色按钮点了会告诉你「不行」。以前有一大半按钮是哑的，包括没有语义标签的 div/span 按钮（画廊卡片、分页圆点等）</li>
+              <li><span class="li-tag tag-new">新功能</span>设置页新增<b>音效音量滑块</b>：五档预设（静音 / 轻 / 适中 / 默认 / 最大），拖动时静音、松手试听一记，音量记在这台设备上</li>
+              <li><span class="li-tag tag-new">新功能</span>设置页新增<b>「刷新到最新版」</b>：界面还是老样子、新功能没出现？点一下即可强制拉取最新代码。它会清掉离线缓存并重新注册，但<b>不碰草稿、登录和设置</b>。旁边还会显示当前版本号，发现新版时会直接提示</li>
+              <li><span class="li-tag tag-new">新功能</span>维护面板新增<b>信箱发布</b>：可以发公告或带光尘的奖励。收件人留空就是<b>广播</b> —— 所有人下次打开信箱时收到，<b>之后注册的新号也会收到</b>；填用户名则只投给那一个人。已发布的广播信可以撤回（已经收到的不收回）</li>
+              <li><span class="li-tag tag-new">新功能</span><b>私信支持表情了</b>：输入框左侧新增表情面板，5 组共 191 个表情，点一下插到光标位置，可以连着点好几个；点空白处自动收起</li>
+              <li><span class="li-tag tag-ui">界面</span>私信界面重做：对方的消息旁边显示<b>像素头像</b>，气泡加大圆角与投影并逐条淡入，时间戳移到气泡外侧，跨天时自动插入「今天 / 昨天 / X 月 X 日」分隔</li>
+              <li><span class="li-tag tag-fix">修复</span>点画板的撤销按钮会响<b>两声</b>（撤销音和成功音叠在一起），现在只响一次</li>
+              <li><span class="li-tag tag-fix">修复</span>「不能操作」的提示音以前是<b>静默</b>的：有三处调用了 no 音效，但它从来没有被定义过（相机作品不能收光尘、每日任务领取失败等），现在补上了</li>
+              <li><span class="li-tag tag-fix">修复</span>设置页「常见问题」这一条的标签没闭合（用了 div 收尾），顺手改正</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="group">
+        <div class="ver red">
+          <div class="ver-body">
             <div class="ver-title"><span class="ver-tag">v1.3.1</span> 举报审核 · 新手教程 · 5 套主题 · 音效 · 装到桌面 <span class="ver-date">2026-10</span></div>
             <ul class="ver-list">
               <li><span class="li-tag tag-new">新功能</span>作品预览新增「🎨 用色」：下拉列出这幅画用到的全部颜色（按用量排序、自动略去白色底色），点任意色块即可复制它的色号；照片转像素画的作品颜色过多，不显示该入口</li>
