@@ -9,3 +9,6 @@ secrets.h
 forecast.png
 config.json
 宣传图*.png
+web/tools/poster/*.json
+web/tools/poster/*.png
+宣传长图.png
