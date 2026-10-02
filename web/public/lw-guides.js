@@ -268,6 +268,139 @@
      这样既不受清理影响，时机也更准（是「新页面渲染完」而不是「猜 700ms」）。 */
   var pendingKey = null
 
+  /* ================= 沉浸式全站游 =================
+     和普通引导的区别：
+       · **跨页** —— 会自动翻页，一路走完画板→社区→小镇→我的→信箱→设置
+       · 有进度条、进度点、「上一步」
+       · 每一步是单独一次 LWDeco.guide() 调用，
+         所以整趟的进度得由这里告诉它（progress: {i, n}）
+
+     跨页那一步不能直接跑：目标元素在别的页面上。
+     所以遇到跨页就先导航、把这个「游到第几站」记下来，
+     等 app.js 的 afterEach 调 resume() 再继续。 */
+  var IMMERSIVE = [
+    {
+      page: '',
+      el: '#appNav', pad: 8,
+      title: '先认门：四个地方都在底下',
+      text: '画板画画 · 社区看别人的 · 小镇盖房串门 · 我的看光尘和成就。点哪去哪，随时能回来。',
+    },
+    {
+      page: '/paint',
+      el: () => document.querySelector('#board') || document.querySelector('.board'),
+      pad: 8,
+      title: '① 画板：一格一格涂',
+      text: '点一下上一格色。右边能选画布大小、喷漆、撒沙、做逐帧动画。画好了点发布，就能挂到社区里。',
+    },
+    {
+      page: '/gallery',
+      el: '#gallery', pad: 6,
+      title: '② 社区：大家画的都在这',
+      text: '点开看大图、看它用了哪些颜色、送光尘。上面还有筛选，能按画布类型、尺寸、时间挑。',
+    },
+    {
+      page: '/town',
+      el: '#twBody', pad: 8,
+      title: '③ 小镇：盖自己的家',
+      text: '点别人家的房子就能去串门。回自己家可以摆家具、贴墙纸、挑窗外的天气。',
+    },
+    {
+      page: '/mine',
+      el: '#dustNum', pad: 8,
+      title: '④ 我的：光尘和成长',
+      text: '签到给光尘，光尘买家具、也能送给喜欢的作品。等级、成就、勋章都在这页。',
+    },
+    {
+      page: '/mail',
+      el: () => document.querySelector('.mail-list') || document.querySelector('#mailList'),
+      pad: 6,
+      title: '⑤ 信箱：记得来领东西',
+      text: '签到奖励、活动信件、作者送的礼包都发这儿。小礼包有期限，过期就没了。',
+    },
+    {
+      page: '/settings',
+      el: () => document.querySelector('#darkSwitch') || document.querySelector('.group'),
+      pad: 6,
+      title: '⑥ 设置：调成你喜欢的样子',
+      text: '深色模式、导航位置、动画强度都在这。想重看这份引导，随时来「引导中心」。',
+    },
+    {
+      page: '',
+      el: '#appNav', pad: 8,
+      title: '逛完了，去玩吧',
+      text: '不用邮箱也不用手机号。画点什么挂上去，或者先去看看别人画了什么。',
+    },
+  ]
+
+  var tourAt = -1 // 当前游到第几站；-1 表示没在游
+
+  function immersiveActive() {
+    return tourAt >= 0
+  }
+
+  /** 把当前这一站显示出来；不在目标页就先导航过去 */
+  function showStop(i) {
+    if (i < 0 || i >= IMMERSIVE.length) return endTour()
+    tourAt = i
+    var st = IMMERSIVE[i]
+    var cur = (location.pathname || '').replace(/\/+$/, '') || '/'
+    var want = st.page || cur
+
+    if (st.page && cur !== want) {
+      pendingStop = i
+      if (window.__lwRouter) window.__lwRouter.push(want)
+      else location.href = want
+      tourAt = -1 // 等换页后由 resume 重新接手
+      return
+    }
+    runStop(i)
+  }
+
+  var pendingStop = -1
+
+  function runStop(i) {
+    if (!window.LWDeco || !window.LWDeco.guide) return endTour()
+    var st = IMMERSIVE[i]
+    var el = typeof st.el === 'function' ? st.el() : document.querySelector(st.el)
+    /* 这一站的目标在当前页面上找不到就跳过，不要让整趟断掉 */
+    if (!el) return showStop(i + 1)
+
+    tourAt = i
+    window.LWDeco.guide([st], {
+      immersive: true,
+      progress: { i: i, n: IMMERSIVE.length },
+      nextText: i === 0 ? '开始逛' : '下一站',
+      doneText: '逛完了',
+      onPrev: () => showStop(i - 1),
+      onDone: () => {
+        // 用户按了「下一站」或右上角跳过
+        if (tourAt === i) showStop(i + 1)
+      },
+    })
+  }
+
+  function startImmersive(from) {
+    tourAt = -1
+    pendingStop = -1
+    showStop(typeof from === 'number' ? from : 0)
+  }
+
+  function endTour() {
+    tourAt = -1
+    pendingStop = -1
+    markSeen('tour')
+  }
+
+  /** 换页完成后接着游 */
+  function resumeTour() {
+    if (pendingStop < 0) return false
+    var i = pendingStop
+    pendingStop = -1
+    // 等新页面把 DOM 建好
+    setTimeout(() => runStop(i), 120)
+    return true
+  }
+
   function request(key) {
     if (!GUIDES[key]) return false
     pendingKey = key
@@ -276,6 +409,7 @@
 
   /** app.js 在每次路由切换后调用；有预约就把它跑掉 */
   function flushPending() {
+    if (resumeTour()) return true
     if (!pendingKey) return false
     var k = pendingKey
     pendingKey = null
@@ -367,6 +501,11 @@
     run: run,
     request: request,
     flushPending: flushPending,
+    /* 沉浸式全站游 */
+    immersive: startImmersive,
+    immersiveActive: immersiveActive,
+    immersiveStops: function () { return IMMERSIVE.length },
+    stopTour: endTour,
     list: list,
     seen: seen,
     markSeen: markSeen,

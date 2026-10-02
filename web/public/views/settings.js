@@ -224,6 +224,23 @@ export default {
       .guide-row .gd { font-size: 11.5px; color: var(--text-faint); margin-top: 2px; }
       .guide-row .gs { flex: none; font-size: 11px; color: var(--text-faint); font-variant-numeric: tabular-nums; }
       .guide-row .gs.done { color: #4caf7d; }
+      /* 全站游：比「重看一遍」更醒目，它是主入口 */
+      .guide-tour {
+        display: block;
+        width: 100%;
+        margin-top: 8px;
+        padding: 12px;
+        border: 1px solid var(--accent, #5b8def);
+        border-radius: 12px;
+        background: var(--accent-soft, rgba(91, 141, 239, .1));
+        color: var(--accent, #5b8def);
+        font-family: inherit;
+        font-size: 13.5px;
+        font-weight: 800;
+        cursor: pointer;
+      }
+      .guide-tour:active { transform: scale(.98); }
+
       .guide-replay {
         display: block; width: 100%; margin-top: 10px;
         padding: 11px; border-radius: 12px;
@@ -1214,6 +1231,7 @@ export default {
         <!-- 引导列表由 lw-guides.js 提供内容，这里只放容器。
              以后加一条新引导不用改这个页面。 -->
         <div id="guideList" class="guide-list"></div>
+        <button class="guide-tour" id="guideTour" type="button">🧭 全站逛一遍（自动翻页）</button>
         <button class="guide-replay" id="guideReplay" type="button">🔄 全部重看一遍</button>
         <div class="guide-note">
           引导平时只在第一次进对应页面时自动弹一次。<br>
@@ -1912,6 +1930,20 @@ export default {
           render()
         })
         render()
+      })()
+
+      /* 「全站逛一遍」：启动沉浸式跨页游 */
+      ;(function () {
+        const b = document.getElementById('guideTour')
+        if (!b) return
+        b.addEventListener('click', () => {
+          if (window.sfx) window.sfx('open')
+          if (window.LWGuides && window.LWGuides.immersive) {
+            window.LWGuides.immersive()
+          } else {
+            window.lwAlert && window.lwAlert('引导模块没加载上，刷新一下试试')
+          }
+        })
       })()
 
       /* ---------- 新手引导中心 ----------

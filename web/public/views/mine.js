@@ -693,10 +693,10 @@ export default {
     <div class="m-card" id="guideCard">
       <div class="m-card-title">🧭 新手引导<span class="m-tip" id="guideTip"></span></div>
       <button class="guide-start" id="guideStart" type="button">
-        <span class="gs-ico">✨</span>
+        <span class="gs-ico">🧭</span>
         <span class="gs-tx">
-          <b>从头逛一遍</b>
-          <i>六站走下来大概一分钟，看完就知道都能干啥</i>
+          <b>全站逛一遍</b>
+          <i>自动带着翻页，六个地方走下来大概一分钟</i>
         </span>
         <span class="gs-go">→</span>
       </button>
@@ -1041,7 +1041,14 @@ export default {
         }
       }
 
-      if (startBtn) startBtn.addEventListener('click', () => go('tour'))
+      /* 大按钮走**沉浸式全站游** —— 会自动翻页一路走完六个地方，
+         不用用户自己一处一处点。小圆点那五条还是「就地跑单条引导」。 */
+      if (startBtn) {
+        startBtn.addEventListener('click', () => {
+          if (window.sfx) window.sfx('open')
+          if (window.LWGuides.immersive) window.LWGuides.immersive()
+        })
+      }
       render()
     })()
 

@@ -266,6 +266,65 @@ html[data-theme='dark'] .lwdeco-grid {
 /* 气泡宽一点，否则「1 / 8」和按钮会挤 */
 #lwdecoGuide .bubble { max-width: 270px; }
 
+/* ---------- 沉浸模式 ----------
+   给「全站逛一遍」用的：遮罩更暗、气泡更大、有进度条和进度点、
+   还能上一步。普通引导不受影响。 */
+#lwdecoGuide.immersive .hole {
+  box-shadow: 0 0 0 9999px rgba(16,11,6,.82), 0 0 0 2px var(--accent, #5b8def) inset,
+              0 0 22px 4px rgba(91,141,239,.35);
+}
+#lwdecoGuide.immersive .bubble {
+  max-width: 320px;
+  padding: 16px 16px 14px;
+  border-radius: 16px;
+  box-shadow: 0 18px 50px rgba(0,0,0,.42);
+  animation: lwdeco-tour-in .32s cubic-bezier(.2,1.25,.4,1) both;
+}
+@keyframes lwdeco-tour-in {
+  from { opacity: 0; transform: translateY(14px) scale(.96) }
+  to   { opacity: 1; transform: none }
+}
+#lwdecoGuide.immersive .b-head b { font-size: 15.5px }
+#lwdecoGuide.immersive .b-text { font-size: 13.5px; line-height: 1.85 }
+/* 顶部进度条 */
+#lwdecoGuide .b-prog {
+  height: 3px;
+  margin: -4px -4px 11px;
+  border-radius: 999px;
+  background: var(--border, #efe7da);
+  overflow: hidden;
+}
+#lwdecoGuide .b-prog i {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: 999px;
+  background: var(--accent, #5b8def);
+  transition: width .3s cubic-bezier(.2,.9,.3,1);
+}
+/* 进度点 */
+#lwdecoGuide .b-dots {
+  display: flex;
+  gap: 5px;
+  margin-top: 11px;
+  justify-content: center;
+}
+#lwdecoGuide .b-dots i {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--border-strong, #ded4c6);
+}
+#lwdecoGuide .b-dots i.on { background: var(--accent, #5b8def); transform: scale(1.35) }
+#lwdecoGuide .b-dots i.done { background: var(--accent, #5b8def); opacity: .45 }
+/* 上一步 */
+#lwdecoGuide .b-acts .prev {
+  flex: 0 0 auto;
+  padding-left: 14px; padding-right: 14px;
+  background: none;
+  border: 1px solid var(--border, #efe7da);
+  color: var(--text-muted);
+}
+
 /* ============ 8. 拖动吸附提示 ============ */
 .lwdeco-snap {
   position: absolute;
@@ -517,14 +576,18 @@ html[data-theme='dark'] .lwdeco-grid {
     wrap.innerHTML =
       '<div class="hole"></div>' +
       '<div class="bubble">' +
+      '<div class="b-prog"><i></i></div>' +
       '<div class="b-head"><b class="b-title"></b><span class="b-step"></span></div>' +
       '<div class="b-text"></div>' +
+      '<div class="b-dots"></div>' +
       '<div class="b-acts">' +
+      '<button class="prev" type="button" hidden>上一步</button>' +
       '<button class="skip" type="button">跳过</button>' +
       '<button class="go" type="button">下一步</button>' +
       '</div>' +
       '</div>'
     document.body.appendChild(wrap)
+    if (o.immersive) wrap.classList.add('immersive')
 
     var hole = wrap.querySelector('.hole')
     var bubble = wrap.querySelector('.bubble')
@@ -533,6 +596,10 @@ html[data-theme='dark'] .lwdeco-grid {
     var bText = wrap.querySelector('.b-text')
     var btnGo = wrap.querySelector('.go')
     var btnSkip = wrap.querySelector('.skip')
+    var btnPrev = wrap.querySelector('.prev')
+    var progBar = wrap.querySelector('.b-prog')
+    var progFill = wrap.querySelector('.b-prog i')
+    var dotsBox = wrap.querySelector('.b-dots')
 
     function clearHL() {
       var prev = document.querySelector('.lwdeco-hl')
@@ -588,9 +655,32 @@ html[data-theme='dark'] .lwdeco-grid {
 
       bTitle.textContent = st.title || ''
       bText.textContent = st.text || ''
-      bStep.textContent = idx + 1 + ' / ' + steps.length
-      btnGo.textContent = idx === steps.length - 1 ? o.doneText || '知道了' : '下一步'
-      btnSkip.hidden = idx === steps.length - 1
+      /* 进度可以外部指定 —— 跨页总引导每一步是单独一次 guide() 调用，
+         它自己只知道「1 / 1」，得让调用方告诉它整趟走到哪了。 */
+      var pi = o.progress ? o.progress.i : idx
+      var pn = o.progress ? o.progress.n : steps.length
+      bStep.textContent = (pi + 1) + ' / ' + pn
+      if (progFill) progFill.style.width = Math.round(((pi + 1) / pn) * 100) + '%'
+      if (progBar) progBar.hidden = pn <= 1
+      if (dotsBox) {
+        dotsBox.hidden = pn <= 1 || !o.immersive
+        if (!dotsBox.hidden) {
+          dotsBox.innerHTML = ''
+          for (var d = 0; d < pn; d++) {
+            var dot = document.createElement('i')
+            if (d < pi) dot.className = 'done'
+            else if (d === pi) dot.className = 'on'
+            dotsBox.appendChild(dot)
+          }
+        }
+      }
+      btnGo.textContent = pi === pn - 1 ? o.doneText || '知道了' : (o.nextText || '下一步')
+      btnSkip.hidden = false
+      btnSkip.textContent = o.immersive ? '退出' : '跳过'
+      if (btnPrev) {
+        /* 只在沉浸模式下给上一步 —— 普通引导就一两步，加了反而碍事 */
+        btnPrev.hidden = !o.immersive || pi === 0 || !o.onPrev
+      }
       wrap.classList.add('on')
       // 先把气泡放到一个可见的兜底位置，量完再摆正 —— 避免第一帧闪在左上角
       bubble.style.cssText = 'left:12px;top:12px;visibility:hidden'
@@ -616,6 +706,13 @@ html[data-theme='dark'] .lwdeco-grid {
       e.preventDefault()
       next()
     })
+    if (btnPrev) {
+      btnPrev.addEventListener('click', function (e) {
+        e.stopPropagation()
+        e.preventDefault()
+        if (o.onPrev) o.onPrev()
+      })
+    }
     btnSkip.addEventListener('click', function (e) {
       e.stopPropagation()
       e.preventDefault()
