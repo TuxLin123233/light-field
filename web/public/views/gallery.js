@@ -988,7 +988,10 @@ export default {
       /* ---------- 用色色板 ---------- */
 
       /* 用色占比条：按比例横向铺开，一眼看出主色调。
-         比一串色块直观 —— 光看色块不知道哪个是主色。 */
+         比一串色块直观 —— 光看色块不知道哪个是主色。
+         ★ .pal-grid 是 flex-wrap 容器，插进去的元素默认都是 flex item，
+         会被同行的色块挤扁。这三块都要独占整行。 */
+      .pal-bar, .pal-sum, .pal-chips { flex: 0 0 100%; width: 100%; }
       .pal-bar {
         display: flex;
         height: 12px;

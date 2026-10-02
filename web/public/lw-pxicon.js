@@ -514,6 +514,44 @@
       ],
     },
 
+    /* ---------- 画板工具专用的六个 ---------- */
+
+    /* 直线：从左下往右上「画」出来 */
+    line: { frames: [
+      ['..........bb','.........bb.','........bb..','.......bb...','......bb....','.....bb.....','....bb......','...bb.......','..bb........','.bb.........'],
+      ['..........bb','.........b..','........b...','.......b....','......b.....','.....b......','....b.......','...b........','..b.........','.bb.........'],
+    ]},
+
+    /* 橡皮：擦一下往右移 */
+    eraser: { frames: [
+      ['............','......nnnn..','.....nnnnnn.','....nnnnnnnn','...nnnnnnnn.','..nnnnnnnn..','..nnnnnn....','..nnnn......','............','............'],
+      ['............','.......nnnn.','......nnnnnn','.....nnnnnnn','....nnnnnnn.','...nnnnnnn..','...nnnnn....','...nnn......','............','............'],
+    ]},
+
+    /* 油漆桶：倾斜，颜色从桶口流出 */
+    fill: { frames: [
+      ['....bbbb....','...b....b...','..b......b..','.b........b.','.bbbbbbbbbb.','..b......b..','...bbbbbb...','......bb....','.....bbbb...','............'],
+      ['....bbbb....','...b....b...','..b......b..','.b........b.','.bbbbbbbbbb.','..b......b..','...bbbbbb...','......bb....','.....bbbb...','.......b....'],
+    ]},
+
+    /* 吸管：管口滴一滴 */
+    picker: { frames: [
+      ['.........kk.','........kggk','.......kggk.','......kggk..','.....kggk...','....kbbk....','...kbbk.....','..kbbk......','.kbk........','..k.........'],
+      ['.........kk.','........kggk','.......kggk.','......kggk..','.....kggk...','....kbbk....','...kbbk.....','..kbbk......','.kbk........','.b..........'],
+    ]},
+
+    /* 手型：手指弯一下 */
+    hand: { frames: [
+      ['...n.n.n....','...n.n.n....','...n.n.n....','..nnnnnnn...','..nWWWWWn...','..nWWWWWn...','.nnWWWWWnn..','.nWWWWWWWn..','..nWWWWWn...','...nnnnn....'],
+      ['...n.n.n....','...n.n.n....','..nnnnnnn...','..nWWWWWn...','..nWWWWWn...','.nnWWWWWnn..','.nWWWWWWWn..','..nWWWWWn...','...nnnnn....','............'],
+    ]},
+
+    /* 移动 / 平移：四向箭头轻微伸缩 */
+    move: { frames: [
+      ['.....b......','....bbb.....','...bbbbb....','.....b......','..b..b..b...','.bbbbbbbbb..','..b..b..b...','.....b......','...bbbbb....','....bbb.....'],
+      ['.....b......','....bbb.....','...bbbbb....','.....b......','..b..b..b...','.bbbbbbbbb..','..b..b..b...','.....b......','....bbb.....','.....b......'],
+    ]},
+
     /* ---------- 下面这批是为「把界面里的 emoji 换掉」补的 ---------- */
 
     /* 箭头（左/右/下）：会「推」出去一下 */
@@ -1009,20 +1047,34 @@
          .bottom-nav a.router-link-active（<a> 包着 <i>）
        所以不能只看一层。找 3 层足够，再往上就可能碰上
        「整个列表容器带 .on」这种误判。 */
-    var ON_CLASSES = ['on', 'active', 'sel', 'router-link-active', 'router-link-exact-active']
-    function hostActive() {
-      var el = host()
-      for (var d = 0; el && d < 3; d++) {
-        for (var i = 0; i < ON_CLASSES.length; i++) {
-          if (el.classList && el.classList.contains(ON_CLASSES[i])) return true
-        }
-        if (el.getAttribute) {
-          if (el.getAttribute('aria-selected') === 'true' || el.getAttribute('aria-pressed') === 'true') return true
-        }
-        el = el.parentNode
-        if (el && el.nodeType !== 1) break
+    var ON_CLASSES = ['on', 'active', 'sel']
+    function onish(el) {
+      if (!el || el.nodeType !== 1) return false
+      for (var i = 0; i < ON_CLASSES.length; i++) {
+        if (el.classList && el.classList.contains(ON_CLASSES[i])) return true
+      }
+      if (el.getAttribute) {
+        if (el.getAttribute('aria-selected') === 'true' || el.getAttribute('aria-pressed') === 'true') return true
       }
       return false
+    }
+    /* ★ 只看自己和**直接父元素**，不再往上找三层。
+       之前找三层是为了兼容「选中类挂在包裹层」的情况，
+       但那会让「某个祖先碰巧带 .on」的图标全都动起来 ——
+       底部导航就踩过这个：四个图标不管在哪个页面都在播。
+       需要更宽判断的场合（比如导航），用显式的 mode='nav'。 */
+    function hostActive() {
+      var h = host()
+      if (onish(h)) return true
+      return onish(h && h.parentNode)
+    }
+    /* 导航专用：Vue Router 会把 .active 加在**匹配的那个 <a>** 上，
+       所以只要看最近的 a 有没有 .active 就够了，精确且不会误判。 */
+    function navActive() {
+      var h = host()
+      if (!h || !h.closest) return false
+      var a = h.closest('a')
+      return !!(a && a.classList.contains('active'))
     }
 
     /* ★ 绑定要等 canvas 真的进了 DOM 再做。
@@ -1041,6 +1093,21 @@
           for (var q = 0; q < live.length; q++) if (live[q].timer) running++
           if (running >= IDLE_BUDGET) mode = player.mode = 'active'
           else player.start()
+        }
+
+        if (mode === 'nav') {
+          var check = navActive
+          if (check()) player.start()
+          player._poll = setInterval(function () {
+            if (!cv.isConnected) {
+              clearInterval(player._poll)
+              player._poll = 0
+              player.stop()
+              return
+            }
+            if (check()) player.start()
+            else player.stop()
+          }, 400)
         }
 
         if (mode === 'active') {
@@ -1063,7 +1130,7 @@
           }, 400)
         }
 
-        if (mode === 'hover' || mode === 'active') {
+        if (mode === 'hover' || mode === 'active' || mode === 'nav') {
           var h2 = host()
           if (h2) {
             h2.addEventListener('pointerenter', function (e) {
@@ -1071,7 +1138,7 @@
               player.start()
             })
             h2.addEventListener('pointerleave', function () {
-              if (mode !== 'active' || !hostActive()) player.stop()
+              if ((mode !== 'active' && mode !== 'nav') || !(mode === 'nav' ? navActive() : hostActive())) player.stop()
             })
           }
         }
@@ -1184,6 +1251,25 @@
     '🗺': ['map', 'hover'],
     '📷': ['frame', 'press'],
     '🎯': ['frame', 'press'],
+    '📏': ['line', 'hover'],
+    '📐': ['line', 'hover'],
+    '🧽': ['eraser', 'press'],
+    '🩹': ['eraser', 'press'],
+    '💧': ['fill', 'press'],
+    '🪣': ['fill', 'press'],
+    '🎨': ['palette', 'hover'],
+    '💉': ['picker', 'press'],
+    '💊': ['picker', 'press'],
+    '✋': ['hand', 'hover'],
+    '🤚': ['hand', 'hover'],
+    '🫂': ['hand', 'hover'],
+    '🤏': ['hand', 'hover'],
+    '✥': ['move', 'hover'],
+    '✛': ['move', 'hover'],
+    '⤢': ['move', 'hover'],
+    '⤡': ['move', 'hover'],
+    '⬛': ['frame', 'none'],
+    '⬜': ['frame', 'none'],
     '📌': ['flag', 'hover'],
     '📋': ['frame', 'hover'],
     '📄': ['frame', 'hover'],

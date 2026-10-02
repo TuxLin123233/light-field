@@ -262,7 +262,8 @@ const App = {
     <nav class="bottom-nav" id="appNav" v-show="showNav">
       <router-link v-for="it in navItems" :key="it.path" :to="it.path">
         <span class="nav-icon" v-if="!it.px">{{ it.ico }}</span>
-        <i class="nav-icon nav-px" v-else :data-px="it.px" :data-px-size="pxIconSize" aria-hidden="true"></i>
+        <i class="nav-icon nav-px" v-else :data-px="it.px" :data-px-size="pxIconSize"
+           data-px-on="nav" aria-hidden="true"></i>
         {{ it.name }}
       </router-link>
     </nav>
