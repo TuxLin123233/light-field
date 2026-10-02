@@ -43,6 +43,7 @@ const SHELL = [
   '/views/mail.js',
   '/lw-avatar.js',
   '/lw-spray.js',
+  '/lw-gravity.js',
   '/lw-thumb.js',
   '/lw-cache.js',
   '/lw-dialog.js',

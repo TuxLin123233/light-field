@@ -274,6 +274,21 @@ export default {
       <section class="group">
         <div class="ver red">
           <div class="ver-body">
+            <div class="ver-title"><span class="ver-tag">v1.7.6</span> 画板多了个「像素重力」 <span class="ver-date">2026-10</span></div>
+            <ul class="ver-list">
+              <li><span class="li-tag tag-new">新功能</span>画板开局多了第三个方向：<b>像素重力</b>。在画布上点一下或者拖着划，颗粒撒下去会自己往下掉，<b>落到下面有东西就斜着滑开</b>，所以堆出来是有坡度的沙堆，不是一根笔直的柱子。堆稳了按「🫂 抖一抖」，沙坡会塌得更紧实</li>
+              <li><span class="li-tag tag-new">新功能</span>调色板、撤销、清空都配齐了。颜色和像素画、喷漆<b>共用同一个</b> —— 在哪边换过色，切到另一边都认得</li>
+              <li><span class="li-tag tag-update">更新</span>发布和存 PNG 会<b>先裁掉上面那片空白</b>。颗粒只往下掉，整块 64×64 的上半截必然是空的，原样发出去就是一张「下面一坨、上面全白」的图；现在裁到内容再按 16/32/64 里最小的合适尺寸上传</li>
+              <li><span class="li-tag tag-update">更新</span>颗粒全部落定之后引擎就<b>自己歇了</b>，不再空转耗电；下次落笔再醒过来</li>
+              <li><span class="li-tag tag-fix">修复</span>切创作方向时有可能<b>三块画布一起消失</b>，页面直接空白。原因是喷漆和重力各记一个开关，俩能同时为真</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="group">
+        <div class="ver red">
+          <div class="ver-body">
             <div class="ver-title"><span class="ver-tag">v1.7.5</span> 天气按钮点得动了 <span class="ver-date">2026-10</span></div>
             <ul class="ver-list">
               <li><span class="li-tag tag-fix">修复</span><b>上一版加的天气按钮点了没反应</b>。按钮画出来了，但<b>处理点击的那段代码被我插进了它自己的处理函数里面</b> —— 成了个死锁：注册监听的唯一途径是调用那个函数，而调用它的唯一途径就是那个监听器</li>

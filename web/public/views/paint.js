@@ -254,6 +254,62 @@ color: var(--text-muted);
         text-align: right;
         flex: none;
       }
+      /* ---------- 像素重力（落沙，与像素画/喷漆并列的第三套） ---------- */
+      #gravityBoard {
+        display: block;
+        width: 100%;
+        max-width: 512px;
+        margin: 0 auto;
+        aspect-ratio: 1;
+        image-rendering: pixelated;
+        touch-action: none;
+        border-radius: 12px;
+        cursor: crosshair;
+        background: #fff;
+      }
+      /* 工具条和调色板直接复用喷漆那套 .spray-* 形状：
+         两行控件宽度本来一样，另起一套名字只会让 CSS 多一份。 */
+      .gravity-bar {
+        width: 100%;
+        max-width: 460px;
+        margin: 12px auto 0;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .gravity-pal {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(9, 1fr);
+        gap: 5px;
+      }
+      .gravity-sw {
+        aspect-ratio: 1;
+        border-radius: 6px;
+        border: 2px solid transparent;
+        padding: 0;
+        cursor: pointer;
+      }
+      .gravity-sw.on {
+        border-color: var(--text);
+        transform: scale(1.08);
+      }
+      .gravity-pal-foot {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+      .gravity-tools { display: flex; gap: 8px; }
+      /* 重力模式下把像素画专属的行藏起来（和喷漆同一份清单） */
+      body.gravity-on .size-row,
+      body.gravity-on .tools,
+      body.gravity-on .hint,
+      body.gravity-on #miniWrap,
+      body.gravity-on .anim-wrap { display: none; }
+
       /* 喷漆模式下把像素画专属的行藏起来 */
       body.spray-on .size-row,
       body.spray-on .tools,
@@ -1639,6 +1695,14 @@ color: var(--text-muted);
         width: 18px;
         text-align: right;
       }
+      /* 参数区下面那两行说明。像素画和喷漆那几节都只有控件，
+         重力这种「玩法本身不直观」的方向得讲一句怎么玩。 */
+      .start-note {
+        margin: 2px 0 0;
+        font-size: 12px;
+        line-height: 1.7;
+        color: var(--text-faint);
+      }
 
       .start-sizes, .start-modes, .start-joins {
         display: flex;
@@ -2065,7 +2129,21 @@ color: var(--text-muted);
               <span class="start-ico">💨</span>
               <span class="start-body"><b>像素喷漆</b><i>按住拖着喷，64×64 出图</i></span>
             </button>
+            <button type="button" class="start-dir" data-dir="gravity">
+              <span class="start-ico">⏳</span>
+              <span class="start-body"><b>像素重力</b><i>撒一把，看它自己往下堆</i></span>
+            </button>
           </div>
+        </div>
+
+        <div class="start-sec" data-for="gravity">
+          <div class="start-label">每次撒多少</div>
+          <div class="start-spray">
+            <input id="startGravityBrush" type="range" min="1" max="4" step="1" value="2"
+                   aria-label="每次撒多少">
+            <span class="start-spray-num" id="startGravityNum">2</span>
+          </div>
+          <p class="start-note">在画布上点一下或拖着划，颗粒会一颗颗落到下面，堆出沙坡。堆稳了可以抖一抖，让它塌得更紧实。</p>
         </div>
 
         <div class="start-sec" data-for="pixel">
@@ -2168,6 +2246,8 @@ color: var(--text-muted);
               title="也可以直接把照片拖到这里"></canvas>
       <canvas id="sprayBoard" hidden
               title="按住鼠标或手指拖着喷"></canvas>
+      <canvas id="gravityBoard" hidden
+              title="点一下撒一把，颗粒会自己落到下面"></canvas>
     </div>
 
     <!-- 喷漆工具条：只在像素喷漆模式下出现 -->
@@ -2192,6 +2272,30 @@ color: var(--text-muted);
         <span class="spray-size-label">笔刷</span>
         <input id="sprayBrush" type="range" min="1" max="8" step="1" value="3" aria-label="笔刷大小">
         <span class="spray-size-num" id="sprayBrushNum">3</span>
+      </div>
+    </div>
+
+    <!-- 重力工具条：只在像素重力模式下出现 -->
+    <div class="gravity-bar" id="gravityBar" hidden>
+      <!-- 和喷漆一样要能换色：调色板在 #pickWrap 里，只有像素画那排「颜色」
+           按钮能打开，所以这里给一个「更多颜色」走同一套（含 HSV 与色值输入）。 -->
+      <div class="gravity-pal" id="gravityPal"></div>
+      <div class="gravity-pal-foot">
+        <button class="spray-tool wide" type="button" id="gravityMoreColor" title="更多颜色">🎨 更多颜色</button>
+        <span class="spray-cur">
+          <span class="spray-cur-sw" id="gravityCurSw"></span>
+          <span class="spray-cur-tx" id="gravityCurTx">#e53935</span>
+        </span>
+      </div>
+      <div class="gravity-tools">
+        <button class="spray-tool" type="button" id="gravityUndo" title="撤销">↩️</button>
+        <button class="spray-tool" type="button" id="gravityShake" title="抖一抖">🫂</button>
+        <button class="spray-tool" type="button" id="gravityClear" title="清空">🗑️</button>
+      </div>
+      <div class="spray-size">
+        <span class="spray-size-label">一把</span>
+        <input id="gravityBrush" type="range" min="1" max="4" step="1" value="2" aria-label="每次撒多少">
+        <span class="spray-size-num" id="gravityBrushNum">2</span>
       </div>
     </div>
 
@@ -2907,45 +3011,82 @@ color: var(--text-muted);
           spraySwatches.push(sw)
         })
       }
-      function syncSprayPalette() {
-        if (!spraySwatches.length) return
-        for (let i = 0; i < spraySwatches.length; i++) {
-          spraySwatches[i].classList.toggle('on', sameRgb(presets[i], currentColor))
-        }
-        const sw = document.getElementById('sprayCurSw')
-        const tx = document.getElementById('sprayCurTx')
-        const hex = '#' + currentColor.map((c) => c.toString(16).padStart(2, '0')).join('')
-        if (sw) sw.style.background = hex
-        if (tx) tx.textContent = hex
+      /* 重力模式专用色板。和喷漆一样只用 currentColor，
+         所以在任何地方换了颜色，这里的高亮都会跟着走。 */
+      const gravityPal = document.getElementById('gravityPal')
+      const gravitySwatches = []
+      if (gravityPal) {
+        PRESET_COLORS.forEach(([hex, name], i) => {
+          const sw = document.createElement('button')
+          sw.type = 'button'
+          sw.className = 'gravity-sw'
+          sw.style.background = hex
+          sw.title = name || hex
+          sw.setAttribute('aria-label', name || hex)
+          sw.addEventListener('click', () => setFromPreset(i))
+          gravityPal.appendChild(sw)
+          gravitySwatches.push(sw)
+        })
       }
-      // 「更多颜色」复用像素画那套完整调色板（含 HSV 和色值输入）
+
+      /* 喷漆和重力两套色板一起同步。
+         它俩都是「别的方向的画布」，都只读 currentColor、不各自存颜色，
+         所以颜色变化只需要一个入口 —— 谁在前面显示谁就跟着亮。 */
+      function syncAuxPalette() {
+        const hex = '#' + currentColor.map((c) => c.toString(16).padStart(2, '0')).join('')
+        if (spraySwatches.length) {
+          for (let i = 0; i < spraySwatches.length; i++) {
+            spraySwatches[i].classList.toggle('on', sameRgb(presets[i], currentColor))
+          }
+          const sw = document.getElementById('sprayCurSw')
+          const tx = document.getElementById('sprayCurTx')
+          if (sw) sw.style.background = hex
+          if (tx) tx.textContent = hex
+        }
+        if (gravitySwatches.length) {
+          for (let i = 0; i < gravitySwatches.length; i++) {
+            gravitySwatches[i].classList.toggle('on', sameRgb(presets[i], currentColor))
+          }
+          const gsw = document.getElementById('gravityCurSw')
+          const gtx = document.getElementById('gravityCurTx')
+          if (gsw) gsw.style.background = hex
+          if (gtx) gtx.textContent = hex
+        }
+      }
+      /* 「更多颜色」复用像素画那套完整调色板（含 HSV 和色值输入）。
+         喷漆和重力都要用，动作完全一样，所以绑同一个函数。 */
+      function togglePickWrap() {
+        // 走和像素画「颜色」按钮同一套状态，别只改 hidden，
+        // 否则 pickOpen 还是 false，resizePicker 会直接 return，画布尺寸不对
+        if (pickOpen) {
+          pickOpen = false
+          pickWrap.hidden = true
+          toolColorBtn.classList.remove('active')
+        } else {
+          pickOpen = true
+          pickWrap.hidden = false
+          toolColorBtn.classList.add('active')
+          if (!hsvOpen) {
+            hsvOpen = true
+            hsvBody.hidden = false
+            customBtn.classList.add('active')
+          }
+          resizePicker()
+          renderSV()
+          renderHue()
+          drawSVMarker()
+          drawHueMarker()
+          syncAuxPalette()
+        }
+        if (window.sfx) window.sfx('open')
+      }
       const sprayMoreColor = document.getElementById('sprayMoreColor')
       if (sprayMoreColor) {
-        sprayMoreColor.addEventListener('click', () => {
-          // 走和像素画「颜色」按钮同一套状态，别只改 hidden，
-          // 否则 pickOpen 还是 false，resizePicker 会直接 return，画布尺寸不对
-          if (pickOpen) {
-            pickOpen = false
-            pickWrap.hidden = true
-            toolColorBtn.classList.remove('active')
-          } else {
-            pickOpen = true
-            pickWrap.hidden = false
-            toolColorBtn.classList.add('active')
-            if (!hsvOpen) {
-              hsvOpen = true
-              hsvBody.hidden = false
-              customBtn.classList.add('active')
-            }
-            resizePicker()
-            renderSV()
-            renderHue()
-            drawSVMarker()
-            drawHueMarker()
-            syncSprayPalette()
-          }
-          if (window.sfx) window.sfx('open')
-        })
+        sprayMoreColor.addEventListener('click', togglePickWrap)
+      }
+      const gravityMoreColor = document.getElementById('gravityMoreColor')
+      if (gravityMoreColor) {
+        gravityMoreColor.addEventListener('click', togglePickWrap)
       }
 
       function setFromRgb(rgb) {
@@ -2960,7 +3101,7 @@ color: var(--text-muted);
           drawHueMarker()
         }
         updateDisplay(currentColor)
-        syncSprayPalette()
+        syncAuxPalette()
       }
 
       curHex.addEventListener('input', () => {
@@ -3330,21 +3471,34 @@ color: var(--text-muted);
       /* ---------- 导出 PNG ---------- */
       const savePngBtn = document.getElementById('savePngBtn')
       if (savePngBtn) savePngBtn.addEventListener('click', () => window.sfx && window.sfx('save'))
+      /* 一维像素数组 → PNG dataURL。
+         喷漆、重力、像素画三条路最后都是「把一片格子放大后存成图」，
+         只有尺寸和数组来源不同，所以画图这段共用一份。 */
+      function flatToPng(flat, n, scale) {
+        const k = scale || 8
+        const cv = document.createElement('canvas')
+        cv.width = n * k
+        cv.height = n * k
+        const sctx = cv.getContext('2d')
+        for (let i = 0; i < flat.length; i++) {
+          const p = flat[i]
+          sctx.fillStyle = 'rgb(' + p[0] + ',' + p[1] + ',' + p[2] + ')'
+          sctx.fillRect((i % n) * k, Math.floor(i / n) * k, k, k)
+        }
+        return cv.toDataURL('image/png')
+      }
       function exportPng(scale) {
         // 喷漆模式下导出喷漆结果，与发布口径一致(64×64)
         if (sprayOn && spray) {
-          const buf = spray.full()
-          const k = scale || 8
-          const cv = document.createElement('canvas')
-          cv.width = 64 * k
-          cv.height = 64 * k
-          const sctx = cv.getContext('2d')
-          for (let i = 0; i < buf.length; i++) {
-            const p = buf[i]
-            sctx.fillStyle = 'rgb(' + p[0] + ',' + p[1] + ',' + p[2] + ')'
-            sctx.fillRect((i % 64) * k, Math.floor(i / 64) * k, k, k)
-          }
-          return cv.toDataURL('image/png')
+          return flatToPng(spray.full(), 64, scale)
+        }
+        // 重力画布上半截必然是空的（颗粒只会往下掉），
+        // 原样导出就是一张上面全白的图。这里按发布口径裁剪后再导出，
+        // 存下来的 PNG 和社区里看到的是同一张。
+        if (gravityOn && gravity) {
+          const ex = gravity.exportData()
+          if (!ex) return ''
+          return flatToPng(ex.flat, ex.size, scale)
         }
         const n = size
         const k = scale || 8
@@ -3364,14 +3518,29 @@ color: var(--text-muted);
       if (savePngBtn) {
         savePngBtn.addEventListener('click', () => {
           try {
-            const url = exportPng(Math.max(4, Math.round(512 / size)))
+            let url
+            let nameSize = size
+            if (sprayOn && spray) nameSize = 64
+            if (gravityOn && gravity) {
+              const ex = gravity.exportData()
+              if (!ex) {
+                toast('还没撒东西呢')
+                return
+              }
+              nameSize = ex.size
+            }
+            url = exportPng(Math.max(4, Math.round(512 / nameSize)))
+            if (!url) {
+              toast('还没撒东西呢')
+              return
+            }
             const a = document.createElement('a')
             a.href = url
-            a.download = '像素小镇-' + size + 'x' + size + '.png'
+            a.download = '像素小镇-' + nameSize + 'x' + nameSize + '.png'
             document.body.appendChild(a)
             a.click()
             a.remove()
-            toast('已导出 PNG（' + size + '×' + size + '）')
+            toast('已导出 PNG（' + nameSize + '×' + nameSize + '）')
           } catch (err) {
             toast('导出失败：' + err.message)
           }
@@ -4752,6 +4921,21 @@ color: var(--text-muted);
           }
           flat = spray.full().map(normalizePixel)
           pubSize = 64
+        } else if (gravityOn) {
+          // 颗粒只会往下掉，整块 64×64 的上半截必然是空的。
+          // 裁到内容再按最小合适档（16/32/64）上传，
+          // 社区里看到的就是这幅画本身，而不是一张下面一坨、上面全白的图。
+          if (!gravity) {
+            toast('画板还没准备好，稍等一下')
+            return
+          }
+          const ex = gravity.exportData()
+          if (!ex) {
+            toast('还没撒东西呢')
+            return
+          }
+          flat = ex.flat.map(normalizePixel)
+          pubSize = ex.size
         } else {
           flat = []
           for (const row of pixels) for (const px of row) flat.push(normalizePixel(px))
@@ -4940,15 +5124,36 @@ color: var(--text-muted);
           },
         })
       }
-      function setSprayMode(on) {
-        sprayOn = !!on
-        document.body.classList.toggle('spray-on', sprayOn)
+      /* 三块画布共用板子里同一个位置，谁开就显示谁。
+         显隐只在这里算一次：早先让两个 setXxxMode 各自写 hidden，
+         结果切方向时得互相把对方收起来，少写一处就是两个 canvas 叠在一起
+         同时抢指针事件 —— 一次点击同时落在两块板上。
+
+         sprayOn / gravityOn 是两个独立布尔量，光靠下面的
+         「开关一个就关掉另一个」来保证互斥；所以这个函数可以假定
+         它们不会同时为 true（否则三块全 hidden，页面直接空白）。 */
+      function applyCanvasVisibility() {
         const board = document.getElementById('board')
         const sc = document.getElementById('sprayBoard')
-        const bar = document.getElementById('sprayBar')
-        if (board) board.hidden = sprayOn
+        const gc = document.getElementById('gravityBoard')
+        const sbar = document.getElementById('sprayBar')
+        const gbar = document.getElementById('gravityBar')
+        const alt = sprayOn || gravityOn // 「非像素画」状态
+        if (board) board.hidden = alt
         if (sc) sc.hidden = !sprayOn
-        if (bar) bar.hidden = !sprayOn
+        if (gc) gc.hidden = !gravityOn
+        if (sbar) sbar.hidden = !sprayOn
+        if (gbar) gbar.hidden = !gravityOn
+        document.body.classList.toggle('spray-on', sprayOn)
+        document.body.classList.toggle('gravity-on', gravityOn)
+      }
+
+      function setSprayMode(on) {
+        sprayOn = !!on
+        // 创作方向只能选一个：开喷漆就一定不是重力，反之亦然。
+        // 少了这两行，两个标志可能同时为真，那时三块画布会一起被藏掉。
+        if (sprayOn) gravityOn = false
+        applyCanvasVisibility()
         if (sprayOn) {
           initSpray()
           if (spray) {
@@ -4957,6 +5162,44 @@ color: var(--text-muted);
             const m = document.getElementById('startSprayMirror')
             if (m) spray.setMirror(!!m.checked)
             spray.render()
+          }
+        }
+      }
+
+      /* ---------- 像素重力（与像素画、喷漆都独立） ---------- */
+      let gravity = null
+      let gravityOn = false
+      let gravitySfxAt = 0
+      function initGravity() {
+        if (gravity || !window.LWGravity) return
+        const cv = document.getElementById('gravityBoard')
+        if (!cv) return
+        gravity = window.LWGravity.create(cv, {
+          size: 64,
+          getColor: () => currentColor,
+          onChange: () => {
+            // 颗粒一帧落一格，会持续触发；每落一颗都响的话直接成噪音
+            if (!window.sfx || !gravityOn) return
+            const now = Date.now()
+            if (now - gravitySfxAt > 140) {
+              gravitySfxAt = now
+              try { window.sfx('tick') } catch (e) {}
+            }
+          },
+        })
+      }
+      function setGravityMode(on) {
+        gravityOn = !!on
+        // 同 setSprayMode：方向互斥，见上面的说明
+        if (gravityOn) sprayOn = false
+        applyCanvasVisibility()
+        if (gravityOn) {
+          initGravity()
+          if (gravity) {
+            const b = document.getElementById('startGravityBrush')
+            if (b) gravity.setBrush(Number(b.value) || 2)
+            gravity.render()
+            syncAuxPalette()
           }
         }
       }
@@ -5006,6 +5249,15 @@ color: var(--text-muted);
           document.getElementById('startSprayNum').textContent = startSprayBrush.value
         })
       }
+      const startGravityBrush = document.getElementById('startGravityBrush')
+      if (startGravityBrush) {
+        startGravityBrush.addEventListener('input', () => {
+          const n = document.getElementById('startGravityNum')
+          if (n) n.textContent = startGravityBrush.value
+          // 滑块直接在启动页调了，工具条上的那个跟着走
+          if (gravity) gravity.setBrush(Number(startGravityBrush.value) || 2)
+        })
+      }
 
       bindSinglePick('#startSizes', 'data-size', (v) => {
         startSize = v ? Number(v) : startSize
@@ -5050,17 +5302,57 @@ color: var(--text-muted);
         })
       }
 
+      /* 重力工具条 */
+      const gravityBrush = document.getElementById('gravityBrush')
+      if (gravityBrush) {
+        gravityBrush.addEventListener('input', () => {
+          const n = gravityBrush.value
+          const num = document.getElementById('gravityBrushNum')
+          if (num) num.textContent = n
+          if (gravity) gravity.setBrush(Number(n) || 2)
+        })
+      }
+      const gravityUndo = document.getElementById('gravityUndo')
+      if (gravityUndo) {
+        gravityUndo.addEventListener('click', () => {
+          if (gravity && gravity.undo() && window.sfx) window.sfx('undo')
+        })
+      }
+      const gravityShake = document.getElementById('gravityShake')
+      if (gravityShake) {
+        gravityShake.addEventListener('click', () => {
+          if (!gravity) return
+          if (gravity.isEmpty()) {
+            toast('还没撒东西呢')
+            return
+          }
+          gravity.shake()
+          if (window.sfx) window.sfx('tick')
+        })
+      }
+      const gravityClear = document.getElementById('gravityClear')
+      if (gravityClear) {
+        gravityClear.addEventListener('click', () => {
+          if (!gravity) return
+          gravity.clear()
+          if (window.sfx) window.sfx('clear')
+        })
+      }
+
       document.getElementById('startGo').addEventListener('click', () => {
         applyStartChoices()
-        if (startDir === 'spray') {
-          setSprayMode(true)
+        if (startDir === 'spray' || startDir === 'gravity') {
+          const isG = startDir === 'gravity'
+          setSprayMode(!isG)
+          setGravityMode(isG)
           enterMode('free')
-          if (modeChip) modeChip.textContent = '当前：像素喷漆'
+          if (modeChip) modeChip.textContent = isG ? '当前：像素重力' : '当前：像素喷漆'
           modeOverlay.hidden = true
           applyLayout()
           return
         }
         setSprayMode(false)
+        setGravityMode(false)
         enterMode(startMode)
         applyLayout()
         modeOverlay.hidden = true
