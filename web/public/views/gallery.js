@@ -3441,6 +3441,16 @@ export default {
         cmtWorkOwner = (rec && rec.ownerUser) || ''
         if (rec && rec.time) loadComments(Number(rec.time), false)
         previewOverlay.hidden = false
+        /* 放大过渡：浮层弹入。
+           ★ 只做浮层，不做「缩略图飞出去」那一半 ——
+           preview(rec) 里没有卡片元素，而作品列表的卡片也没挂
+           data-time（只有 Top5 那块挂了 likeTime）。
+           为了半个转场去改列表渲染不值得，浮层弹入已经够用了。 */
+        try {
+          if (window.LWDeco) {
+            window.LWDeco.overlayIn(previewOverlay.querySelector('.preview-box') || previewOverlay)
+          }
+        } catch (e) {}
       }
 
       function syncPreviewVoteBtn() {

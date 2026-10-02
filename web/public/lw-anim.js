@@ -379,6 +379,10 @@ button, [role='button'], .lwa-tap {
     shake: function (el) { this.play(el, 'shake', 550) },
     /** 成功反馈：弹一弹 */
     bounce: function (el) { this.play(el, 'bounce', 750) },
+    /** 弹一下，提示「这个数字/元素变了」。
+        和 bounce 的区别：pop 是纯缩放、幅度大、适合数字；
+        bounce 带位移、更轻，适合图标和整块元素。 */
+    pop: function (el) { this.play(el, 'pop', 480) },
     /** 高亮定位：闪一下，用来指出「就是这条」 */
     flash: function (el) { this.play(el, 'flash', 2300) },
     /** 数字滚动 */

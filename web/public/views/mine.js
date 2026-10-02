@@ -973,6 +973,19 @@ export default {
         cell.append(dot, lab)
         week.appendChild(cell)
       }
+      /* 7 天带依次亮起来，今天是最后一格。
+         从最早一天往今天数，像进度推过来；今天那格再单独弹一下。 */
+      try {
+        if (window.LWAnim) {
+          window.LWAnim.stagger(week)
+          const today = week.lastElementChild
+          if (today && signed) {
+            setTimeout(function () {
+              window.LWAnim.pop(today.querySelector('.sign-dot') || today)
+            }, 420)
+          }
+        }
+      } catch (e) {}
 
       // 徽章
       const box = $('medals')
@@ -984,6 +997,13 @@ export default {
         el.textContent = m.ico + ' ' + m.name
         box.appendChild(el)
       })
+      /* 刚够到的徽章弹一下，让「又解锁一个」这件事被看见 */
+      try {
+        if (window.LWAnim) {
+          const got = box.querySelectorAll('.medal.got')
+          if (got.length) window.LWAnim.bounce(got[got.length - 1])
+        }
+      } catch (e) {}
       $('signTip').textContent = '已同步到账号'
       renderDustBalance()
     }
