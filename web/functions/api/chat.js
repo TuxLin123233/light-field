@@ -6,7 +6,7 @@
 //   POST {action:'read', with}        标记已读
 //   POST {action:'del', with}         清掉我和某人的对话
 //
-// 只有好友之间能私信（互相关注），陌生人发不出去。
+// 只有好友之间能聊天（互相关注 = 互加好友），陌生人发不出去。
 // 「非实时」的含义：不轮询、不推送、没有在线状态。
 // 对方发的新消息要自己点「刷新」才拉得到 —— 这一点在前端也写明了。
 import { readActiveUser, readUser, isBanned, BANNED_ERROR } from './_auth.js'
@@ -160,7 +160,7 @@ export async function onRequestGet(context) {
 
   const friend = await isFriend(kv, who.uid, withUid)
   if (!friend) {
-    return json({ error: '你们还不是好友，先互相关注才能私信', code: 'nofriend' }, 403)
+    return json({ error: '你们还不是好友，先加个好友才能聊天', code: 'nofriend' }, 403)
   }
 
   const list = await readBox(kv, who.uid, withUid)
@@ -199,7 +199,7 @@ export async function onRequestPost(context) {
     const other = await readUser(kv, to)
     if (!other || isBanned(other)) return json({ error: '没有这个用户' }, 404)
     if (!(await isFriend(kv, who.uid, to))) {
-      return json({ error: '你们还不是好友，先互相关注才能私信', code: 'nofriend' }, 403)
+      return json({ error: '你们还不是好友，先加个好友才能聊天', code: 'nofriend' }, 403)
     }
 
     const text = String((body && body.text) || '')

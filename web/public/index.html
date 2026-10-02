@@ -18,6 +18,20 @@
       window.__LW_VER = '1.4.0'
     </script>
     <script>
+      /* 设置页的「刷新到最新版」会带一个一次性参数（_u）跳过来 —— 那是用来
+         绕开浏览器和 PWA 容器缓存的。它只在那一次跳转里有意义，落地就抹掉，
+         免得地址栏一直挂着；replaceState 不会多留一条历史记录。 */
+      ;(function () {
+        try {
+          var u = new URL(location.href)
+          if (!u.searchParams.has('_u')) return
+          u.searchParams.delete('_u')
+          var q = u.searchParams.toString()
+          history.replaceState(null, '', u.pathname + (q ? '?' + q : '') + u.hash)
+        } catch (e) {}
+      })()
+    </script>
+    <script>
       ;(function () {
         try {
           var t = localStorage.getItem('lw-theme')

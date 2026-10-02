@@ -319,7 +319,7 @@ export default {
               ? '<button class="u-chat" id="uChatBtn" type="button">💬 与他聊天</button>'
               : '') +
             '<button class="u-follow' + (f.iFollow ? ' on' : '') + '" id="uFollowBtn" type="button">' +
-            (f.iFollow ? '已关注' : '关注') + '</button>' +
+            (f.friend ? '🤝 好友' : f.iFollow ? '已申请' : '＋ 加好友') + '</button>' +
             '</div>') +
         '</div>' +
         '<div class="u-nums">' +
@@ -472,7 +472,7 @@ export default {
           if (window.sfx) window.sfx('tap')
           const tk = token()
           if (!tk) {
-            showMsg('私信需要先登录。', true)
+            showMsg('聊天需要先登录。', true)
             return
           }
           const uid = (profile && profile.uid) || wantUid || ''
@@ -508,13 +508,13 @@ export default {
         fb.addEventListener('click', async () => {
           const tk = token()
           if (!tk) {
-            showMsg('关注需要先登录。', true)
+            showMsg('加好友需要先登录。', true)
             return
           }
           const on = fb.classList.contains('on')
           fb.disabled = true
           const old = fb.textContent
-          fb.textContent = on ? '取消中…' : '关注中…'
+          fb.textContent = on ? '处理中…' : '申请中…'
           try {
             const res = await fetch('/api/follow', {
               method: 'POST',
@@ -533,7 +533,11 @@ export default {
             C.put('u:uid:' + profile.uid, { profile, ach, follow, works })
             if (window.sfx) window.sfx(on ? 'close' : 'follow')
             render()
-            showMsg(d.friend ? '关注成功，你们现在是好友了 🤝' : on ? '已取消关注' : '关注成功')
+            showMsg(
+              d.friend ? '你们已经是好友了 🤝 现在可以聊天了'
+                : on ? '已解除好友'
+                : '已发出好友申请，等对方通过'
+            )
           } catch (e) {
             fb.textContent = old
             fb.disabled = false

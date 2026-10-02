@@ -1,4 +1,4 @@
-// 私信（/chat）
+// 好友与聊天（/chat）
 //
 // 这里是「非实时」最直白的地方：没有任何轮询、没有推送、没有在线状态。
 // 对方发的新消息，你要自己点右上角的「刷新」才拉得到。
@@ -9,7 +9,7 @@
 // 好友列表从 /api/chat?type=list 拿。
 export default {
   name: 'chat',
-  title: '私信',
+  title: '好友',
   css: `
       [hidden] { display: none !important; }
       :root {
@@ -121,6 +121,59 @@ export default {
         font-size: 11px; font-weight: 800; line-height: 18px; text-align: center;
       }
       .ch-unread.dot { min-width: 10px; width: 10px; height: 10px; padding: 0; }
+
+      /* ---------- 加好友 ---------- */
+      .ch-find { margin-top: 10px; }
+      .ch-find-btn {
+        display: block; width: 100%;
+        border: 1px dashed var(--border-strong); background: var(--surface);
+        color: var(--accent); border-radius: 13px; padding: 11px;
+        font-size: 13px; font-weight: 800; font-family: inherit; cursor: pointer;
+      }
+      .ch-find-btn.on {
+        border-style: solid; background: var(--surface-2); color: var(--text-muted);
+      }
+      .ch-find-panel { margin-top: 8px; }
+      .ch-panel {
+        background: var(--surface); border: 1px solid var(--border);
+        border-radius: 13px; padding: 12px;
+      }
+      .ch-panel h4 { margin: 0 0 6px; font-size: 13px; font-weight: 800; color: var(--text); }
+      .ch-panel h4.ch-find-h2 { margin-top: 14px; }
+      .ch-panel-n { color: var(--accent); }
+      .ch-find-empty { font-size: 12px; color: var(--text-faint); padding: 8px 2px; line-height: 1.7; }
+      .ch-friend-row { display: flex; align-items: center; padding: 8px 0; }
+      .ch-friend-row + .ch-friend-row { border-top: 1px solid var(--border); }
+      .ch-friend-row .ch-av { width: 36px; height: 36px; flex: 0 0 36px; margin-right: 9px; }
+      .ch-friend-main { flex: 1; min-width: 0; }
+      .ch-friend-name {
+        font-size: 13px; font-weight: 700; color: var(--text); display: block;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      }
+      .ch-friend-bio {
+        font-size: 11px; color: var(--text-faint); display: block; margin-top: 2px;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      }
+      .ch-friend-act {
+        flex: none; margin-left: 8px;
+        border: 0; border-radius: 999px; padding: 7px 13px;
+        background: var(--accent); color: #fff;
+        font-size: 12px; font-weight: 800; font-family: inherit; cursor: pointer;
+      }
+      .ch-friend-act[disabled] { opacity: 0.6; cursor: default; }
+      .ch-search { display: flex; margin-top: 2px; }
+      .ch-search input {
+        flex: 1; min-width: 0;
+        border: 1px solid var(--border-input); background: var(--surface-2);
+        color: var(--text); border-radius: 10px; padding: 9px 11px;
+        font-size: 13px; font-family: inherit;
+      }
+      .ch-search > * + * { margin-left: 7px; }
+      .ch-search button {
+        flex: none; border: 0; border-radius: 10px; padding: 0 14px;
+        background: var(--accent); color: #fff;
+        font-size: 13px; font-weight: 800; font-family: inherit; cursor: pointer;
+      }
 
 
       /* 这里用子元素 margin 而不是 flex 的 gap。
@@ -243,7 +296,7 @@ export default {
       <div class="ch-bar">
         <a class="ch-back" id="chBack" href="/mine">← 我的</a>
         <div class="ch-bar-main">
-          <div class="ch-title" id="chTitle">💬 私信</div>
+          <div class="ch-title" id="chTitle">💬 好友</div>
           <div class="ch-sub" id="chSub"></div>
         </div>
         <button class="lw-refresh" id="chRefresh" type="button" data-label="刷新"></button>
@@ -416,52 +469,215 @@ export default {
     function drawList(d) {
       setThreadMode(false)
       setBack('/mine', '← 我的')
-      $('chTitle').textContent = '💬 私信'
+      $('chTitle').textContent = '💬 好友'
       $('chNote').hidden = false
       $('chNote').innerHTML =
-        '私信是<b>非实时</b>的：不轮询、不推送。对方发了新消息，' +
-        '要自己点右上角的<b>刷新</b>才看得到。'
+        '这里是你的<b>好友</b>。两个人要<b>互相加好友</b>才能聊天；' +
+        '聊天是<b>非实时</b>的：不轮询、不推送，对方发了新消息要自己点右上角的<b>刷新</b>。'
       const rows = d.list || []
-      if (!rows.length) {
-        $('chBody').innerHTML =
-          '<div class="ch-empty">还没有可以聊天的人。<br />去画师主页点「关注」，' +
-          '<b>对方也关注你</b>之后就成了好友，这里会出现对话。</div>'
-        return
-      }
-      $('chBody').innerHTML =
-        '<div class="ch-list">' +
-        rows
-          .map((r) => {
-            const last = r.last ? (r.lastMine ? '我：' + r.last : r.last) : '还没有消息'
-            const n = Math.max(0, Number(r.unread) || 0)
-            /* 未读提示：1 条就是一个小红点，多条才显示数字（超过 99 记 99+） */
-            const badge = n
-              ? '<span class="ch-unread' + (n === 1 ? ' dot' : '') + '">' +
-                (n === 1 ? '' : n > 99 ? '99+' : String(n)) +
-                '</span>'
-              : ''
-            return (
-              '<a class="ch-row" data-to="' + esc(r.uid) + '">' +
-              '<span class="ch-av" data-uid="' + esc(r.uid) + '"></span>' +
-              '<span class="ch-main">' +
-              '<span class="ch-name">' + esc(r.name) + '</span>' +
-              '<span class="ch-last' + (r.lastMine ? ' mine' : '') + '">' + esc(last) + '</span>' +
-              '</span>' +
-              '<span class="ch-side">' +
-              '<span class="ch-time">' + esc(r.lastAt ? fmt(r.lastAt) : '') + '</span>' +
-              badge +
-              '</span>' +
-              '</a>'
-            )
-          })
-          .join('') +
+
+      /* 「加好友」始终给入口：已经有好友了也可能想加新的 */
+      const findBar =
+        '<div class="ch-find">' +
+        '<button class="ch-find-btn" id="chFindBtn" type="button">＋ 加好友</button>' +
+        '<div class="ch-find-panel" id="chFindPanel" hidden></div>' +
         '</div>'
+
+      const listHtml = rows.length
+        ? '<div class="ch-list">' +
+          rows
+            .map((r) => {
+              const last = r.last ? (r.lastMine ? '我：' + r.last : r.last) : '还没有消息'
+              const n = Math.max(0, Number(r.unread) || 0)
+              /* 未读提示：1 条就是一个小红点，多条才显示数字（超过 99 记 99+） */
+              const badge = n
+                ? '<span class="ch-unread' + (n === 1 ? ' dot' : '') + '">' +
+                  (n === 1 ? '' : n > 99 ? '99+' : String(n)) +
+                  '</span>'
+                : ''
+              return (
+                '<a class="ch-row" data-to="' + esc(r.uid) + '">' +
+                '<span class="ch-av" data-uid="' + esc(r.uid) + '"></span>' +
+                '<span class="ch-main">' +
+                '<span class="ch-name">' + esc(r.name) + '</span>' +
+                '<span class="ch-last' + (r.lastMine ? ' mine' : '') + '">' + esc(last) + '</span>' +
+                '</span>' +
+                '<span class="ch-side">' +
+                '<span class="ch-time">' + esc(r.lastAt ? fmt(r.lastAt) : '') + '</span>' +
+                badge +
+                '</span>' +
+                '</a>'
+              )
+            })
+            .join('') +
+          '</div>'
+        : '<div class="ch-empty">还没有好友。<br />点上面的「＋ 加好友」按用户名找找看，<br />' +
+          '或者在社区里点作者名字，到他的主页点「＋ 加好友」。</div>'
+
+      $('chBody').innerHTML = findBar + listHtml
       paintAvatars()
+      bindFindPanel()
       $('chBody').querySelectorAll('.ch-row').forEach((a) => {
         a.addEventListener('click', () => {
           if (window.__lwRouter) window.__lwRouter.push('/chat?to=' + encodeURIComponent(a.getAttribute('data-to')))
         })
       })
+    }
+
+    /* ---------- 加好友 ----------
+       规则：我关注你 = 发出好友申请；互相关注 = 成为好友。
+       所以这里要做两件事：把「谁申请加你」列出来一键通过，以及按用户名主动找。 */
+    let staleList = false
+
+    function bindFindPanel() {
+      const btn = $('chFindBtn')
+      const panel = $('chFindPanel')
+      if (!btn || !panel) return
+      btn.addEventListener('click', () => {
+        const willOpen = panel.hidden
+        panel.hidden = !willOpen
+        btn.classList.toggle('on', willOpen)
+        btn.textContent = willOpen ? '收起' : '＋ 加好友'
+        if (window.sfx) window.sfx(willOpen ? 'open' : 'close')
+        if (willOpen) {
+          if (!panel.dataset.ready) openFindPanel()
+        } else if (staleList) {
+          // 加过好友：收起面板时再刷新列表，这样能在面板里连着通过好几个
+          staleList = false
+          load(true)
+        }
+      })
+    }
+
+    async function openFindPanel() {
+      const panel = $('chFindPanel')
+      if (!panel) return
+      panel.dataset.ready = '1'
+      panel.innerHTML =
+        '<div class="ch-panel"><div class="ch-find-empty"><span class="lw-load"></span>读取中…</div></div>'
+      let pend = []
+      try {
+        const res = await fetch('/api/follow?type=pending', {
+          headers: { Authorization: 'Bearer ' + token() },
+          cache: 'no-store',
+        })
+        const d = await res.json().catch(() => ({}))
+        pend = (d && d.list) || []
+      } catch (e) {}
+      renderFindPanel(pend)
+    }
+
+    function friendRow(u, label) {
+      return (
+        '<div class="ch-friend-row">' +
+        '<span class="ch-av" data-uid="' + esc(u.uid) + '"></span>' +
+        '<span class="ch-friend-main">' +
+        '<span class="ch-friend-name">' + esc(u.username) + '</span>' +
+        '<span class="ch-friend-bio">' + esc(u.bio || '这个人很低调，什么都没写') + '</span>' +
+        '</span>' +
+        '<button class="ch-friend-act" type="button" data-uid="' + esc(u.uid) + '">' +
+        esc(label) +
+        '</button>' +
+        '</div>'
+      )
+    }
+
+    function renderFindPanel(pend) {
+      const panel = $('chFindPanel')
+      if (!panel) return
+      panel.innerHTML =
+        '<div class="ch-panel">' +
+        '<h4>想加你好友' + (pend.length ? ' <span class="ch-panel-n">' + pend.length + '</span>' : '') + '</h4>' +
+        (pend.length
+          ? pend.map((u) => friendRow(u, '通过')).join('')
+          : '<div class="ch-find-empty">还没有人申请加你好友</div>') +
+        '<h4 class="ch-find-h2">按用户名找好友</h4>' +
+        '<div class="ch-search">' +
+        '<input id="chFindName" type="text" maxlength="16" placeholder="对方的用户名" autocomplete="off">' +
+        '<button id="chFindGo" type="button">查找</button>' +
+        '</div>' +
+        '<div id="chFindResult"></div>' +
+        '</div>'
+      paintAvatars()
+      panel.querySelectorAll('.ch-friend-act').forEach((b) => {
+        b.addEventListener('click', () => addFriend(b.getAttribute('data-uid'), b))
+      })
+      const go = $('chFindGo')
+      const inp = $('chFindName')
+      if (go && inp) {
+        const run = () => findUser(inp.value.trim())
+        go.addEventListener('click', run)
+        inp.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            run()
+          }
+        })
+      }
+    }
+
+    async function findUser(name) {
+      const box = $('chFindResult')
+      if (!box) return
+      if (!name) {
+        box.innerHTML = ''
+        return
+      }
+      box.innerHTML = '<div class="ch-find-empty"><span class="lw-load"></span>查找中…</div>'
+      try {
+        const res = await fetch('/api/profile?name=' + encodeURIComponent(name), { cache: 'no-store' })
+        const d = await res.json().catch(() => ({}))
+        if (!res.ok || !d || !d.ok) {
+          box.innerHTML = '<div class="ch-find-empty">没有找到「' + esc(name) + '」这个用户</div>'
+          return
+        }
+        box.innerHTML = friendRow({ uid: d.uid, username: d.username, bio: d.bio }, '加好友')
+        paintAvatars()
+        const b = box.querySelector('.ch-friend-act')
+        if (b) b.addEventListener('click', () => addFriend(d.uid, b))
+      } catch (e) {
+        box.innerHTML = '<div class="ch-find-empty">查找失败，稍后再试</div>'
+      }
+    }
+
+    async function addFriend(uid, btn) {
+      if (!uid || !btn || btn.disabled) return
+      const t = token()
+      if (!t) {
+        showMsg('加好友需要先登录', true)
+        return
+      }
+      btn.disabled = true
+      const old = btn.textContent
+      btn.textContent = '…'
+      try {
+        const res = await fetch('/api/follow', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t },
+          body: JSON.stringify({ action: 'follow', uid }),
+        })
+        const d = await res.json().catch(() => ({}))
+        if (!res.ok || !d || !d.ok) {
+          btn.disabled = false
+          btn.textContent = old
+          showMsg((d && d.error) || '加好友失败', true)
+          return
+        }
+        if (window.sfx) window.sfx(d.friend ? 'follow' : 'ok')
+        /* 按钮就地变成结果，面板不关 —— 这样能连着通过好几个申请 */
+        btn.textContent = d.friend ? '好友 ✓' : '已申请'
+        staleList = true
+        C.drop('chatlist')
+        C.drop('chatBadge')
+        try {
+          window.dispatchEvent(new CustomEvent('lw-chat-changed'))
+        } catch (e) {}
+        showMsg(d.friend ? '你们已经是好友了 🤝 可以聊天了' : '已发出好友申请，等对方通过')
+      } catch (e) {
+        btn.disabled = false
+        btn.textContent = old
+        showMsg('加好友失败：网络错误', true)
+      }
     }
 
     /* 会话列表头像是 42px，消息气泡旁的是 28px */
@@ -500,7 +716,7 @@ export default {
       $('chTitle').textContent = '💬 ' + peerName
       $('chNote').hidden = false
       $('chNote').innerHTML =
-        '和 <b>' + esc(peerName) + '</b> 的私信。' +
+        '和好友 <b>' + esc(peerName) + '</b> 聊天。' +
         '<b>非实时</b>：对方发了新消息要自己点<b>刷新</b>。'
 
       const items = d.items || []
@@ -695,7 +911,7 @@ export default {
     async function load(force) {
       if (!token()) {
         $('chBody').innerHTML =
-          '<div class="ch-empty">私信需要登录。<br />' +
+          '<div class="ch-empty">好友功能需要登录。<br />' +
           '<a class="ch-back" href="/login" style="margin-top:10px">去登录 / 注册</a></div>'
         $('chNote').hidden = true
         return

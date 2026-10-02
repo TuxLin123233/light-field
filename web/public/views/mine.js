@@ -555,7 +555,7 @@ export default {
         <router-link class="m-link" to="/chat">
           <span class="ml-ico">💬</span>
           <span class="ml-num" id="lnkChat"></span>
-          <span>私信</span>
+          <span>好友</span>
         </router-link>
         <router-link class="m-link" to="/rank">
           <span class="ml-ico">🏆</span>

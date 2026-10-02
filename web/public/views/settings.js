@@ -1853,8 +1853,22 @@ export default {
             }
             // 3) 清掉切页缓存（内存里的，重载本来也会没，这里图个干净）
             if (window.__lwCache) window.__lwCache = {}
-            // 4) 重新加载
-            location.reload()
+            /* 4) 把入口脚本用「强制走网络」的方式重新拉一遍。
+                  只清 Cache Storage 不够：app.js / views 的地址没变，
+                  浏览器仍可能从 HTTP 缓存里拿旧的。cache:'reload' 会绕过
+                  HTTP 缓存并把新内容写回去，紧接着的重载才能拿到新版。 */
+            await Promise.all(
+              ['/app.js', '/lw-cache.js', '/themes.js', '/lw-avatar.js', '/lw-spray.js', '/lw-thumb.js']
+                .map((p) => fetch(p, { cache: 'reload' }).catch(() => {}))
+            )
+            /* 5) 带一个一次性参数跳转 —— 这是最关键的一步。
+                  location.reload() 用的是同一个地址，浏览器（以及装到桌面的
+                  PWA 容器）仍可能从缓存里把旧页面交回来，表现就是「点了刷新
+                  反而回到旧版本」。带上参数后它是一个「新地址」，必须重新向
+                  服务器要；参数落地后由 index.html 里的脚本抹掉，地址栏不留痕。 */
+            const u = new URL(location.href)
+            u.searchParams.set('_u', Date.now().toString(36))
+            location.replace(u.toString())
           } catch (e) {
             updBtn.disabled = false
             updBtn.textContent = old

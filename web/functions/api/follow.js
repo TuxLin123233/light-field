@@ -114,6 +114,18 @@ export async function onRequestGet(context) {
     return json({ ok: true, type, total: uids.length, list: await decorate(kv, uids, who.uid) })
   }
 
+  /* 待通过的好友申请：关注了我、但我还没回关的人。
+     语义上「我关注你」= 发出好友申请，「我们互相关注」= 成为好友，
+     所以这里就是「谁想加你」。对方主页点一下「加好友」即可通过。 */
+  if (type === 'pending') {
+    if (!who) return json({ error: '未登录', code: 'noauth' }, 401)
+    if (who.banned) return json(BANNED_ERROR, 403)
+    const followers = await readSet(kv, IN_KEY(who.uid))
+    const mine = await readSet(kv, OUT_KEY(who.uid))
+    const pend = followers.filter((u) => mine.indexOf(u) < 0)
+    return json({ ok: true, type: 'pending', total: pend.length, list: await decorate(kv, pend, who.uid) })
+  }
+
   // 查某个人的公开关注数（不登录也能看）
   const uid = (url.searchParams.get('uid') || '').trim()
   const name = (url.searchParams.get('name') || '').trim()
