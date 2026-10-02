@@ -2660,6 +2660,27 @@ color: var(--text-muted);
               return c.trim().indexOf('paint_consent=') === 0
             })
           if (!has) document.getElementById('consentOverlay').removeAttribute('hidden')
+          else if (window.LWDeco && window.LWDeco.guide) {
+            /* 老用户（已同意过）且第一次用新引导 —— 只在没看过时弹一次。
+               用 localStorage 记，和 consent 的 cookie 分开：
+               consent 是法律确认，引导只是教学，两件事不该共用一个标记。 */
+            var seen = false
+            try { seen = localStorage.getItem('lw-guide-paint') === '1' } catch (e2) {}
+            if (!seen) {
+              setTimeout(function () {
+                window.LWDeco.guide([
+                  { el: '#board', title: '这里是画布', text: '点一下就能上色，按住拖动可以连续涂。' },
+                  { el: '.size-row, .sizes, [data-size]', title: '选画布尺寸', text: '16×16 最快，64×64 最细。' },
+                  { el: '#uploadBtn, .upload', title: '画完点这里', text: '发布到社区，别人就能看到、送你光尘。', pad: 8 },
+                ], {
+                  doneText: '开始画吧',
+                  onDone: function () {
+                    try { localStorage.setItem('lw-guide-paint', '1') } catch (e3) {}
+                  },
+                })
+              }, 900)
+            }
+          }
         } catch (e) {}
       })()
       let size = 16
@@ -4046,9 +4067,20 @@ color: var(--text-muted);
         setCam(zoom / 1.5, c)
       })
 
+      /* 画辅助网格。
+         原来每条线一个粗细（rgba .10），16×16 时还行，
+         到 64×64 就是一片均匀的灰网，看不出格子在哪。
+         改成**主次两层**：每 8 格一条较深的主线，每格一条很浅的细线。
+         这样扫一眼就能数出格子，长时间画也不累眼。 */
       function drawGrid() {
-        ctx.strokeStyle = 'rgba(0, 0, 0, 0.10)'
-        ctx.lineWidth = 1 / zoom
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark'
+        const minor = isDark ? 'rgba(255, 255, 255, 0.07)' : 'rgba(0, 0, 0, 0.07)'
+        const major = isDark ? 'rgba(255, 255, 255, 0.16)' : 'rgba(0, 0, 0, 0.16)'
+        const lw = 1 / zoom
+
+        // 先铺细线
+        ctx.strokeStyle = minor
+        ctx.lineWidth = lw
         for (let i = 1; i < size; i++) {
           const p = i * CELL + 0.5
           ctx.beginPath()
@@ -4060,6 +4092,28 @@ color: var(--text-muted);
           ctx.lineTo(512, p)
           ctx.stroke()
         }
+
+        // 再压主线上去。8 的倍数画主线，等于把画布分成 8 格一块
+        if (size >= 8) {
+          ctx.strokeStyle = major
+          ctx.lineWidth = lw
+          for (let i = 8; i < size; i += 8) {
+            const p = i * CELL + 0.5
+            ctx.beginPath()
+            ctx.moveTo(p, 0)
+            ctx.lineTo(p, 512)
+            ctx.stroke()
+            ctx.beginPath()
+            ctx.moveTo(0, p)
+            ctx.lineTo(512, p)
+            ctx.stroke()
+          }
+        }
+
+        // 最外框：让画布边界清楚，不然浅色画到边上分不清出没出去
+        ctx.strokeStyle = major
+        ctx.lineWidth = lw * 2
+        ctx.strokeRect(0, 0, 512, 512)
       }
 
       function redraw() {

@@ -534,6 +534,9 @@ export default {
         <span class="dust-num" id="dustNum">0</span>
         <span class="dust-got" id="dustGot" hidden></span>
       </div>
+      <!-- 小镇等级条。数据来自 renderStats 拿到的统计，纯前端算，不改后端 -->
+      <div id="lvBarHost" style="margin-top:12px"></div>
+
       <div class="sign-top">
         <div class="sign-streak">
           <div class="sign-num"><span id="signStreak">0</span> <small>天连续</small></div>
@@ -1202,6 +1205,23 @@ export default {
         d.innerHTML = '<div class="stat-num">' + fmt(it.n) + '</div><div class="stat-lab">' + it.lab + '</div>'
         grid.appendChild(d)
       })
+
+      /* 等级条：用已有统计现算一个「小镇等级」，不改后端也不影响别的逻辑。
+         成就数这里拿不到（要另开接口），所以只用前三项，权重见 lw-deco.js。 */
+      try {
+        const host = $('lvBarHost')
+        if (host && window.LWDeco && window.LWDeco.levelBar) {
+          host.innerHTML = ''
+          host.appendChild(
+            window.LWDeco.levelBar({
+              works: Number(st.works) || 0,
+              days: Number(st.days) || 0,
+              dust: Number(st.likes) || 0,
+              ach: 0,
+            })
+          )
+        }
+      } catch (e) {}
 
       // 尺寸分布
       const sc = st.sizeCount || {}
