@@ -609,7 +609,7 @@ export default {
       if (cl) {
         cl.addEventListener('click', async () => {
           if (!house.items.length) return
-          if (!window.confirm('把屋里的家具全收起来？家具还是你的，随时能再摆。')) return
+          if (!(await lwConfirm('把屋里的家具全收起来？家具还是你的，随时能再摆。'))) return
           const d = await post({ action: 'clear' })
           if (!d || !d.ok) {
             msg((d && d.error) || '操作失败', true)
@@ -646,7 +646,7 @@ export default {
     async function buy(id, btn) {
       const f = findItem(id)
       if (!f || btn.disabled) return
-      if (!window.confirm('花 ' + f.price + ' 个光尘买下「' + f.name + '」？买过就永久归你。')) return
+      if (!(await lwConfirm('花 ' + f.price + ' 个光尘买下「' + f.name + '」？买过就永久归你。'))) return
       btn.disabled = true
       const d = await post({ action: 'buy', id })
       btn.disabled = false
@@ -678,7 +678,7 @@ export default {
     async function upgrade() {
       const nx = nextSizeOf()
       if (!nx) return
-      if (!window.confirm('花 ' + nx.price + ' 个光尘，把屋子扩成' + nx.name + '（' + nx.size + '×' + nx.size + '）？\n家具原地不动，不用重新摆。')) return
+      if (!(await lwConfirm('花 ' + nx.price + ' 个光尘，把屋子扩成' + nx.name + '（' + nx.size + '×' + nx.size + '）？\n家具原地不动，不用重新摆。'))) return
       const d = await post({ action: 'upgrade' })
       if (!d || !d.ok) {
         msg((d && d.error) || '扩建失败', true)

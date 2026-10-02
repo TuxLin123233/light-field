@@ -44,6 +44,7 @@ const SHELL = [
   '/lw-spray.js',
   '/lw-thumb.js',
   '/lw-cache.js',
+  '/lw-dialog.js',
 ]
 
 self.addEventListener('install', (event) => {

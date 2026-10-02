@@ -821,7 +821,7 @@ export default {
                     ? '核实该账号违规？将立即封禁「' + (r.title || '') + '」并标记举报已处理。'
                     : '确定删除该作品并标记举报已处理吗？'
                   : '确定标记该举报为已处理吗？'
-              if (!window.confirm(msg)) return
+              if (!(await lwConfirm(msg))) return
               const key = getKey()
               if (!key) {
                 toast('请先登录')
@@ -935,7 +935,7 @@ export default {
           btn.type = 'button'
           btn.textContent = '解封'
           btn.addEventListener('click', async () => {
-            if (!confirm('确定解封「' + u.username + '」吗？')) return
+            if (!(await lwConfirm('确定解封「' + u.username + '」吗？'))) return
             btn.disabled = true
             try {
               const res = await fetch('/api/ban', {
@@ -1003,7 +1003,7 @@ export default {
         btn.textContent = u.banned ? '解封该账号' : '封禁该账号'
         btn.addEventListener('click', async () => {
           const act = u.banned ? 'unban' : 'ban'
-          if (act === 'ban' && !confirm('确定封禁「' + u.username + '」吗？\n\n对方将无法签到、送光尘和发布作品，直到解封。')) return
+          if (act === 'ban' && !(await lwConfirm('确定封禁「' + u.username + '」吗？\n\n对方将无法签到、送光尘和发布作品，直到解封。'))) return
           btn.disabled = true
           try {
             const res = await fetch('/api/ban', {
@@ -1129,7 +1129,7 @@ export default {
 
       async function removeEntry(rec) {
         const label = rec.name || '匿名'
-        if (!window.confirm(`确定删除「${label}」的作品吗？`)) return
+        if (!(await lwConfirm(`确定删除「${label}」的作品吗？`))) return
 
         const key = getKey()
         if (!key) {
@@ -1175,8 +1175,8 @@ export default {
             toast('数量要是非 0 的整数，正数增加、负数扣减')
             return
           }
-          if (amt > 0 && !window.confirm('确定给「' + name + '」赠送 ' + amt + ' 个光尘吗？')) return
-          if (amt < 0 && !window.confirm('确定从「' + name + '」扣掉 ' + (-amt) + ' 个光尘吗？')) return
+          if (amt > 0 && !(await lwConfirm('确定给「' + name + '」赠送 ' + amt + ' 个光尘吗？'))) return
+          if (amt < 0 && !(await lwConfirm('确定从「' + name + '」扣掉 ' + (-amt) + ' 个光尘吗？'))) return
           grantBtn.disabled = true
           const old = grantBtn.textContent
           grantBtn.textContent = '处理中'
@@ -1263,7 +1263,7 @@ export default {
         admMailList.addEventListener('click', async (e) => {
           const btn = e.target && e.target.closest ? e.target.closest('[data-revoke]') : null
           if (!btn) return
-          if (!window.confirm('撤回这封广播信？之后打开信箱的人不再收到（已经收到的不会收回）')) return
+          if (!(await lwConfirm('撤回这封广播信？之后打开信箱的人不再收到（已经收到的不会收回）'))) return
           try {
             const res = await fetch('/api/admin/mail', {
               method: 'POST',
@@ -1306,7 +1306,7 @@ export default {
           }
           const who = payload.to ? '「' + payload.to + '」' : '全体用户'
           const kind = payload.dust > 0 ? '奖励（' + payload.dust + ' 光尘）' : '公告'
-          if (!window.confirm('确定把' + kind + '发给 ' + who + ' 吗？')) return
+          if (!(await lwConfirm('确定把' + kind + '发给 ' + who + ' 吗？'))) return
           mailPubBtn.disabled = true
           const old = mailPubBtn.textContent
           mailPubBtn.textContent = '发布中'
@@ -1347,7 +1347,7 @@ export default {
       }
 
       clearAllBtn.addEventListener('click', async () => {
-        if (!window.confirm('确定清空全部数据吗？此操作不可恢复！')) return
+        if (!(await lwConfirm('确定清空全部数据吗？此操作不可恢复！'))) return
 
         const key = getKey()
         if (!key) {

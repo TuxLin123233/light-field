@@ -3089,7 +3089,7 @@ color: var(--text-muted);
           return
         }
         const name = rec.workName || '未命名'
-        if (!window.confirm('确定删除「' + name + '」吗？删除后无法恢复。')) return
+        if (!(await lwConfirm('确定删除「' + name + '」吗？删除后无法恢复。'))) return
         try {
           const res = await fetch('/api/mine', {
             method: 'POST',

@@ -257,6 +257,19 @@ export default {
       <section class="group">
         <div class="ver red">
           <div class="ver-body">
+            <div class="ver-title"><span class="ver-tag">v1.5.2</span> 确认框改成小镇自己的（不再被浏览器插按钮） <span class="ver-date">2026-10</span></div>
+            <ul class="ver-list">
+              <li><span class="li-tag tag-fix">修复</span><b>确认框里冒出「关闭网页」按钮</b>的问题。以前的确认框用的是浏览器自带的，<b>按钮由浏览器说了算</b> —— 有些手机浏览器和内置 WebView 会自作主张多塞一个按钮，想点确认却把页面关了。现在改成小镇自己画的对话框，按钮就只有「取消」和「确认」，一个不多、一个不少</li>
+              <li><span class="li-tag tag-ui">界面</span>顺便把全站 <b>30 处</b>原生弹窗都换掉了：18 个确认框、9 个提示框、3 个输入框。删除作品、清空对话、买家具、扩建屋子、后台封禁……现在长得都一样，也是小镇的样子</li>
+              <li><span class="li-tag tag-ui">界面</span>新对话框的几个细节：按 <b>Esc</b> 取消、按 <b>回车</b>确认；点旁边空白处，确认框算取消、提示框算知道了；删除、清空这类不可恢复的操作会<b>标红</b>；同时弹出多个会排队，不会叠在一起</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="group">
+        <div class="ver red">
+          <div class="ver-body">
             <div class="ver-title"><span class="ver-tag">v1.5.1</span> 聊天送光尘 · 涂鸦 · 猜拳 · 家具 104 件 · 房间能扩建 <span class="ver-date">2026-10</span></div>
             <ul class="ver-list">
               <li><span class="li-tag tag-new">新功能</span><b>聊天不再只有打字和表情了</b>。输入框左边多了一个「＋」，里面是四样东西：<b>🎁 送光尘 / 🎨 涂鸦 / 🖼️ 画作 / 🎲 猜拳</b></li>

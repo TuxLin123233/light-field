@@ -1154,18 +1154,7 @@ export default {
          以前只有「有消息」那条绑过，所以新会话连输入框都没有。 */
       /* ---------- 更多功能：面板与动作 ---------- */
       const PANES = ['gift', 'doodle', 'work', 'rps']
-      const RPS_TXT = { rock: '✊', scissors: '✌️', paper: '✋' }
       const RPS_NAME = { rock: '石头', scissors: '剪刀', paper: '布' }
-      let giftAmt = 10
-      let padArt = null // 16×16，懒初始化
-      let padColor = [40, 40, 40]
-      let workList = null
-      let pickedWork = null
-      let rpsPick = ''
-      let rpsWager = 0
-      let replyTo = null
-      const myUid = () => d.me || ''
-
       const paneEl = (name) => $('chPane' + name.charAt(0).toUpperCase() + name.slice(1))
       function hidePanes() {
         PANES.forEach((k) => {
@@ -1204,7 +1193,7 @@ export default {
       }
       async function doGift() {
         if (!(giftAmt > 0)) return
-        if (!window.confirm('送出 ' + giftAmt + ' 个光尘？送出就从你账上扣掉了。')) return
+        if (!(await lwConfirm('送出 ' + giftAmt + ' 个光尘？送出就从你账上扣掉了。'))) return
         const r = await sendMsg({ kind: 'dust', dust: giftAmt, text: inp ? inp.value.trim() : '' })
         if (!r) return
         if (inp) inp.value = ''
@@ -1278,7 +1267,7 @@ export default {
         if (!padArt) return
         const blank = padArt.every((q) => q[0] > 250 && q[1] > 250 && q[2] > 250)
         if (blank) {
-          window.alert('还什么都没画呢')
+          await lwAlert('还什么都没画呢')
           return
         }
         const r = await sendMsg({ kind: 'doodle', art: padArt, text: inp ? inp.value.trim() : '' })
@@ -1335,7 +1324,7 @@ export default {
       }
       async function doShareWork() {
         if (!pickedWork) {
-          window.alert('先挑一幅作品')
+          await lwAlert('先挑一幅作品')
           return
         }
         const r = await sendMsg({
@@ -1379,7 +1368,7 @@ export default {
       }
       async function doRps() {
         if (!rpsPick) {
-          window.alert('先出拳')
+          await lwAlert('先出拳')
           return
         }
         const r = await sendMsg({ kind: 'rps', pick: rpsPick, wager: rpsWager })
@@ -1392,7 +1381,7 @@ export default {
         const jd = await chatPost({ action: 'rps', with: d.with.uid, id: mid, pick })
         if (!jd) return
         if (!jd.ok) {
-          window.alert(jd.error || '出拳失败')
+          await lwAlert(jd.error || '出拳失败')
           return
         }
         if (window.sfx) window.sfx(jd.result === 'draw' ? 'tick' : 'coin')
@@ -1405,7 +1394,7 @@ export default {
         const jd = await chatPost({ action: 'react', with: d.with.uid, id: mid, emoji })
         if (!jd) return
         if (!jd.ok) {
-          window.alert(jd.error || '回应失败')
+          await lwAlert(jd.error || '回应失败')
           return
         }
         if (window.sfx) window.sfx('tick')
@@ -1449,7 +1438,7 @@ export default {
           })
           return await res.json().catch(() => ({}))
         } catch (e) {
-          window.alert('网络错误')
+          await lwAlert('网络错误')
           return null
         }
       }
@@ -1464,7 +1453,7 @@ export default {
         const jd = await chatPost({ action: 'send', to: d.with.uid, ...payload })
         if (!jd) return null
         if (!jd.ok) {
-          window.alert(jd.error || '发送失败')
+          await lwAlert(jd.error || '发送失败')
           return null
         }
         replyTo = null
@@ -1583,13 +1572,13 @@ export default {
           paintWorks()
           if (window.sfx) window.sfx('tick')
         })
-        on('chPlus', 'click', (e) => {
+        on('chPlus', 'click', async (e) => {
           const b = e.target.closest ? e.target.closest('[data-go]') : null
           if (!b) return
           const go = b.getAttribute('data-go')
           if (go === 'gift') doGift()
           else if (go === 'gift-reset') {
-            const v = window.prompt('要送多少光尘？（最多 ' + (Number(d.maxGift) || 500) + '）', String(giftAmt))
+            const v = await lwPrompt('要送多少光尘？（最多 ' + (Number(d.maxGift) || 500) + '）', String(giftAmt))
             const num = Math.floor(Number(v))
             if (Number.isFinite(num) && num >= 1) {
               giftAmt = Math.min(Number(d.maxGift) || 500, num)
@@ -1769,7 +1758,7 @@ export default {
     if (delBtnEl) {
       delBtnEl.addEventListener('click', async () => {
         if (!peerUid) return
-        if (!window.confirm('确定清空和 ' + (peerName || '对方') + ' 的这段对话吗？\n清空之后无法恢复。')) return
+        if (!(await lwConfirm('确定清空和 ' + (peerName || '对方') + ' 的这段对话吗？\n清空之后无法恢复。'))) return
         const t = token()
         if (!t) {
           showMsg('清空需要先登录', true)

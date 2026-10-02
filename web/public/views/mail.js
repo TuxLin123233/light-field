@@ -299,7 +299,7 @@ export default {
         const tip = pendingN
           ? '会清掉 ' + pendingN + ' 封还没领取的附件，这些光尘就收不到了。确定清空吗？'
           : '确定清空全部信件吗？'
-        if (!window.confirm(tip)) return
+        if (!(await lwConfirm(tip))) return
         clearBtn.disabled = true
         const label = clearBtn.textContent
         clearBtn.textContent = '清空中…'

@@ -3579,7 +3579,7 @@ export default {
         cmtList.querySelectorAll('[data-del]').forEach((b) => {
           b.addEventListener('click', async () => {
             const id = b.getAttribute('data-del')
-            if (!window.confirm('确定删掉这条评论吗？')) return
+            if (!(await lwConfirm('确定删掉这条评论吗？'))) return
             const t = cmtToken()
             if (!t) {
               toast('请先登录')
@@ -4032,11 +4032,12 @@ export default {
         }
         if (navigator.clipboard && navigator.clipboard.writeText) {
           navigator.clipboard.writeText(url).then(done).catch(() => {
-            prompt('复制链接', url)
+            // 拿不到剪贴板权限：把链接摆出来让人手动复制。结果不参与后续逻辑，不用 await
+            lwPrompt('复制链接', url)
             done()
           })
         } else {
-          prompt('复制链接', url)
+          lwPrompt('复制链接', url)
           done()
         }
       })

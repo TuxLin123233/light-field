@@ -462,7 +462,7 @@ export default {
       if (md) {
         const m2 = md.getAttribute('data-mode')
         if (m2 !== mode) {
-          if (dirty && !window.confirm('切换画法后，之前画的内容不会保留，确定吗？')) return
+          if (dirty && !(await lwConfirm('切换画法后，之前画的内容不会保留，确定吗？'))) return
           mode = m2
           dirty = false
           if (window.sfx) window.sfx('tap')
@@ -609,9 +609,9 @@ export default {
       }
       // 已经有头像了还改，等于重新花一次钱，先说清楚
       if (hasAvatar) {
-        const again = !window.confirm(
+        const again = !(await lwConfirm(
           '修改头像会再花 ' + cost + ' 个光尘（现在有 ' + balance + ' 个）。\n\n确定要改吗？'
-        )
+        ))
         if (!again) return
       }
       const btn = $('avSave')
