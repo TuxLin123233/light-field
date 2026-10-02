@@ -405,7 +405,7 @@ export default {
         margin: 10px 4px 0;
         font-size: 12px;
         line-height: 1.6;
-        color: var(--text-2);
+        color: var(--text-muted, #6b5f50);
       }
 
       /* ---------- 单选组（启动页 / 导航位置） ---------- */
