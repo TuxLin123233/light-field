@@ -564,22 +564,51 @@ export default {
         /* 雨丝要画成**一小段斜线**（滴 + 后面拖的尾巴），不能只点一个像素 ——
            窗子只有几个像素大，形状是唯一能跟雪区分开的线索。
            尾巴甩向左上，看上去就是往右下斜着落。 */
-        const n = Math.max(7, Math.round((r.w * r.h) / 5))
+        /* 密度：窗子只有几像素，粒子多了会连成一片蓝。
+           按面积算但压得很低，再加个上限。 */
+        const n = Math.min(6, Math.max(3, Math.round((r.w * r.h) / 12)))
         for (let i = 0; i < n; i++) {
           const x = r.x + ((i * 5 + 1) % r.w)
           const y = r.y + ((i * 3 + Math.floor(wxT / 2)) % r.h)
-          put(x, y, [206, 224, 246])
-          put(x > r.x ? x - 1 : x + 1, y > r.y ? y - 1 : y + 1, [150, 182, 226])
+          /* ★ 颜色要够深。原来用 [206,224,246] 挂在浅蓝天空上基本看不见 ——
+             窗子才几个像素，反差不够等于没画。 */
+          put(x, y, [150, 186, 224])
+          put(x > r.x ? x - 1 : x + 1, y > r.y ? y - 1 : y + 1, [104, 146, 198])
+        }
+        /* 窗台溅开的水花：雨丝落到下沿时扩散一小圈。
+           只在下沿那一行画，而且只在「刚落地」的那几帧出现 ——
+           窗子小，画多了就成了糊在下边的一片白。 */
+        const bottom = r.y + r.h - 1
+        for (let i = 0; i < 2; i++) {
+          const phase = (wxT + i * 4) % 12
+          if (phase > 3) continue // 只在周期的前 1/4 显示
+          const x = r.x + ((i * 6 + 2) % r.w)
+          put(x, bottom, [128, 168, 212])
+          if (phase <= 1) {
+            if (x > r.x) put(x - 1, bottom, [96, 138, 190])
+            if (x < r.x + r.w - 1) put(x + 1, bottom, [96, 138, 190])
+          }
         }
       } else if (weather === 'snow') {
         /* 雪比雨慢得多，而且是一片一片往下**飘**（左右还会晃），
            不像雨那样一条线地赶。 */
-        const n = Math.max(6, Math.round((r.w * r.h) / 8))
+        const n = Math.min(6, Math.max(3, Math.round((r.w * r.h) / 16)))
         for (let i = 0; i < n; i++) {
           const sway = Math.floor(Math.sin((wxT + i * 9) / 7) * 1.6)
           const x = r.x + ((((i * 5 + sway) % r.w) + r.w) % r.w)
           const y = r.y + ((i * 3 + Math.floor(wxT / 5)) % r.h)
+          /* 雪是白的，但纯白挂在浅色天空上会糊掉。
+             先点一颗淡蓝的「影」再压白点，边缘就出来了。 */
+          put(x, y, [206, 220, 240])
           put(x, y, [252, 252, 255])
+        }
+        /* 雪落到窗台会积一点：下沿铺一条不规则的白色，慢慢变厚再清掉。
+           跟雨的水花不同 —— 雪是「留下」，不是「溅开」。 */
+        const bank = 1 + (Math.floor(wxT / 40) % 2) // 1~2 像素厚
+        for (let i = 0; i < r.w; i++) {
+          if ((i * 7 + Math.floor(wxT / 12)) % 5 === 0) continue // 缺口，不然太齐
+          put(r.x + i, r.y + r.h - 1, [226, 234, 248])
+          if (bank > 1 && (i * 3) % 4 !== 0) put(r.x + i, r.y + r.h - 2, [244, 247, 253])
         }
       }
 
