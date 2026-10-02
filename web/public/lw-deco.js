@@ -223,17 +223,48 @@ html[data-theme='dark'] .lwdeco-grid {
   box-shadow: var(--lwp-sh-4);
   transition: all .3s cubic-bezier(.2,.9,.3,1);
 }
-#lwdecoGuide .bubble b { display: block; font-weight: 800; margin-bottom: 3px }
-#lwdecoGuide .bubble span { color: var(--text-muted) }
-#lwdecoGuide .bubble .go {
-  display: inline-block;
-  margin-top: 9px;
-  padding: 6px 14px;
+#lwdecoGuide .b-head {
+  display: flex; align-items: baseline; gap: 8px;
+  margin-bottom: 5px;
+}
+#lwdecoGuide .b-head b { font-weight: 800; font-size: 13.5px; }
+#lwdecoGuide .b-step {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
+#lwdecoGuide .b-text {
+  color: var(--text-muted);
+  line-height: 1.7;
+  font-size: 12.5px;
+}
+#lwdecoGuide .b-acts {
+  display: flex;
+  gap: 8px;
+  margin-top: 11px;
+}
+#lwdecoGuide .b-acts button {
+  flex: 1;
+  padding: 8px 0;
   border: 0; border-radius: 999px;
-  background: var(--accent, #5b8def); color: #fff;
   font-family: inherit; font-size: 12.5px; font-weight: 800;
   cursor: pointer; pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
 }
+#lwdecoGuide .b-acts .go {
+  background: var(--accent, #5b8def); color: #fff;
+}
+#lwdecoGuide .b-acts .go:active { transform: scale(.96); }
+#lwdecoGuide .b-acts .skip {
+  flex: 0 0 auto;
+  padding-left: 14px; padding-right: 14px;
+  background: var(--surface-2, #f6f2ea);
+  color: var(--text-faint);
+  border: 1px solid var(--border, #efe7da);
+}
+/* 气泡宽一点，否则「1 / 8」和按钮会挤 */
+#lwdecoGuide .bubble { max-width: 270px; }
 
 /* ============ 8. 拖动吸附提示 ============ */
 .lwdeco-snap {
@@ -459,70 +490,142 @@ html[data-theme='dark'] .lwdeco-grid {
   /* ================= 新手引导光圈 ================= */
   var guideEl = null
 
+  /* 引导浮层。
+     ★ 每次调用都**重建** DOM，不在同一个元素上反复 addEventListener ——
+       之前是复用 guideEl，结果每弹一次引导就在它身上多叠一个 click 监听，
+       点一下会触发好几次，看似「点了没反应」。
+     ★ 按钮的监听**立即绑定**，不等布局完成。
+       之前按钮是放在 setTimeout(340ms) 里创建并绑定的，
+       那 340 毫秒内点它完全无效 —— 用户点了没反应就再点，
+       于是要「点很多次」才跳过。
+     ★ 带「跳过」和步骤计数。8 步的引导要按 8 次「下一步」才出得去，
+       没有一键跳过太折磨人。 */
   function guide(steps, opts) {
     if (!steps || !steps.length) return
     var o = opts || {}
+
+    // 上一次没关干净就先收掉，避免两层浮层叠着
+    var old = document.getElementById('lwdecoGuide')
+    if (old && old.parentNode) old.parentNode.removeChild(old)
+
     var idx = 0
-    if (!guideEl) {
-      guideEl = el('div', '', '<div class="hole"></div><div class="bubble"></div>')
-      guideEl.id = 'lwdecoGuide'
-      document.body.appendChild(guideEl)
-    }
-    var hole = guideEl.querySelector('.hole')
-    var bubble = guideEl.querySelector('.bubble')
+    var closed = false
+    var pendingTimer = 0
+
+    var wrap = document.createElement('div')
+    wrap.id = 'lwdecoGuide'
+    wrap.innerHTML =
+      '<div class="hole"></div>' +
+      '<div class="bubble">' +
+      '<div class="b-head"><b class="b-title"></b><span class="b-step"></span></div>' +
+      '<div class="b-text"></div>' +
+      '<div class="b-acts">' +
+      '<button class="skip" type="button">跳过</button>' +
+      '<button class="go" type="button">下一步</button>' +
+      '</div>' +
+      '</div>'
+    document.body.appendChild(wrap)
+
+    var hole = wrap.querySelector('.hole')
+    var bubble = wrap.querySelector('.bubble')
+    var bTitle = wrap.querySelector('.b-title')
+    var bStep = wrap.querySelector('.b-step')
+    var bText = wrap.querySelector('.b-text')
+    var btnGo = wrap.querySelector('.go')
+    var btnSkip = wrap.querySelector('.skip')
 
     function clearHL() {
       var prev = document.querySelector('.lwdeco-hl')
       if (prev) prev.classList.remove('lwdeco-hl')
     }
 
+    function onDocClick(e) {
+      if (closed) return
+      if (bubble.contains(e.target)) return
+      close()
+    }
+
+    function close() {
+      if (closed) return
+      closed = true
+      if (pendingTimer) clearTimeout(pendingTimer)
+      document.removeEventListener('click', onDocClick, true)
+      clearHL()
+      wrap.classList.remove('on')
+      setTimeout(function () {
+        if (wrap.parentNode) wrap.parentNode.removeChild(wrap)
+      }, 220)
+      if (o.onDone) o.onDone()
+    }
+
+    function next() {
+      if (closed) return
+      idx++
+      if (idx >= steps.length) return close()
+      show()
+    }
+
+    /* 先按当前这一步把内容写进去，再等下一帧量位置。
+       内容和按钮在「写进去」时就生效，不等布局 ——
+       用户手指快的话，第一帧点下去也一定有效。 */
     function show() {
+      if (closed) return
       var st = steps[idx]
-      if (!st) return done()
+      if (!st) return close()
+
       var target = typeof st.el === 'string' ? document.querySelector(st.el) : st.el
-      if (!target) return next()
+      if (!target) {
+        // 这一步的目标不在这个页面上（跨页引导常见），直接跳到下一步
+        // 用 setTimeout 而不是同步递归，避免一长串都不存在时爆栈
+        return setTimeout(next, 0)
+      }
+
       clearHL()
       target.classList.add('lwdeco-hl')
-      try { target.scrollIntoView({ block: 'center', behavior: reduce ? 'auto' : 'smooth' }) } catch (e) {}
-      setTimeout(function () {
+      try {
+        target.scrollIntoView({ block: 'center', behavior: reduce ? 'auto' : 'smooth' })
+      } catch (e) {}
+
+      bTitle.textContent = st.title || ''
+      bText.textContent = st.text || ''
+      bStep.textContent = idx + 1 + ' / ' + steps.length
+      btnGo.textContent = idx === steps.length - 1 ? o.doneText || '知道了' : '下一步'
+      btnSkip.hidden = idx === steps.length - 1
+      wrap.classList.add('on')
+      // 先把气泡放到一个可见的兜底位置，量完再摆正 —— 避免第一帧闪在左上角
+      bubble.style.cssText = 'left:12px;top:12px;visibility:hidden'
+
+      if (pendingTimer) clearTimeout(pendingTimer)
+      pendingTimer = setTimeout(function () {
+        if (closed) return
         var r = target.getBoundingClientRect()
         var pad = st.pad == null ? 6 : st.pad
         hole.style.cssText =
           'left:' + (r.left - pad) + 'px;top:' + (r.top - pad) + 'px;' +
           'width:' + (r.width + pad * 2) + 'px;height:' + (r.height + pad * 2) + 'px;'
+        var bh = bubble.offsetHeight || 140
         var below = r.bottom + 12
-        var bh = 120
         var top = below + bh < window.innerHeight ? below : Math.max(12, r.top - bh - 12)
-        bubble.style.cssText = 'left:' + Math.max(12, Math.min(window.innerWidth - 262, r.left)) + 'px;top:' + top + 'px;'
-        bubble.innerHTML =
-          '<b>' + (st.title || '') + '</b>' +
-          '<span>' + (st.text || '') + '</span>' +
-          '<button class="go" type="button">' + (idx === steps.length - 1 ? (o.doneText || '知道了') : '下一步') + '</button>'
-        var go = bubble.querySelector('.go')
-        go.addEventListener('click', function (e) {
-          e.stopPropagation()
-          next()
-        })
-      }, reduce ? 0 : 340)
-      guideEl.classList.add('on')
+        var left = Math.max(12, Math.min(window.innerWidth - (bubble.offsetWidth || 250) - 12, r.left))
+        bubble.style.cssText = 'left:' + left + 'px;top:' + top + 'px;'
+      }, reduce ? 0 : 60)
     }
 
-    function next() {
-      idx++
-      if (idx >= steps.length) return done()
-      show()
-    }
-
-    function done() {
-      guideEl.classList.remove('on')
-      clearHL()
-      if (o.onDone) o.onDone()
-    }
-
-    // 点空白处跳过
-    guideEl.addEventListener('click', function (e) {
-      if (e.target === guideEl) done()
+    btnGo.addEventListener('click', function (e) {
+      e.stopPropagation()
+      e.preventDefault()
+      next()
     })
+    btnSkip.addEventListener('click', function (e) {
+      e.stopPropagation()
+      e.preventDefault()
+      close()
+    })
+    /* 点气泡以外的地方也跳过。
+       浮层本身不能吃 pointer-events（否则挡住画布），所以不挂在浮层上，
+       改挂 document 并用 capture —— 这样盖在下面的按钮不会被误触。 */
+    document.addEventListener('click', onDocClick, true)
+
     show()
   }
 
