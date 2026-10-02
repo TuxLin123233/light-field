@@ -26,18 +26,31 @@ export default {
       }
       .ch-wrap { max-width: 460px; margin: 0 auto; padding: 14px 16px 96px; }
       /* ---------- 对话模式：整屏 flex，消息滚动、输入框钉在底部 ----------
-         高度优先用 dvh（会随键盘收缩），JS 里再用 visualViewport 兜一层 ——
-         有些老浏览器不认 dvh，键盘弹起来时输入框会被挡住。
-         padding-bottom 补上安全区，iPhone 的横条不会盖住输入框。 */
+         必须用 fixed 脱离文档流：body 上有 padding: 16px 16px 112px（给底部
+         导航留位），普通流里的元素会从 y=16 开始、高度再取一整屏，底部就正好
+         溢出 16px —— 表现是「输入框跑到屏幕外，只看到一半」，同时 body 总高
+         超过视口，手指一滑滚动的是整页而不是消息区（「滑不动」）。
+         fixed 之后相对视口定位，完全不受 body 内边距影响。
+         高度优先用 dvh（会随键盘收缩），JS 里再用 visualViewport 兜一层。 */
       .ch-wrap.thread {
-        padding: 0;
+        position: fixed;
+        left: 0;
+        right: 0;
+        top: 0;
         height: 100vh;
         height: 100dvh;
+        max-width: 460px;
+        margin: 0 auto;
+        padding: 0;
         display: flex;
         flex-direction: column;
         overflow: hidden;
       }
-      .ch-wrap.thread .ch-bar { padding: 14px 16px 0; flex: none; }
+      /* fixed 之后顶部会贴到视口最上沿，得让开刘海/状态栏 */
+      .ch-wrap.thread .ch-bar {
+        padding: calc(14px + env(safe-area-inset-top, 0px)) 16px 0;
+        flex: none;
+      }
       .ch-wrap.thread .ch-note { margin: 8px 16px 0; flex: none; }
       .ch-wrap.thread #chBody {
         flex: 1 1 auto;
@@ -50,9 +63,15 @@ export default {
         flex: 1 1 auto;
         display: flex; flex-direction: column; justify-content: center;
       }
+      /* 消息区用负 margin 撑到整屏宽：手指落在最左/最右也能滑，
+         不是只有中间那条能滑。内边距再补回来，视觉不变。 */
       .ch-wrap.thread .ch-msgs {
         flex: 1 1 auto;
         min-height: 0;
+        margin-left: -16px;
+        margin-right: -16px;
+        padding-left: 16px;
+        padding-right: 16px;
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
         overscroll-behavior: contain;
@@ -441,14 +460,29 @@ export default {
       const wrap = document.querySelector('.ch-wrap.thread')
       if (!wrap) return
       const vv = window.visualViewport
-      const h = vv && vv.height ? vv.height : window.innerHeight
-      wrap.style.height = Math.round(h) + 'px'
+      if (!vv || !vv.height) return // 拿不到就交给 CSS 里的 100dvh
+      /* visualViewport 是「此刻真正看得见的那块区域」：键盘弹起时 height 变小、
+         offsetTop 变大。容器是 fixed 定位，光改高度不够 —— 页面被顶上去多少，
+         它就得跟着挪多少，否则输入框仍然留在键盘底下看不见。 */
+      wrap.style.height = Math.round(vv.height) + 'px'
+      wrap.style.transform = vv.offsetTop ? 'translateY(' + Math.round(vv.offsetTop) + 'px)' : ''
     }
 
     function setThreadMode(on) {
       const wrap = document.querySelector('.ch-wrap')
-      if (wrap) wrap.classList.toggle('thread', !!on)
-      if (on) fitThread()
+      if (!wrap) return
+      wrap.classList.toggle('thread', !!on)
+      /* 锁住页面本身的滚动：body 有 min-height:100vh 加下内边距，不锁的话
+         手指一滑滚的是整页，消息区反而滑不动。
+         app.js 的 withAutoCleanup 在离开本页时也会把 body 的 overflow 复位。 */
+      document.body.style.overflow = on ? 'hidden' : ''
+      if (on) {
+        fitThread()
+      } else {
+        // 回到列表页时把内联样式清掉，否则会盖住普通流的布局
+        wrap.style.height = ''
+        wrap.style.transform = ''
+      }
     }
 
     /* 返回按钮：会话列表回「我的」，对话里回会话列表
