@@ -139,6 +139,8 @@ export async function hideWork(kv, time, byUid, byName, reason) {
   if (!why) return { ok: false, error: '请填一句下架原因，管理员要照着它判断' }
   const map = await readHiddenMap(kv)
   const rec = { time: t, byUid: String(byUid || ''), byName: String(byName || ''), at: Date.now(), reason: why }
+  // 系统自动下架的标记出来，后台一眼能分清是机器触发还是人下的
+  if (byUid === 'system') rec.auto = true
   map[t] = rec
   await writeHiddenMap(kv, map)
   return { ok: true, hide: rec }

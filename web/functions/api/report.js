@@ -13,6 +13,9 @@ const MAX_LOG = 500
 const RATE_PREFIX = 'reportrate:'
 const RATE_WINDOW_MS = 10 * 60 * 1000 // 10 分钟内同一设备最多 5 条
 const RATE_MAX = 5
+// 超过这么多**不同用户**举报同一件作品，就自动暂时下架，交给审核员复核。
+// 是「超过」不是「达到」—— 6 个人举报才触发。
+const AUTO_HIDE_REPORTS = 5
 
 // 举报列表必须每次都拿到最新：任何缓存都会导致后台看到过期的待处理列表
 const json = (body, status = 200) =>
@@ -208,5 +211,29 @@ export async function onRequestPost(context) {
   })
   await writeList(env.LIGHTFIELD_KV, PENDING_KEY, pending)
 
-  return json({ ok: true })
+  /* 被足够多的**不同用户**举报 → 自动暂时下架，交给审核员复核。
+     不是删除，作品本体一个字节都不动：审核员或作者觉得没问题，
+     在后台点「恢复显示」就回来了。 */
+  let autoHidden = false
+  try {
+    const by = new Set(pending.filter((r) => r.time === time).map((r) => r.from))
+    if (by.size > AUTO_HIDE_REPORTS) {
+      const { readHide, hideWork } = await import('./_mod.js')
+      const already = await readHide(env.LIGHTFIELD_KV, time)
+      if (!already) {
+        const r = await hideWork(
+          env.LIGHTFIELD_KV,
+          time,
+          'system',
+          '系统',
+          '被 ' + by.size + ' 位用户举报，自动下架待复核'
+        )
+        autoHidden = !!(r && r.ok)
+      }
+    }
+  } catch (e) {
+    // 自动下架失败不该让举报本身失败
+  }
+
+  return json({ ok: true, autoHidden })
 }
