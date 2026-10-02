@@ -198,14 +198,24 @@ export async function onRequestPost(context) {
     )
   }
 
-  // 归属：优先用登录账号；没登录才回退到认领码（过渡期保留）
+  /* 归属：必须登录。
+
+     以前这里是「优先用登录账号；没登录才回退到认领码（过渡期保留）」：
+     token 为空或无效时 readActiveUser 返回 null，下面三个 if 全是
+     `if (who && ...)`，于是整段校验被跳过、作品照收 —— 游客可以直接发布。
+
+     前端那层 requireLogin() 只挡住了按钮，拦不住直接 POST /api/set，
+     而限流只有「每 IP 30 秒一次」，换个 IP 就能接着灌。
+     注释里提到的「认领码」过渡路径早就没有了，这里一并收紧。
+
+     顺带把三行 `who &&` 拆开：现在 who 一定存在，
+     少一层判断就不会再出现「忘了判空就放行」这种漏法。 */
   const who = await readActiveUser(env, pickToken(request, body), request.headers.get('authorization'))
-  if (who && who.banned) return json(BANNED_ERROR, 403)
-  if (who && who.gone) return json({ error: '账号不存在', code: 'gone' }, 401)
-  if (who) {
-    entry.ownerUser = who.uid
-    entry.ownerName = who.username
-  }
+  if (!who) return json({ error: '请先登录再发布', code: 'noauth' }, 401)
+  if (who.banned) return json(BANNED_ERROR, 403)
+  if (who.gone) return json({ error: '账号不存在', code: 'gone' }, 401)
+  entry.ownerUser = who.uid
+  entry.ownerName = who.username
   /* fromImage 以前完全由客户端声明（`if (body.fromImage === true)`），
      只要不发这个字段就能冒充原创：拿发布奖励、算绘制格数成就、
      收光尘收票全都通吃。改成服务端自己判断（_camera.js），
