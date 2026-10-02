@@ -332,96 +332,149 @@
     },
   ]
 
-  var tourAt = -1 // 当前游到第几站；-1 表示没在游
+  /* ---------- 沉浸游的状态机 ----------
+     原来是用几个散落的变量（tourAt / pendingStop）加回调串联起来的，
+     链路里任何一环不按预期触发，整趟就停在那儿 —— 而用户看到的现象
+     是「按钮有反馈，但内容不变」。
+
+     现在改成一份显式状态 + 一个序号：
+       tour.at       当前在第几站（-1 = 没在游）
+       tour.wait    正在等换页（换到第几站）
+       tour.seq     每次真正「展示」一次就 +1
+     展示时的 onDone 会记住自己那次的 seq，推进前先核对 ——
+     过期的回调一律不认，杜绝「旧步骤把自己后面的步骤顶掉」。
+     另外还有一个看门狗：如果浮层已经不在页面上、而状态还停在某一站，
+     说明这次推进丢了，600ms 后强制往前走。宁可多走一步，不能卡住。 */
+  var tour = { at: -1, wait: -1, seq: 0 }
+  var watchdog = 0
+
+  function normPath() {
+    var p = (location.pathname || '').replace(/\/+$/, '')
+    return p || '/'
+  }
+
+  function stopEl(st) {
+    try {
+      return typeof st.el === 'function' ? st.el() : document.querySelector(st.el)
+    } catch (e) {
+      return null
+    }
+  }
 
   function immersiveActive() {
-    return tourAt >= 0
+    return tour.at >= 0
   }
 
-  /** 把当前这一站显示出来；不在目标页就先导航过去 */
-  function showStop(i) {
+  /** 推进到第 i 站（需要换页就先换） */
+  function goTo(i) {
     if (i < 0 || i >= IMMERSIVE.length) return endTour()
-    tourAt = i
+    tour.at = i
     var st = IMMERSIVE[i]
-    var cur = (location.pathname || '').replace(/\/+$/, '') || '/'
-    var want = st.page || cur
-
-    if (st.page && cur !== want) {
-      pendingStop = i
-      if (window.__lwRouter) window.__lwRouter.push(want)
-      else location.href = want
-      tourAt = -1 // 等换页后由 resume 重新接手
+    if (st.page && normPath() !== st.page) {
+      tour.wait = i
+      tour.seq++ // 这一趟的旧回调全部作废
+      if (window.__lwRouter) window.__lwRouter.push(st.page)
+      else location.href = st.page
       return
     }
-    runStop(i)
+    present(i, 0)
   }
 
-  var pendingStop = -1
-
-  function runStop(i, tries) {
+  /** 把第 i 站显示出来；元素还没出现就重试，实在没有才跳过 */
+  function present(i, tries) {
+    if (tour.at !== i) return
     if (!window.LWDeco || !window.LWDeco.guide) return endTour()
     var st = IMMERSIVE[i]
     if (!st) return endTour()
-    var el = typeof st.el === 'function' ? st.el() : document.querySelector(st.el)
-    if (!el) {
-      /* ★ 目标还没出现，先**重试**几次再跳过。
-         跨页之后是等 120ms 就跑，但有些页面要等接口回来才把元素渲染出来
-         （社区要拉作品、信箱要拉信件）——直接跳过的话，用户看到的就是
-         「上一站讲完，下一站没了」，也就是「引导断开」。
-         重试 6 次（约 1.8 秒）还找不到，才认定这一站在本设备上确实没有。 */
+
+    if (!stopEl(st)) {
       var t = tries || 0
-      if (t < 6) {
-        tourAt = i
-        setTimeout(function () { runStop(i, t + 1) }, [120, 200, 300, 400, 500, 600][t] || 600)
+      if (t < 8) {
+        setTimeout(function () { present(i, t + 1) }, [100, 150, 200, 300, 400, 500, 600, 600][t] || 600)
         return
       }
-      return showStop(i + 1)
+      // 这一站在本设备上确实没有，跳过
+      return setTimeout(function () { goTo(i + 1) }, 0)
     }
 
-    tourAt = i
+    var mySeq = ++tour.seq
     window.LWDeco.guide([st], {
       immersive: true,
       progress: { i: i, n: IMMERSIVE.length },
       nextText: i === 0 ? '开始逛' : '下一站',
       doneText: '逛完了',
-      onPrev: () => showStop(i - 1),
-      /* onDone 的 reason 是 lw-deco 传过来的关闭原因：
-           next     点完了这一步（含最后一步的「逛完了」）
-           skip     点了「退出」
-           outside  点了气泡外面
-         只有 next 才继续走；另外两种都算用户想收工 ——
-         以前不区分，点「退出」反而会跳到下一站，等于退不出去。 */
-      onDone: (reason) => {
-        if (tourAt !== i) return
+      onPrev: function () {
+        if (mySeq !== tour.seq) return
+        tour.seq++
+        goTo(i - 1)
+      },
+      onDone: function (reason) {
+        /* ★ 只有「当前这一次展示」的回调才算数。
+           历史遗留的浮层、被顶掉的旧步骤，它们的 onDone 到这里会被拦住。 */
+        if (mySeq !== tour.seq) return
+        if (tour.at !== i) return
+        tour.seq++
         if (reason && reason !== 'next') return endTour()
-        showStop(i + 1)
+        goTo(i + 1)
       },
     })
+    startWatchdog()
+  }
+
+  /* 看门狗：浮层没了但状态没推进 → 强制往前。
+     正常情况下永远不会触发；它只在「推进丢了」时兜底，
+     保证用户不会卡在某一站出不去。 */
+  function startWatchdog() {
+    if (watchdog) return
+    watchdog = setInterval(function () {
+      if (tour.at < 0) {
+        clearInterval(watchdog)
+        watchdog = 0
+        return
+      }
+      if (tour.wait >= 0) return // 正在等换页，不是卡住
+      if (document.getElementById('lwdecoGuide')) return // 浮层还在，正常
+      // 浮层不见了却没推进 —— 补一刀
+      var i = tour.at
+      tour.seq++
+      goTo(i + 1)
+    }, 600)
   }
 
   function startImmersive(from) {
-    tourAt = -1
-    pendingStop = -1
-    /* 上一趟如果没收干净（比如用户中途刷新）先兜一下 */
     try {
       if (window.__lwGuideCleanup) window.__lwGuideCleanup()
     } catch (e) {}
-    showStop(typeof from === 'number' ? from : 0)
+    tour.at = -1
+    tour.wait = -1
+    tour.seq++
+    var start = typeof from === 'number' ? from : 0
+    if (start === 0 && !IMMERSIVE[0].page) {
+      // 第 0 站的 page 是空的，任何页面都能跑，直接开始
+      tour.at = 0
+      present(0, 0)
+    } else {
+      goTo(start)
+    }
   }
 
   function endTour() {
-    tourAt = -1
-    pendingStop = -1
+    tour.at = -1
+    tour.wait = -1
+    tour.seq++
+    if (watchdog) {
+      clearInterval(watchdog)
+      watchdog = 0
+    }
     markSeen('tour')
   }
 
   /** 换页完成后接着游 */
   function resumeTour() {
-    if (pendingStop < 0) return false
-    var i = pendingStop
-    pendingStop = -1
-    // 等新页面把 DOM 建好
-    setTimeout(() => runStop(i), 120)
+    if (tour.wait < 0) return false
+    var i = tour.wait
+    tour.wait = -1
+    setTimeout(function () { present(i, 0) }, 120)
     return true
   }
 

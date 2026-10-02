@@ -8,6 +8,14 @@
   if (window.__lwDeco) return
   window.__lwDeco = true
 
+  /* 引导按钮的动作锁。
+     ★ 必须是**模块级**的，不能放在每次 guide() 里面 ——
+     触摸端 pointerup 和 click 会各触发一次动作，而第一次点击
+     往往就推进到下一步、生成了一个新浮层；新浮层的锁如果是新的一份，
+     紧接着那个 click 就拦不住了，表现是「点一下跳两步」。
+     放在模块级，跨浮层也拦得住。 */
+  var GUIDE_ACT_LOCK = 0
+
   var reduce = false
   try {
     reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
@@ -741,7 +749,6 @@ html[data-theme='dark'] .lwdeco-grid {
          · 250ms 的锁保证一次点击只前进一步
          · 浮层关掉时只摘这一个监听，不会漏
        这样无论外面有多少历史遗留，行为都是确定的。 */
-    var lastAct = 0
     function onAct(e) {
       if (closed) return
       var t = e.target
@@ -751,8 +758,8 @@ html[data-theme='dark'] .lwdeco-grid {
       e.preventDefault()
       e.stopPropagation()
       var now = Date.now()
-      if (now - lastAct < 250) return
-      lastAct = now
+      if (now - GUIDE_ACT_LOCK < 350) return
+      GUIDE_ACT_LOCK = now
       if (btn.classList.contains('go')) next()
       else if (btn.classList.contains('prev')) { if (o.onPrev) o.onPrev() }
       else close('skip')

@@ -2269,44 +2269,6 @@ export default {
       }
 
       // 取作品里出现最多的几个颜色（相互拉开距离），用于卡片点缀
-      function dominantColors(pixels, n, count) {
-        const buckets = new Map()
-        for (let i = 0; i < n * n; i++) {
-          const p = pixels[i]
-          if (!p) continue
-          const key = (p[0] >> 4) + ',' + (p[1] >> 4) + ',' + (p[2] >> 4)
-          const cur = buckets.get(key)
-          if (cur) cur.n++
-          else buckets.set(key, { c: [p[0], p[1], p[2]], n: 1 })
-        }
-        const sorted = [...buckets.values()].sort((a, b) => b.n - a.n)
-        const picked = []
-        for (const item of sorted) {
-          if (picked.length >= count) break
-          const far = picked.every(
-            (q) => Math.abs(q[0] - item.c[0]) + Math.abs(q[1] - item.c[1]) + Math.abs(q[2] - item.c[2]) > 90
-          )
-          if (far) picked.push(item.c)
-        }
-        while (picked.length < count) picked.push([91, 141, 239])
-        return picked.map((c) => 'rgb(' + c[0] + ',' + c[1] + ',' + c[2] + ')')
-      }
-
-      function roundRect(ctx, x, y, w, h, r) {
-        if (ctx.roundRect) {
-          ctx.beginPath()
-          ctx.roundRect(x, y, w, h, r)
-          return
-        }
-        ctx.beginPath()
-        ctx.moveTo(x + r, y)
-        ctx.arcTo(x + w, y, x + w, y + h, r)
-        ctx.arcTo(x + w, y + h, x, y + h, r)
-        ctx.arcTo(x, y + h, x, y, r)
-        ctx.arcTo(x, y, x + w, y, r)
-        ctx.closePath()
-      }
-
       // 取作品里出现最多的几个颜色（相互拉开距离），用于卡片点缀
       function dominantColors(pixels, n, count) {
         const buckets = new Map()

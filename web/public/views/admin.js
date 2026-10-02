@@ -800,12 +800,6 @@ export default {
         return row
       }
 
-      function fmtTime(t) {
-        const d = new Date(Number(t) || 0)
-        const p = (x) => String(x).padStart(2, '0')
-        return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes())
-      }
-
       async function loadModAdmin() {
         let d
         try {

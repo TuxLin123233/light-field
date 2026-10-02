@@ -3198,22 +3198,6 @@ color: var(--text-muted);
         return [parseInt(m.slice(0, 2), 16), parseInt(m.slice(2, 4), 16), parseInt(m.slice(4, 6), 16)]
       }
 
-      function rgbToHsv([r, g, b]) {
-        r /= 255; g /= 255; b /= 255
-        const max = Math.max(r, g, b)
-        const min = Math.min(r, g, b)
-        const d = max - min
-        let h = 0
-        if (d !== 0) {
-          if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) % 6
-          else if (max === g) h = (b - r) / d + 2
-          else h = (r - g) / d + 4
-          h /= 6
-        }
-        const s = max === 0 ? 0 : d / max
-        return [h, s, max]
-      }
-
       function hsvToRgb(h, s, v) {
         const i = Math.floor(h * 6)
         const f = h * 6 - i
@@ -3229,8 +3213,22 @@ color: var(--text-muted);
       /* RGB → HSV。取色器吸到颜色后靠它把 H/S/V 还原回去，
          否则 SV 方块和色相条的 marker 不会跟着动
          —— 表现就是「取色器不同步到选取的位置」。 */
-      function rgbToHsv(r, g, b) {
-        const rr = r / 255, gg = g / 255, bb = b / 255
+      /* ★ 这个函数原本有**两份定义**，一份收数组、一份收三个参数，
+         而 JS 里同名函数是后面的覆盖前面的 —— 所以只有收三个参数的那份
+         活着。可调用方两种写法都有：
+           syncPickerFromRgb: rgbToHsv(rgb[0], rgb[1], rgb[2])
+           另一处:            rgbToHsv(rgb)
+         传数组进去时 r 是数组、g/b 是 undefined，
+         算出来是 [0, 0, NaN]，颜色直接错掉，而且不报错。
+         现在只留一份，并把两种签名都认下来。 */
+      function rgbToHsv(a, b, c) {
+        let r, g, b2
+        if (Array.isArray(a)) {
+          r = a[0]; g = a[1]; b2 = a[2]
+        } else {
+          r = a; g = b; b2 = c
+        }
+        const rr = r / 255, gg = g / 255, bb = b2 / 255
         const max = Math.max(rr, gg, bb)
         const min = Math.min(rr, gg, bb)
         const d = max - min
