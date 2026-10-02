@@ -124,46 +124,7 @@ export default {
       .tw-tab.on { background: var(--accent); border-color: var(--accent); color: #fff; }
       .tw-hint { font-size: 12px; color: var(--text-faint); line-height: 1.8; padding: 2px 0; }
 
-      /**
-     * 这件东西放在当前位置行不行。
-     * 行就返回 true；不行返回一句能直接给人看的原因。
-     * 拖拽落点和「拿在手上放下」都走这一套判定，规则只有一份。
-     */
-    function placeWhy(it, exceptIdx) {
-      const f = findItem(it.id)
-      if (!f || !f.art) return '这件东西不认识了'
-      const sz = artSize(f.art)
-      if (it.x < 0 || it.y < 0 || it.x + sz.w > ROOM || it.y + sz.h > ROOM) return '这里放不下，往里边挪一挪'
-      if (!f.wallOk && it.y + sz.h - 1 < floorY) return '「' + f.name + '」得放在地上，往下挪一挪'
-      for (let i = 0; i < house.items.length; i++) {
-        if (i === exceptIdx) continue
-        const o = house.items[i]
-        const g = findItem(o.id)
-        if (!g || !g.art) continue
-        const gs = artSize(g.art)
-        if (it.x < o.x + gs.w && it.x + sz.w > o.x && it.y < o.y + gs.h && it.y + sz.h > o.y) {
-          return '这里已经有东西了'
-        }
-      }
-      return true
-    }
-
-    /* 天气动画：4 帧/秒就够了，像素雨雪不需要更顺 */
-    function startWeather() {
-      stopWeather()
-      wxTimer = setInterval(() => {
-        wxT++
-        drawRoom()
-      }, 260)
-    }
-    function stopWeather() {
-      if (wxTimer) {
-        clearInterval(wxTimer)
-        wxTimer = null
-      }
-    }
-
-    /* ---------- 留言板 ---------- */
+      /* ---------- 留言板 ---------- */
       .tw-gift { display: flex; align-items: center; margin-top: 12px; }
       .tw-gift .tw-btn { flex: 1; }
       .tw-gift .tw-btn.on { background: var(--surface-2); color: #2e7d32; border: 1px solid var(--border-input); }
@@ -288,6 +249,45 @@ export default {
       el.textContent = text || ''
       el.hidden = !text
       el.style.color = bad ? '#c0392b' : ''
+    }
+
+    /**
+     * 这件东西放在当前位置行不行。
+     * 行就返回 true；不行返回一句能直接给人看的原因。
+     * 拖拽落点和「拿在手上放下」都走这一套判定，规则只有一份。
+     */
+    function placeWhy(it, exceptIdx) {
+      const f = findItem(it.id)
+      if (!f || !f.art) return '这件东西不认识了'
+      const sz = artSize(f.art)
+      if (it.x < 0 || it.y < 0 || it.x + sz.w > ROOM || it.y + sz.h > ROOM) return '这里放不下，往里边挪一挪'
+      if (!f.wallOk && it.y + sz.h - 1 < floorY) return '「' + f.name + '」得放在地上，往下挪一挪'
+      for (let i = 0; i < house.items.length; i++) {
+        if (i === exceptIdx) continue
+        const o = house.items[i]
+        const g = findItem(o.id)
+        if (!g || !g.art) continue
+        const gs = artSize(g.art)
+        if (it.x < o.x + gs.w && it.x + sz.w > o.x && it.y < o.y + gs.h && it.y + sz.h > o.y) {
+          return '这里已经有东西了'
+        }
+      }
+      return true
+    }
+
+    /* 天气动画：4 帧/秒就够了，像素雨雪不需要更顺 */
+    function startWeather() {
+      stopWeather()
+      wxTimer = setInterval(() => {
+        wxT++
+        drawRoom()
+      }, 260)
+    }
+    function stopWeather() {
+      if (wxTimer) {
+        clearInterval(wxTimer)
+        wxTimer = null
+      }
     }
 
     /* ---------- 画像素 ---------- */

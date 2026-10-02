@@ -40,6 +40,46 @@ def _blank(m):
     return ''.join('\n' if c == '\n' else ' ' for c in m.group(0))
 
 
+def strip_templates(src):
+    """把 `...` 模板字符串的内容挖空（保留换行与长度）。
+
+    这一步是必须的：视图里的 css / template 就是模板字符串，
+    往里面误插一段 JS 的话，正则会把那段当成"真代码"，
+    于是「函数明明声明了」——但它在字符串里，运行时根本不存在。
+    town.js 的 startWeather 就是这么丢的。"""
+    out = []
+    i = 0
+    while i < len(src):
+        c = src[i]
+        if c == '`':
+            j = i + 1
+            while j < len(src):
+                if src[j] == '\\':
+                    j += 2
+                    continue
+                if src[j] == '`':
+                    break
+                j += 1
+            seg = src[i:j + 1]
+            out.append('`' + ''.join('\n' if ch == '\n' else ' ' for ch in seg[1:-1]) + '`')
+            i = j + 1
+        elif c in '\'"':
+            q = c
+            j = i + 1
+            while j < len(src) and src[j] != q:
+                if src[j] == '\\':
+                    j += 1
+                j += 1
+            seg = src[i:j + 1]
+            # 内容也挖空：'rgb(' 这种写在字符串里的括号不算函数调用
+            out.append(q + ''.join('\n' if ch == '\n' else ' ' for ch in seg[1:-1]) + q)
+            i = j + 1
+        else:
+            out.append(c)
+            i += 1
+    return ''.join(out)
+
+
 def strip_comments(src):
     src = re.sub(r'/\*.*?\*/', _blank, src, flags=re.S)
     out = []
@@ -144,7 +184,7 @@ def direct_calls(text, names):
 
 
 def analyze(path):
-    lines = strip_comments(open(path, encoding='utf-8').read())
+    lines = strip_comments(strip_templates(open(path, encoding='utf-8').read()))
     global ARROWS
     ARROWS = arrow_ranges(lines)
     scopes = collect_scopes(lines)
@@ -228,6 +268,13 @@ def analyze(path):
     return problems
 
 
+# 说明：还试过两个更宽的检查，都撤掉了 ——
+#   1)「调用了但整个文件里找不到声明」：误报几十处（get anim() 这种特性开关、
+#      字符串里的 rgb(、第三方库的全局），要做准得写真正的词法分析器。
+#   2)「函数声明落在模板字符串里」：靠正则数反引号来判断模板边界，同样不准。
+# 与其留一个天天误报的工具让人不再信它，不如只留这一条验证过的。
+
+
 total = 0
 for path in sorted(glob.glob('public/views/*.js')) + ['public/app.js']:
     try:
@@ -244,6 +291,6 @@ for path in sorted(glob.glob('public/views/*.js')) + ['public/app.js']:
 
 print()
 if total:
-    print('发现 %d 处 TDZ 风险（真跑起来会抛 Cannot access ... before initialization）' % total)
+    print('发现 %d 处 TDZ 风险（会抛 Cannot access ... before initialization）' % total)
     sys.exit(1)
 print('✓ 没有 TDZ 风险')
