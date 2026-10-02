@@ -668,6 +668,23 @@ export default {
           c.fillRect(0, i, ROOM, 0.05)
         }
       }
+
+      /* 拖动时的对齐提示线。
+         拖到跟别件家具的左边 / 上边齐了，就在那一条上闪一条线 ——
+         像素级的手工对齐靠眼睛很难做准，有个线做参照省事很多。
+         线画在最上层，1 物理像素宽（用 fillRect 而不是 stroke，
+         stroke 的 1px 会被抗锯齿抹淡，在 canvas 上几乎看不见）。 */
+      const g = dragOn && dragOn.guides
+      if (g) {
+        if (g.v != null) {
+          c.fillStyle = 'rgba(91,141,239,.9)'
+          c.fillRect(g.v, 0, Math.max(1 / ROOM, 0.06), ROOM)
+        }
+        if (g.h != null) {
+          c.fillStyle = 'rgba(91,141,239,.9)'
+          c.fillRect(0, g.h, ROOM, Math.max(1 / ROOM, 0.06))
+        }
+      }
     }
 
     /* ---------- 导出成图片 ----------
@@ -1123,6 +1140,17 @@ export default {
           }
           it.x = nx
           it.y = ny
+          /* 跟其它家具比，左边或上边齐了就给一条提示线。
+             阈值取 0——像素画里差一格就是没对齐，不该有容差。 */
+          let gv = null
+          let gh = null
+          for (let k = 0; k < (house.items || []).length; k++) {
+            if (k === dragOn.i) continue
+            const o = house.items[k]
+            if (o.x === it.x) gv = it.x
+            if (o.y === it.y) gh = it.y
+          }
+          dragOn.guides = gv != null || gh != null ? { v: gv, h: gh } : null
           drawRoom()
         })
 
@@ -1131,6 +1159,8 @@ export default {
           const d = dragOn
           dragOn = null
           cv.classList.remove('dragging')
+          // guides 跟着 dragOn 一起没了，重画一次把线擦掉
+          drawRoom()
           const it = house.items[d.i]
           if (!it) {
             drawRoom()
