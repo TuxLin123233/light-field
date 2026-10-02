@@ -1694,6 +1694,19 @@ color: var(--text-muted);
         box-shadow: 0 16px 44px rgba(0, 0, 0, 0.3);
       }
 
+      .imgmode-warn {
+        font-size: 12px;
+        line-height: 1.7;
+        color: #b4762a;
+        background: #fdf5e6;
+        border: 1px solid #f0e0c0;
+        border-radius: 10px;
+        padding: 9px 11px;
+        margin-bottom: 14px;
+        text-align: left;
+      }
+      .imgmode-warn b { color: #8a5a1a; }
+
       .imgmode-title {
         font-size: 15px;
         font-weight: 800;
@@ -2291,7 +2304,7 @@ color: var(--text-muted);
           <div class="start-label">辅助工具</div>
           <label class="start-toggle">
             <input type="checkbox" id="startImage">
-            <span class="start-body"><b>📷 像素相机</b><i>把照片变成像素画再手改</i></span>
+            <span class="start-body"><b>📷 像素相机</b><i>把照片变成像素画再手改（请只用自己的照片）</i></span>
           </label>
         </div>
 
@@ -2536,6 +2549,16 @@ color: var(--text-muted);
     <div class="imgmode-overlay" id="imgModeOverlay" hidden>
       <div class="imgmode-box">
         <div class="imgmode-title">照片转成像素画后，颜色想怎么处理？</div>
+        <!--
+          版权提示不能省。
+          「把照片转成像素画」不改变原照片的著作权归属 ——
+          处理别人的照片再发布，和直接盗图在法律上是同一件事。
+          这里明说一句，既是提醒用户，也是平台已尽合理注意义务的证明。
+        -->
+        <div class="imgmode-warn">
+          ⚠️ 请只处理<b>你自己拍的照片</b>或<b>已获得授权的图片</b>。<br>
+          把他人作品转成像素画后发布，<b>仍然属于侵权</b>。
+        </div>
         <button class="imgmode-opt" type="button" data-imgmode="palette">
           <span class="imgmode-name">只用画板的 32 种颜色</span>
           <span class="imgmode-desc">颜色更统一，看起来像老游戏画面</span>
@@ -2598,8 +2621,6 @@ color: var(--text-muted);
 
     <div class="copyright">© 2026 像素小镇 · 版权所有 · 作者 Lin Sifan</div>
 
-    <button id="tipBtn" class="tip-btn" type="button">赞赏支持</button>
-
     <div class="card-overlay" id="animOverlay" hidden>
       <div class="card-box">
         <div class="card-head">
@@ -2614,24 +2635,6 @@ color: var(--text-muted);
       </div>
     </div>
 
-    <div class="tip-overlay" id="tipOverlay" hidden>
-      <div class="tip-box">
-        <div class="tip-head">
-          <span class="tip-title">赞赏支持</span>
-          <button class="tip-close" id="tipClose" type="button">关闭</button>
-        </div>
-        <div class="tip-qrs">
-          <div class="tip-qr-item">
-            <img src="/images/alipay-code.jpg" alt="支付宝收款码">
-            <b>支付宝</b>
-          </div>
-          <div class="tip-qr-item">
-            <img src="/images/tip-code.jpg" alt="微信赞赏码">
-            <b>微信赞赏</b>
-          </div>
-        </div>
-        <div class="tip-note">喜欢像素小镇？长按识别二维码 → 扫码赞赏，感谢你的支持！</div>
-      </div>
     </div>
 
     <div class="preview-overlay" id="previewOverlay" hidden>
@@ -4971,17 +4974,6 @@ color: var(--text-muted);
       }
 
       /* ---------- 赞赏 ---------- */
-      const tipOverlay = document.getElementById('tipOverlay')
-
-      document.getElementById('tipBtn').addEventListener('click', () => {
-        tipOverlay.hidden = false
-      })
-      document.getElementById('tipClose').addEventListener('click', () => {
-        tipOverlay.hidden = true
-      })
-      tipOverlay.addEventListener('click', (e) => {
-        if (e.target === tipOverlay) tipOverlay.hidden = true
-      })
 
       const uploadBtn = document.getElementById('uploadBtn')
 
@@ -5166,7 +5158,7 @@ color: var(--text-muted);
         if (e.metaKey || e.ctrlKey || e.altKey) return
         const tag = (e.target && e.target.tagName) || ''
         if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
-        if (!consentOverlay.hidden || !previewOverlay.hidden || !tipOverlay.hidden) return
+        if (!consentOverlay.hidden || !previewOverlay.hidden) return
         const k = e.key.toLowerCase()
         if (k === 'b') setTool('brush')
         else if (k === 'e') setTool('eraser')

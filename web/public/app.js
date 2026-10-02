@@ -7,6 +7,7 @@ import changelog from './views/changelog.js'
 import admin from './views/admin.js'
 import modPanel from './views/mod.js'
 import terms from './views/terms.js'
+import copyright from './views/copyright.js'
 import faq from './views/faq.js'
 import mine from './views/mine.js'
 import login from './views/login.js'
@@ -135,6 +136,7 @@ const routes = [
   { path: '/admin', component: withAutoCleanup(admin) },
   { path: '/mod', component: withAutoCleanup(modPanel) },
   { path: '/terms', component: withAutoCleanup(terms) },
+  { path: '/copyright', component: withAutoCleanup(copyright) },
   { path: '/faq', component: withAutoCleanup(faq) },
   { path: '/:pathMatch(.*)*', redirect: resolveEntrance },
 ]

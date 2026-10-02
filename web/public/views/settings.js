@@ -1088,7 +1088,15 @@ export default {
           <span class="entry-ico">📄</span>
           <span class="entry-body">
             <span class="entry-label">使用条款</span>
-            <div class="entry-desc">我下架过哪些作品 · 误下架可以一键恢复</div>
+            <div class="entry-desc">服务性质、禁止事项与责任划分</div>
+          </span>
+          <span class="entry-arrow">›</span>
+        </router-link>
+        <router-link class="entry" to="/copyright">
+          <span class="entry-ico">©️</span>
+          <span class="entry-body">
+            <span class="entry-label">版权声明与侵权投诉</span>
+            <div class="entry-desc">权利人可以在这里提交通知 · 48 小时内处理</div>
           </span>
           <span class="entry-arrow">›</span>
         </router-link>
@@ -1134,7 +1142,7 @@ export default {
       </section>
 
       <section class="group">
-        <div class="group-title">赞赏支持</div>
+        <div class="group-title">请作者喝杯咖啡</div>
         <div class="qr-row">
           <div class="qr-item">
             <img src="/images/alipay-code.jpg" alt="支付宝收款码">
@@ -1142,10 +1150,23 @@ export default {
           </div>
           <div class="qr-item">
             <img src="/images/tip-code.jpg" alt="微信赞赏码">
-            <b>微信赞赏</b>
+            <b>微信</b>
           </div>
         </div>
-        <div class="qr-note">喜欢像素小镇？长按识别二维码 → 扫码赞赏，感谢你的支持！<br>每一格光，都由大家点亮</div>
+        <!--
+          措辞是刻意这么写的，别改回「赞赏作品」那类说法。
+
+          这一段的定位是「读者自愿赠与作者个人」，用来贴补服务器和域名费用，
+          跟站上的任何作品、任何功能都**没有对价关系**。
+          写成「喜欢这幅画就赞赏」会被理解成「为内容付费」，
+          那正好踩中避风港里「未从用户提供的内容直接获得经济利益」这一条 ——
+          一旦被认定靠用户的侵权内容赚钱，前面所有免责条款全部失效。
+        -->
+        <div class="qr-note">
+          这是给作者个人的自愿赠与，用来贴补服务器和域名开销。<br>
+          <b>与站内任何作品、任何功能都没有关系</b>，也不会因此获得任何特权或授权。<br>
+          不给也完全不影响使用 —— 像素小镇一直免费，以后也是。
+        </div>
       </section>
 
       <section class="group">
