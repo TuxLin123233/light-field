@@ -389,7 +389,7 @@ export default {
         border-radius: 9px; padding: 4px; cursor: pointer; font-family: inherit;
       }
       .ch-works button.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
-      .ch-works canvas { width: 100%; aspect-ratio: 1; image-rendering: pixelated; display: block; border-radius: 5px; }
+      .ch-works canvas { width: 100%; aspect-ratio: 1; image-rendering: pixelated; display: block; border-radius: 5px; background: var(--surface); }
       .ch-works span { display: block; font-size: 9px; color: var(--text-muted); margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
       /* ---------- 气泡里的各种消息 ---------- */
@@ -1325,9 +1325,16 @@ export default {
         if (tip) tip.textContent = '正在读取你的作品…'
         try {
           const t = localStorage.getItem('lw-token') || ''
-          const res = await fetch('/api/mine', { headers: { Authorization: 'Bearer ' + t }, cache: 'no-store' })
+          /* 这个接口是 POST + {token, action:'list'}，返回 { works: [...] }。
+             之前我写成了 GET、也没带 body，接口根本没返回作品，
+             于是永远显示「还没发布过作品」—— 明明有画。 */
+          const res = await fetch('/api/mine', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t },
+            body: JSON.stringify({ token: t, action: 'list' }),
+          })
           const jd = await res.json().catch(() => ({}))
-          workList = (jd && (jd.list || jd.history)) || []
+          workList = (jd && jd.works) || []
           if (!Array.isArray(workList)) workList = []
         } catch (e) {
           workList = []
@@ -1348,10 +1355,17 @@ export default {
           .map((w, i) =>
             '<button class="' + (pickedWork && pickedWork.time === w.time ? 'on' : '') +
             '" type="button" data-work-pick="' + i + '">' +
-            '<div style="width:100%;aspect-ratio:1;background:var(--surface-2);border-radius:5px;' +
-            'display:flex;align-items:center;justify-content:center;font-size:18px">🖼️</div>' +
+            '<canvas class="ch-wthumb" data-wthumb="' + i + '"></canvas>' +
             '<span>' + esc(w.workName || '未命名') + '</span></button>')
           .join('')
+        // 接口连像素一起给了，就画真的缩略图，别拿个 🖼️ 占位糊弄
+        box.querySelectorAll('canvas[data-wthumb]').forEach((cv) => {
+          const w = workList[Number(cv.getAttribute('data-wthumb'))]
+          if (!w || !Array.isArray(w.pixels) || !window.LWThumb) return
+          try {
+            window.LWThumb.draw(cv, w.pixels, w.size, { fill: true })
+          } catch (e) {}
+        })
         if (tip) tip.textContent = '挑一幅，对方会在对话里看到它'
       }
       async function doShareWork() {
