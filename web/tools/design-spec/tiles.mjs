@@ -117,8 +117,8 @@ body { font-family: "HarmonyOS Sans SC", -apple-system, "PingFang SC", "Microsof
 <div class="body" id="t5"></div>
 <div class="foot"><span>像素小镇</span><b>light-field.pages.dev</b></div></div>
 
-<div class="tile alt"><div class="ico">🎨</div><h3>三种画法</h3>
-<p>逐格涂、按住喷、撒一把让颗粒自己堆</p>
+<div class="tile alt"><div class="ico">🎨</div><h3>所有绘画工具</h3>
+<p>三种画法 · 八个工具 · 帧动画和照片转像素</p>
 <div class="body" id="t6"></div>
 <div class="foot"><span>像素小镇</span><b>light-field.pages.dev</b></div></div>
 
@@ -227,23 +227,78 @@ DATA.surfaces.slice(0,24).forEach(s=>{const d=document.createElement('div');d.cl
  c.style.width=((wr.w+2)*S)+'px';c.style.height=((wr.h+2)*S)+'px';
  d.appendChild(c);const s=document.createElement('span');s.textContent=N[k];d.appendChild(s);put('t5',d)});
 
-/* 6 三种画法 */
-(function(){const W=['🖌️ 逐格涂','💨 按住喷','⏳ 撒一把'];
- W.forEach((label,i)=>{
-  const d=document.createElement('div');d.style.cssText='width:100%;display:flex;align-items:center;margin-bottom:10px';
-  const n=[16,32,32][i],c=cv(n,n),g=c.getContext('2d');
-  g.fillStyle='#fff';g.fillRect(0,0,n,n);
-  g.fillStyle='#e3d9c8';
-  const st=n<=16?4:n<=32?8:16;
-  for(let k=0;k<n;k+=st){g.fillRect(k,0,1,n);g.fillRect(0,k,n,1)}
-  const box=document.createElement('div');box.style.cssText='width:104px;height:104px;border:1px solid #efe7da;border-radius:12px;display:flex;align-items:center;justify-content:center;background:#fff;flex:none';
-  c.style.cssText='width:84px;height:84px;image-rendering:pixelated';
-  box.appendChild(c);d.appendChild(box);
-  const t=document.createElement('div');t.style.cssText='margin-left:18px;font-size:20px;font-weight:700;color:#3b342c';
-  t.textContent=label;d.appendChild(t);
-  const t2=document.createElement('div');t2.style.cssText='margin-left:auto;font-size:14px;color:#b0a697';
-  t2.textContent=n+'×'+n;d.appendChild(t2);
-  put('t6',d)})})();
+/* 6 所有绘画工具 —— 三种画法各配真实图案，再把八个工具和附加功能全列出来 */
+(function(){
+ const HEART=['..rr....rr..','.rRRr..rRRr.','rRRRRrrRRRRr','rRRRRRRRRRRr','rRRRRRRRRRRr',
+              '.rRRRRRRRRr.','..rRRRRRRr..','...rRRRRr...','....rRRr....','.....rr.....'];
+ const HP={r:[229,87,75],R:[170,44,38]};
+ const modes=[
+  ['🖌️','逐格涂','一格一格点',16,(g,n)=>{
+    for(let y=0;y<n;y++)for(let x=0;x<n;x++){
+      // 爱心是 10 行 × 12 列，要缩放到整个 16×16，不然只画在左上角
+      const hy=Math.floor(y*HEART.length/n), hx=Math.floor(x*HEART[0].length/n);
+      const ch=HEART[hy]?HEART[hy][hx]:'.';
+      const q=HP[ch]; if(!q)continue;
+      g.fillStyle='rgb('+q[0]+','+q[1]+','+q[2]+')'; g.fillRect(x,y,1,1);
+    }}],
+  ['💨','按住喷','喷出渐变的雾',32,(g,n)=>{
+    const c=n/2;
+    for(let y=0;y<n;y++)for(let x=0;x<n;x++){
+      const d=Math.hypot(x-c,y-c); if(d>c)continue;
+      const t=1-d/c, q=[Math.round(91+120*t),Math.round(141+80*t),Math.round(239-40*t)];
+      g.fillStyle='rgb('+q[0]+','+q[1]+','+q[2]+')';
+      if((x*7+y*13)%5<1+t*4) g.fillRect(x,y,1,1);
+    }}],
+  ['⏳','撒一把','颗粒自己往下堆',32,(g,n)=>{
+    for(let y=0;y<n;y++)for(let x=0;x<n;x++){
+      const h=n-1-Math.floor((n-2)*(1-Math.abs(x-n/2)/(n/2)));
+      if(y<h)continue;
+      const t=(y-h)/Math.max(1,(n-h)), q=[Math.round(224-60*t),Math.round(180-50*t),Math.round(96-40*t)];
+      g.fillStyle='rgb('+q[0]+','+q[1]+','+q[2]+')';
+      if((x*11+y*7)%7<5) g.fillRect(x,y,1,1);
+    }}],
+ ];
+ const row1=document.createElement('div');
+ row1.style.cssText='width:100%;display:flex;justify-content:center;align-items:flex-start;margin-bottom:15px';
+ modes.forEach(([ico,name,desc,n,draw])=>{
+  const col=document.createElement('div');col.style.cssText='width:140px;margin:0 5px;text-align:center';
+  const box=document.createElement('div');
+  box.style.cssText='width:112px;height:112px;margin:0 auto;border:1px solid #efe7da;border-radius:12px;display:flex;align-items:center;justify-content:center;background:#fff';
+  const c=cv(n,n),g=c.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,n,n); draw(g,n);
+  c.style.cssText='width:94px;height:94px;image-rendering:pixelated';
+  box.appendChild(c); col.appendChild(box);
+  const t1=document.createElement('div'); t1.style.cssText='font-size:16px;font-weight:700;color:#3b342c;margin-top:8px'; t1.textContent=ico+' '+name; col.appendChild(t1);
+  const t2=document.createElement('div'); t2.style.cssText='font-size:11.5px;color:#8c7f6b;margin-top:3px'; t2.textContent=desc+' · '+n+'×'+n; col.appendChild(t2);
+  row1.appendChild(col);
+ });
+ put('t6',row1);
+ // 八个工具
+ const lab=document.createElement('div');
+ lab.style.cssText='width:100%;text-align:center;font-size:12px;color:#8c7f6b;margin:0 0 7px';
+ lab.textContent='工具'; put('t6',lab);
+ const row2=document.createElement('div');
+ row2.style.cssText='width:100%;display:flex;flex-wrap:wrap;justify-content:center;margin-bottom:15px';
+ [['✏️','画笔'],['╱','直线'],['▭','矩形'],['◯','圆'],['🧽','橡皮'],
+  ['💧','填充'],['💉','吸管'],['✋','手型'],['🦋','镜像'],['↩️','撤销']].forEach(([i,t])=>{
+  const d=document.createElement('div');
+  d.style.cssText='width:64px;margin:0 4px 7px;padding:7px 2px;border:1px solid #efe7da;border-radius:10px;background:#fff;text-align:center';
+  const a1=document.createElement('div'); a1.style.cssText='font-size:17px;line-height:1.1'; a1.textContent=i; d.appendChild(a1);
+  const a2=document.createElement('div'); a2.style.cssText='font-size:10.5px;color:#6b5f50;margin-top:3px'; a2.textContent=t; d.appendChild(a2);
+  row2.appendChild(d);
+ });
+ put('t6',row2);
+ // 附加功能
+ const row3=document.createElement('div');
+ row3.style.cssText='width:100%;display:flex;justify-content:center';
+ [['🎞️','逐帧画导 GIF'],['📷','照片转像素'],['🎯','按题目出题']].forEach(([i,t])=>{
+  const d=document.createElement('div');
+  d.style.cssText='width:134px;margin:0 5px;padding:10px 6px;border:1px solid #efe7da;border-radius:11px;background:#fff;text-align:center';
+  const a1=document.createElement('div'); a1.style.cssText='font-size:20px;line-height:1'; a1.textContent=i; d.appendChild(a1);
+  const a2=document.createElement('div'); a2.style.cssText='font-size:11.5px;color:#6b5f50;margin-top:6px'; a2.textContent=t; d.appendChild(a2);
+  row3.appendChild(d);
+ });
+ put('t6',row3);
+})();
 
 /* 7 五套配色 —— 每套 16 色，色块放大到 27px，一行放得下 */
 (function(){
