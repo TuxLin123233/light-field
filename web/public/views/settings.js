@@ -191,6 +191,42 @@ export default {
         cursor: pointer;
       }
 
+      /* ---------- 新手引导（引导中心） ---------- */
+      .guide-list { display: flex; flex-direction: column; gap: 8px; }
+      .guide-row {
+        display: flex; align-items: center; gap: 10px;
+        padding: 11px 12px;
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        cursor: pointer;
+        font-family: inherit;
+        text-align: left;
+        width: 100%;
+        transition: transform .15s var(--lwp-ease, ease), box-shadow .15s var(--lwp-ease, ease);
+      }
+      .guide-row:active { transform: scale(.985); }
+      @media (hover: hover) {
+        .guide-row:hover { box-shadow: var(--lwp-sh-2, 0 2px 8px rgba(0,0,0,.08)); transform: translateY(-1px); }
+      }
+      .guide-row .gi { flex: none; font-size: 20px; line-height: 1; }
+      .guide-row .gb { flex: 1; min-width: 0; }
+      .guide-row .gt { font-size: 13.5px; font-weight: 700; color: var(--text); }
+      .guide-row .gd { font-size: 11.5px; color: var(--text-faint); margin-top: 2px; }
+      .guide-row .gs { flex: none; font-size: 11px; color: var(--text-faint); font-variant-numeric: tabular-nums; }
+      .guide-row .gs.done { color: #4caf7d; }
+      .guide-replay {
+        display: block; width: 100%; margin-top: 10px;
+        padding: 11px; border-radius: 12px;
+        border: 1px solid var(--border-input);
+        background: var(--surface);
+        color: var(--text-muted);
+        font-family: inherit; font-size: 13px; font-weight: 700;
+        cursor: pointer;
+      }
+      .guide-replay:active { transform: scale(.98); }
+      .guide-note { font-size: 11.5px; color: var(--text-faint); line-height: 1.7; margin-top: 9px; }
+
       /* ---------- 新手教程 ---------- */
       .guide {
         background: var(--surface);
@@ -1146,6 +1182,18 @@ export default {
       </section>
 
       <section class="group">
+        <div class="group-title">新手引导</div>
+        <!-- 引导列表由 lw-guides.js 提供内容，这里只放容器。
+             以后加一条新引导不用改这个页面。 -->
+        <div id="guideList" class="guide-list"></div>
+        <button class="guide-replay" id="guideReplay" type="button">🔄 全部重看一遍</button>
+        <div class="guide-note">
+          引导平时只在第一次进对应页面时自动弹一次。<br>
+          想重看就点上面，或者点某一条单独看。
+        </div>
+      </section>
+
+      <section class="group">
         <div class="group-title">请作者喝杯咖啡</div>
         <div class="qr-row">
           <div class="qr-item">
@@ -1803,6 +1851,79 @@ export default {
           if (window.sfx) window.sfx('tick')
         })
       }
+
+      /* ---------- 新手引导中心 ----------
+         列表由 lw-guides.js 提供内容，这里只负责渲染和触发。
+         加一条新引导不用改这个页面。 */
+      ;(function () {
+        const host = document.getElementById('guideList')
+        if (!host) return
+        const G = window.LWGuides
+        if (!G) {
+          host.innerHTML = '<div class="guide-note">引导模块没加载上，刷新一下试试。</div>'
+          return
+        }
+        function render() {
+          const items = G.list().filter((g) => g.key !== 'tour')
+          host.innerHTML = ''
+          items.forEach((g) => {
+            const b = document.createElement('button')
+            b.className = 'guide-row'
+            b.type = 'button'
+            b.innerHTML =
+              '<span class="gi">' + g.icon + '</span>' +
+              '<span class="gb"><span class="gt">' + g.name + '</span>' +
+              '<div class="gd">' + g.desc + '</div></span>' +
+              '<span class="gs' + (g.seen ? ' done' : '') + '">' +
+              (g.seen ? '已看过' : g.steps + ' 步') + '</span>'
+            b.addEventListener('click', () => {
+              if (window.sfx) window.sfx('open')
+              // 引导要在目标页面上才能高亮到对应元素，所以先跳过去再跑
+              const home = { paint: '/paint', gallery: '/gallery', town: '/town', mine: '/mine', chat: '/chat' }[g.key]
+              if (home && window.__lwRouter && window.__lwRouter.currentRoute.value.path !== home) {
+                window.__lwRouter.push(home)
+                setTimeout(() => G.run(g.key), 700)
+              } else {
+                G.run(g.key)
+              }
+            })
+            host.appendChild(b)
+          })
+          // 总引导单独一条醒目的
+          const tour = G.list().find((g) => g.key === 'tour')
+          if (tour) {
+            const b = document.createElement('button')
+            b.className = 'guide-row'
+            b.type = 'button'
+            b.style.borderColor = 'var(--accent)'
+            b.innerHTML =
+              '<span class="gi">' + tour.icon + '</span>' +
+              '<span class="gb"><span class="gt">' + tour.name + '</span>' +
+              '<div class="gd">' + tour.desc + '</div></span>' +
+              '<span class="gs">' + tour.steps + ' 步</span>'
+            b.addEventListener('click', () => {
+              if (window.sfx) window.sfx('open')
+              if (window.__lwRouter) window.__lwRouter.push('/paint')
+              setTimeout(() => {
+                // 总引导跨好几个页面，所以分步跳 —— 每步弹出的位置由
+                // lw-guides 过滤掉当前页没有的元素，不会卡住
+                G.run('tour')
+              }, 700)
+            })
+            host.appendChild(b)
+          }
+        }
+        render()
+        const replay = document.getElementById('guideReplay')
+        if (replay) {
+          replay.addEventListener('click', async () => {
+            const n = G.reset()
+            render()
+            if (window.sfx) window.sfx('tick')
+            await lwAlert('已重置 ' + n + ' 条引导记录。\n下次进对应页面会重新自动弹出。')
+          })
+        }
+      })()
 
       const sfxSwitch = document.getElementById('sfxSwitch')
       if (sfxSwitch) {

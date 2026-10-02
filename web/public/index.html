@@ -679,6 +679,40 @@
         background: var(--accent, #5b8def); transition: width .25s linear;
       }
     </style>
+    <style id="global-motion">
+      /* ---------- 全局「减弱动态效果」兜底 ----------
+         上面那几层（anim / polish / fx / deco）各自都写了保护块，
+         但都是**列类名**的写法 —— 每加一个新动画就得回来补一条，
+         加漏一个，开了减弱动效的用户就还会看到那一个在动。
+
+         这里用通配再兜一层：把动画时长压到近乎 0、只播一次，
+         过渡也压到 0。不管以后谁加了什么动画，都自动被覆盖。
+         这是各家设计系统通用的做法，比逐条枚举可靠得多。 */
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: .01ms !important;
+          animation-delay: 0ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: .01ms !important;
+          transition-delay: 0ms !important;
+          scroll-behavior: auto !important;
+        }
+        /* 无限循环的那些直接停掉，不然会「闪一下」 */
+        [class*='lwa-'][class*='pulse'],
+        [class*='lwa-'][class*='beat'],
+        [class*='lwa-'][class*='float'],
+        [class*='lwa-'][class*='glow'],
+        [class*='lwa-'][class*='breathe'],
+        [class*='lwa-'][class*='shine'],
+        [class*='lwa-'][class*='ring'],
+        [class*='lwdeco-wave'] i,
+        [class*='lwfx-unread']::after {
+          animation: none !important;
+        }
+      }
+    </style>
     <style id="global-noselect">
       /* ---------- 全站禁止选中文字 ----------
          起因：按钮、卡片这些交互元素上，手指按下去稍微一划就选中了一片文字，
@@ -1183,6 +1217,7 @@
     <script src="/lw-polish.js"></script>
     <script src="/lw-fx.js"></script>
     <script src="/lw-deco.js"></script>
+    <script src="/lw-guides.js"></script>
     <script src="/lw-dialog.js"></script>
     <script src="/lw-workmenu.js"></script>
   </head>

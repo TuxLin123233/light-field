@@ -103,6 +103,191 @@
   to   { background-position: 40px 0 }
 }
 
+/* ============ 第二批关键帧（更丰富的入场与强调） ============ */
+/* 入场变体 */
+@keyframes lwa-blur-in   { from { opacity: 0; filter: blur(7px) } to { opacity: 1; filter: blur(0) } }
+@keyframes lwa-scale-in  { from { opacity: 0; transform: scale(.8) } to { opacity: 1; transform: none } }
+@keyframes lwa-rotate-in { from { opacity: 0; transform: rotate(-8deg) scale(.92) }
+                           to { opacity: 1; transform: none } }
+@keyframes lwa-skew-in   { from { opacity: 0; transform: skewY(4deg) translateY(16px) }
+                           to { opacity: 1; transform: none } }
+@keyframes lwa-flipY-in  { from { opacity: 0; transform: perspective(700px) rotateY(22deg) }
+                           to { opacity: 1; transform: none } }
+@keyframes lwa-drop-in   { 0% { opacity: 0; transform: translateY(-28px) scale(.9) }
+                           55% { opacity: 1; transform: translateY(4px) scale(1.02) }
+                           75% { transform: translateY(-2px) }
+                           100% { opacity: 1; transform: none } }
+@keyframes lwa-slide-blur { from { opacity: 0; transform: translateX(26px); filter: blur(4px) }
+                            to { opacity: 1; transform: none; filter: blur(0) } }
+@keyframes lwa-unfold     { from { opacity: 0; transform: scaleY(.4); transform-origin: top }
+                            to { opacity: 1; transform: none } }
+@keyframes lwa-expand     { from { opacity: 0; clip-path: inset(0 50% 0 50% round 12px) }
+                            to { opacity: 1; clip-path: inset(0 0 0 0 round 12px) } }
+
+/* 强调变体 */
+@keyframes lwa-wobble {
+  0%, 100% { transform: translateX(0) }
+  15% { transform: translateX(-9px) rotate(-2deg) }
+  30% { transform: translateX(7px) rotate(1.6deg) }
+  45% { transform: translateX(-5px) rotate(-1deg) }
+  60% { transform: translateX(3px) rotate(.6deg) }
+  80% { transform: translateX(-1px) }
+}
+@keyframes lwa-jello {
+  0%, 100% { transform: scale(1, 1) }
+  22% { transform: scale(1.22, .8) }
+  38% { transform: scale(.82, 1.2) }
+  54% { transform: scale(1.1, .92) }
+  70% { transform: scale(.95, 1.05) }
+  85% { transform: scale(1.02, .98) }
+}
+@keyframes lwa-tada {
+  0% { transform: scale(1) rotate(0) }
+  10%, 20% { transform: scale(.92) rotate(-3deg) }
+  30%, 50%, 70%, 90% { transform: scale(1.1) rotate(3deg) }
+  40%, 60%, 80% { transform: scale(1.1) rotate(-3deg) }
+  100% { transform: scale(1) rotate(0) }
+}
+@keyframes lwa-rubber {
+  0% { transform: scale(1, 1) }
+  30% { transform: scale(1.26, .74) }
+  40% { transform: scale(.74, 1.26) }
+  50% { transform: scale(1.14, .86) }
+  65% { transform: scale(.94, 1.06) }
+  75% { transform: scale(1.04, .96) }
+  100% { transform: scale(1, 1) }
+}
+@keyframes lwa-heartbeat {
+  0%, 100% { transform: scale(1) }
+  14% { transform: scale(1.2) }
+  28% { transform: scale(1) }
+  42% { transform: scale(1.14) }
+  70% { transform: scale(1) }
+}
+@keyframes lwa-swing {
+  20% { transform: rotate(14deg) }
+  40% { transform: rotate(-10deg) }
+  60% { transform: rotate(6deg) }
+  80% { transform: rotate(-4deg) }
+  100% { transform: rotate(0) }
+}
+@keyframes lwa-headshake {
+  0% { transform: translateX(0) }
+  6.5% { transform: translateX(-5px) rotateY(-9deg) }
+  18.5% { transform: translateX(4px) rotateY(7deg) }
+  31.5% { transform: translateX(-3px) rotateY(-5deg) }
+  43.5% { transform: translateX(2px) rotateY(3deg) }
+  50% { transform: translateX(0) }
+}
+@keyframes lwa-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(91,141,239,0) }
+  50%      { box-shadow: 0 0 16px 3px rgba(91,141,239,.45) }
+}
+@keyframes lwa-shine {
+  0%   { background-position: -220% 0 }
+  100% { background-position: 320% 0 }
+}
+@keyframes lwa-breathe {
+  0%, 100% { transform: scale(1); opacity: 1 }
+  50%      { transform: scale(1.045); opacity: .88 }
+}
+@keyframes lwa-ring {
+  0%   { transform: scale(.6); opacity: .7 }
+  100% { transform: scale(1.9); opacity: 0 }
+}
+@keyframes lwa-typing-dot {
+  0%, 60%, 100% { transform: translateY(0); opacity: .45 }
+  30%           { transform: translateY(-4px); opacity: 1 }
+}
+
+/* ============ 第二批工具类 ============ */
+.lwa-blur-in   { animation: lwa-blur-in   .42s ease-out both }
+.lwa-scale-in  { animation: lwa-scale-in  .3s  cubic-bezier(.2,1.2,.4,1) both }
+.lwa-rotate-in { animation: lwa-rotate-in .38s cubic-bezier(.2,1.15,.4,1) both }
+.lwa-skew-in   { animation: lwa-skew-in   .4s  cubic-bezier(.2,1.1,.4,1) both }
+.lwa-flipY-in  { animation: lwa-flipY-in  .48s cubic-bezier(.2,1.1,.4,1) both }
+.lwa-drop-in   { animation: lwa-drop-in   .52s cubic-bezier(.3,1.25,.4,1) both }
+.lwa-slide-blur{ animation: lwa-slide-blur .42s ease-out both }
+.lwa-unfold    { animation: lwa-unfold    .34s cubic-bezier(.2,1.15,.4,1) both }
+.lwa-expand    { animation: lwa-expand    .4s  cubic-bezier(.2,1.1,.4,1) both }
+
+.lwa-wobble    { animation: lwa-wobble    .72s ease-in-out }
+.lwa-jello     { animation: lwa-jello     .72s ease-in-out }
+.lwa-tada      { animation: lwa-tada      1s   ease-in-out }
+.lwa-rubber    { animation: lwa-rubber    .8s  ease-out }
+.lwa-heartbeat { animation: lwa-heartbeat 1.3s ease-in-out infinite }
+.lwa-swing     { animation: lwa-swing     .72s ease-in-out; transform-origin: top center }
+.lwa-headshake { animation: lwa-headshake .72s cubic-bezier(.36,.07,.19,.97) }
+.lwa-glow      { animation: lwa-glow      2s   ease-in-out infinite }
+.lwa-breathe   { animation: lwa-breathe   3s   ease-in-out infinite }
+
+/* 掠光：给「新」标记、按钮加一道扫过的高光 */
+.lwa-shine {
+  position: relative;
+  overflow: hidden;
+}
+.lwa-shine::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(100deg, transparent 35%, rgba(255,255,255,.55) 50%, transparent 65%);
+  background-size: 220% 100%;
+  background-repeat: no-repeat;
+  animation: lwa-shine 1.8s ease-in-out infinite;
+  pointer-events: none;
+}
+html[data-theme='dark'] .lwa-shine::after {
+  background: linear-gradient(100deg, transparent 35%, rgba(255,255,255,.16) 50%, transparent 65%);
+  background-size: 220% 100%;
+}
+
+/* 扩散圆环：点击、通知、聚焦 */
+.lwa-ring { position: relative }
+.lwa-ring::before {
+  content: '';
+  position: absolute; inset: 0;
+  border-radius: inherit;
+  border: 2px solid var(--accent, #5b8def);
+  animation: lwa-ring 1.4s ease-out infinite;
+  pointer-events: none;
+}
+
+/* 打字点：聊天「正在输入」 */
+.lwa-dots { display: inline-flex; gap: 3px; align-items: center }
+.lwa-dots i {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: currentColor;
+  animation: lwa-typing-dot 1.15s ease-in-out infinite;
+}
+.lwa-dots i:nth-child(2) { animation-delay: .16s }
+.lwa-dots i:nth-child(3) { animation-delay: .32s }
+
+/* ============ 自动应用：更细的地方 ============ */
+/* 区块标题左侧加一条会「长出来」的竖线 */
+.card-title, .group-title, .mp-head h1 {
+  position: relative;
+}
+.page > .card, .page > section {
+  animation: lwa-scale-in .32s cubic-bezier(.2,1.15,.4,1) both;
+}
+/* 卡片依次错开，避免整页同时弹 */
+.page > .card:nth-of-type(1), .page > section:nth-of-type(1) { animation-delay: .02s }
+.page > .card:nth-of-type(2), .page > section:nth-of-type(2) { animation-delay: .06s }
+.page > .card:nth-of-type(3), .page > section:nth-of-type(3) { animation-delay: .1s }
+.page > .card:nth-of-type(4), .page > section:nth-of-type(4) { animation-delay: .14s }
+.page > .card:nth-of-type(5), .page > section:nth-of-type(5) { animation-delay: .18s }
+.page > .card:nth-of-type(n+6), .page > section:nth-of-type(n+6) { animation-delay: .2s }
+
+/* 图标类元素轻微呼吸，让静态页面有生气（幅度很小，不抢注意力） */
+.entry-ico, .ml-ico, .ach-ico, .tw-item canvas {
+  transition: transform .22s cubic-bezier(.2,1.3,.4,1);
+}
+@media (hover: hover) {
+  .entry:hover .entry-ico, .m-link:hover .ml-ico { transform: scale(1.14) rotate(-4deg) }
+  .tw-plot:hover canvas { transform: translateY(-2px) }
+}
+/* 点按时的图标反馈 */
+.entry:active .entry-ico, .m-link:active .ml-ico { transform: scale(.92) }
+
 /* ============ 可直接用的工具类 ============ */
 .lwa-fade  { animation: lwa-fade  .3s ease-out both }
 .lwa-up    { animation: lwa-up    .34s cubic-bezier(.2,1.15,.4,1) both }
@@ -192,14 +377,22 @@ button, [role='button'], .lwa-tap {
 .lwa-io.lwa-in { opacity: 1; transform: none }
 
 @media (prefers-reduced-motion: reduce) {
-  .lwa-fade, .lwa-up, .lwa-down, .lwa-left, .lwa-right, .lwa-pop, .lwa-zoom, .lwa-flip,
-  .lwa-pulse, .lwa-beat, .lwa-shake, .lwa-bounce, .lwa-float, .lwa-flash, .lwa-spin,
-  .page, #app > * > .page, .lwa-stagger > * {
+  /* ★ 用属性选择器通配，不要一个个列类名。
+     列名字的话每加一个新动画都会漏一个 —— 我第二批加了 20 个，
+     原来那份清单一个都没覆盖到，等于「减弱动效」形同虚设。
+     [class*='lwa-'] 能命中所有工具类，加多少都自动跟上。 */
+  [class*='lwa-'],
+  .page,
+  #app > * > .page,
+  .lwa-stagger > *,
+  .page > .card,
+  .page > section {
     animation: none !important;
   }
   .lwa-io { opacity: 1 !important; transform: none !important }
   button:active, [role='button']:active { transform: none !important }
-  .lwa-skel { animation: none !important }
+  [class*='lwa-']::before, [class*='lwa-']::after { animation: none !important }
+  .entry-ico, .ml-ico, .ach-ico, .tw-item canvas { transition: none !important }
 }
 `
 

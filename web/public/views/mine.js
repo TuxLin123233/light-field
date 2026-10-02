@@ -630,6 +630,12 @@ export default {
     <div id="likedSlot"></div>
   </div>`,
   mounted() {
+    /* 首次进这页自动弹一次引导（看过就不再弹）。
+       内容在 lw-guides.js，这里只声明「这页有引导」。 */
+    try {
+      if (window.LWGuides) window.LWGuides.auto('mine', 1200)
+    } catch (e) {}
+
     const $ = (id) => document.getElementById(id)
 
     /* 账本来自服务端。启动时 dust 模块已经静默拉过一次了，

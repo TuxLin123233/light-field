@@ -2660,26 +2660,11 @@ color: var(--text-muted);
               return c.trim().indexOf('paint_consent=') === 0
             })
           if (!has) document.getElementById('consentOverlay').removeAttribute('hidden')
-          else if (window.LWDeco && window.LWDeco.guide) {
-            /* 老用户（已同意过）且第一次用新引导 —— 只在没看过时弹一次。
-               用 localStorage 记，和 consent 的 cookie 分开：
-               consent 是法律确认，引导只是教学，两件事不该共用一个标记。 */
-            var seen = false
-            try { seen = localStorage.getItem('lw-guide-paint') === '1' } catch (e2) {}
-            if (!seen) {
-              setTimeout(function () {
-                window.LWDeco.guide([
-                  { el: '#board', title: '这里是画布', text: '点一下就能上色，按住拖动可以连续涂。' },
-                  { el: '.size-row, .sizes, [data-size]', title: '选画布尺寸', text: '16×16 最快，64×64 最细。' },
-                  { el: '#uploadBtn, .upload', title: '画完点这里', text: '发布到社区，别人就能看到、送你光尘。', pad: 8 },
-                ], {
-                  doneText: '开始画吧',
-                  onDone: function () {
-                    try { localStorage.setItem('lw-guide-paint', '1') } catch (e3) {}
-                  },
-                })
-              }, 900)
-            }
+          else if (window.LWGuides) {
+            /* 老用户（已同意过）才弹引导 —— 新用户先看到的是法律确认，
+               两个浮层叠着会很乱。
+               内容与「看过没」都由 lw-guides.js 管，各页共用一套。 */
+            window.LWGuides.auto('paint', 900)
           }
         } catch (e) {}
       })()

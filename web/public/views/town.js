@@ -210,6 +210,12 @@ export default {
     </div>
   `,
   mounted() {
+    /* 首次进这页自动弹一次引导（看过就不再弹）。
+       内容在 lw-guides.js，这里只声明「这页有引导」。 */
+    try {
+      if (window.LWGuides) window.LWGuides.auto('town', 1200)
+    } catch (e) {}
+
     const $ = (id) => document.getElementById(id)
     const esc = (s) =>
       String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
