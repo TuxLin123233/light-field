@@ -2107,53 +2107,63 @@ export default {
              所以不会出现「下去了上不来」的死局。
        底下那层的对应位置也生成时留了梯子（见 isHoleSpot），
        但玩家如果自己挖了个新洞下去，就得自己带梯子。 */
-    function canDescend() {
-      const here = getTile(P.x, P.y)
-      if (P.layer === 0) return here.k === 'cave_entrance'
-      if (P.layer === 1) {
-        const below = getTile(P.x, P.y, 2)
-        return !TILE[below.k].solid || below.k === 'air'
-      }
-      return false
-    }
+    /* ---------- 层间移动 ----------
+       ★ 原来要求「站在洞穴口上才能下去」，可洞穴口是 0.28% 的稀有格子 ——
+       实测最近的一个在 55 格外，等于「下去」这个按钮**永远点不动**，
+       因为下不去，「上来」也就跟着白搭。用户说的「下去和上来没用」就是这个。
+
+       现在改成：**哪儿都能往下挖**，而且下去的时候会自动在你落脚的地方
+       放一架「向上梯子」—— 这样一定上得来，不会把自己关在地下。
+       洞穴口保留，当成一个「天然的快捷通道」（站上去按下去少挖一层）。 */
+    function canDescend() { return P.layer < 2 }
     function canAscend() {
       if (P.layer === 0) return false
-      return getTile(P.x, P.y).k === 'ladder_up'
+      if (getTile(P.x, P.y).k === 'ladder_up') return true
+      return count('ladder_up_item') > 0
     }
 
     function changeLayer(delta) {
       const to = P.layer + delta
-      if (to < 0 || to > 2) return toast('到头了')
+      if (to < 0) return toast('已经在地表了')
+      if (to > 2) return toast('已经是最深的一层了')
       if (delta > 0) {
-        if (!canDescend()) {
-          return toast(P.layer === 0 ? '要站在洞穴口上才能下去' : '脚下不是空的，挖开再说')
-        }
-      } else {
-        if (!canAscend()) return toast('要站在向上梯子上才能上去（梯子用 7 根木棍合成）')
-      }
-      P.layer = to
-      P.moving = null
-      ensureAround(P.x, P.y, 2, P.layer)
-      // 落地：换层之后也要找地方站稳
-      {
+        const fromLayer = P.layer
+        P.layer = to
+        ensureAround(P.x, P.y, 2, P.layer)
+        // 落点：往下钻出来的洞不一定是空的，找个能站的地方
         const sp = findStand(P.x, P.y, P.layer)
         P.x = sp.x; P.y = sp.y
+        /* ★ 在落脚点放一架向上梯子。
+           这是「一定上得去」的保证 —— 不然玩家挖下去发现四面是石头，
+           就只能等着重开世界了。 */
+        setTile(P.x, P.y, 'ladder_up', P.layer)
+        // 上一层对应位置挖个洞，视觉上像是从那儿钻下来的
+        if (fromLayer >= 0 && getTile(P.x, P.y, fromLayer).k !== 'cave_entrance') {
+          setTile(P.x, P.y, 'hole_down', fromLayer)
+        }
+        P.rx = P.x; P.ry = P.y
+        mobs = []
+        for (let i = 0; i < 6; i++) spawnMob()
+        toast('往下挖到了' + LAYER_NAME[P.layer] + '（落脚点留了架梯子，随时能上去）')
+      } else {
+        if (!canAscend()) {
+          if (getTile(P.x, P.y).k !== 'ladder_up') {
+            return toast('要站在「向上梯子」上，或者身上带一架（7 根木棍合成）')
+          }
+        }
+        const fromLayer = P.layer
+        P.layer = to
+        ensureAround(P.x, P.y, 2, P.layer)
+        const sp = findStand(P.x, P.y, P.layer)
+        P.x = sp.x; P.y = sp.y; P.rx = P.x; P.ry = P.y
+        mobs = []
+        for (let i = 0; i < 4; i++) spawnMob()
+        toast('爬回了' + LAYER_NAME[P.layer])
       }
-      P.rx = P.x; P.ry = P.y
-      mobs = []
-      for (let i = 0; i < (P.layer === 0 ? 4 : 6); i++) spawnMob()
-      toast('来到' + LAYER_NAME[P.layer])
       try { window.sfx && window.sfx('nav') } catch (e) {}
       refreshClock(); refreshPane(); render()
     }
 
-    /* ⛏ 键：只管挖。
-       原来这里还想「手上有方块就顺手放下去」，但俯视视角下
-       面前几乎总是有地面，结果就是「想挖却放不了、想放也放不了」，
-       两边都别扭。现在分工明确：
-         ⛏ 中间键 = 挖（也能打怪）
-         🧱 右边按钮 / Shift+点 = 放
-       手机上原来只能靠 Shift，等于放不了东西，所以右边专门加了个按钮。 */
     function use() {
       mine()
     }
@@ -2478,9 +2488,12 @@ export default {
         lc.textContent = ['🟩 地表', '🕳️ 洞穴', '🌑 深层'][P.layer]
         lc.style.color = P.layer === 0 ? '#b6f0c8' : P.layer === 1 ? '#d8c8a0' : '#b8a0d8'
       }
+      /* 按钮不置灰了。之前「下去」因为在稀有的洞穴口上才可用，
+         一直是灰的、点了也没反应，看着就像坏的。
+         现在下去永远可用；上来万一条件不够，点了会弹一句说明。 */
       const dn = $('wdDown'), up = $('wdUp')
-      if (dn) dn.disabled = !canDescend()
-      if (up) up.disabled = !canAscend()
+      if (dn) dn.disabled = false
+      if (up) up.disabled = false
     }
 
     function itemSq(it, size) {
@@ -2863,9 +2876,10 @@ export default {
         '· 右边「🧱 放一个」（或 Shift + 点）：把手上的方块盖到面前<br>' +
         '· 1~9 换手上的槽位　E 吃东西<br>' +
         '<b>上下层</b><br>' +
-        '· 站在<b>洞穴口</b>上点「⬇ 下去」进洞穴层<br>' +
-        '· 站在<b>向上梯子</b>上点「⬆ 上来」回地表<br>' +
-        '· 梯子用 7 根木棍合成，自己挖的新洞要自己带梯子<br>' +
+        '· 「⬇ 下去」<b>在哪儿都能按</b> —— 直接往下挖一层到洞穴层，再按就是深层<br>' +
+        '· 下去时会在你落脚的地方<b>自动留一架向上梯子</b>，所以一定上得来<br>' +
+        '· 「⬆ 上来」要站在向上梯子上；自己带一架（7 根木棍合成）也行<br>' +
+        '· 地表那些<b>洞穴口</b>是天然通道，站上去按「下去」少挖一层<br>' +
         '<b>小心</b><br>' +
         '· 天黑会刷怪，火把能照亮　岩浆会烫伤<br>' +
         '· 血没了回出生点，掉一半东西' +
@@ -3163,6 +3177,12 @@ export default {
       boss: () => (bossRef ? { hp: bossRef.hp, phase: bossRef.phase, max: bossRef.def.hp } : null),
       hurtBoss: (n) => { if (bossRef) bossRef.hp -= n },
       layer: (l) => { P.layer = l },
+      canDown: () => canDescend(),
+      canUp: () => canAscend(),
+      down: () => changeLayer(1),
+      up: () => changeLayer(-1),
+      btnState: () => ({ down: $('wdDown') ? $('wdDown').disabled : null, up: $('wdUp') ? $('wdUp').disabled : null }),
+      here: () => getTile(P.x, P.y).k,
       farm: () => ({ tilled: tilledCount, planted: plantedCount, harvested: harvestedCount, traded: tradedCount, boss: bossKills }),
       setSeed: (v) => { switchWorld(v); return WORLD_SEED },
       seedOf: (v) => seedOf(v),
