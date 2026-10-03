@@ -249,6 +249,7 @@ export default {
         <div class="wd-bar" id="wdBar"></div>
         <!-- 下沉 / 上来 -->
         <div class="wd-layerbtns">
+          <button id="wdPlace" type="button">🧱 放一个</button>
           <button id="wdDown" type="button">⬇ 下去</button>
           <button id="wdUp" type="button">⬆ 上来</button>
         </div>
@@ -1177,6 +1178,35 @@ export default {
       ctx.strokeRect(hx + 1, hy + 1, c - 2, c - 2)
       hover = { x: fx, y: fy }
 
+      /* 挖掘进度。
+         ★ 原来挖一个方块要连点好几次（比如箱子 8 下），但画面上
+         **一点反馈都没有**，玩家根本不知道自己有没有在挖、还差多少 ——
+         玩起来就像「点不动」。现在在目标格上画一圈进度环。 */
+      if (P.mining && P.mining.x === fx && P.mining.y === fy) {
+        const t = getTile(fx, fy)
+        const tool = ITEMS[heldItem()]
+        let speed = 1
+        if (tool && tool.tool && tool.tool === t.tool) speed = tool.power
+        const dur = Math.max(0.05, t.hard / speed)
+        const k = Math.min(1, P.mining.t / dur)
+        // 底圈
+        ctx.strokeStyle = 'rgba(0,0,0,.35)'
+        ctx.lineWidth = Math.max(2, c * 0.14)
+        ctx.beginPath()
+        ctx.arc(hx + c / 2, hy + c / 2, c * 0.42, 0, 6.284)
+        ctx.stroke()
+        // 进度弧
+        ctx.strokeStyle = k > 0.75 ? 'rgba(140,240,160,.95)' : 'rgba(255,225,140,.95)'
+        ctx.beginPath()
+        ctx.arc(hx + c / 2, hy + c / 2, c * 0.42, -1.5708, -1.5708 + 6.284 * k)
+        ctx.stroke()
+        // 四角敲击痕
+        ctx.fillStyle = 'rgba(255,255,255,' + (0.2 + k * 0.5) + ')'
+        const d2 = Math.max(1, c * 0.1)
+        ctx.fillRect(hx + 2, hy + 2, d2, d2)
+        ctx.fillRect(hx + c - 2 - d2, hy + c - 2 - d2, d2, d2)
+      }
+
       // 夜色
       const na = nightAlpha()
       if (na > 0.01) {
@@ -1378,11 +1408,20 @@ export default {
       let speed = 1
       if (tool && tool.tool && tool.tool === t.tool) speed = tool.power
       const dur = Math.max(0.05, t.hard / speed)
+      /* 挖掘是「连敲几下才掉」的：每敲一下进度加一点，
+         敲够 dur 秒（按方块硬度和手上工具算）才真的挖掉。
+         画面上那圈进度环就是读这里的数据画的，所以看得见还差多少。 */
       if (P.mining && P.mining.x === f.x && P.mining.y === f.y) {
-        P.mining.t += 0.12
-        if (P.mining.t < dur) return
+        P.mining.t += 0.14
+        render()
+        if (P.mining.t < dur) {
+          try { window.sfx && window.sfx('tick') } catch (e) {}
+          return
+        }
       } else {
-        P.mining = { x: f.x, y: f.y, t: 0.12 }
+        P.mining = { x: f.x, y: f.y, t: 0.14 }
+        render()
+        try { window.sfx && window.sfx('tick') } catch (e) {}
         return
       }
       // 挖掉
@@ -1409,11 +1448,19 @@ export default {
       if (count(k) <= 0) return toast('没有了')
       const f = frontTile()
       const cur = getTile(f.x, f.y)
-      if (cur.k !== 'air' && !(cur.k === 'water' || cur.k === 'deep_water')) return toast('那儿有东西')
-      // 不能悬空放（除了植物和火把）
-      const below = getTile(f.x, f.y + 1)
-      const soft = !TILE[placeAs].solid
-      if (!below.solid && !soft) return toast('下面没支撑')
+      /* ★ 这里原来是「目标必须是 air 才能放」—— 但这是俯视视角，
+         地表每一格都是草地/沙地/石头，**根本没有 air**，
+         所以放东西必然提示「那儿有东西」，一个都放不下去。
+         用户反馈的「无法放置物品」就是这个。
+
+         俯视视角下「放置」的正确含义是**替换地面**：
+         草地、沙地、水面这些都能被盖掉，只有真正挡路的
+         （树干、箱子、砖墙…）才不让盖，得先挖掉。
+
+         另外原来还有一句「下面没支撑」——那是横版视角的规则，
+         俯视视角没有重力，每格都在同一层，这句纯属从别处抄来的，
+         一并去掉。 */
+      if (blocks(cur)) return toast('那儿有东西挡着，先挖掉')
       setTile(f.x, f.y, placeAs)
       take(k, 1)
       placedCount++
@@ -1469,14 +1516,14 @@ export default {
       refreshClock(); refreshPane(); render()
     }
 
+    /* ⛏ 键：只管挖。
+       原来这里还想「手上有方块就顺手放下去」，但俯视视角下
+       面前几乎总是有地面，结果就是「想挖却放不了、想放也放不了」，
+       两边都别扭。现在分工明确：
+         ⛏ 中间键 = 挖（也能打怪）
+         🧱 右边按钮 / Shift+点 = 放
+       手机上原来只能靠 Shift，等于放不了东西，所以右边专门加了个按钮。 */
     function use() {
-      // ⛏ 键：手上有方块就放，否则挖
-      const k = heldItem()
-      if (k && ITEMS[k] && count(k) > 0 && (ITEMS[k].place || TILE[k])) {
-        const f = frontTile()
-        const cur = getTile(f.x, f.y)
-        if (cur.k === 'air' || cur.k === 'water') return place()
-      }
       mine()
     }
 
@@ -1848,6 +1895,7 @@ export default {
       })
     })
 
+    $('wdPlace').onclick = () => place()
     $('wdDown').onclick = () => changeLayer(1)
     $('wdUp').onclick = () => changeLayer(-1)
     $('wdSave').onclick = () => { saveAll(); toast('存好了'); try { window.sfx && window.sfx('save') } catch (e) {} }
@@ -1861,8 +1909,8 @@ export default {
         '· 方向键 / WASD，**按住就会一直走**（手机上按住左下角方向键）<br>' +
         '· 走不了的地方是墙：树干、仙人掌、箱子、遗迹砖墙这些<br>' +
         '<b>动手</b><br>' +
-        '· 空格 或 点画布：挖面前的方块 / 打面前的生物<br>' +
-        '· Shift + 点：把手上的方块放到面前<br>' +
+        '· 空格 / 点画布 / 中间的 ⛏：挖面前的方块、或打面前的生物<br>' +
+        '· 右边「🧱 放一个」（或 Shift + 点）：把手上的方块盖到面前<br>' +
         '· 1~9 换手上的槽位　E 吃东西<br>' +
         '<b>上下层</b><br>' +
         '· 站在<b>洞穴口</b>上点「⬇ 下去」进洞穴层<br>' +
@@ -1967,6 +2015,12 @@ export default {
       move: (dir) => tryMove(dir),
       hold: (dir, on) => { held[dir] = !!on },
       at: () => ({ x: P.x, y: P.y, layer: P.layer, moving: !!P.moving }),
+      place: () => place(),
+      give: (k, nn) => give(k, nn || 1),
+      hold: (k) => { hotbar[sel] = k; refreshBar() },
+      count: (k) => count(k),
+      mine: () => mine(),
+      front: () => frontTile(),
       tile: (x, y, l) => { const t = getTile(x, y, l == null ? P.layer : l); return t.k + (blocks(t) ? '(挡路)' : '(能走)') },
       grid: (x0, y0, w, h) => {
         const rows = []
