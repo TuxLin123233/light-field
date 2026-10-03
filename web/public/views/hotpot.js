@@ -3,12 +3,78 @@ export default {
   name: 'town-hotpot',
   title: '大锅饭',
   css: `
-    .hp-page { max-width: 560px; margin: 0 auto; padding: 14px 14px calc(96px + env(safe-area-inset-bottom, 0px)); }
-    .hp-head { display: flex; align-items: center; margin-bottom: 10px; }
-    .hp-back { font-size: 14px; color: var(--text-muted2); text-decoration: none; }
-    .hp-title { font-size: 18px; font-weight: 800; color: var(--text); margin-left: 10px; flex: 1; }
-    .hp-sum { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin-bottom: 12px; color: var(--text); }
-    .hp-arena { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 14px; margin-bottom: 12px; text-align: center; }
+    .hp-page { max-width: 560px; margin: 0 auto; padding: 0 14px calc(96px + env(safe-area-inset-bottom, 0px)); }
+    /* 顶部做成木质招牌，和小镇地图一套视觉 */
+      .hp-head {
+        display: flex; align-items: center; gap: 10px;
+        margin: 0 -14px 12px;
+        padding: 14px 16px;
+        background: linear-gradient(180deg, #b5763f, #96602f);
+        border-bottom: 3px solid #6d451f;
+        box-shadow: 0 4px 14px rgba(80,50,20,.28), inset 0 1px 0 rgba(255,255,255,.22);
+      }
+    .hp-back {
+        font-size: 13px; font-weight: 700; text-decoration: none;
+        color: #ffe9cf; background: rgba(0,0,0,.18);
+        border-radius: 999px; padding: 5px 11px;
+      }
+      .hp-back:active { transform: scale(.95) }
+    .hp-title {
+        font-size: 18px; font-weight: 800; color: #fff6e8; flex: 1;
+        text-shadow: 0 2px 0 rgba(90,55,25,.55);
+      }
+    /* 战绩条：一块小木牌 */
+      .hp-sum {
+        background: linear-gradient(180deg, #fff8ec, #f6ecdb);
+        border: 1px solid #e0c9a6; border-radius: 14px;
+        padding: 12px 14px; margin-bottom: 12px;
+        color: #4a3a24; font-size: 12.5px; line-height: 1.85;
+        box-shadow: 0 2px 0 #e8d7bd, 0 4px 12px rgba(120,90,50,.10);
+      }
+      html[data-mood='dark'] .hp-sum {
+        background: linear-gradient(180deg, #3a332a, #322c24);
+        border-color: #4d453a; color: #efe3cf; box-shadow: none;
+      }
+    /* ---------- 舞台：灶台 ----------
+         分层背景做出「瓷砖台面 + 从下往上的灶火光」，
+         再配四角铆钉和内阴影，看起来像一口锅架在台面上。
+         和小镇地图用的是同一套做法（多层渐变 + inset 阴影）。 */
+      .hp-arena {
+        position: relative;
+        background:
+          radial-gradient(120% 60% at 50% 118%, rgba(255,168,60,.34), transparent 68%),
+          repeating-linear-gradient(90deg, rgba(0,0,0,.045) 0 1px, transparent 1px 26px),
+          repeating-linear-gradient(0deg, rgba(0,0,0,.045) 0 1px, transparent 1px 26px),
+          linear-gradient(180deg, #fdf6ea, #f2e5d1);
+        border: 3px solid #c79a63;
+        border-radius: 18px;
+        padding: 18px 14px 16px;
+        margin-bottom: 12px;
+        text-align: center;
+        box-shadow:
+          inset 0 2px 0 rgba(255,255,255,.7),
+          inset 0 0 34px rgba(150,100,50,.14),
+          0 4px 0 #b9884f,
+          0 8px 20px rgba(120,80,40,.16);
+      }
+      .hp-arena::before, .hp-arena::after {
+        content: ''; position: absolute; width: 7px; height: 7px; border-radius: 50%;
+        background: radial-gradient(circle at 35% 35%, #e8cba4, #a97b46);
+        box-shadow: 0 1px 2px rgba(90,60,25,.4);
+      }
+      .hp-arena::before { left: 9px; top: 9px }
+      .hp-arena::after { right: 9px; top: 9px }
+      .hp-arena b { color: #4a3a24; font-size: 15px }
+      html[data-mood='dark'] .hp-arena {
+        border-color: #5a4a37;
+        background:
+          radial-gradient(120% 60% at 50% 118%, rgba(255,150,50,.22), transparent 68%),
+          repeating-linear-gradient(90deg, rgba(255,255,255,.035) 0 1px, transparent 1px 26px),
+          repeating-linear-gradient(0deg, rgba(255,255,255,.035) 0 1px, transparent 1px 26px),
+          linear-gradient(180deg, #332c24, #2b251e);
+        box-shadow: inset 0 0 34px rgba(0,0,0,.35), 0 4px 0 #241f19;
+      }
+      html[data-mood='dark'] .hp-arena b { color: #f3e7d3 }
     .hp-ing { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin: 10px 0; }
     .hp-ing button { border: 1px solid var(--border); border-radius: 12px; padding: 10px 4px; background: var(--surface-2); cursor: pointer; font-family: inherit; font-size: 12px; color: var(--text); }
     .hp-ing button.picked { outline: 3px solid var(--accent); }

@@ -3,26 +3,125 @@ export default {
   name: 'town-card',
   title: '卡牌屋',
   css: `
-    .cr-page { max-width: 560px; margin: 0 auto; padding: 14px 14px calc(96px + env(safe-area-inset-bottom, 0px)); }
-    .cr-head { display: flex; align-items: center; margin-bottom: 10px; }
-    .cr-back { font-size: 14px; color: var(--text-muted2); text-decoration: none; }
-    .cr-title { font-size: 18px; font-weight: 800; color: var(--text); margin-left: 10px; flex: 1; }
-    .cr-sum { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin-bottom: 12px; box-shadow: 0 2px 10px var(--shadow2, rgba(0,0,0,.05)); color: var(--text); }
-    .cr-arena { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 14px; margin-bottom: 12px; text-align: center; }
-    .cr-enemy { font-size: 15px; font-weight: 800; color: var(--text); }
+    .cr-page { max-width: 560px; margin: 0 auto; padding: 0 14px calc(96px + env(safe-area-inset-bottom, 0px)); }
+    /* 顶部：深夜牌铺的招牌 */
+      .cr-head {
+        display: flex; align-items: center; gap: 10px;
+        margin: 0 -14px 12px;
+        padding: 14px 16px;
+        background: linear-gradient(180deg, #3d2b52, #2c1e3d);
+        border-bottom: 3px solid #1d1429;
+        box-shadow: 0 4px 14px rgba(30,15,50,.35), inset 0 1px 0 rgba(255,255,255,.12);
+      }
+    .cr-back {
+        font-size: 13px; font-weight: 700; text-decoration: none;
+        color: #e6d8ff; background: rgba(255,255,255,.12);
+        border-radius: 999px; padding: 5px 11px;
+      }
+      .cr-back:active { transform: scale(.95) }
+    .cr-title {
+        font-size: 18px; font-weight: 800; color: #fff2d8; flex: 1;
+        text-shadow: 0 2px 0 rgba(20,10,35,.7);
+      }
+    .cr-sum {
+        background: linear-gradient(180deg, #fffaf2, #f7f0e4);
+        border: 1px solid #e4d6c0; border-radius: 14px;
+        padding: 12px 14px; margin-bottom: 12px;
+        color: #3f3324; font-size: 12.5px; line-height: 1.85;
+        box-shadow: 0 2px 0 #ece0cb, 0 4px 12px rgba(120,100,60,.10);
+      }
+      html[data-mood='dark'] .cr-sum {
+        background: linear-gradient(180deg, #322b3d, #2a2434);
+        border-color: #453c55; color: #ece2f5; box-shadow: none;
+      }
+    /* ---------- 牌桌 ----------
+         深绿绒面 + 斜向织纹 + 中央的灯光，边缘一圈木框。
+         和小镇地图同一套做法：多层渐变 + inset 阴影。 */
+      .cr-arena {
+        position: relative;
+        background:
+          radial-gradient(90% 70% at 50% 40%, rgba(255,240,200,.14), transparent 70%),
+          repeating-linear-gradient(45deg, rgba(255,255,255,.035) 0 3px, transparent 3px 7px),
+          linear-gradient(180deg, #2f5b45, #234536);
+        border: 5px solid #6b4a2a;
+        border-radius: 16px;
+        padding: 16px 14px;
+        margin-bottom: 12px;
+        text-align: center;
+        color: #eef6ef;
+        box-shadow:
+          inset 0 0 40px rgba(0,0,0,.42),
+          inset 0 2px 0 rgba(255,255,255,.10),
+          0 4px 0 #4e3620,
+          0 10px 22px rgba(40,30,15,.28);
+      }
+      /* 木框上的高光，让边框有点厚度 */
+      .cr-arena::after {
+        content: ''; position: absolute; inset: 3px;
+        border-radius: 10px;
+        border: 1px solid rgba(255,255,255,.10);
+        pointer-events: none;
+      }
+      .cr-arena .cr-enemy { color: #fff6e2; text-shadow: 0 2px 0 rgba(0,0,0,.5) }
+      .cr-arena .cr-log, .cr-arena .cr-hpbar + div { color: #cfe3d5 }
+    .cr-enemy { font-size: 15.5px; font-weight: 800; color: inherit; }
     .cr-enemy .emoji { font-size: 40px; display: block; margin: 6px 0; }
     .cr-hpbar { height: 10px; background: var(--surface-2); border-radius: 999px; overflow: hidden; margin: 8px 0; }
     .cr-hpbar > i { display: block; height: 100%; background: #e5574b; transition: width .2s; }
     .cr-pbar > i { background: #45b581; }
     .cr-hand { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 10px 0; }
-    .cr-card { width: 104px; border: 1px solid var(--border); background: var(--surface-2); border-radius: 12px; padding: 8px; cursor: pointer; font-family: inherit; text-align: left; color: var(--text); }
-    .cr-card:active { transform: scale(.95); }
+    /* 手牌：给一点厚度和悬停抬起，像真的一叠牌 */
+      .cr-card {
+        width: 106px;
+        border: 1px solid #d9c8ab;
+        background: linear-gradient(180deg, #fffdf8, #f7efe1);
+        border-radius: 12px; padding: 9px;
+        cursor: pointer; font-family: inherit; text-align: left;
+        color: #3f3324;
+        box-shadow: 0 2px 0 #e2d3ba, 0 4px 10px rgba(110,80,40,.13);
+        transition: transform .12s, box-shadow .12s;
+      }
+      html[data-mood='dark'] .cr-card {
+        background: linear-gradient(180deg, #3b3444, #322b3b);
+        border-color: #4c4359; color: #efe6f7; box-shadow: 0 2px 0 #241f2e;
+      }
+      .cr-card:hover { transform: translateY(-2px); box-shadow: 0 4px 0 #e2d3ba, 0 8px 16px rgba(110,80,40,.18) }
+      .cr-card:active { transform: translateY(0) scale(.97) }
+    
     .cr-card b { font-size: 13px; display: block; }
     .cr-card i { font-size: 11px; color: var(--text-muted); display: block; margin-top: 3px; font-style: normal; }
     .cr-card em { font-size: 10px; color: var(--accent); display: block; margin-top: 4px; font-style: normal; font-weight: 700; }
-    .cr-btn { border: 1px solid var(--border-strong); background: var(--surface-2); color: var(--text); border-radius: 999px; padding: 9px 20px; font-size: 13px; font-weight: 800; cursor: pointer; font-family: inherit; margin: 4px; }
-    .cr-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-    .cr-log { font-size: 12px; color: var(--text-muted); margin-top: 8px; min-height: 18px; }
+    /* 按钮：做成小铜牌 */
+      .cr-btn {
+        border: 1px solid #c9a86f;
+        background: linear-gradient(180deg, #fff6e4, #f3e3c6);
+        color: #4a3a20;
+        border-radius: 999px; padding: 9px 20px;
+        font-size: 13px; font-weight: 800; cursor: pointer; font-family: inherit;
+        margin: 4px;
+        box-shadow: 0 2px 0 #d3b785;
+      }
+      .cr-btn:active { transform: translateY(1px); box-shadow: none }
+      html[data-mood='dark'] .cr-btn {
+        background: linear-gradient(180deg, #3c3646, #322c3b); border-color: #554a68; color: #efe6f7;
+        box-shadow: 0 2px 0 #241f2e;
+      }
+    .cr-btn.primary {
+        background: linear-gradient(180deg, #8b6ad4, #6f4fb8);
+        border-color: #5b3fa0; color: #fff;
+        box-shadow: 0 2px 0 #4a3384;
+      }
+      .cr-btn[disabled] { opacity: .6; cursor: default }
+    /* 日志：牌桌下面的一条「记录纸」 */
+      .cr-log {
+        font-size: 12px; line-height: 1.75;
+        color: #5c4a33; background: #fdf8ef;
+        border: 1px dashed #dcc9a8; border-radius: 10px;
+        padding: 9px 12px; margin-top: 10px; min-height: 20px;
+      }
+      html[data-mood='dark'] .cr-log {
+        background: #2f2a24; border-color: #4a4136; color: #e2d6c2;
+      }
     .cr-row { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
   `,
   template: `
