@@ -822,10 +822,10 @@ export default {
           else location.href = to
         })
       })
-      const gc = $('twGoCard')
-      if (gc) gc.addEventListener('click', () => { if (window.sfx) window.sfx('tick'); const to = '/town/card'; if (window.__lwRouter) window.__lwRouter.push(to); else location.href = to })
-      const gh = $('twGoHotpot')
-      if (gh) gh.addEventListener('click', () => { if (window.sfx) window.sfx('tick'); const to = '/town/hotpot'; if (window.__lwRouter) window.__lwRouter.push(to); else location.href = to })
+      const cardBtn = $('twGoCard')
+      if (cardBtn) cardBtn.addEventListener('click', () => { if (window.sfx) window.sfx('tick'); const to = '/town/card'; if (window.__lwRouter) window.__lwRouter.push(to); else location.href = to })
+      const hotpotBtn = $('twGoHotpot')
+      if (hotpotBtn) hotpotBtn.addEventListener('click', () => { if (window.sfx) window.sfx('tick'); const to = '/town/hotpot'; if (window.__lwRouter) window.__lwRouter.push(to); else location.href = to })
       const gb = $('twGoBag')
       if (gb) {
         gb.addEventListener('click', () => {
