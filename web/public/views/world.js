@@ -171,6 +171,20 @@ export default {
       100% { opacity: 0; transform: translate(-50%, -8px) }
     }
 
+    /* 下沉 / 上来 */
+    .wd-layerbtns {
+      position: absolute; right: 8px; bottom: 56px;
+      display: flex; flex-direction: column; gap: 5px;
+    }
+    .wd-layerbtns button {
+      padding: 7px 12px; border: 1px solid rgba(255,255,255,.3);
+      border-radius: 8px; background: rgba(8,20,16,.6);
+      color: #eafff3; font-family: inherit; font-size: 12px; font-weight: 700;
+      cursor: pointer; white-space: nowrap;
+    }
+    .wd-layerbtns button:active { background: rgba(255,255,255,.25) }
+    .wd-layerbtns button:disabled { opacity: .38; cursor: default }
+
     /* 触屏方向键 */
     .wd-dpad {
       position: absolute; left: 10px; bottom: 56px;
@@ -202,6 +216,7 @@ export default {
           <div class="wd-chip" id="wdWhere">—</div>
           <div class="wd-spacer"></div>
           <div class="wd-chip" id="wdClock">☀️ 白天</div>
+          <div class="wd-chip" id="wdLayerChip">🟩 地表</div>
         </div>
         <div class="wd-mini"><canvas id="wdMini"></canvas></div>
         <div class="wd-toast" id="wdToast"></div>
@@ -211,6 +226,11 @@ export default {
           <button class="sp"></button><button data-dir="down">▼</button><button class="sp"></button>
         </div>
         <div class="wd-bar" id="wdBar"></div>
+        <!-- 下沉 / 上来 -->
+        <div class="wd-layerbtns">
+          <button id="wdDown" type="button">⬇ 下去</button>
+          <button id="wdUp" type="button">⬆ 上来</button>
+        </div>
       </div>
 
       <div class="wd-panel">
@@ -326,6 +346,16 @@ export default {
       T('diamond_block', '钻石块', '#6ff0e0', '#3fc8b8', { hard: 3.8, tool: 'pick', light: 0.2 }),
       T('mossy_stone', '苔石', '#7a8a70', '#5c6b52', { hard: 1.3, tool: 'pick' }),
       T('cracked_brick', '裂砖', '#9a8a78', '#7a6a58', { hard: 1.4, tool: 'pick' }),
+    // --- 洞穴与层间 ---
+    T('cave_entrance', '洞穴口', '#3a3440', '#191722', { hard: 0.8, solid: false, light: 0.3 }),
+    T('ladder_up', '向上梯子', '#a8895c', '#ffd36e', { hard: 0.3, solid: false, light: 0.3 }),
+    T('glow_moss', '荧光苔', '#5ac8a0', '#8affd0', { hard: 0.2, solid: false, light: 0.8 }),
+    T('crystal', '水晶簇', '#7fd8f0', '#ffffff', { hard: 1.6, tool: 'pick', light: 0.9 }),
+    T('stalagmite', '石笋', '#a8a49a', '#7d7a72', { hard: 1.0, tool: 'pick' }),
+    T('deep_stone', '深板岩', '#4a4a56', '#35353f', { hard: 2.2, tool: 'pick' }),
+    T('gem_ore', '宝石矿', '#5a5a7a', '#c86af0', { hard: 4.2, tool: 'pick', light: 0.4 }),
+    T('mithril_ore', '秘银矿', '#6a7a8a', '#b8e8ff', { hard: 5.0, tool: 'pick', light: 0.5 }),
+    T('cave_mushroom', '洞穴菇', '#8a6ac8', '#e0d0ff', { hard: 0.15, solid: false, light: 0.3 }),
     ]
 
     const TILE = {}
@@ -351,6 +381,7 @@ export default {
       { k: 'lava_field', n: '熔岩原', top: 'basalt', sub: 'basalt', flora: [] },
     ]
     const BIOME = {}
+    const LAYER_NAME = ['地表', '洞穴', '深层']
     BIOMES.forEach((b) => { BIOME[b.k] = b })
 
     /* ===================== 噪声 =====================
@@ -392,10 +423,71 @@ export default {
     const edited = new Map()  // 'x,y' -> tileKey（玩家改过的格，存档用）
     const WORLD_SEED = 20240601
 
-    const ck = (cx, cy) => cx + ',' + cy
+    const ck = (cx, cy, L) => cx + ',' + cy + ',' + (L || 0)
 
     /** 某个格「原始」是什么（没被玩家改过的话） */
-    function genTile(x, y) {
+    /* 矿脉：不是「按格子独立随机」撒矿点，而是**一小片一小片**地长。
+       把世界切成 3×3 的小片，用哈希决定这片有没有矿、是哪种矿，
+       然后再决定片里哪几格长。出来就是一簇一簇的，像矿脉。
+       按深度换矿种：浅层煤铜铁，中层铁金红石青金石，深层钻石绿宝石秘银。 */
+    const ORE_LADDER = [
+      [['coal_ore', 0.55], ['copper_ore', 0.3], ['iron_ore', 0.4]],
+      [['iron_ore', 0.45], ['gold_ore', 0.28], ['redstone_ore', 0.3], ['lapis_ore', 0.22]],
+      [['diamond_ore', 0.2], ['emerald_ore', 0.14], ['quartz_ore', 0.3], ['sulfur_ore', 0.25], ['gem_ore', 0.1], ['mithril_ore', 0.06]],
+    ]
+    function veinAt(x, y, layer) {
+      const vx = Math.floor(x / 3), vy = Math.floor(y / 3)
+      if (hash2(vx, vy, WORLD_SEED + 900 + layer * 7) > 0.34) return null
+      const table = ORE_LADDER[Math.min(layer, ORE_LADDER.length - 1)]
+      const which = hash2(vx, vy, WORLD_SEED + 901 + layer * 7)
+      let pick = null, acc = 0
+      for (const pair of table) {
+        acc += pair[1]
+        if (which * 1.6 < acc) { pick = pair[0]; break }
+      }
+      if (!pick) pick = table[0][0]
+      if (hash2(x, y, WORLD_SEED + 902 + layer * 7) > 0.62) return null
+      return pick
+    }
+
+    /* 洞穴：用两层噪声相减，得到蜿蜒的通道，而不是一堆圆洞。
+       两条噪声值接近的地方就是通道 —— 这样洞是连着的、能走通的。 */
+    function caveOpen(x, y, layer) {
+      const n1 = fbm(x / 34, y / 34, WORLD_SEED + 311 + layer * 13, 3)
+      const n2 = fbm(x / 34 + 500, y / 34 + 500, WORLD_SEED + 411 + layer * 13, 3)
+      const d = Math.abs(n1 - n2)
+      return d < (layer === 1 ? 0.055 : 0.075)
+    }
+    function isHoleSpot(x, y) {
+      return fbm(x / 90, y / 90, WORLD_SEED, 4) > 0.42 && hash2(x, y, WORLD_SEED + 661) < 0.004
+    }
+
+    function genTile(x, y, layer) {
+      layer = layer || 0
+
+      /* ---------- 洞穴层 / 深层 ---------- */
+      if (layer > 0) {
+        if (isHoleSpot(x, y) && layer === 1) return 'ladder_up'
+        if (caveOpen(x, y, layer)) {
+          const w = hash2(x, y, WORLD_SEED + 555 + layer * 3)
+          if (layer >= 2 && w < 0.05) return 'lava'
+          if (layer === 1 && w < 0.06) return 'water'
+          const deco = hash2(x, y, WORLD_SEED + 556 + layer * 3)
+          if (deco < 0.02) return 'crystal'
+          if (deco < 0.05) return 'glow_moss'
+          if (deco < 0.07) return 'cave_mushroom'
+          if (deco < 0.10) return 'stalagmite'
+          return 'air'
+        }
+        const ore = veinAt(x, y, layer)
+        if (ore) return ore
+        return layer >= 2 ? 'deep_stone' : 'stone'
+      }
+
+      /* ---------- 地表 ---------- */
+      // 洞穴口：稀稀落落地开在地表，踩上去能下到洞穴层
+      if (isHoleSpot(x, y)) return 'cave_entrance'
+
       // 高度：大陆
       const e = fbm(x / 90, y / 90, WORLD_SEED, 4)
       const m = fbm(x / 60 + 1000, y / 60 + 1000, WORLD_SEED + 31, 3) // 湿度
@@ -434,16 +526,17 @@ export default {
     }
 
     /** 生成一个块（只在没有的时候生成） */
-    function genChunk(cx, cy) {
-      const key = ck(cx, cy)
+    function genChunk(cx, cy, layer) {
+      layer = layer || 0
+      const key = ck(cx, cy, layer)
       let ch = world.get(key)
       if (ch) return ch
       ch = new Uint16Array(CS * CS)
       for (let j = 0; j < CS; j++) {
         for (let i = 0; i < CS; i++) {
           const x = cx * CS + i, y = cy * CS + j
-          const ek = x + ',' + y
-          const key2 = edited.has(ek) ? edited.get(ek) : genTile(x, y)
+          const ek = x + ',' + y + ',' + layer
+          const key2 = edited.has(ek) ? edited.get(ek) : genTile(x, y, layer)
           ch[j * CS + i] = TILE[key2] ? TILE[key2].id : 0
         }
       }
@@ -451,26 +544,29 @@ export default {
       return ch
     }
 
-    function getTile(x, y) {
+    function getTile(x, y, layer) {
+      const L = layer == null ? P.layer : layer
       const cx = Math.floor(x / CS), cy = Math.floor(y / CS)
-      const ch = genChunk(cx, cy)
+      const ch = genChunk(cx, cy, L)
       const i = x - cx * CS, j = y - cy * CS
       return TILES[ch[j * CS + i]] || TILE.air
     }
 
-    function setTile(x, y, k) {
+    function setTile(x, y, k, layer) {
+      const L = layer == null ? P.layer : layer
       const cx = Math.floor(x / CS), cy = Math.floor(y / CS)
-      const ch = genChunk(cx, cy)
+      const ch = genChunk(cx, cy, L)
       const i = x - cx * CS, j = y - cy * CS
       ch[j * CS + i] = TILE[k] ? TILE[k].id : 0
-      edited.set(x + ',' + y, k)
+      edited.set(x + ',' + y + ',' + L, k)
     }
 
     /** 玩家周围的块都生成好 */
-    function ensureAround(px, py, r) {
+    function ensureAround(px, py, r, layer) {
+      const L = layer == null ? P.layer : layer
       const cx = Math.floor(px / CS), cy = Math.floor(py / CS)
       for (let j = cy - r; j <= cy + r; j++) {
-        for (let i = cx - r; i <= cx + r; i++) genChunk(i, j)
+        for (let i = cx - r; i <= cx + r; i++) genChunk(i, j, L)
       }
     }
 
@@ -530,6 +626,7 @@ export default {
     item('iron_sword', '铁剑', { c: '#d8dce0', c2: '#a8adb4', weapon: 8 })
     item('diamond_sword', '钻石剑', { c: '#6ff0e0', c2: '#3fc8b8', weapon: 13 })
     item('torch_item', '火把', { c: '#f0b04a', c2: '#8a6a42', place: 'torch' })
+    item('ladder_up_item', '向上梯子', { c: '#a8895c', c2: '#ffd36e', place: 'ladder_up' })
 
     const RECIPES = [
       { out: 'planks', n: 4, need: { log_oak: 1 } },
@@ -567,6 +664,7 @@ export default {
       { out: 'sandstone', n: 1, need: { sand: 4 } },
       { out: 'lantern', n: 1, need: { iron_ingot: 1, torch_item: 1 } },
       { out: 'ladder', n: 3, need: { stick: 7 } },
+      { out: 'ladder_up_item', n: 2, need: { stick: 7 } },
       { out: 'snow_block', n: 1, need: { snow: 4 } },
       { out: 'packed_ice', n: 1, need: { ice: 4 } },
     ]
@@ -595,6 +693,7 @@ export default {
       hp: 20, maxHp: 20,
       food: 20,
       dir: 'down',
+      layer: 0,            // 0 地表 / 1 洞穴 / 2 深层
       anim: 0,
       moving: null,        // 正在走的那一步
     }
@@ -619,7 +718,7 @@ export default {
       const ed = []
       edited.forEach((v, k2) => ed.push(k2 + '=' + v))
       const data = {
-        x: P.x, y: P.y, hp: P.hp, food: P.food, time: time,
+        x: P.x, y: P.y, layer: P.layer, hp: P.hp, food: P.food, time: time,
         bag: bag, hotbar: hotbar, sel: sel,
         ed: ed.slice(-4000), // 最多存 4000 格改动
         dex: dexSeen, dmob: dexMob,
@@ -645,6 +744,7 @@ export default {
         if (!d) return false
         P.x = Number(d.x) || 0
         P.y = Number(d.y) || 0
+        P.layer = Math.max(0, Math.min(2, Number(d.layer) || 0))
         P.hp = Number(d.hp) || 20
         P.food = Number(d.food) || 20
         time = typeof d.time === 'number' ? d.time : 0.28
@@ -755,7 +855,11 @@ export default {
     function nightAlpha() {
       // time: 0=清晨 0.25=正午 0.5=黄昏 0.75=午夜
       const a = Math.cos(time * Math.PI * 2) // 1=正午 -1=午夜
-      return Math.min(0.68, Math.max(0, (0.35 - a) * 0.52))
+      const sky = Math.min(0.68, Math.max(0, (0.35 - a) * 0.52))
+      // 洞里和深层本来就黑，跟昼夜无关
+      if (P.layer === 1) return Math.max(sky, 0.62)
+      if (P.layer === 2) return Math.max(sky, 0.86)
+      return sky
     }
     function isNight() { return nightAlpha() > 0.28 }
 
@@ -773,7 +877,7 @@ export default {
       for (let j = 0; j < VIEW_H; j++) {
         for (let i = 0; i < VIEW_W; i++) {
           const gx = x0 + i, gy = y0 + j
-          const t = getTile(gx, gy)
+          const t = getTile(gx, gy, P.layer)
           paintTile(gx, gy, i * c, j * c, t)
         }
       }
@@ -830,7 +934,7 @@ export default {
         // 火把/岩浆周围挖个亮圈
         for (let j = 0; j < VIEW_H; j++) {
           for (let i = 0; i < VIEW_W; i++) {
-            const t = getTile(x0 + i, y0 + j)
+            const t = getTile(x0 + i, y0 + j, P.layer)
             if (t.light > 0) {
               const g = ctx.createRadialGradient(
                 (i + 0.5) * c, (j + 0.5) * c, 0,
@@ -859,7 +963,7 @@ export default {
       const cy = Math.round(P.ry) - Math.floor(N / 2)
       for (let j = 0; j < N; j++) {
         for (let i = 0; i < N; i++) {
-          const t = getTile(cx + i, cy + j)
+          const t = getTile(cx + i, cy + j, P.layer)
           mctx.fillStyle = t.c
           mctx.fillRect(i, j, 1, 1)
         }
@@ -987,6 +1091,50 @@ export default {
       render()
       refreshBar()
       refreshPane()
+    }
+
+    /* ---------- 层间移动 ----------
+       下潜：地表要在「洞穴口」上；洞穴层只要下面那格是空的就能钻下去。
+       上来：必须站在「向上梯子」上 —— 梯子可以用 7 根木棍合成，
+             所以不会出现「下去了上不来」的死局。
+       底下那层的对应位置也生成时留了梯子（见 isHoleSpot），
+       但玩家如果自己挖了个新洞下去，就得自己带梯子。 */
+    function canDescend() {
+      const here = getTile(P.x, P.y)
+      if (P.layer === 0) return here.k === 'cave_entrance'
+      if (P.layer === 1) {
+        const below = getTile(P.x, P.y, 2)
+        return !TILE[below.k].solid || below.k === 'air'
+      }
+      return false
+    }
+    function canAscend() {
+      if (P.layer === 0) return false
+      return getTile(P.x, P.y).k === 'ladder_up'
+    }
+
+    function changeLayer(delta) {
+      const to = P.layer + delta
+      if (to < 0 || to > 2) return toast('到头了')
+      if (delta > 0) {
+        if (!canDescend()) {
+          return toast(P.layer === 0 ? '要站在洞穴口上才能下去' : '脚下不是空的，挖开再说')
+        }
+      } else {
+        if (!canAscend()) return toast('要站在向上梯子上才能上去（梯子用 7 根木棍合成）')
+      }
+      P.layer = to
+      P.moving = null
+      ensureAround(P.x, P.y, 2, P.layer)
+      // 落地：如果目标格是实心的，往上找一个空的
+      let g = 0
+      while (getTile(P.x, P.y).solid && g++ < 40) P.y--
+      P.rx = P.x; P.ry = P.y
+      mobs = []
+      for (let i = 0; i < (P.layer === 0 ? 4 : 6); i++) spawnMob()
+      toast('来到' + LAYER_NAME[P.layer])
+      try { window.sfx && window.sfx('nav') } catch (e) {}
+      refreshClock(); refreshPane(); render()
     }
 
     function use() {
@@ -1152,8 +1300,16 @@ export default {
       const icon = na < 0.1 ? '☀️' : na < 0.3 ? '🌤' : na < 0.5 ? '🌆' : '🌙'
       const hh = Math.floor(((time * 24) + 6) % 24)
       $('wdClock').innerHTML = icon + ' ' + String(hh).padStart(2, '0') + ':00'
-      const b = biomeAt(P.x, P.y)
+      const b = P.layer > 0 ? { n: LAYER_NAME[P.layer] } : biomeAt(P.x, P.y)
       $('wdWhere').innerHTML = '<b>' + esc(b.n) + '</b> · ❤️' + P.hp + ' · 🍗' + P.food
+      const lc = $('wdLayerChip')
+      if (lc) {
+        lc.textContent = ['🟩 地表', '🕳️ 洞穴', '🌑 深层'][P.layer]
+        lc.style.color = P.layer === 0 ? '#b6f0c8' : P.layer === 1 ? '#d8c8a0' : '#b8a0d8'
+      }
+      const dn = $('wdDown'), up = $('wdUp')
+      if (dn) dn.disabled = !canDescend()
+      if (up) up.disabled = !canAscend()
     }
 
     function itemSq(it, size) {
@@ -1233,7 +1389,8 @@ export default {
           '<h4>📊 统计</h4>' +
           '<div style="line-height:2">' +
           '坐标 <b>' + P.x + ', ' + P.y + '</b><br>' +
-          '所在群系 <b>' + esc(biomeAt(P.x, P.y).n) + '</b><br>' +
+          '所在层 <b>' + LAYER_NAME[P.layer] + '</b>' +
+          (P.layer === 0 ? '（' + esc(biomeAt(P.x, P.y).n) + '）' : '') + '<br>' +
           '挖掉方块 <b>' + minedCount + '</b> 个<br>' +
           '放置方块 <b>' + placedCount + '</b> 个<br>' +
           '倒下 <b>' + deathCount + '</b> 次<br>' +
@@ -1274,6 +1431,8 @@ export default {
       else if (k === 'Space') { if (!attack()) use() }
       else if (k === 'KeyE') eat()
       else if (k === 'KeyF') place()
+      else if (k === 'KeyR') changeLayer(1)
+      else if (k === 'KeyT') changeLayer(-1)
       else if (k === 'KeyQ') { attack(); }
       else if (k >= 'Digit1' && k <= 'Digit9') { sel = Number(k.slice(5)) - 1; refreshBar(); render() }
       else if (k === 'Tab') { e.preventDefault(); switchTab(tab === 'bag' ? 'craft' : tab === 'craft' ? 'dex' : 'bag') }
@@ -1308,6 +1467,8 @@ export default {
       })
     })
 
+    $('wdDown').onclick = () => changeLayer(1)
+    $('wdUp').onclick = () => changeLayer(-1)
     $('wdSave').onclick = () => { saveAll(); toast('存好了'); try { window.sfx && window.sfx('save') } catch (e) {} }
     $('wdHelp').onclick = () => {
       lwAlert(
@@ -1318,7 +1479,8 @@ export default {
         '· Shift + 点：把手上选中的方块放到面前<br>' +
         '· 1~9：换手上的槽位<br>' +
         '· E：吃东西　Q：攻击<br>' +
-        '· Shift+点 也能放；点背包里的方块换到手上<br><br>' +
+        '· R：下潜到洞穴层　T：回到上一层<br>' +
+        '· 洞穴里黑，带火把；向上梯子用 7 根木棍合成<br><br>' +
         '<b>要小心</b><br>' +
         '· 天黑会刷怪，火把能照亮<br>' +
         '· 岩浆会烫伤，掉水里没事<br>' +
@@ -1363,6 +1525,7 @@ export default {
       give('bread', 3)
       give('wood_pick', 1)
       give('wood_sword', 1)
+      give('ladder_up_item', 3)
       hotbar = ['torch_item', 'planks', 'craft_table', 'wood_pick', 'wood_sword', 'bread', 'dirt', 'stone', null]
     }
     ensureAround(P.x, P.y, 3)
