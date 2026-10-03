@@ -65,8 +65,8 @@ export default {
       .header {
         display: flex;
         align-items: center;
-        gap: 12px;
-        margin-bottom: 20px;
+        gap: 14px;
+        margin-bottom: 24px;
       }
 
       .back {
@@ -95,7 +95,7 @@ export default {
       #count {
         font-size: 13px;
         color: var(--text-faint);
-        margin-top: 4px;
+        margin-top: 6px;
       }
 
       .theme-btn {
@@ -136,7 +136,7 @@ export default {
         background: var(--surface);
         border: 1px solid var(--border);
         border-radius: 18px;
-        padding: 14px;
+        padding: 16px;
         margin-bottom: 16px;
       }
 
@@ -169,8 +169,8 @@ export default {
       .chip-row, .tag-cloud {
         display: flex;
         flex-wrap: wrap;
-        gap: 6px;
-        margin-top: 10px;
+        gap: 8px;
+        margin-top: 12px;
       }
 
       .chip {
@@ -1026,18 +1026,18 @@ export default {
         background: var(--surface);
         display: flex;
         flex-direction: column;
-        gap: 11px;
+        gap: 13px;
         animation: lwa-fade .2s ease-out both;
       }
-      .fp-group { display: flex; align-items: flex-start; gap: 9px; }
+      .fp-group { display: flex; align-items: flex-start; gap: 10px; }
       .fp-label {
         flex: none;
-        width: 32px;
-        padding-top: 6px;
-        font-size: 11.5px;
+        width: 34px;
+        padding-top: 7px;
+        font-size: 12px;
         color: var(--text-faint);
       }
-      .fp-chips { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; }
+      .fp-chips { display: flex; flex-wrap: wrap; gap: 8px; flex: 1; }
       .fp-chips button {
         padding: 5px 11px;
         border: 1px solid var(--border);
@@ -1077,10 +1077,10 @@ export default {
       /* ---------- 分区标题 ---------- */
       .sec-bar {
         display: flex;
-        gap: 6px;
+        gap: 8px;
         overflow-x: auto;
-        margin-top: 10px;
-        padding-bottom: 2px;
+        margin-top: 14px;
+        padding-bottom: 4px;
         -webkit-overflow-scrolling: touch;
       }
       .sec-bar::-webkit-scrollbar { display: none }
