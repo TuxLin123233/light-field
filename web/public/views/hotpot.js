@@ -80,6 +80,9 @@ export default {
     const $ = (id) => document.getElementById(id)
     const log = (m) => { $('hpLog').textContent = m }
     const token = () => { try { return localStorage.getItem('lw-token') || '' } catch (e) { return '' } }
+    /* 镇民的名字是用户自己填的，直接拼进 innerHTML 会有注入风险 */
+    const esc = (x) =>
+      String(x == null ? '' : x).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
 
     const ING = [
       { n: '番茄', c: '#e5574b' }, { n: '鸡蛋', c: '#f2d04b' }, { n: '豆腐', c: '#fbf7ef' },
@@ -94,6 +97,60 @@ export default {
 
     let customer = 0, satisfied = 0, order = null, timer = null
 
+    /* ---------- 客人是**真实的小镇住户** ----------
+       原来是 5 个随机 NPC，做完就完了，谁也不知道。
+       现在从 /api/town 拿真实名单，做完**真的把菜端过去** ——
+       对方信箱里会多一封带光尘的信。 */
+    let residents = [] // [{uid,name}]
+    let customers = [] // 这一轮要招待的 5 位真实镇民
+    let myUid = ''
+    let servedToday = {} // { uid: {name,dish} }
+    let pickName = ''
+
+    function apiHeaders() {
+      const t = token()
+      return t
+        ? { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t }
+        : { 'Content-Type': 'application/json' }
+    }
+
+    async function loadResidents() {
+      try {
+        const r = await fetch('/api/town?list=1', { cache: 'no-store' })
+        const d = await r.json()
+        const list = (d && d.list) || []
+        residents = list.filter((h) => h && h.uid).map((h) => ({ uid: h.uid, name: String(h.name || '镇民') }))
+      } catch (e) {
+        residents = []
+      }
+      // 今天已经端过谁，避免重复端（服务端也会拦，这里先挑掉，少一次往返）
+      try {
+        const r = await fetch('/api/feast', { headers: apiHeaders(), cache: 'no-store' })
+        const d = await r.json()
+        if (d && d.ok) servedToday = d.served || {}
+      } catch (e) {}
+
+      // 还没端过的优先，不够再补已经端过的（当天不能再端，界面上会说明）
+      const fresh = residents.filter((x) => !servedToday[x.uid])
+      const used = residents.filter((x) => servedToday[x.uid])
+      customers = shuffle(fresh.slice()).concat(shuffle(used.slice())).slice(0, 5)
+    }
+
+    /** 把「端菜」这件事真的发出去 */
+    async function serveTo(target, dish, perfect) {
+      if (!target || !target.uid) return null
+      try {
+        const r = await fetch('/api/feast', {
+          method: 'POST',
+          headers: apiHeaders(),
+          body: JSON.stringify({ action: 'serve', to: target.uid, dish: dish, perfect: perfect }),
+        })
+        return await r.json()
+      } catch (e) {
+        return { ok: false, error: '网络不太好' }
+      }
+    }
+
     function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; const t = a[i]; a[i] = a[j]; a[j] = t } return a }
     function saveAll() {
       let combo = {}
@@ -103,7 +160,16 @@ export default {
       const t = token()
       if (t) fetch('/api/towngame', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t }, body: JSON.stringify({ action: 'save', save: combo }) }).catch(() => {})
     }
-    function sumHtml() { return '累计 ' + state.cooks + ' 轮 · 最满意客人数 ' + state.best + '/5 · 每满意 1 人结 1 个光尘 · 音效：gamersounds.com' }
+    function sumHtml() {
+      return (
+        '累计 ' + state.cooks + ' 轮 · 最满意客人数 ' + state.best + '/5<br>' +
+        '<span style="font-size:11px;color:var(--text-muted)">' +
+        (residents.length
+          ? '镇上 ' + residents.length + ' 户人家 · 今天已端 ' + Object.keys(servedToday).length + ' 份'
+          : '正在看镇上都有谁…') +
+        '</span>'
+      )
+    }
 
     function nextCustomer() {
       customer++
@@ -115,9 +181,12 @@ export default {
     function stepPrepare() {
       const need = order.map((o) => o.n)
       const picked = []
+      const who = customers[customer - 1]
+      pickName = who ? who.name : '路过的镇民'
       $('hpArena').innerHTML =
-        '<b style="color:var(--text)">第 ' + customer + ' 位食客点餐：</b>' +
-        '<div style="margin:6px 0;font-size:14px;color:var(--text)">想点「' + need.join('、') + '」各一份 <img src="' + FOOD_IMG[customer-1] + '" style="width:36px;height:36px;vertical-align:middle;image-rendering:pixelated"></div>' +
+        '<b style="color:var(--text)">' + esc(who ? who.name : '路过的镇民') + ' 点餐：</b>' +
+        (who && servedToday[who.uid] ? '<div class="hp-log">今天已经给这位端过了，这次就当练手</div>' : '') +
+        '<div style="margin:6px 0;font-size:14px;color:var(--text)">想点「' + need.join('、') + '」各一份 <img src="' + FOOD_IMG[(customer-1) % FOOD_IMG.length] + '" style="width:36px;height:36px;vertical-align:middle;image-rendering:pixelated"></div>' +
         '<div class="hp-ing" id="hpIng"></div>' +
         '<button class="hp-btn primary" id="hpOk">凑齐了</button>'
       const g = $('hpIng')
@@ -193,17 +262,38 @@ export default {
         })
         $('hpDone').onclick = () => {
           const ok = cur.every((c, i) => c === target[i])
-          log(ok ? '装盘好看到流泪！' : '摆歪了…')
           const full = preFireOk && ok
+          const dish = order.map((o) => o.n).join('')
+          log(ok ? '装盘好看到流泪！' : '摆歪了…')
           if (full) satisfied++
           try { window.sfx && window.sfx(full ? 'win' : 'fail') } catch (e) {}
-          customerInfo(full)
+          /* 就算摆歪了也端过去（对方少拿一个光尘）——
+             「做得好才送得出去」会让失败的这一轮完全白做，太打击人。 */
+          const target2 = customers[customer - 1]
+          if (!target2) return customerInfo(full, null)
+          $('hpDone').disabled = true
+          $('hpDone').textContent = '端过去…'
+          serveTo(target2, dish, full).then((res) => customerInfo(full, res))
         }
       }
       draw()
     }
-    function customerInfo(ok) {
-      $('hpArena').innerHTML = '<b style="color:var(--text)">' + (ok ? '😋 食客满意！+1 颗星' : '😅 这顿将就了') + '</b><br><button class="hp-btn primary" id="hpNext" style="margin-top:8px">下一位</button>'
+    function customerInfo(ok, res) {
+      const who = pickName
+      let line = ''
+      if (!res) {
+        line = '<div class="hp-log">镇上好像还没有别人盖房子 —— 先去小镇看看，或者等邻居搬来</div>'
+      } else if (res.ok) {
+        line =
+          '<div class="hp-log">🍲 端到「' + esc(res.name) + '」门口了<br>' +
+          '他收到 <b>' + res.got.toThem + '</b> 个光尘，你也拿到 <b>' + res.got.toMe + '</b> 个</div>'
+      } else {
+        line = '<div class="hp-log">这道没能端出去：' + esc(res.error || '再试试') + '</div>'
+      }
+      $('hpArena').innerHTML =
+        '<b style="color:var(--text)">' + (ok ? '😋 ' + esc(who) + ' 很满意！' : '😅 ' + esc(who) + ' 说还行') + '</b>' +
+        line +
+        '<br><button class="hp-btn primary" id="hpNext" style="margin-top:8px">下一位</button>'
       $('hpNext').onclick = () => nextCustomer()
     }
     function finish() {
@@ -215,13 +305,33 @@ export default {
       if (t) fetch('/api/towngame', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t }, body: JSON.stringify({ action: 'claim', kind: 'hotpot', score: satisfied }) })
         .then((r) => r.json()).then((d) => { if (d && d.book && window.dust) window.dust.take(d.book) }).catch(() => {})
       $('hpSum').innerHTML = sumHtml()
+    /* 先把镇民名单拉回来，再让「开火！」可用 ——
+       拉到之前就开局的话，第一位客人会变成「路过的镇民」，看起来像没生效。
+       这里只拉数据、不自动开局，开始界面还是要用户自己点。 */
+    loadResidents().then(() => {
+      $('hpSum').innerHTML = sumHtml()
+      const b = $('hpStart')
+      if (b) {
+        b.disabled = false
+        b.textContent = residents.length ? '开火！给镇上 ' + residents.length + ' 户人家做饭' : '开火！'
+      }
+      if (!residents.length) {
+        const t = $('hpLog')
+        if (t) t.textContent = '镇上还没有别人盖房子 —— 先去小镇安家，或者等邻居搬来。'
+      }
+    })
       try { window.sfx && window.sfx('levelup') } catch (e) {}
       $('hpArena').innerHTML = '<b style="color:var(--text)">今日出餐结束！满意 ' + satisfied + '/5 位食客</b><br><button class="hp-btn primary" id="hpAgain" style="margin-top:8px">再开一轮</button>'
       $('hpAgain').onclick = () => { customer = 0; satisfied = 0; nextCustomer() }
     }
 
     $('hpSum').innerHTML = sumHtml()
-    $('hpArena').innerHTML = '<b style="color:var(--text)">五位食客，备料要齐、火候要准、装盘要对</b><br><span style="font-size:11px;color:var(--text-faint)">餐品素材：DOTOWN ドット絵ダウンロードサイト（无料素材）</span><br><button class="hp-btn primary" id="hpStart" style="margin-top:8px">开火！</button>'
+    $('hpArena').innerHTML =
+      '<b style="color:var(--text)">给镇上的邻居做饭</b><br>' +
+      '<span style="font-size:12px;color:var(--text-muted)">一轮五位客人，都是<b>真住在小镇的人</b>。<br>' +
+      '做好了菜会真的端到他门口，他的信箱里会多一封带光尘的信。</span><br>' +
+      '<span style="font-size:11px;color:var(--text-faint)">餐品素材：DOTOWN ドット絵ダウンロードサイト（无料素材）</span><br>' +
+      '<button class="hp-btn primary" id="hpStart" style="margin-top:8px" disabled>正在看镇上都有谁…</button>'
     $('hpStart').onclick = () => { customer = 0; satisfied = 0; nextCustomer() }
   },
 }
