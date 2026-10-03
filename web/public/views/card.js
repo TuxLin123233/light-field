@@ -225,16 +225,16 @@ export default {
     const STARTERS = ['c0', 'c0', 'c4', 'c8', 'c12', 'c16', 'c1', 'c5', 'c9', 'c2']
 
     const FOES = [
-      { n: '鸽子小妖', img: '/images/dotown/thing_pigeon_01.png', hp: 10, atk: 3 },
-      { n: '阿布怪', img: '/images/dotown/thing_abu.png', hp: 14, atk: 4 },
-      { n: '小猎犬幽灵', img: '/images/dotown/thing_dachshund_01.png', hp: 18, atk: 5 },
-      { n: '猫魂', img: '/images/dotown/thing_cats_13.png', hp: 24, atk: 6 },
-      { n: '猴子巡逻兵', img: '/images/dotown/thing_monkey_01.png', hp: 30, atk: 7 },
-      { n: '猴王', img: '/images/dotown/thing_monkey_02.png', hp: 36, atk: 8 },
-      { n: '疯猴', img: '/images/dotown/thing_monkey_03.png', hp: 46, atk: 9 },
-      { n: '旧图廊鸽王', img: '/images/dotown/thing_pigeon_04.png', hp: 60, atk: 11 },
-      { n: '旧图廊守卫', img: '/images/dotown/thing_cats_13.png', hp: 80, atk: 13 },
-      { n: '像素末日', img: '/images/dotown/thing_monkey_03.png', hp: 110, atk: 15 },
+      { n: '鸽子小妖', px: 'mon_pigeon', hp: 10, atk: 3 },
+      { n: '阿布怪', px: 'mon_abu', hp: 14, atk: 4 },
+      { n: '小猎犬幽灵', px: 'mon_hound', hp: 18, atk: 5 },
+      { n: '猫魂', px: 'mon_cat', hp: 24, atk: 6 },
+      { n: '猴子巡逻兵', px: 'mon_monkey', hp: 30, atk: 7 },
+      { n: '猴王', px: 'mon_king', hp: 36, atk: 8 },
+      { n: '疯猴', px: 'mon_frenzy', hp: 46, atk: 9 },
+      { n: '旧图廊鸽王', px: 'mon_ghost', hp: 60, atk: 11 },
+      { n: '旧图廊守卫', px: 'mon_guard', hp: 80, atk: 13 },
+      { n: '像素末日', px: 'mon_doom', hp: 110, atk: 15 },
     ]
 
     /* ★ 启动自检：初始牌组里任何一个 key 在卡池里找不到，
@@ -346,7 +346,8 @@ export default {
     function render() {
       const e = state.enemy, p = state.run, t = state.turn
       $('crArena').innerHTML =
-        '<div class="cr-enemy">第 ' + state.run.floor + ' 层 · ' + e.n + ' <img src="' + e.img + '" alt="" style="width:48px;height:48px;display:block;margin:6px auto;image-rendering:pixelated"></div>' +
+        '<div class="cr-enemy">第 ' + state.run.floor + ' 层 · ' + e.n +
+        ' <i data-px="' + (e.px || 'mon_puk') + '" data-px-size="48" data-px-on="hover" style="display:block;margin:6px auto;width:48px"></i></div>' +
         '<div class="cr-hpbar"><i style="width:' + Math.max(0, e.hp / e.maxHp * 100) + '%"></i></div>' +
         '<div style="font-size:12px;color:var(--text-muted)">敌人 ' + Math.max(0, e.hp) + '/' + e.maxHp + ' · 每回合造成 ' + e.atk + '</div>' +
         '<hr style="border:0;border-top:1px dashed var(--border);margin:10px 0">' +
@@ -371,7 +372,7 @@ export default {
     } catch (e) {}
     state = { best, plays, run: null, enemy: null, hand: [], discard: [], deck: null, deckNow: [], turn: null }
     $('crSum').innerHTML = sumHtml()
-    $('crArena').innerHTML = '<div class="cr-enemy">10 层小塔，每层一只小妖<br>牌组可三选一扩牌，倒下也有光尘</div><div style="font-size:11px;color:var(--text-faint);margin-top:8px">怪兽素材：DOTOWN ドット絵ダウンロードサイト（无料素材）</div><div class="cr-row" style="margin-top:8px"><button class="cr-btn primary" id="crStart">开始一局</button></div>'
+    $('crArena').innerHTML = '<div class="cr-enemy">10 层小塔，每层一只小妖<br>牌组可三选一扩牌，倒下也有光尘</div><div style="font-size:11px;color:var(--text-faint);margin-top:8px">怪兽是站内自绘的像素图</div><div class="cr-row" style="margin-top:8px"><button class="cr-btn primary" id="crStart">开始一局</button></div>'
     $('crStart').onclick = () => startRun()
     const t = token()
     if (t) fetch('/api/towngame', { headers: { Authorization: 'Bearer ' + t } })

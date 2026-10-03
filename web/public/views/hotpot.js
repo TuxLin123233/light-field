@@ -311,7 +311,8 @@ export default {
       order = shuffle(ING.slice()).slice(0, 3)
       stepPrepare()
     }
-    const FOOD_IMG=['/images/dotown/food_mushroom_05.png','/images/dotown/food_weddingcake_01.png','/images/dotown/food_shaved_ice_02.png','/images/dotown/food_butaman_01.png','/images/dotown/food_hinomarubento_01.png']
+    /* 五道餐品，和妖怪一样改成站内自绘的像素图标 */
+    const FOOD_PX = ['food_mushroom', 'food_cake', 'food_ice', 'food_bun', 'food_bento']
     function stepPrepare() {
       const need = order.map((o) => o.n)
       const picked = []
@@ -320,7 +321,8 @@ export default {
       $('hpArena').innerHTML =
         '<b style="color:var(--text)">' + esc(who ? who.name : '路过的镇民') + ' 点餐：</b>' +
         (who && servedToday[who.uid] ? '<div class="hp-log">今天已经给这位端过了，这次就当练手</div>' : '') +
-        '<div style="margin:6px 0;font-size:14px;color:var(--text)">想点「' + need.join('、') + '」各一份 <img src="' + FOOD_IMG[(customer-1) % FOOD_IMG.length] + '" style="width:36px;height:36px;vertical-align:middle;image-rendering:pixelated"></div>' +
+        '<div style="margin:6px 0;font-size:14px;color:var(--text)">想点「' + need.join('、') + '」各一份 ' +
+          '<i data-px="' + FOOD_PX[(customer-1) % FOOD_PX.length] + '" data-px-size="36" data-px-on="hover" style="vertical-align:middle"></i></div>' +
         '<div class="hp-cats" id="hpCats"></div>' +
         '<div class="hp-ing" id="hpIng"></div>' +
         '<button class="hp-btn primary" id="hpOk">凑齐了</button>'
@@ -362,6 +364,8 @@ export default {
       }
       paintCats()
       paintIng()
+      // 餐品图是自绘的像素图标，innerHTML 写完再画
+      if (window.LWIcon) { try { window.LWIcon.apply($('hpArena')) } catch (e) {} }
       $('hpOk').onclick = () => {
         /* ★ 必须**按名字**比，不能比对象身份。
            分类渲染之后 picked 里放的是新建的 {n,c}，
@@ -482,7 +486,7 @@ export default {
       '<b style="color:var(--text)">给镇上的邻居做饭</b><br>' +
       '<span style="font-size:12px;color:var(--text-muted)">一轮五位客人，都是<b>真住在小镇的人</b>。<br>' +
       '做好了菜会真的端到他门口，他的信箱里会多一封带光尘的信。</span><br>' +
-      '<span style="font-size:11px;color:var(--text-faint)">餐品素材：DOTOWN ドット絵ダウンロードサイト（无料素材）</span><br>' +
+      '<span style="font-size:11px;color:var(--text-faint)">餐品是站内自绘的像素图</span><br>' +
       '<button class="hp-btn primary" id="hpStart" style="margin-top:8px" disabled>正在看镇上都有谁…</button>'
     $('hpStart').onclick = () => { customer = 0; satisfied = 0; nextCustomer() }
 

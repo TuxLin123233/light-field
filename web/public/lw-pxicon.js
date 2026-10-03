@@ -1730,6 +1730,108 @@
       ],
     },
 
+    /* ---------- 卡牌屋 / 大锅饭 用的角色和食物 ----------
+       原来这 15 张是 DOTOWN 的外部素材。DOTOWN 的条款允许用在游戏里，
+       但**禁止再配布素材本身** —— 而它们跟着公开仓库一起发布了，
+       性质上更接近「再配布」。所以照着自己的像素风格重画了一套，
+       版权问题一次性归零，风格也和站里其它图标统一了。
+
+       都画成 14×14，因为卡片上要放到 40px 左右。 */
+
+    /* --- 小妖（卡牌屋的 10 层）--- */
+    mon_pigeon: { frames: [[
+      '..............','....gg..gg....','...ggg..ggg...','..gggggggggg..',
+      '..ggllggllgg..','..gggkggkggg..','..gggggggggg..','...gggggggg...',
+      '....gggggg....','...gggggggg...','..gggggggggg..','..gg..gg..gg..',
+      '..g....g...g..','..............',
+    ]] },
+    mon_abu: { frames: [[
+      '..............','.....pppp.....','....pppppp....','...pppppppp...',
+      '..ppllppllpp..','..pppkppkppp..','..pppppppppp..','..pppkkkkppp..',
+      '...pppppppp...','....pppppp....','...pppppppp...','..ppp.pp.ppp..',
+      '..pp...p...pp.','..............',
+    ]] },
+    mon_hound: { frames: [[
+      '..............','..tt......tt..','..tttt..tttt..','..tttttttttt..',
+      '..ttllttlltt..','..tttkttkttt..','..tttttttttt..','..ttkkkkkktt..',
+      '..tttttttttt..','...tttttttt...','...tttttttt...','..ttt.tt.ttt..',
+      '..tt...t...tt.','..............',
+    ]] },
+    mon_cat: { frames: [[
+      '..k........k..','..kk......kk..','..kkkkkkkkkk..','..kwwwwwwwwk..',
+      '..kwllwwllwk..','..kwkwwwwkwk..','..kwwwwwwwwk..','..kwwkwwkwwk..',
+      '..kwwwwwwwwk..','..kwwwwwwwwk..','...kwwwwwwk...','...kkkkkkkk...',
+      '..kk......kk..','..............',
+    ]] },
+    mon_monkey: { frames: [[
+      '..kk......kk..','..kbb....bbk..','..kbbbbbbbbk..','..kbqqqqqqbk..',
+      '..kqllqqllqk..','..kqkqqqqkqk..','..kqqqqqqqqk..','..kqqkkkkqqk..',
+      '..kqqqqqqqqk..','...kqqqqqqk...','...kqqqqqqk...','..kqq.qq.qqk..',
+      '..kq...q...qk.','..............',
+    ]] },
+    mon_king: { frames: [[
+      '..y..y..y..y..','..yyyyyyyyyy..','..YbbbbbbbbY..','..YbqqqqqqbY..',
+      '..YqllqqllqY..','..YqkqqqqkqY..','..YqqqqqqqqY..','..YqqkkkkqqY..',
+      '..YqqqqqqqqY..','...YqqqqqqY...','...YqqqqqqY...','..Yqq.qq.qqY..',
+      '..Yq...q...qY.','..............',
+    ]] },
+    mon_frenzy: { frames: [[
+      '..rr......rr..','..rRRR..RRRr..','..rRRRRRRRRr..','..rRqqqqqqRr..',
+      '..rqllqqllqr..','..rqkqqqqkqr..','..rqqqqqqqqr..','..rqqkkkkqqr..',
+      '..rqqqqqqqqr..','...rqqqqqqr...','...rqqqqqqr...','..rqq.qq.qqr..',
+      '..rq...q...qr.','..............',
+    ]] },
+    mon_ghost: { frames: [[
+      '..............','....ssssss....','...ssssssss...','..ssllssllss..',
+      '..ssskssksss..','..ssssssssss..','..ssskkkksss..','..ssssssssss..',
+      '..ssssssssss..','..ssssssssss..','..ssssssssss..','..s.sss.sss.s.',
+      '..s..s...s..s.','..............',
+    ]] },
+    mon_guard: { frames: [[
+      '....UUUUUU....','...UUUUUUUU...','..UUllUUllUU..','..UUkUUUkUUU..',
+      '..UUUUUUUUUU..','..UUUkkkkUUU..','..UUUUUUUUUU..','..UUUUUUUUUU..',
+      '...UUUUUUUU...','...UUUUUUUU...','..UUU.UU.UUU..','..UU...U...UU.',
+      '..UU...U...UU.','..............',
+    ]] },
+    mon_doom: { frames: [[
+      '..kk......kk..','..kLL....LLk..','..kLLLLLLLLk..','..kLccccccLk..',
+      '..kcll cclcLk.','..kckcccckcLk.','..kccccccccLk.','..kcckkkkccLk.',
+      '..kccccccccLk.','...kcccccck...','...kcccccck...','..kcc.cc.cck..',
+      '..kc...c...ck.','..............',
+    ]] },
+
+    /* --- 餐品（大锅饭的 5 道）--- */
+    food_mushroom: { frames: [[
+      '..............','.....rrrr.....','...rrrrrrrr...','..rrwrrrrwrr..',
+      '.rrrrrwrrrrrr.','.rrrrrrrrrrrr.','..wwwwwwwwww..','...wwwwwwww...',
+      '...wwwwwwww...','...wwwwwwww...','...wwwwwwww...','...wwwwwwww...',
+      '..wwwwwwwwww..','..............',
+    ]] },
+    food_cake: { frames: [[
+      '..............','......y.......','.....yoy......','......t.......',
+      '......t.......','..nnnnnnnnnn..','.nwnwnwnwnwnn.','.nnnnnnnnnnnn.',
+      '.nrnrnrnrnrnn.','.nnnnnnnnnnnn.','.nwnwnwnwnwnn.','.nnnnnnnnnnnn.',
+      'nnnnnnnnnnnnnn','..............',
+    ]] },
+    food_ice: { frames: [[
+      '..............','......s.......','.....sss......','....sssss.....',
+      '...sssssss....','..ssswwssss...','..sswwwwssss..','..ssswwsssss..',
+      '..sssssssss...','...ssssssss...','....ssssss....','.....ssss.....',
+      '......ss......','..............',
+    ]] },
+    food_bun: { frames: [[
+      '..............','....wwwwww....','..wwwwwwwwww..','.wwwwwwwwwwww.',
+      '.wwwwwwwwwwww.','wwwwwwwwwwwwww','wwwwwwwwwwwwww','.wwwwwwwwwwww.',
+      '.wwwwwwwwwwww.','..wwwwwwwwww..','...wwwwwwww...','....wwwwww....',
+      '.....wwww.....','..............',
+    ]] },
+    food_bento: { frames: [[
+      '..............','kkkkkkkkkkkkkk','kwwwwwwwwwwwwk','kwrrrwyyywwwwk',
+      'kwrrrwyyywwwwk','kwwwwwwwwwwwwk','kwwwwwwwwwwwwk','kyyywwgggwwwwk',
+      'kyyywwgggwwwwk','kwwwwwwwwwwwwk','kwwwwwwwwwwwwk','kwrrrwwyyywwwk',
+      'kkkkkkkkkkkkkk','..............',
+    ]] },
+
   }
 
   /* ================= 绘制 ================= */
