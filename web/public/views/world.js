@@ -373,7 +373,7 @@ export default {
     T('glow_moss', '荧光苔', '#5ac8a0', '#8affd0', { hard: 0.2, solid: false, light: 0.8 }),
     T('crystal', '水晶簇', '#7fd8f0', '#ffffff', { hard: 1.6, tool: 'pick', light: 0.9 }),
     T('stalagmite', '石笋', '#a8a49a', '#7d7a72', { hard: 1.0, tool: 'pick' }),
-    T('deep_stone', '深板岩', '#4a4a56', '#35353f', { hard: 2.2, tool: 'pick' }),
+    T('deep_stone', '深岩', '#4a4a56', '#35353f', { hard: 2.2, tool: 'pick' }),
     T('gem_ore', '宝石矿', '#5a5a7a', '#c86af0', { hard: 4.2, tool: 'pick', light: 0.4 }),
     T('mithril_ore', '秘银矿', '#6a7a8a', '#b8e8ff', { hard: 5.0, tool: 'pick', light: 0.5 }),
     T('cave_mushroom', '洞穴菇', '#8a6ac8', '#e0d0ff', { hard: 0.15, solid: false, light: 0.3 }),
@@ -398,6 +398,36 @@ export default {
 
     const TILE = {}
     TILES.forEach((t, i) => { t.id = i; TILE[t.k] = t })
+
+    /* ===================== 能不能走过去 =====================
+       ★ 这里是最关键的一处修正。
+
+       原来我只给方块打了 `solid`（能不能站上去），俯视视角下直接拿它
+       当「挡不挡路」用 —— 结果**草地、沙地、石头这些地面全部被判成墙**，
+       整个地表是一堵实心墙，玩家一格都迈不出去。
+       用户反馈的「冒险世界怎么不能自由走动」，根因就在这。
+
+       俯视视角里这两件事必须分开：
+         · 地面（草/沙/石/雪/木板…）—— 能站在上面，也能走过去
+         · 障碍（树干/仙人掌/箱子/工作台/遗迹砖墙…）—— 挡路
+       所以下面单独列一张「真的挡路」的表，移动判定只看它。
+       水不算障碍（能趟过去，只是慢）。 */
+    const BLOCK_LIST = [
+      // 树干与植物
+      'log_oak', 'log_pine', 'log_birch', 'log_jungle', 'log_acro', 'cactus',
+      // 家具与功能块
+      'craft_table', 'chest', 'furnace', 'bars', 'spawner', 'book_shelf',
+      'well', 'altar', 'nether_portal', 'rune_stone',
+      // 结构用的砖墙
+      'ruin_brick', 'ruin_pillar', 'dungeon_brick', 'stone_brick', 'deep_brick',
+      'brick', 'cracked_brick', 'ancient_brick', 'rune_block', 'packed_ice',
+      // 挖不动的
+      'bedrock', 'obsidian',
+    ]
+    const BLOCKS = {}
+    BLOCK_LIST.forEach((k) => { BLOCKS[k] = 1 })
+    /** 这个方块挡不挡路 */
+    function blocks(t) { return !!BLOCKS[t.k] }
 
     /* ===================== 生物群系 ===================== */
     const BIOMES = [
@@ -890,12 +920,12 @@ export default {
       { k: 'chicken', n: '鸡', c: '#f4f2e8', c2: '#e0553a', hp: 6, dmg: 0, hostile: false, speed: 1.0, drop: 'meat_raw' },
       { k: 'rabbit', n: '兔', c: '#c8b8a8', c2: '#a89888', hp: 5, dmg: 0, hostile: false, speed: 1.3, drop: 'meat_raw' },
       { k: 'fox', n: '狐狸', c: '#d08a4a', c2: '#f4f2e8', hp: 10, dmg: 0, hostile: false, speed: 1.4, drop: 'meat_raw' },
-      { k: 'zombie', n: '僵尸', c: '#4a7a52', c2: '#2f5238', hp: 18, dmg: 3, hostile: true, speed: 0.7, drop: 'meat_raw', night: true },
-      { k: 'skeleton', n: '骷髅', c: '#e0e0d8', c2: '#b8b8b0', hp: 16, dmg: 4, hostile: true, speed: 0.8, range: 5, night: true },
-      { k: 'spider', n: '蜘蛛', c: '#3a2f2a', c2: '#8a2a2a', hp: 14, dmg: 3, hostile: true, speed: 1.2, night: true },
-      { k: 'slime', n: '史莱姆', c: '#6fd06f', c2: '#3f9a3f', hp: 12, dmg: 2, hostile: true, speed: 0.6, drop: 'slimeball' },
-      { k: 'creeper', n: '苦力怕', c: '#5fae5f', c2: '#2f6b2f', hp: 16, dmg: 8, hostile: true, speed: 0.85, night: true },
-      { k: 'bat', n: '蝙蝠', c: '#4a3a3a', c2: '#2a1f1f', hp: 5, dmg: 1, hostile: true, speed: 1.6 },
+      { k: 'zombie', n: '褪色客', c: '#4a7a52', c2: '#2f5238', hp: 18, dmg: 3, hostile: true, speed: 0.7, drop: 'meat_raw', night: true },
+      { k: 'skeleton', n: '线稿骸', c: '#e0e0d8', c2: '#b8b8b0', hp: 16, dmg: 4, hostile: true, speed: 0.8, range: 5, night: true },
+      { k: 'spider', n: '蛛网怪', c: '#3a2f2a', c2: '#8a2a2a', hp: 14, dmg: 3, hostile: true, speed: 1.2, night: true },
+      { k: 'slime', n: '糊图层', c: '#6fd06f', c2: '#3f9a3f', hp: 12, dmg: 2, hostile: true, speed: 0.6, drop: 'slimeball' },
+      { k: 'creeper', n: '鼓包墨怪', c: '#5fae5f', c2: '#2f6b2f', hp: 16, dmg: 8, hostile: true, speed: 0.85, night: true },
+      { k: 'bat', n: '橡皮屑', c: '#4a3a3a', c2: '#2a1f1f', hp: 5, dmg: 1, hostile: true, speed: 1.6 },
     ]
     item('slimeball', '黏液球', { c: '#6fd06f', c2: '#3f9a3f' })
 
@@ -1013,9 +1043,12 @@ export default {
     function resize() {
       const w = stage.clientWidth || 430
       // 视口高度按屏幕比例定，手机上别太扁
-      const h = Math.max(200, Math.min(Math.round(w * 0.78), Math.round(window.innerHeight * 0.52)))
-      cell = Math.max(14, Math.floor(w / VIEW_W))
-      VIEW_H = Math.max(9, Math.floor(h / cell))
+      /* 视野放大：原来高度只取屏幕的 52%，画布很扁，看得见的地方太少。
+         现在取 68%（上限接近屏幕宽），格子也从 21px 提到 24px 上下。 */
+      const h = Math.max(240, Math.min(Math.round(w * 0.95), Math.round(window.innerHeight * 0.68)))
+      cell = Math.max(16, Math.floor(w / 19))
+      VIEW_W = Math.max(17, Math.floor(w / cell))
+      VIEW_H = Math.max(11, Math.floor(h / cell))
       dpr = Math.min(window.devicePixelRatio || 1, 2)
       cv.width = VIEW_W * cell * dpr
       cv.height = VIEW_H * cell * dpr
@@ -1211,7 +1244,7 @@ export default {
       P.dir = dir
       const nx = P.x + d[0], ny = P.y + d[1]
       const t = getTile(nx, ny)
-      if (t.solid) {
+      if (blocks(t)) {
         // 撞墙就不动，但朝向要变
         render()
         return
@@ -1258,6 +1291,63 @@ export default {
       }
     }
 
+    /* ★ 找一个**能站、而且走得动**的格子。
+       这里踩过两次坑，都记下来：
+
+       第一版出生点如果正好是实心块，代码是「往上顶直到不实心」——
+       结果可能被顶到结构内部，四面都是墙，一步也走不了。
+
+       第二版改成「自己不是实心、下面有支撑」就收工，
+       结果找出来的可能是个**一格大的封闭小坑**：站得住，
+       但四个方向全是实心 —— 表现就是「按住方向键只挪一格就卡死」。
+       这是跑测试量出来的（按住右 1.5 秒只走了 1 格）。
+
+       所以现在要求：自己 + 头顶都不是实心（人要能站直），
+       而且四个方向里至少三个是通的（不能是个洞窟缝）。
+       按这个条件从目标点一圈圈往外找，优先近的。 */
+    function findStand(fromX, fromY, layer) {
+      const L = layer == null ? P.layer : layer
+      const pass = (x, y) => {
+        const t = getTile(x, y, L)
+        if (blocks(t)) return false
+        if (t.k === 'lava' || t.k === 'deep_water') return false
+        return true
+      }
+      const openAt = (x, y) => {
+        if (!pass(x, y)) return false
+        if (!pass(x, y - 1)) return false // 头顶要有空间，不然是条缝
+        const below = getTile(x, y + 1, L)
+        const footOk = below.solid || below.k === 'water' || below.k === 'deep_water'
+        if (!footOk && !/water|deep_water/.test(getTile(x, y, L).k)) return false
+        let n = 0
+        if (pass(x + 1, y)) n++
+        if (pass(x - 1, y)) n++
+        if (pass(x, y + 1) || getTile(x, y + 1, L).solid) n++
+        if (pass(x, y - 1)) n++
+        return n >= 3
+      }
+      if (openAt(fromX, fromY)) return { x: fromX, y: fromY }
+      // 先小范围搜（正常情况就在附近）
+      for (let r = 1; r <= 100; r++) {
+        for (let dy = -r; dy <= r; dy++) {
+          for (let dx = -r; dx <= r; dx++) {
+            if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue
+            if (openAt(fromX + dx, fromY + dy)) return { x: fromX + dx, y: fromY + dy }
+          }
+        }
+      }
+      // 实在找不到开阔地，退一步只要求「站得住」
+      for (let r = 1; r <= 100; r++) {
+        for (let dy = -r; dy <= r; dy++) {
+          for (let dx = -r; dx <= r; dx++) {
+            if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue
+            if (pass(fromX + dx, fromY + dy)) return { x: fromX + dx, y: fromY + dy }
+          }
+        }
+      }
+      return { x: fromX, y: fromY }
+    }
+
     function onEnterTile() {
       checkDiscover()
       const t = getTile(P.x, P.y)
@@ -1283,6 +1373,7 @@ export default {
       const f = frontTile()
       const t = getTile(f.x, f.y)
       if (t.k === 'air' || t.k === 'bedrock') return toast(t.k === 'bedrock' ? '挖不动' : '这里没东西')
+      if (t.k === 'water' || t.k === 'deep_water' || t.k === 'lava') return toast('这个挖不了')
       const tool = ITEMS[heldItem()]
       let speed = 1
       if (tool && tool.tool && tool.tool === t.tool) speed = tool.power
@@ -1365,9 +1456,11 @@ export default {
       P.layer = to
       P.moving = null
       ensureAround(P.x, P.y, 2, P.layer)
-      // 落地：如果目标格是实心的，往上找一个空的
-      let g = 0
-      while (getTile(P.x, P.y).solid && g++ < 40) P.y--
+      // 落地：换层之后也要找地方站稳
+      {
+        const sp = findStand(P.x, P.y, P.layer)
+        P.x = sp.x; P.y = sp.y
+      }
       P.rx = P.x; P.ry = P.y
       mobs = []
       for (let i = 0; i < (P.layer === 0 ? 4 : 6); i++) spawnMob()
@@ -1396,9 +1489,9 @@ export default {
         const x = Math.round(P.x + Math.cos(a) * r)
         const y = Math.round(P.y + Math.sin(a) * r)
         const t = getTile(x, y)
-        if (t.solid || t.k === 'water' || t.k === 'deep_water') continue
+        if (blocks(t) || t.k === 'water' || t.k === 'deep_water') continue
         const under = getTile(x, y + 1)
-        if (!under.solid) continue
+        if (blocks(under)) continue // 不能站在障碍里
         // 选生物：敌对只在夜里/洞穴
         const night = isNight()
         const pool = MOBS.filter((m) => (m.hostile ? night : !night || !m.night))
@@ -1434,7 +1527,7 @@ export default {
             if (!ox && !oy) continue
             const nx = m.x + ox, ny = m.y + oy
             const nt = getTile(nx, ny)
-            if (!nt.solid && nt.k !== 'water' && nt.k !== 'lava') {
+            if (!blocks(nt) && nt.k !== 'water' && nt.k !== 'lava') {
               m.x = nx; m.y = ny
               break
             }
@@ -1447,7 +1540,7 @@ export default {
             const d = [[1, 0], [-1, 0], [0, 1], [0, -1]][Math.floor(Math.random() * 4)]
             const nx = m.x + d[0], ny = m.y + d[1]
             const nt = getTile(nx, ny)
-            if (!nt.solid && nt.k !== 'water' && nt.k !== 'lava') { m.x = nx; m.y = ny }
+            if (!blocks(nt) && nt.k !== 'water' && nt.k !== 'lava') { m.x = nx; m.y = ny }
           }
         }
       }
@@ -1541,7 +1634,10 @@ export default {
       const hh = Math.floor(((time * 24) + 6) % 24)
       $('wdClock').innerHTML = icon + ' ' + String(hh).padStart(2, '0') + ':00'
       const b = P.layer > 0 ? { n: LAYER_NAME[P.layer] } : biomeAt(P.x, P.y)
-      $('wdWhere').innerHTML = '<b>' + esc(b.n) + '</b> · ❤️' + P.hp + ' · 🍗' + P.food
+      // 带上坐标：走路时能看见自己在动，也方便和工会的悬赏对上
+      $('wdWhere').innerHTML =
+        '<b>' + esc(b.n) + '</b> · ❤️' + P.hp + ' · 🍗' + P.food +
+        '<br><span class="wd-pos" data-pos="' + P.x + ',' + P.y + '" style="opacity:.7;font-size:10.5px">' + P.x + ', ' + P.y + '</span>'
       const lc = $('wdLayerChip')
       if (lc) {
         lc.textContent = ['🟩 地表', '🕳️ 洞穴', '🌑 深层'][P.layer]
@@ -1688,10 +1784,24 @@ export default {
     }
 
     /* ===================== 输入 ===================== */
+    /* ★ 这里原来有个坑：为了不让「系统自动重复」触发多次，
+       按下时加了 `if (keysDown[k]) return`，
+       结果**按住方向键只走一格**，松开再按才走第二格 ——
+       玩起来就是「不能自由走动」。用户反馈的正是这个。
+       改法：按键只负责记录「现在按着哪些键」，
+       真正的移动放到主循环里 —— 一直按着就一直走。 */
     const keysDown = {}
+    const held = {}
+    const DIR_KEYS = { ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right' }
+
     function onKey(e, down) {
       const k = e.code
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(k)) e.preventDefault()
+      if (DIR_KEYS[k]) {
+        held[DIR_KEYS[k]] = down
+        if (down && !P.moving) tryMove(DIR_KEYS[k])
+        return
+      }
       if (!down) { keysDown[k] = false; return }
       if (keysDown[k]) return
       keysDown[k] = true
@@ -1745,7 +1855,7 @@ export default {
       lwAlert(
         '<div style="text-align:left;font-size:13px;line-height:2">' +
         '<b>怎么玩</b><br>' +
-        '· 方向键 / WASD：走一格（手机上用左下角方向键）<br>' +
+        '· 方向键 / WASD：**按住就会一直走**（手机上按住左下角方向键）<br>' +
         '· 空格 或 点画布：挖面前的方块 / 打面前的生物<br>' +
         '· Shift + 点：把手上选中的方块放到面前<br>' +
         '· 1~9：换手上的槽位<br>' +
@@ -1769,6 +1879,14 @@ export default {
       time = (time + dt / dayLen) % 1
       tick++
       updateMove(dt)
+      /* 一直按着方向键就一直走。放在主循环里而不是按键回调里，
+         因为按键回调只在按下的瞬间触发一次。 */
+      if (!P.moving) {
+        if (held.up) tryMove('up')
+        else if (held.down) tryMove('down')
+        else if (held.left) tryMove('left')
+        else if (held.right) tryMove('right')
+      }
       updateMobs(dt)
       // 饥饿：每 20 秒掉一点
       if (tick % 1200 === 0 && P.food > 0) { P.food--; refreshClock() }
@@ -1800,9 +1918,11 @@ export default {
       hotbar = ['torch_item', 'planks', 'craft_table', 'wood_pick', 'wood_sword', 'bread', 'dirt', 'stone', null]
     }
     ensureAround(P.x, P.y, 3)
-    // 落地：如果站在实心块里，往上找一个空的
-    let guard = 0
-    while (getTile(P.x, P.y).solid && guard++ < 40) P.y--
+    // 落地：从出生点向外找一个真的能站的地方
+    {
+      const sp = findStand(P.x, P.y, P.layer)
+      P.x = sp.x; P.y = sp.y
+    }
     P.rx = P.x; P.ry = P.y
     // 开局给几只温顺的
     for (let i = 0; i < 4; i++) spawnMob()
@@ -1827,6 +1947,30 @@ export default {
 
     // 给外部（成就/统计）用
     window.__lwWorld = {
+      /* 测试钩子：手动推若干帧。
+         无头浏览器在 --virtual-time-budget 下 requestAnimationFrame
+         根本不触发，主循环不跑，所以没法用它验证「走得动走不动」。
+         这里把主循环那一步暴露出来，测试里直接调。 */
+      step: (n, dt) => {
+        for (let i = 0; i < (n || 1); i++) tickWorld(dt || 0.05)
+        render(); refreshClock()
+      },
+      move: (dir) => tryMove(dir),
+      hold: (dir, on) => { held[dir] = !!on },
+      at: () => ({ x: P.x, y: P.y, layer: P.layer, moving: !!P.moving }),
+      tile: (x, y, l) => { const t = getTile(x, y, l == null ? P.layer : l); return t.k + (blocks(t) ? '(挡路)' : '(能走)') },
+      grid: (x0, y0, w, h) => {
+        const rows = []
+        for (let j = 0; j < h; j++) {
+          let r = ''
+          for (let i = 0; i < w; i++) {
+            const t = getTile(x0 + i, y0 + j)
+            r += blocks(t) ? '#' : '.'
+          }
+          rows.push(r)
+        }
+        return rows
+      },
       stats: () => ({ mined: minedCount, placed: placedCount, deaths: deathCount, mobs: Object.keys(dexMob).length, blocks: Object.keys(dexSeen).length,
         kills: kills, structs: Object.keys(FOUND).length, layer: P.layer, }),
     }

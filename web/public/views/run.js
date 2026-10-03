@@ -440,7 +440,7 @@ export default {
     const stage = $('rkStage')
     let W = 0, H = 0      // 逻辑像素尺寸
     let scale = 1         // 实际像素 / 逻辑像素
-    const ROWS = 7        // 地形高度固定 7 格
+    const ROWS = 10       // 画布高度 10 格（地形只占底下 7 格，上面是天空）
 
     let world = []        // 世界是一列一列的，index = 格号
     let genX = 0          // 已生成到第几列
@@ -542,8 +542,10 @@ export default {
     /* ================= 尺寸 ================= */
     function resize() {
       const w = stage.clientWidth || 430
-      const hCols = Math.round(w / (TILE * 1.6))
-      W = Math.max(28, hCols)
+      /* 每格占的屏幕像素从 1.6 个逻辑像素降到 1.45 —— 格子大了，画布也就高了。
+         之前画布只有 175px 高，手机上看着像一条缝。 */
+      const hCols = Math.round(w / (TILE * 1.45))
+      W = Math.max(20, hCols)
       H = ROWS
       scale = Math.max(1, Math.floor(w / W))
       const dpr = Math.min(window.devicePixelRatio || 1, 2)
