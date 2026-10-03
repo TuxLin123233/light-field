@@ -83,6 +83,51 @@ export default {
     .wd-mini canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated }
 
     /* 热键栏 */
+    /* 世界列表 */
+    .wd-world {
+      display: flex; align-items: center; gap: 7px;
+      padding: 10px 11px; margin-bottom: 7px;
+      border: 1px solid #e0d0b4; border-radius: 12px;
+      background: linear-gradient(180deg, #fffdf8, #f8f0e2);
+    }
+    html[data-mood='dark'] .wd-world {
+      background: linear-gradient(180deg, #37312a, #2e2822); border-color: #4d4437;
+    }
+    .wd-world.cur { border-color: #6fbf85; box-shadow: 0 0 0 2px rgba(111,191,133,.25) }
+    .wd-worldinfo { flex: 1; min-width: 0 }
+    .wd-worldname { font-size: 13.5px; font-weight: 800; color: #4a3a24 }
+    html[data-mood='dark'] .wd-worldname { color: #f0e6d2 }
+    .wd-worldtag {
+      display: inline-block; margin-left: 6px; padding: 1px 7px;
+      font-size: 10px; font-weight: 700; border-radius: 999px;
+      background: #6fbf85; color: #fff; vertical-align: middle;
+    }
+    .wd-worldmeta { font-size: 11px; opacity: .7; margin-top: 2px }
+    .wd-worldbtn {
+      flex: none; padding: 6px 10px; border: 1px solid #d3bb93; border-radius: 8px;
+      background: #fff6e4; color: #4a3a20;
+      font-family: inherit; font-size: 11.5px; font-weight: 700; cursor: pointer;
+    }
+    .wd-worldbtn:active { transform: scale(.96) }
+    .wd-worldbtn.danger { border-color: #d9a9a0; color: #a8463a }
+    html[data-mood='dark'] .wd-worldbtn { background:#3a332a; border-color:#4f4536; color:#efe3cf }
+    html[data-mood='dark'] .wd-worldbtn.danger { color:#e08a7a; border-color:#5c3b34 }
+    .wd-worldacts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px }
+    .wd-bigbtn {
+      flex: 1; min-width: 140px; padding: 12px;
+      border: 1px solid #d3bb93; border-radius: 12px;
+      background: #fff6e4; color: #4a3a20;
+      font-family: inherit; font-size: 13.5px; font-weight: 800; cursor: pointer;
+      box-shadow: 0 2px 0 #e0cbaa;
+    }
+    .wd-bigbtn.primary {
+      border-color: #c98a4f; color: #5a3a1a;
+      background: linear-gradient(180deg,#fff2dc,#f2dcb8);
+    }
+    .wd-bigbtn:active { transform: translateY(1px); box-shadow: none }
+    html[data-mood='dark'] .wd-bigbtn { background:#3a332a; border-color:#4f4536; color:#efe3cf; box-shadow: 0 2px 0 #241f18 }
+    html[data-mood='dark'] .wd-bigbtn.primary { background:linear-gradient(180deg,#5a4526,#43331c); border-color:#6b5230; color:#ffe8c8 }
+
     /* 世界生成动画 */
     .wd-gen {
       position: absolute; inset: 0; z-index: 40;
@@ -149,9 +194,9 @@ export default {
     /* 热键栏。原来 40px 一格，手机上手指点不准 —— 放大到 54。
        9 格总共 526px，窄屏放不下，所以让它能横向滑。 */
     .wd-bar {
-      position: absolute; left: 0; right: 0; bottom: 8px;
-      display: flex; gap: 5px; justify-content: center; padding: 0 8px;
+      display: flex; gap: 5px; justify-content: center;
       overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+      padding-bottom: 2px;
     }
     .wd-bar::-webkit-scrollbar { display: none }
     .wd-slot {
@@ -234,7 +279,7 @@ export default {
 
     /* 提示条 */
     .wd-toast {
-      position: absolute; left: 50%; bottom: 56px; transform: translateX(-50%);
+      position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%);
       padding: 6px 14px; border-radius: 999px;
       background: rgba(8,20,16,.8); color: #eafff3;
       font-size: 12px; font-weight: 700; white-space: nowrap;
@@ -247,27 +292,36 @@ export default {
       100% { opacity: 0; transform: translate(-50%, -8px) }
     }
 
-    /* 下沉 / 上来 */
-    .wd-layerbtns {
-      position: absolute; right: 10px; bottom: 74px;
-      display: flex; flex-direction: column; gap: 6px;
+    /* 右边那列动作按钮：挖打 / 放 / 下去 / 上来 */
+    .wd-actcol {
+      flex: 1; min-width: 0;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
     }
-    .wd-layerbtns button {
-      padding: 11px 16px; border: 2px solid rgba(255,255,255,.34);
+    .wd-actcol button {
+      padding: 13px 6px; border: 2px solid rgba(255,255,255,.34);
       border-radius: 12px; background: rgba(8,20,16,.68);
-      color: #eafff3; font-family: inherit; font-size: 14px; font-weight: 800;
+      color: #eafff3; font-family: inherit; font-size: 13px; font-weight: 800;
       cursor: pointer; white-space: nowrap;
       box-shadow: 0 2px 6px rgba(0,0,0,.35);
       -webkit-tap-highlight-color: transparent;
     }
-    .wd-layerbtns button:active { background: rgba(255,255,255,.3); transform: scale(.96) }
-    .wd-layerbtns button:disabled { opacity: .35; cursor: default }
+    .wd-actcol button:active { background: rgba(255,255,255,.3); transform: scale(.97) }
+    .wd-actcol button:disabled { opacity: .35; cursor: default }
+    .wd-actcol #wdAct { background: rgba(70,120,190,.8); border-color: rgba(150,200,255,.6) }
+    .wd-actcol #wdPlace { background: rgba(200,140,60,.8); border-color: rgba(255,210,140,.7) }
 
     /* 触屏方向键 */
+    /* 控制区：在画面下面，不再盖住画布 */
+    .wd-controls {
+      padding: 10px 12px 12px;
+      background: linear-gradient(180deg, #16223d, #101a2e);
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .wd-ctlrow { display: flex; gap: 12px; align-items: center }
     /* 方向键。原来 34px，拇指按不准 —— 放大到 52。
        正中间那格放「挖/打」，那是最常用的动作。 */
     .wd-dpad {
-      position: absolute; left: 10px; bottom: 74px;
+      flex: none;
       display: grid; grid-template-columns: repeat(3, 52px); grid-template-rows: repeat(3, 52px);
       gap: 5px;
     }
@@ -290,6 +344,7 @@ export default {
       <div class="wd-head">
         <a class="wd-back" href="/town">← 小镇</a>
         <div class="wd-title">🧭 冒险世界</div>
+        <button class="wd-btn" id="wdWorlds" type="button">🌍 世界</button>
         <button class="wd-btn" id="wdSave" type="button">存档</button>
         <button class="wd-btn" id="wdHelp" type="button">帮助</button>
       </div>
@@ -316,25 +371,35 @@ export default {
         </div>
         <div class="wd-mini"><canvas id="wdMini"></canvas></div>
         <div class="wd-toast" id="wdToast"></div>
-        <div class="wd-dpad">
-          <button class="sp"></button><button data-dir="up">▲</button><button class="sp"></button>
-          <button data-dir="left">◀</button><button data-dir="act">⛏</button><button data-dir="right">▶</button>
-          <button class="sp"></button><button data-dir="down">▼</button><button class="sp"></button>
-        </div>
-        <div class="wd-bar" id="wdBar"></div>
-        <!-- 下沉 / 上来 -->
-        <div class="wd-layerbtns">
-          <button id="wdPlace" type="button">🧱 放一个</button>
-          <button id="wdDown" type="button">⬇ 下去</button>
-          <button id="wdUp" type="button">⬆ 上来</button>
-        </div>
       </div>
+
+        <!-- 控制区。
+             ★ 原来这些是绝对定位、盖在画布上的，挡住了一大块视野，
+             手指还得压在画面上。现在挪到画面**外面**，
+             画布整块看得见，操作也不挡视线。 -->
+        <div class="wd-controls">
+          <div class="wd-ctlrow">
+            <div class="wd-dpad">
+              <button class="sp"></button><button data-dir="up">▲</button><button class="sp"></button>
+              <button data-dir="left">◀</button><button data-dir="act">⛏</button><button data-dir="right">▶</button>
+              <button class="sp"></button><button data-dir="down">▼</button><button class="sp"></button>
+            </div>
+            <div class="wd-actcol">
+              <button id="wdAct" type="button">⛏ 挖 / 打</button>
+              <button id="wdPlace" type="button">🧱 放一个</button>
+              <button id="wdDown" type="button">⬇ 下去</button>
+              <button id="wdUp" type="button">⬆ 上来</button>
+            </div>
+          </div>
+          <div class="wd-bar" id="wdBar"></div>
+        </div>
 
       <div class="wd-panel">
         <div class="wd-tabs" id="wdTabs">
           <button data-tab="bag" class="on" type="button">🎒 背包</button>
           <button data-tab="craft" type="button">🔨 合成</button>
           <button data-tab="dex" type="button">📖 图鉴</button>
+          <button data-tab="world" type="button">🌍 世界</button>
           <button data-tab="stat" type="button">📊 统计</button>
         </div>
         <div id="wdPane"></div>
@@ -1054,8 +1119,77 @@ export default {
     const dexMob = {}     // 见过哪些生物（图鉴用）
     const kills = {}      // 每种生物打死了多少（冒险者工会的悬赏要用）
 
-    /* ===================== 存档 ===================== */
+    /* ===================== 存档（多世界） =====================
+       localStorage 里 'lw-town-save' 的形状：
+
+         {
+           cur: 'w3',                    ← 当前在玩哪个世界
+           worlds: {                     ← 世界槽位，可以有多个
+             'w3': { name, seed, savedAt, data: { …真正那份存档… } }
+           },
+           run: { … }                    ← 跑酷的存档，和世界无关
+         }
+
+       每个世界的 data 里只存「玩家改过的格」+ 状态，
+       原始地形靠种子重算 —— 所以一个世界也就几十 KB，能放好几个。
+
+       ★ 兼容老的（单世界）存档：以前是 combo.world 直接放一份 data，
+         这里读到就顺手搬进 worlds[cur] 里，老玩家不会丢档。 */
     const SAVE_KEY = 'lw-town-save'
+    let curSlot = 'w1'
+    const WORLD_NAME_A = ['青苔', '雾谷', '苔原', '砂丘', '云溪', '石楠', '松风', '盐滩', '萤火', '霜岭', '潮汐', '暖泉']
+    const WORLD_NAME_B = ['小镇', '平原', '盆地', '海湾', '林地', '山坳', '绿洲', '尽头', '之南', '以北', '旧地', '新城']
+
+    function readCombo() {
+      let c = {}
+      try { c = JSON.parse(localStorage.getItem(SAVE_KEY) || '{}') } catch (e) { c = {} }
+      if (!c || typeof c !== 'object') c = {}
+      if (!c.worlds || typeof c.worlds !== 'object') c.worlds = {}
+      // 老格式迁移：combo.world 直接就是一份 data
+      if (c.world && !c.worlds[c.cur]) {
+        const id = c.cur || 'w1'
+        c.worlds[id] = {
+          name: c.world.name || '我的世界',
+          seed: c.world.seed != null ? c.world.seed : DEFAULT_SEED,
+          savedAt: Date.now(),
+          data: c.world,
+        }
+        c.cur = id
+        delete c.world
+      }
+      if (!c.cur || !c.worlds[c.cur]) {
+        const ids = Object.keys(c.worlds)
+        c.cur = ids.length ? ids[0] : ''
+      }
+      return c
+    }
+    function writeCombo(c) {
+      try { localStorage.setItem(SAVE_KEY, JSON.stringify(c)) } catch (e) {}
+      return c
+    }
+    function slotName(seed) {
+      const a = WORLD_NAME_A[seedOf(seed) % WORLD_NAME_A.length]
+      const b = WORLD_NAME_B[Math.floor(seedOf(seed) / 7) % WORLD_NAME_B.length]
+      return a + b
+    }
+    function newSlotId(c) {
+      let i = 1
+      while (c.worlds['w' + i]) i++
+      return 'w' + i
+    }
+    /** 世界列表，最近玩的排前面 */
+    function worldList() {
+      const c = readCombo()
+      return Object.keys(c.worlds).map((id) => ({
+        id: id,
+        name: c.worlds[id].name || '世界',
+        seed: c.worlds[id].seed,
+        savedAt: c.worlds[id].savedAt || 0,
+        cur: id === c.cur,
+        bytes: (() => { try { return JSON.stringify(c.worlds[id].data || {}).length } catch (e) { return 0 } })(),
+      })).sort((x, y) => (y.cur ? 1 : 0) - (x.cur ? 1 : 0) || y.savedAt - x.savedAt)
+    }
+
     function saveAll() {
       // 只存玩家改过的格 + 状态。原始地形靠种子重算，不用存。
       const ed = []
@@ -1067,50 +1201,132 @@ export default {
         ed: ed.slice(-4000), // 最多存 4000 格改动
         found: FOUND,
         dex: dexSeen, dmob: dexMob,
-          kills: kills,
+        kills: kills,
         mined: minedCount, placed: placedCount, deaths: deathCount,
       }
-      let combo = {}
-      try { combo = JSON.parse(localStorage.getItem(SAVE_KEY) || '{}') } catch (e) {}
-      combo.world = data
-      try { localStorage.setItem(SAVE_KEY, JSON.stringify(combo)) } catch (e) {}
+      const c = readCombo()
+      if (!c.cur) { c.cur = newSlotId(c) }
+      const old = c.worlds[c.cur] || {}
+      c.worlds[c.cur] = {
+        name: old.name || slotName(WORLD_SEED),
+        seed: WORLD_SEED,
+        savedAt: Date.now(),
+        data: data,
+      }
+      writeCombo(c)
       const t = token()
       if (t) {
         fetch('/api/towngame', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t },
-          body: JSON.stringify({ action: 'save', save: combo }),
+          body: JSON.stringify({ action: 'save', save: c }),
         }).catch(() => {})
       }
     }
+
+    /** 把一份 data 灌进当前的运行时状态 */
+    function applyWorldData(d) {
+      if (!d) return false
+      if (d.seed != null) WORLD_SEED = seedOf(d.seed)
+      world.clear()
+      edited.clear()
+      Object.keys(FOUND).forEach((k) => { delete FOUND[k] })
+      Object.keys(kills).forEach((k) => { delete kills[k] })
+      Object.keys(dexSeen).forEach((k) => { delete dexSeen[k] })
+      Object.keys(dexMob).forEach((k) => { delete dexMob[k] })
+      Object.keys(bag).forEach((k) => { delete bag[k] })
+      mobs = []
+      P.x = Number(d.x) || 0
+      P.y = Number(d.y) || 0
+      P.layer = Math.max(0, Math.min(2, Number(d.layer) || 0))
+      P.hp = Number(d.hp) || 20
+      P.food = Number(d.food) || 20
+      P.moving = null
+      time = typeof d.time === 'number' ? d.time : 0.28
+      Object.assign(bag, d.bag || {})
+      if (Array.isArray(d.hotbar) && d.hotbar.length === 9) hotbar = d.hotbar
+      sel = Number(d.sel) || 0
+      ;(d.ed || []).forEach((str) => {
+        const i = String(str).indexOf('=')
+        if (i > 0) edited.set(str.slice(0, i), str.slice(i + 1))
+      })
+      Object.assign(dexSeen, d.dex || {})
+      Object.assign(dexMob, d.dmob || {})
+      Object.assign(kills, d.kills || {})
+      if (d.found) Object.assign(FOUND, d.found)
+      minedCount = Number(d.mined) || 0
+      placedCount = Number(d.placed) || 0
+      deathCount = Number(d.deaths) || 0
+      P.rx = P.x; P.ry = P.y
+      ensureAround(P.x, P.y, 3, P.layer)
+      return true
+    }
+
     function loadAll() {
-      try {
-        const combo = JSON.parse(localStorage.getItem(SAVE_KEY) || '{}')
-        const d = combo.world
-        if (!d) return false
-        if (d.seed != null) WORLD_SEED = seedOf(d.seed)
-        P.x = Number(d.x) || 0
-        P.y = Number(d.y) || 0
-        P.layer = Math.max(0, Math.min(2, Number(d.layer) || 0))
-        P.hp = Number(d.hp) || 20
-        P.food = Number(d.food) || 20
-        time = typeof d.time === 'number' ? d.time : 0.28
-        bag = d.bag || {}
-        if (Array.isArray(d.hotbar) && d.hotbar.length === 9) hotbar = d.hotbar
-        sel = Number(d.sel) || 0
-        ;(d.ed || []).forEach((s) => {
-          const i = String(s).indexOf('=')
-          if (i > 0) edited.set(s.slice(0, i), s.slice(i + 1))
-        })
-        Object.assign(dexSeen, d.dex || {})
-        Object.assign(dexMob, d.dmob || {})
-        Object.assign(kills, d.kills || {})
-        if (d.found) Object.assign(FOUND, d.found)
-        minedCount = Number(d.mined) || 0
-        placedCount = Number(d.placed) || 0
-        deathCount = Number(d.deaths) || 0
-        return true
-      } catch (e) { return false }
+      const c = readCombo()
+      curSlot = c.cur || ''
+      if (!curSlot || !c.worlds[curSlot]) return false
+      return applyWorldData(c.worlds[curSlot].data)
+    }
+
+    /** 新建一个世界并切过去 */
+    function createWorld(seed, name) {
+      saveAll()                       // 先把当前这个世界存好
+      const c = readCombo()
+      const id = newSlotId(c)
+      const sd = seedOf(seed == null ? randomSeed() : seed)
+      c.worlds[id] = { name: name || slotName(sd), seed: sd, savedAt: Date.now(), data: null }
+      c.cur = id
+      writeCombo(c)
+      curSlot = id
+      applyWorldData({ seed: sd, x: 0, y: 0, layer: 0, hp: 20, food: 20, time: 0.28,
+        bag: {}, hotbar: ['torch_item', 'dirt', 'planks', 'stone', 'craft_table', null, null, null, null], sel: 0,
+        ed: [], found: {}, dex: {}, dmob: {}, kills: {}, mined: 0, placed: 0, deaths: 0 })
+      // 新世界给一份起步物资（和第一次玩一样）
+      give('torch_item', 8)
+      give('planks', 16)
+      give('craft_table', 1)
+      give('bread', 3)
+      give('wood_pick', 1)
+      give('wood_sword', 1)
+      give('ladder_up_item', 3)
+      hotbar = ['torch_item', 'planks', 'craft_table', 'wood_pick', 'wood_sword', 'bread', 'dirt', 'stone', null]
+      const sp = findStand(0, 0, 0)
+      P.x = sp.x; P.y = sp.y; P.rx = P.x; P.ry = P.y
+      mobs = []
+      for (let i = 0; i < 4; i++) spawnMob()
+      saveAll()
+      return id
+    }
+
+    /** 切到另一个已有的世界 */
+    function gotoWorld(id) {
+      const c = readCombo()
+      if (!c.worlds[id] || id === c.cur) return false
+      saveAll()
+      const c2 = readCombo()
+      c2.cur = id
+      writeCombo(c2)
+      curSlot = id
+      if (!applyWorldData(c2.worlds[id].data)) return false
+      const sp = findStand(P.x, P.y, P.layer)
+      P.x = sp.x; P.y = sp.y; P.rx = P.x; P.ry = P.y
+      mobs = []
+      for (let i = 0; i < 4; i++) spawnMob()
+      return true
+    }
+
+    function dropWorld(id) {
+      const c = readCombo()
+      if (!c.worlds[id]) return false
+      delete c.worlds[id]
+      if (c.cur === id) {
+        const ids = Object.keys(c.worlds)
+        c.cur = ids.length ? ids[0] : ''
+      }
+      writeCombo(c)
+      if (c.cur && c.cur !== curSlot) gotoWorld(c.cur)
+      return true
     }
 
     /* ===================== 背包操作 ===================== */
@@ -1146,7 +1362,9 @@ export default {
       // 视口高度按屏幕比例定，手机上别太扁
       /* 视野放大：原来高度只取屏幕的 52%，画布很扁，看得见的地方太少。
          现在取 68%（上限接近屏幕宽），格子也从 21px 提到 24px 上下。 */
-      const h = Math.max(240, Math.min(Math.round(w * 0.95), Math.round(window.innerHeight * 0.68)))
+      /* 控制区挪出画面之后，底部不用再留位置给按钮 ——
+         画布占高从屏幕的 68% 提到 76%。 */
+      const h = Math.max(260, Math.min(Math.round(w * 1.0), Math.round(window.innerHeight * 0.76)))
       cell = Math.max(16, Math.floor(w / 19))
       VIEW_W = Math.max(17, Math.floor(w / cell))
       VIEW_H = Math.max(11, Math.floor(h / cell))
@@ -1904,6 +2122,97 @@ export default {
             return '<div class="wd-cell' + (got ? '' : ' locked') + '" title="' + esc(got ? m.n : '？？？') + '">' +
               '<div class="wd-sq" style="background:' + (got ? m.c : '#888') + '"></div></div>'
           }).join('') + '</div>'
+      } else if (tab === 'world') {
+        /* 世界管理：列出现在有几个世界、各叫什么、多大，能切、能删、能新建。
+           用户反馈「没有新建世界选项」—— 原来按钮埋在统计页里，
+           等于没有入口。现在顶栏有个「🌍 世界」直接跳到这一页。 */
+        const list = worldList()
+        const rows = list.map((w) => {
+          const kb = Math.max(1, Math.round(w.bytes / 1024))
+          const when = (() => {
+            if (!w.savedAt) return '还没存过'
+            const mins = Math.floor((Date.now() - w.savedAt) / 60000)
+            if (mins < 1) return '刚刚玩过'
+            if (mins < 60) return mins + ' 分钟前'
+            if (mins < 1440) return Math.floor(mins / 60) + ' 小时前'
+            return Math.floor(mins / 1440) + ' 天前'
+          })()
+          return '<div class="wd-world' + (w.cur ? ' cur' : '') + '">' +
+            '<div class="wd-worldinfo">' +
+              '<div class="wd-worldname">' + (w.cur ? '▶ ' : '') + esc(w.name) +
+                (w.cur ? '<span class="wd-worldtag">正在玩</span>' : '') + '</div>' +
+              '<div class="wd-worldmeta">种子 ' + w.seed + ' · ' + when + ' · ' + kb + ' KB</div>' +
+            '</div>' +
+            (w.cur ? '' : '<button class="wd-worldbtn" data-goto="' + w.id + '">切换</button>') +
+            '<button class="wd-worldbtn" data-rename="' + w.id + '">改名</button>' +
+            '<button class="wd-worldbtn danger" data-drop="' + w.id + '">删除</button>' +
+          '</div>'
+        }).join('')
+        pane.innerHTML =
+          '<h4>🌍 我的世界（' + list.length + ' 个）</h4>' +
+          (list.length ? rows : '<div style="opacity:.7;font-size:12.5px">还没有世界</div>') +
+          '<div class="wd-worldacts">' +
+          '<button id="wdNewRandom" class="wd-bigbtn primary">🎲 新建世界（随机）</button>' +
+          '<button id="wdNewSeed" class="wd-bigbtn">🔢 用种子新建</button>' +
+          '</div>' +
+          '<div style="font-size:11.5px;opacity:.72;line-height:1.9;margin-top:10px">' +
+          '· 每个世界的地形、群系、洞穴、矿脉、结构都由它的<b>种子</b>决定，' +
+          '同一个种子永远是同一个世界。<br>' +
+          '· 存档里只记<b>你改过的格子</b>和身上的东西，地形靠种子重算 —— ' +
+          '所以一个世界才几十 KB，可以放好几个。<br>' +
+          '· 想把自己的世界给别人玩，把种子发过去就行。' +
+          '</div>'
+
+        pane.querySelectorAll('[data-goto]').forEach((btn) => {
+          btn.onclick = () => {
+            const id = btn.getAttribute('data-goto')
+            if (gotoWorld(id)) {
+              refreshBar(); refreshClock(); refreshPane(); render()
+              toast('切到世界 ' + id.replace('w', '#'))
+              try { window.sfx && window.sfx('nav') } catch (e) {}
+            }
+          }
+        })
+        pane.querySelectorAll('[data-rename]').forEach((btn) => {
+          btn.onclick = async () => {
+            const id = btn.getAttribute('data-rename')
+            const c = readCombo()
+            const oldN = (c.worlds[id] && c.worlds[id].name) || ''
+            const v = await lwPrompt('给这个世界起个名字', oldN)
+            if (v == null) return
+            const c2 = readCombo()
+            if (!c2.worlds[id]) return
+            c2.worlds[id].name = String(v).trim().slice(0, 12) || oldN
+            writeCombo(c2)
+            refreshPane()
+          }
+        })
+        pane.querySelectorAll('[data-drop]').forEach((btn) => {
+          btn.onclick = async () => {
+            const id = btn.getAttribute('data-drop')
+            const c = readCombo()
+            const nm = (c.worlds[id] && c.worlds[id].name) || id
+            if (Object.keys(c.worlds).length <= 1) { toast('至少要留一个世界'); return }
+            if (!(await lwConfirm('删掉「' + nm + '」？\n\n这个世界里挖的、盖的都会没，删了就找不回来了。'))) return
+            dropWorld(id)
+            refreshBar(); refreshClock(); refreshPane(); render()
+            toast('删掉了')
+          }
+        })
+        const nr = $('wdNewRandom')
+        if (nr) nr.onclick = () => {
+          createWorld(randomSeed())
+          refreshBar(); refreshClock(); refreshPane()
+          playGenAnim(() => { render(); refreshClock(); refreshPane(); toast('新世界：' + WORLD_SEED) })
+        }
+        const ns = $('wdNewSeed')
+        if (ns) ns.onclick = async () => {
+          const v = await lwPrompt('输入世界种子\n\n数字或者一串字都行 —— 同一串种子永远长出同一个世界。', '')
+          if (v == null || String(v).trim() === '') return
+          createWorld(v)
+          refreshBar(); refreshClock(); refreshPane()
+          playGenAnim(() => { render(); refreshClock(); refreshPane(); toast('新世界：' + WORLD_SEED) })
+        }
       } else {
         pane.innerHTML =
           '<h4>📊 统计</h4>' +
@@ -1918,6 +2227,12 @@ export default {
           '发现的结构 <b>' + Object.keys(FOUND).length + '</b> 处<br>' +
           '附近生物 <b>' + mobs.length + '</b> 只' +
           '</div>' +
+          '<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">' +
+          '<button id="wdEat" style="padding:8px 16px;border:1px solid #d3bb93;border-radius:8px;background:#fff6e4;font-family:inherit;font-size:13px;cursor:pointer">🍗 吃东西</button>' +
+          '<button id="wdSpawn" style="padding:8px 16px;border:1px solid #d3bb93;border-radius:8px;background:#fff6e4;font-family:inherit;font-size:13px;cursor:pointer">🐾 引一只生物过来</button>' +
+          '<button id="wdFind" style="padding:8px 16px;border:1px solid #d3bb93;border-radius:8px;background:#fff6e4;font-family:inherit;font-size:13px;cursor:pointer">🧭 找最近的结构</button>' +
+          '</div>' +
+'</div>' +
           '<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">' +
           '<button id="wdEat" style="padding:8px 16px;border:1px solid #d3bb93;border-radius:8px;background:#fff6e4;font-family:inherit;font-size:13px;cursor:pointer">🍗 吃东西</button>' +
           '<button id="wdSpawn" style="padding:8px 16px;border:1px solid #d3bb93;border-radius:8px;background:#fff6e4;font-family:inherit;font-size:13px;cursor:pointer">🐾 引一只生物过来</button>' +
@@ -2084,8 +2399,10 @@ export default {
     })
 
     $('wdPlace').onclick = () => place()
+    $('wdAct').onclick = () => { if (!attack()) use() }
     $('wdDown').onclick = () => changeLayer(1)
     $('wdUp').onclick = () => changeLayer(-1)
+    $('wdWorlds').onclick = () => { switchTab('world'); refreshPane() }
     $('wdSave').onclick = () => { saveAll(); toast('存好了'); try { window.sfx && window.sfx('save') } catch (e) {} }
     /* 帮助。这里原来用 lwAlert 塞了 HTML —— 显示出来是一堆源码。
        改用 lwPanel（正文走 innerHTML）。 */
