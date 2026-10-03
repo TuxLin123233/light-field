@@ -149,7 +149,7 @@ export default {
       draw()
     }
     function customerInfo(ok) {
-      $('hpArena').innerHTML = '<b style="color:var(--text)">' + (ok ? '😋 食客满意！+1 颗星' : '😅 这顿将就了' : '') + '</b><br><button class="hp-btn primary" id="hpNext" style="margin-top:8px">下一位</button>'
+      $('hpArena').innerHTML = '<b style="color:var(--text)">' + (ok ? '😋 食客满意！+1 颗星' : '😅 这顿将就了') + '</b><br><button class="hp-btn primary" id="hpNext" style="margin-top:8px">下一位</button>'
       $('hpNext').onclick = () => nextCustomer()
     }
     function finish() {

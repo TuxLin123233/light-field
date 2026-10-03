@@ -756,6 +756,25 @@
         .px-ico-hero .px-ico-host { animation: none }
       }
     </style>
+    <style id="boot-fail-style">
+      #bootFail {
+        position: fixed; inset: 0; z-index: 999999;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        gap: 10px; padding: 28px; text-align: center;
+        background: var(--surface, #fff); color: var(--text, #3b342c);
+        font-family: system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+      }
+      #bootFail[hidden] { display: none }
+      #bootFail b { font-size: 17px }
+      #bootFail p { margin: 0; font-size: 13px; color: var(--text-muted, #6b5f50); line-height: 1.7; max-width: 300px }
+      #bootFail button {
+        margin-top: 6px; padding: 11px 26px;
+        border: 0; border-radius: 999px;
+        background: var(--accent, #5b8def); color: #fff;
+        font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+      }
+    </style>
     <style id="global-noselect">
       /* ---------- 全站禁止选中文字 ----------
          起因：按钮、卡片这些交互元素上，手指按下去稍微一划就选中了一片文字，
@@ -1447,6 +1466,41 @@
   <body>
     <div id="app"></div>
     <div id="toast"></div>
+    <!-- 启动失败兜底。
+         app.js 用的是**静态 import**，所以任何一个视图文件有语法错误，
+         整个模块图就加载不了，Vue 挂不上，页面会是一片空白 ——
+         用户只看到白屏，完全不知道出了什么事。
+         这里放一个探针：几秒后如果 #app 还是空的，就说明没挂上，
+         把真实错误显示出来，并给一个刷新按钮。 -->
+    <div id="bootFail" hidden>
+      <b>页面没能启动</b>
+      <p id="bootFailMsg">可能是网络不稳，或者刚才更新了一半。</p>
+      <button id="bootFailBtn" type="button">重新加载</button>
+    </div>
+    <script>
+      ;(function () {
+        var errs = []
+        window.addEventListener('error', function (e) {
+          if (e && e.message) errs.push(e.message + (e.lineno ? ' （第 ' + e.lineno + ' 行）' : ''))
+        })
+        window.addEventListener('unhandledrejection', function (e) {
+          errs.push('Promise: ' + String(e.reason).slice(0, 120))
+        })
+        function show() {
+          var app = document.getElementById('app')
+          if (app && app.children.length) return // 挂上了，什么都不做
+          var box = document.getElementById('bootFail')
+          if (!box) return
+          var msg = document.getElementById('bootFailMsg')
+          if (msg && errs.length) msg.textContent = errs[0]
+          box.hidden = false
+        }
+        // 第一次检查给足时间（慢网 + 冷启动）
+        setTimeout(show, 4000)
+        var btn = document.getElementById('bootFailBtn')
+        if (btn) btn.addEventListener('click', function () { location.reload() })
+      })()
+    </script>
     <script type="module" src="/app.js"></script>
     <script>
       /* ---------- 光尘账本（只走服务端） ----------
