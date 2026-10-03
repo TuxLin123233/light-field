@@ -1264,6 +1264,15 @@ export default {
             </span>
             <span class="entry-arrow">›</span>
           </a>
+          <div class="entry-sep"></div>
+          <a class="entry" href="https://blog.ltx88.icu" target="_blank" rel="noopener noreferrer">
+            <span class="entry-ico">🔗</span>
+            <span class="entry-body">
+              <span class="entry-label">ltx88 blog</span>
+              <div class="entry-desc">blog.ltx88.icu</div>
+            </span>
+            <span class="entry-arrow">›</span>
+          </a>
         </div>
       </section>
 
