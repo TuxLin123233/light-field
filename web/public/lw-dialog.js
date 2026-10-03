@@ -277,10 +277,77 @@
     return open(o).then(function (v) { return v === null ? null : String(v) })
   }
 
+  /* ================= 能吃 HTML 的浮层 =================
+     lwAlert 的正文是用 textContent 写的（见上面 open() 里的注释），
+     这样换行和特殊字符原样保留、也不怕被当成 HTML —— 对提示语是对的，
+     但**不能往里塞 HTML**：塞了就会把源码原样显示出来。
+
+     站里有三处就是这么用的（跑酷的永久加成面板、跑酷的成绩板、
+     冒险世界的帮助），表现都是「弹出来一堆 <div style=...> 源码，
+     而且里面的按钮根本没有」。
+
+     所以补一个 lwPanel：专门用来放我们自己拼的、可信的 HTML。
+     里面的按钮带 data-close 就能关掉浮层。
+     用法：lwPanel('<b>标题</b><button data-close>好</button>')
+     返回一个 Promise，关掉时 resolve。 */
+  /* ================= 能吃 HTML 的浮层 =================
+     lwAlert 的正文是用 textContent 写的（见 open() 里的注释），
+     这样换行和特殊字符原样保留、也不怕被当成 HTML —— 对提示语是对的，
+     但**不能往里塞 HTML**：塞了就会把源码原样显示出来。
+
+     站里有三处就是这么用的（跑酷的永久加成面板、跑酷的成绩板、
+     冒险世界的帮助），表现都是「弹出来一堆 <div style=...> 源码，
+     而且里面的按钮根本没渲染出来」。
+
+     所以补一个 lwPanel：专门放我们自己拼的、可信的 HTML。
+     它复用现有的 .lwd-mask / .lwd-box 样式（那套 CSS 是动态注入的，
+     这里不用重复写），只是正文改成 innerHTML。
+     里面的按钮带 data-close 就能关掉浮层。
+     用法：lwPanel('<b>标题</b><button data-close>好</button>')
+     返回 Promise，关掉时 resolve。 */
+  function panelBox(html, opts) {
+    var o = opts || {}
+    return new Promise(function (resolve) {
+      var mask = document.createElement('div')
+      mask.className = 'lwd-mask'
+      var box = document.createElement('div')
+      box.className = 'lwd-box'
+      var ico = o.icon ? '<div class="lwd-ico">' + o.icon + '</div>' : ''
+      var ttl = o.title ? '<div class="lwd-title">' + o.title + '</div>' : ''
+      box.innerHTML = ico + ttl + '<div class="lwd-msg">' + html + '</div>'
+      mask.appendChild(box)
+      document.body.appendChild(mask)
+
+      var done = false
+      function close(v) {
+        if (done) return
+        done = true
+        mask.classList.add('lwd-out')
+        document.removeEventListener('keydown', onEsc)
+        setTimeout(function () {
+          if (mask.parentNode) mask.parentNode.removeChild(mask)
+          resolve(v == null ? null : v)
+        }, 170)
+      }
+      // 带 data-close 的按钮点了就关，值取 data-close 的内容
+      box.addEventListener('click', function (e) {
+        var t = e.target
+        var btn = t && t.closest ? t.closest('[data-close]') : null
+        if (btn) { e.preventDefault(); close(btn.getAttribute('data-close') || true) }
+      })
+      if (o.mask !== false) {
+        mask.addEventListener('click', function (e) { if (e.target === mask) close(null) })
+      }
+      var onEsc = function (e) { if (e.key === 'Escape' || e.keyCode === 27) close(null) }
+      document.addEventListener('keydown', onEsc)
+    })
+  }
+
   window.LWDialog = {
     floatText: floatText,
-    pop: pop, confirm: confirmBox, alert: alertBox, prompt: promptBox, open: open }
+    pop: pop, confirm: confirmBox, alert: alertBox, prompt: promptBox, panel: panelBox, open: open }
   window.lwConfirm = confirmBox
   window.lwAlert = alertBox
   window.lwPrompt = promptBox
+  window.lwPanel = panelBox
 })()

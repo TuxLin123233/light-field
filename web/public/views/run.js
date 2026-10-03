@@ -454,7 +454,7 @@ export default {
     const stage = $('rkStage')
     let W = 0, H = 0      // 逻辑像素尺寸
     let scale = 1         // 实际像素 / 逻辑像素
-    const ROWS = 10       // 画布高度 10 格（地形只占底下 7 格，上面是天空）
+    const ROWS = 13       // 画布高度 13 格（地形只占底下 7 格，上面是天空）
 
     let world = []        // 世界是一列一列的，index = 格号
     let genX = 0          // 已生成到第几列
@@ -1074,52 +1074,92 @@ export default {
     /* 点击覆盖层上的「开始跑」也算 */
     $('rkGo').onclick = start
 
-    /* 永久加成面板 */
+    /* 永久加成面板。
+       ★ 原来这里是 lwAlert(...) —— 但 lwAlert 的正文是用 textContent 写的，
+       塞 HTML 进去只会把源码原样显示出来，**按钮一个都不会渲染**。
+       表现就是「点永久加成，弹出来一堆 <div style=...> 的字」。
+       改用 lwPanel（正文走 innerHTML，专门给可信的 HTML 用）。 */
     $('rkShop').onclick = () => {
-      const rows = UPGRADES.map((u) => {
-        const l = lv(u.k)
-        const maxed = l >= u.max
-        const cost = u.cost * (l + 1)
-        return (
-          '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px dashed rgba(150,120,80,.35)">' +
-          '<div style="flex:1"><b style="font-size:13px">' + esc(u.n) + '</b> ' +
-          '<span style="font-size:11px;opacity:.7">Lv.' + l + '/' + u.max + '</span>' +
-          '<div style="font-size:11.5px;opacity:.75">' + esc(u.d) + '</div></div>' +
-          '<button data-up="' + u.k + '" ' + (maxed ? 'disabled' : '') +
-          ' style="padding:6px 12px;border:1px solid #d3bb93;border-radius:8px;background:#fff6e4;font-family:inherit;font-size:12px;cursor:pointer">' +
-          (maxed ? '已满' : cost + ' 光尘') + '</button></div>'
-        )
-      }).join('')
-      lwAlert(
-        '<div style="text-align:left;max-height:52vh;overflow:auto">' + rows +
-        '<div style="margin-top:10px;font-size:12px">持有光尘：<b>' + run.coins + '</b></div></div>'
-      ).then(() => {})
-      // lwAlert 是纯展示，按钮得挂在真的浮层上 —— 用一次性委托接住
-      setTimeout(() => {
-        document.querySelectorAll('[data-up]').forEach((b) => {
+      function rowsHtml() {
+        return UPGRADES.map((u) => {
+          const l = lv(u.k)
+          const maxed = l >= u.max
+          const cost = u.cost * (l + 1)
+          const afford = run.coins >= cost
+          return (
+            '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px dashed rgba(150,120,80,.35)">' +
+            '<div style="flex:1;min-width:0">' +
+              '<b style="font-size:14px">' + esc(u.n) + '</b> ' +
+              '<span style="font-size:11px;opacity:.7">Lv.' + l + '/' + u.max + '</span>' +
+              '<div style="font-size:11.5px;opacity:.75;line-height:1.6">' + esc(u.d) + '</div>' +
+            '</div>' +
+            '<button data-up="' + u.k + '"' + (maxed ? ' disabled' : '') +
+            ' style="flex:none;padding:9px 14px;border:1px solid ' + (maxed ? '#c9c2b4' : afford ? '#c9a06a' : '#d8cfc0') +
+            ';border-radius:10px;background:' + (maxed ? '#efe9dd' : afford ? 'linear-gradient(180deg,#fff2dc,#f2dcb8)' : '#f4efe6') +
+            ';color:' + (maxed ? '#9a9082' : afford ? '#5a3a1a' : '#a89c8a') +
+            ';font-family:inherit;font-size:12.5px;font-weight:800;cursor:' + (maxed ? 'default' : 'pointer') + '">' +
+            (maxed ? '已满级' : cost + ' 光尘') + '</button></div>'
+          )
+        }).join('')
+      }
+      function head() {
+        return '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px">' +
+          '<b style="font-size:15px">🎽 永久加成</b>' +
+          '<span style="margin-left:auto;font-size:12.5px">持有 <b style="color:#c98a4f">' + run.coins + '</b> 光尘</span></div>' +
+          '<div style="font-size:11.5px;opacity:.7;line-height:1.7;margin-bottom:6px">' +
+          '跑出来的光尘在这里买加成，买了**下一局起跑就生效**，一直有效。</div>'
+      }
+      const closeBtn = '<button data-close style="width:100%;margin-top:12px;padding:11px;border:1px solid #d3bb93;' +
+        'border-radius:12px;background:#fff6e4;color:#4a3a20;font-family:inherit;font-size:14px;font-weight:800;cursor:pointer">关闭</button>'
+      lwPanel(head() + '<div id="rkUpList">' + rowsHtml() + '</div>' + closeBtn).then(() => {})
+      const mount = () => {
+        const list = $('rkUpList')
+        if (!list) return false
+        list.querySelectorAll('[data-up]').forEach((b) => {
           b.onclick = () => {
             const u = UPGRADES.find((x) => x.k === b.getAttribute('data-up'))
             if (!u) return
             const l = lv(u.k)
             if (l >= u.max) return
             const cost = u.cost * (l + 1)
-            if (run.coins < cost) { pop('光尘不够'); return }
+            if (run.coins < cost) { pop('光尘不够'); try { window.sfx && window.sfx('fail') } catch (e) {} return }
             run.coins -= cost
             run.up[u.k] = l + 1
             saveRun()
             refreshBest()
             try { window.sfx && window.sfx('buy') } catch (e) {}
-            b.textContent = '已买'
-            b.disabled = true
+            pop('买下了 ' + u.n + ' Lv.' + (l + 1))
+            // 重画整块面板，价格和等级跟着更新
+            const box = list.parentNode
+            if (box) {
+              box.innerHTML = head() + '<div id="rkUpList">' + rowsHtml() + '</div>' + closeBtn
+              setTimeout(mount, 0)
+            }
           }
         })
-      }, 60)
+        return true
+      }
+      // 浮层是同步插进 DOM 的，这里直接挂；万一没插上就重试几次
+      if (!mount()) {
+        let tries = 0
+        const t = setInterval(() => {
+          if (mount() || ++tries > 20) clearInterval(t)
+        }, 30)
+      }
     }
 
     $('rkBoard').onclick = () => {
-      lwAlert(
-        '<b>我的成绩</b><br>最远 <b>' + run.best + '</b> 米<br>跑过 ' + run.runs + ' 局<br>累计光尘 ' + run.coins
-      )
+      // 同上：这里也塞了 HTML，lwAlert 显示不出来，改 lwPanel
+      lwPanel(
+        '<b style="font-size:15px">📊 我的成绩</b>' +
+        '<div style="margin-top:10px;line-height:2.1;font-size:13.5px">' +
+        '最远跑了 <b>' + run.best + '</b> 米<br>' +
+        '一共跑过 <b>' + run.runs + '</b> 局<br>' +
+        '手上还有 <b>' + run.coins + '</b> 光尘' +
+        '</div>' +
+        '<button data-close style="width:100%;margin-top:14px;padding:11px;border:1px solid #d3bb93;' +
+        'border-radius:12px;background:#fff6e4;color:#4a3a20;font-family:inherit;font-size:14px;font-weight:800;cursor:pointer">知道了</button>'
+      ).then(() => {})
     }
 
     /* ================= 启动 ================= */

@@ -1851,23 +1851,32 @@ export default {
     $('wdDown').onclick = () => changeLayer(1)
     $('wdUp').onclick = () => changeLayer(-1)
     $('wdSave').onclick = () => { saveAll(); toast('存好了'); try { window.sfx && window.sfx('save') } catch (e) {} }
+    /* 帮助。这里原来用 lwAlert 塞了 HTML —— 显示出来是一堆源码。
+       改用 lwPanel（正文走 innerHTML）。 */
     $('wdHelp').onclick = () => {
-      lwAlert(
-        '<div style="text-align:left;font-size:13px;line-height:2">' +
-        '<b>怎么玩</b><br>' +
-        '· 方向键 / WASD：**按住就会一直走**（手机上按住左下角方向键）<br>' +
+      lwPanel(
+        '<b style="font-size:15px">🧭 怎么玩</b>' +
+        '<div style="text-align:left;font-size:13px;line-height:2;margin-top:8px">' +
+        '<b>走路</b><br>' +
+        '· 方向键 / WASD，**按住就会一直走**（手机上按住左下角方向键）<br>' +
+        '· 走不了的地方是墙：树干、仙人掌、箱子、遗迹砖墙这些<br>' +
+        '<b>动手</b><br>' +
         '· 空格 或 点画布：挖面前的方块 / 打面前的生物<br>' +
-        '· Shift + 点：把手上选中的方块放到面前<br>' +
-        '· 1~9：换手上的槽位<br>' +
-        '· E：吃东西　Q：攻击<br>' +
-        '· R：下潜到洞穴层　T：回到上一层<br>' +
-        '· 洞穴里黑，带火把；向上梯子用 7 根木棍合成<br><br>' +
-        '<b>要小心</b><br>' +
-        '· 天黑会刷怪，火把能照亮<br>' +
-        '· 岩浆会烫伤，掉水里没事<br>' +
-        '· 血没了会回到出生点，掉一半东西'
-      )
+        '· Shift + 点：把手上的方块放到面前<br>' +
+        '· 1~9 换手上的槽位　E 吃东西<br>' +
+        '<b>上下层</b><br>' +
+        '· 站在<b>洞穴口</b>上点「⬇ 下去」进洞穴层<br>' +
+        '· 站在<b>向上梯子</b>上点「⬆ 上来」回地表<br>' +
+        '· 梯子用 7 根木棍合成，自己挖的新洞要自己带梯子<br>' +
+        '<b>小心</b><br>' +
+        '· 天黑会刷怪，火把能照亮　岩浆会烫伤<br>' +
+        '· 血没了回出生点，掉一半东西' +
+        '</div>' +
+        '<button data-close style="width:100%;margin-top:14px;padding:11px;border:1px solid #d3bb93;' +
+        'border-radius:12px;background:#fff6e4;color:#4a3a20;font-family:inherit;font-size:14px;font-weight:800;cursor:pointer">知道了</button>'
+      ).then(() => {})
     }
+
     document.querySelectorAll('#wdTabs button').forEach((b) => {
       b.addEventListener('click', () => switchTab(b.getAttribute('data-tab')))
     })
