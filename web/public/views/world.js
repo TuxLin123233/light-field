@@ -131,6 +131,13 @@ export default {
       font-size: 11px; color: #7f93b8; text-align: right;
       font-variant-numeric: tabular-nums; margin-top: -3px;
     }
+    .wd-genseed {
+      font-size: 11px; color: #6f83a8;
+      font-variant-numeric: tabular-nums;
+      margin-top: -2px;
+    }
+    .wd-genseed b { color: #9fb4d8; font-weight: 800; letter-spacing: .5px }
+
     .wd-genskip {
       align-self: flex-start;
       padding: 6px 14px; border: 1px solid #2b3a5c; border-radius: 8px;
@@ -297,6 +304,7 @@ export default {
             <div class="wd-gentxt" id="wdGenTxt">正在计算地形高度…</div>
             <div class="wd-genbar"><i id="wdGenBar"></i></div>
             <div class="wd-genpct" id="wdGenPct">0%</div>
+            <div class="wd-genseed">世界种子 <b id="wdGenSeed">—</b></div>
             <button class="wd-genskip" id="wdGenSkip" type="button">跳过</button>
           </div>
         </div>
@@ -557,7 +565,30 @@ export default {
     const CS = 16 // 块边长
     const world = new Map()   // 'cx,cy' -> Uint16Array(CS*CS)
     const edited = new Map()  // 'x,y' -> tileKey（玩家改过的格，存档用）
-    const WORLD_SEED = 20240601
+    /* ★ 世界种子。原来是写死的常量，现在改成可变量 ——
+       换一个种子就是另一个世界（地形、群系、洞穴、矿脉、结构全靠它推）。
+       下面所有用它的地方都是「读的时候才取」，所以直接改变量就生效。
+       改完必须清掉块缓存和「玩家改动表」：前者是旧种子生成的地形，
+       后者记的是旧世界里的挖挖补补，都不能带到新世界来。 */
+    let WORLD_SEED = 20240601
+    const DEFAULT_SEED = 20240601
+
+    /** 把种子规整成一个稳定整数。字符串也能用（别人分享的一串字也行） */
+    function seedOf(v) {
+      if (v == null || v === '') return DEFAULT_SEED
+      if (typeof v === 'number' && isFinite(v)) return Math.floor(Math.abs(v)) % 100000000
+      const str = String(v).trim()
+      if (/^[0-9]+$/.test(str)) return Number(str) % 100000000
+      // 一串字 → 自己算个哈希，同一串字永远得到同一个种子
+      let h = 2166136261
+      for (let i = 0; i < str.length; i++) {
+        h ^= str.charCodeAt(i)
+        h = (h * 16777619) >>> 0
+      }
+      return h % 100000000
+    }
+    /** 随机一个新种子 */
+    function randomSeed() { return Math.floor(Math.random() * 90000000) + 10000000 }
 
     const ck = (cx, cy, L) => cx + ',' + cy + ',' + (L || 0)
 
@@ -1030,6 +1061,7 @@ export default {
       const ed = []
       edited.forEach((v, k2) => ed.push(k2 + '=' + v))
       const data = {
+        seed: WORLD_SEED,
         x: P.x, y: P.y, layer: P.layer, hp: P.hp, food: P.food, time: time,
         bag: bag, hotbar: hotbar, sel: sel,
         ed: ed.slice(-4000), // 最多存 4000 格改动
@@ -1056,6 +1088,7 @@ export default {
         const combo = JSON.parse(localStorage.getItem(SAVE_KEY) || '{}')
         const d = combo.world
         if (!d) return false
+        if (d.seed != null) WORLD_SEED = seedOf(d.seed)
         P.x = Number(d.x) || 0
         P.y = Number(d.y) || 0
         P.layer = Math.max(0, Math.min(2, Number(d.layer) || 0))
@@ -1443,6 +1476,35 @@ export default {
         }
       }
       return { x: fromX, y: fromY }
+    }
+
+    /* 换一个新世界。
+       ★ 两件事必须做：清块缓存（旧种子生成的地形）、清玩家改动表
+       （旧世界的挖挖补补）。不然新世界会长着旧世界的地形，
+       而且你以前挖的坑会出现在新世界里。 */
+    function switchWorld(seed) {
+      WORLD_SEED = seedOf(seed)
+      world.clear()
+      edited.clear()
+      Object.keys(FOUND).forEach((k) => { delete FOUND[k] })
+      Object.keys(kills).forEach((k) => { delete kills[k] })
+      Object.keys(dexSeen).forEach((k) => { delete dexSeen[k] })
+      Object.keys(dexMob).forEach((k) => { delete dexMob[k] })
+      Object.keys(bag).forEach((k) => { delete bag[k] })
+      minedCount = 0; placedCount = 0; deathCount = 0
+      mobs = []
+      P.layer = 0
+      P.moving = null
+      P.hp = P.maxHp
+      P.food = 20
+      time = 0.28
+      P.x = 0; P.y = 0
+      ensureAround(0, 0, 3, 0)
+      const sp = findStand(0, 0, 0)
+      P.x = sp.x; P.y = sp.y
+      P.rx = P.x; P.ry = P.y
+      for (let i = 0; i < 4; i++) spawnMob()
+      saveAll()
     }
 
     function onEnterTile() {
@@ -1860,7 +1922,23 @@ export default {
           '<button id="wdEat" style="padding:8px 16px;border:1px solid #d3bb93;border-radius:8px;background:#fff6e4;font-family:inherit;font-size:13px;cursor:pointer">🍗 吃东西</button>' +
           '<button id="wdSpawn" style="padding:8px 16px;border:1px solid #d3bb93;border-radius:8px;background:#fff6e4;font-family:inherit;font-size:13px;cursor:pointer">🐾 引一只生物过来</button>' +
           '<button id="wdFind" style="padding:8px 16px;border:1px solid #d3bb93;border-radius:8px;background:#fff6e4;font-family:inherit;font-size:13px;cursor:pointer">🧭 找最近的结构</button>' +
-          '<button id="wdReplay" style="padding:8px 16px;border:1px solid #d3bb93;border-radius:8px;background:#fff6e4;font-family:inherit;font-size:13px;cursor:pointer">🌍 重看世界生成</button>' +
+          '</div>' +
+          /* 世界种子：可以复制分享，也可以填别人的种子重开同一个世界 */
+          '<div style="margin-top:14px;padding-top:12px;border-top:1px dashed rgba(150,120,80,.35)">' +
+          '<div style="font-size:13px;font-weight:800;margin-bottom:2px">🌍 这个世界</div>' +
+          '<div style="font-size:12.5px;line-height:2">' +
+          '种子 <b style="font-family:ui-monospace,monospace;font-size:14px">' + WORLD_SEED + '</b>' +
+          '<span style="opacity:.65;font-size:11.5px"> —— 同一串种子永远长出同一个世界</span>' +
+          '</div>' +
+          '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:9px">' +
+          '<button id="wdSeedCopy" style="padding:8px 14px;border:1px solid #d3bb93;border-radius:8px;background:#fff6e4;font-family:inherit;font-size:12.5px;cursor:pointer">📋 复制种子</button>' +
+          '<button id="wdSeedInput" style="padding:8px 14px;border:1px solid #d3bb93;border-radius:8px;background:#fff6e4;font-family:inherit;font-size:12.5px;cursor:pointer">🔢 用种子开新世界</button>' +
+          '<button id="wdSeedNew" style="padding:8px 14px;border:1px solid #c98a4f;border-radius:8px;background:linear-gradient(180deg,#fff2dc,#f2dcb8);color:#5a3a1a;font-weight:800;font-family:inherit;font-size:12.5px;cursor:pointer">🎲 随机新世界</button>' +
+          '<button id="wdReplay" style="padding:8px 14px;border:1px solid #d3bb93;border-radius:8px;background:#fff6e4;font-family:inherit;font-size:12.5px;cursor:pointer">🎬 重看生成动画</button>' +
+          '</div>' +
+          '<div style="font-size:11.5px;opacity:.7;line-height:1.8;margin-top:7px">' +
+          '⚠️ 开新世界会清空这个世界里挖到的、盖的、发现的东西 —— 背包和改动都归零，' +
+          '换成一个全新的世界。想留着的话先记下种子。</div>' +
           '</div>'
         const e1 = $('wdEat')
         if (e1) e1.onclick = eat
@@ -1868,6 +1946,45 @@ export default {
         if (e2) e2.onclick = () => { spawnMob(); toast('附近出现了一只生物'); refreshPane() }
         const e4 = $('wdReplay')
         if (e4) e4.onclick = () => { playGenAnim(() => { render(); refreshClock() }) }
+        const ec = $('wdSeedCopy')
+        if (ec) ec.onclick = () => {
+          const t = String(WORLD_SEED)
+          const done = () => toast('种子已复制：' + t)
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(t).then(done, () => toast('种子：' + t))
+          } else {
+            // 老浏览器的兜底
+            try {
+              const ta = document.createElement('textarea')
+              ta.value = t
+              ta.style.position = 'fixed'
+              ta.style.left = '-9999px'
+              document.body.appendChild(ta)
+              ta.select()
+              document.execCommand('copy')
+              document.body.removeChild(ta)
+              done()
+            } catch (e) { toast('种子：' + t) }
+          }
+        }
+        const en = $('wdSeedNew')
+        if (en) en.onclick = async () => {
+          if (!(await lwConfirm('开一个全新的世界？\n\n这个世界里挖到的、盖的、发现的东西都会清空。'))) return
+          switchWorld(randomSeed())
+          refreshPane()
+          playGenAnim(() => { render(); refreshClock(); refreshPane(); toast('新世界：' + WORLD_SEED) })
+        }
+        const ei = $('wdSeedInput')
+        if (ei) ei.onclick = async () => {
+          const v = await lwPrompt('输入世界种子\n\n数字或者一串字都行 —— 同一串种子永远长出同一个世界。', String(WORLD_SEED))
+          if (v == null) return
+          const sd = seedOf(v)
+          if (sd === WORLD_SEED) { toast('这就是现在的种子'); return }
+          if (!(await lwConfirm('用种子 ' + sd + ' 开新世界？\n\n当前世界的背包和改动会清空。'))) return
+          switchWorld(sd)
+          refreshPane()
+          playGenAnim(() => { render(); refreshClock(); refreshPane(); toast('新世界：' + WORLD_SEED) })
+        }
 
         const e3 = $('wdFind')
         if (e3) e3.onclick = () => {
@@ -2038,7 +2155,10 @@ export default {
       for (let j = 0; j < GH; j++) {
         for (let i = 0; i < GW; i++) {
           const t = getTile(ox + i, oy + j)
-          cells.push({ i: i, j: j, c: t.c, c2: t.c2, at: Math.random() })
+          cells.push({
+            i: i, j: j, c: t.c, c2: t.c2, at: Math.random(),
+            spinDir: hash2(ox + i, oy + j, 3131) < 0.5 ? -1 : 1,
+          })
         }
       }
       const total = cells.length
@@ -2050,16 +2170,22 @@ export default {
 
       const STAGES = [
         [0.00, '正在计算地形高度…'],
-        [0.12, '正在划分生物群系…'],
-        [0.30, '正在挖开洞穴…'],
-        [0.48, '正在埋下矿脉…'],
-        [0.66, '正在放置遗迹与村庄…'],
-        [0.84, '正在种树、铺草…'],
-        [0.96, '世界准备好了'],
+        [0.10, '正在划分生物群系…'],
+        [0.24, '正在挖开洞穴…'],
+        [0.38, '正在埋下矿脉…'],
+        [0.52, '正在放置遗迹与村庄…'],
+        [0.66, '正在种树、铺草…'],
+        [0.76, '正在生成天气…'],
+        [0.86, '正在安排昼夜…'],
+        [0.94, '正在唤醒镇上的居民…'],
+        [0.99, '世界准备好了'],
       ]
 
       wrap.hidden = false
+      const seedEl = $('wdGenSeed')
+      if (seedEl) seedEl.textContent = String(WORLD_SEED)
       let t0 = 0, finished = false
+      let lastStage = -1, lastBlip = 0
       const DUR = 2600
 
       function stop(v) {
@@ -2086,11 +2212,37 @@ export default {
         g2.fillRect(0, 0, GW, GH)
         for (let i2 = 0; i2 < want && i2 < total; i2++) {
           const c2 = cells[i2]
-          g2.fillStyle = c2.c
-          g2.fillRect(c2.i, c2.j, 1, 1)
-          if (hash2(c2.i + ox, c2.j + oy, 555) < 0.42) {
-            g2.fillStyle = c2.c2
-            g2.fillRect(c2.i + 0.62, c2.j + 0.62, 0.34, 0.34)
+          /* 刚冒出来的那几格做「翻转落位」：从压扁 + 转一点，
+             很快回到正位。只对最后 18 格做 —— 全画布都做变换太贵，
+             而且远处的方块本来也看不清。 */
+          const age = want - i2
+          let spun = false
+          if (age > 0 && age <= 18) {
+            const k2 = 1 - age / 18            // 0 → 刚出现，1 → 已经落位
+            const ease = k2 * k2 * (3 - 2 * k2) // smoothstep
+            const ang = (1 - ease) * 1.5 * (c2.spinDir || 1)
+            const sx = 0.25 + 0.75 * ease
+            const sy = 0.65 + 0.35 * ease
+            g2.save()
+            g2.translate(c2.i + 0.5, c2.j + 0.5)
+            g2.rotate(ang)
+            g2.scale(sx, sy)
+            g2.fillStyle = c2.c
+            g2.fillRect(-0.5, -0.5, 1, 1)
+            if (hash2(c2.i + ox, c2.j + oy, 555) < 0.42) {
+              g2.fillStyle = c2.c2
+              g2.fillRect(0.12, 0.12, 0.34, 0.34)
+            }
+            g2.restore()
+            spun = true
+          }
+          if (!spun) {
+            g2.fillStyle = c2.c
+            g2.fillRect(c2.i, c2.j, 1, 1)
+            if (hash2(c2.i + ox, c2.j + oy, 555) < 0.42) {
+              g2.fillStyle = c2.c2
+              g2.fillRect(c2.i + 0.62, c2.j + 0.62, 0.34, 0.34)
+            }
           }
         }
         // 前沿的十字扫描光
@@ -2103,10 +2255,22 @@ export default {
         const realK = want / total
         if (bar) bar.style.width = (realK * 100).toFixed(1) + '%'
         if (pct) pct.textContent = Math.floor(realK * 100) + '%'
-        let label = STAGES[0][1]
-        for (const st of STAGES) { if (k >= st[0]) label = st[1] }
+        let label = STAGES[0][1], si = 0
+        for (let q = 0; q < STAGES.length; q++) { if (k >= STAGES[q][0]) { label = STAGES[q][1]; si = q } }
         if (txt) txt.textContent = label
-        if (k >= 1) { stop(true); return }
+        // 每进一个阶段换一个音高，配一条「机器在组装」的底噪
+        if (si !== lastStage) {
+          lastStage = si
+          try { window.sfx && window.sfx('note') } catch (e) {}
+        }
+        if (ts - lastBlip > 210) {
+          lastBlip = ts
+          try { window.sfx && window.sfx('tick') } catch (e) {}
+        }
+        if (k >= 1) {
+          try { window.sfx && window.sfx('achieve') } catch (e) {}
+          stop(true); return
+        }
         genRaf = requestAnimationFrame(frame)
       }
       genRaf = requestAnimationFrame(frame)
@@ -2208,6 +2372,12 @@ export default {
       move: (dir) => tryMove(dir),
       hold: (dir, on) => { held[dir] = !!on },
       at: () => ({ x: P.x, y: P.y, layer: P.layer, moving: !!P.moving }),
+      seed: () => WORLD_SEED,
+      setSeed: (v) => { switchWorld(v); return WORLD_SEED },
+      seedOf: (v) => seedOf(v),
+      randomSeed: () => randomSeed(),
+      biomeAt: (x, y) => biomeAt(x, y).k,
+      genPlaying: () => { const g = $('wdGen'); return !!g && !g.hidden },
       place: () => place(),
       give: (k, nn) => give(k, nn || 1),
       hold: (k) => { hotbar[sel] = k; refreshBar() },
