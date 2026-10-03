@@ -131,6 +131,43 @@ export default {
       .tw-room.dragging { cursor: grabbing; }
       .tw-acts { display: flex; justify-content: center; margin-top: 12px; }
       .tw-acts > * + * { margin-left: 8px; }
+
+      /* ---------- 入口：大卡片 + 像素动画 ----------
+         原来是四个小圆按钮，字挤在一起，也看不出点进去是什么。
+         现在每个入口一张卡片：大像素动画 + 名字 + 一句说明。
+         仍然用 <button>（键盘和读屏要靠它），只是长得像卡片。 */
+      .tw-entries { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 14px; }
+      @media (max-width: 340px) { .tw-entries { grid-template-columns: 1fr } }
+      .tw-entry {
+        position: relative;
+        display: flex; flex-direction: column; align-items: center; gap: 6px;
+        padding: 14px 10px 12px;
+        border: 0; border-radius: 16px;
+        background: linear-gradient(180deg, #fffaf1, #f6ecdb);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 3px 0 #e2d0b4, 0 6px 16px rgba(120,90,50,.12);
+        font-family: inherit; cursor: pointer; text-align: center;
+        overflow: hidden; -webkit-tap-highlight-color: transparent;
+        transition: transform .12s, box-shadow .12s;
+      }
+      html[data-mood='dark'] .tw-entry {
+        background: linear-gradient(180deg, #38312a, #2f2922);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 3px 0 #221d18;
+      }
+      .tw-entry:hover { transform: translateY(-2px); box-shadow: 0 5px 0 #e2d0b4, 0 10px 22px rgba(120,90,50,.18) }
+      .tw-entry:active { transform: translateY(0) scale(.98) }
+      .tw-entry::before {
+        content: ''; position: absolute; inset: 0;
+        background:
+          repeating-linear-gradient(90deg, rgba(140,110,70,.05) 0 1px, transparent 1px 12px),
+          repeating-linear-gradient(0deg, rgba(140,110,70,.05) 0 1px, transparent 1px 12px);
+        pointer-events: none;
+      }
+      .tw-entry-art { display: flex; align-items: flex-end; justify-content: center; height: 86px; width: 100% }
+      .tw-entry-art canvas { display: block; image-rendering: pixelated }
+      .tw-entry b { font-size: 14px; color: #4a3a24; position: relative }
+      .tw-entry i { font-style: normal; font-size: 11px; line-height: 1.6; color: #8a7458; position: relative }
+      html[data-mood='dark'] .tw-entry b { color: #f2e7d5 }
+      html[data-mood='dark'] .tw-entry i { color: #b3a58d }
       .tw-btn {
         border: 0; border-radius: 999px; padding: 10px 18px;
         font-size: 13px; font-weight: 800; font-family: inherit;
@@ -796,6 +833,17 @@ export default {
     let townFoldOpen = false
     try { townFoldOpen = localStorage.getItem('lw-town-fold') === '1' } catch (e) {}
 
+    /** 一张入口卡片：大像素动画 + 名字 + 说明 */
+    function entryCard(id, icon, title, desc) {
+      return (
+        '<button class="tw-entry" type="button" id="' + id + '">' +
+        '<span class="tw-entry-art"><i data-px="' + icon + '" data-px-size="84" data-px-on="idle"></i></span>' +
+        '<b>' + esc(title) + '</b>' +
+        '<i>' + esc(desc) + '</i>' +
+        '</button>'
+      )
+    }
+
     function drawMap(data) {
       const list = data.list || []
       const grid = list
@@ -839,11 +887,11 @@ export default {
         '</div>' +
         '<div class="tw-sign">🏠 点谁家的房子，就去谁家串门<br />串门只能看，动不了人家的东西</div>' +
         '</div>' +
-        '<div class="tw-acts">' +
-        '<button class="tw-btn" type="button" id="twGoHome">🏠 回我的小屋</button>' +
-        '<button class="tw-btn ghost" type="button" id="twGoBag">🏠 家具商店</button>' +
-'<button class="tw-btn" type="button" id="twGoCard">🃏 卡牌屋</button>' +
-'<button class="tw-btn" type="button" id="twGoHotpot">🍲 大锅饭</button>' +
+        '<div class="tw-entries">' +
+        entryCard('twGoHome', 'home', '我的小屋', '摆家具、贴墙纸、挑窗外天气') +
+        entryCard('twGoBag', 'shop', '家具商店', '六百多件家具，光尘换') +
+        entryCard('twGoCard', 'cardgame', '卡牌屋', '十层小塔，三选一扩牌') +
+        entryCard('twGoHotpot', 'cooking', '大锅饭', '给镇上的邻居做道菜端过去') +
         '</div>'
 
       /* 收起 / 展开。只切 class，不重画整张地图 —— 重画会把已经画好的
@@ -863,6 +911,9 @@ export default {
         if (window.sfx) window.sfx('tap')
       })
     }
+
+    // 入口卡片里的像素图标（地图重画后卡片会重建，所以每次都补一遍）
+    if (window.LWIcon) { try { window.LWIcon.apply($('twBody')) } catch (e) {} }
 
     $('twBody').querySelectorAll('canvas[data-house]').forEach((cv) => {
         drawHouse(cv, cv.getAttribute('data-house'), cv.getAttribute('data-stuff') === '1')
