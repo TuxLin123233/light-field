@@ -518,6 +518,12 @@ export default {
     T('gem_ore', '宝石矿', '#5a5a7a', '#c86af0', { hard: 4.2, tool: 'pick', light: 0.4 }),
     T('mithril_ore', '秘银矿', '#6a7a8a', '#b8e8ff', { hard: 5.0, tool: 'pick', light: 0.5 }),
     T('cave_mushroom', '洞穴菇', '#8a6ac8', '#e0d0ff', { hard: 0.15, solid: false, light: 0.3 }),
+    // --- 种田与村庄 ---
+    T('farmland_wet', '湿农田', '#4f3a22', '#6b9a4a', { hard: 0.4, tool: 'shovel' }),
+    T('scarecrow', '稻草人', '#c8a860', '#8a6a42', { hard: 0.6 }),
+    T('compost', '堆肥桶', '#7a5c3e', '#4a9e42', { hard: 0.8, tool: 'axe' }),
+    T('market', '摊位', '#c88a4a', '#f0d06a', { hard: 0.9, tool: 'axe', light: 0.3 }),
+    T('boss_altar', '讨伐台', '#3a2a44', '#c84af0', { hard: 4.0, tool: 'pick', light: 0.7 }),
     // --- 结构用 ---
     T('ruin_brick', '遗迹砖', '#8a8272', '#6b6353', { hard: 2.0, tool: 'pick' }),
     T('ruin_pillar', '遗迹柱', '#9a9282', '#7a7262', { hard: 2.2, tool: 'pick' }),
@@ -1042,6 +1048,11 @@ export default {
       { out: 'planks', n: 4, need: { log_jungle: 1 } },
       { out: 'planks', n: 4, need: { log_acro: 1 } },
       { out: 'stick', n: 4, need: { planks: 2 } },
+      { out: 'wood_hoe', n: 1, need: { planks: 2, stick: 2 } },
+      { out: 'stone_hoe', n: 1, need: { cobble: 2, stick: 2 } },
+      { out: 'iron_hoe', n: 1, need: { iron_ingot: 2, stick: 2 } },
+      { out: 'bucket', n: 1, need: { iron_ingot: 3 } },
+      { out: 'hay_bale', n: 1, need: { wheat: 3 } },
       { out: 'craft_table', n: 1, need: { planks: 4 } },
       { out: 'chest', n: 1, need: { planks: 8 } },
       { out: 'furnace', n: 1, need: { cobble: 8 } },
@@ -1066,7 +1077,7 @@ export default {
       { out: 'iron_block', n: 1, need: { iron_ingot: 9 } },
       { out: 'gold_block', n: 1, need: { gold_ingot: 9 } },
       { out: 'diamond_block', n: 1, need: { diamond: 9 } },
-      { out: 'bread', n: 1, need: { crop: 3 } },
+      { out: 'bread', n: 1, need: { wheat: 3 } },
       { out: 'meat_cooked', n: 1, need: { meat_raw: 1, coal: 1 } },
       { out: 'sandstone', n: 1, need: { sand: 4 } },
       { out: 'lantern', n: 1, need: { iron_ingot: 1, torch_item: 1 } },
@@ -1074,6 +1085,10 @@ export default {
       { out: 'ladder_up_item', n: 2, need: { stick: 7 } },
       { out: 'snow_block', n: 1, need: { snow: 4 } },
       { out: 'packed_ice', n: 1, need: { ice: 4 } },
+      { out: 'scarecrow', n: 1, need: { hay_bale: 2, stick: 4, planks: 1 } },
+      { out: 'compost', n: 1, need: { planks: 6 } },
+      { out: 'market', n: 1, need: { planks: 6, hay_bale: 2 } },
+      { out: 'boss_altar', n: 1, need: { obsidian: 4, diamond: 2, gem_ore: 1 } },
     ]
 
     /* ===================== 生物 ===================== */
@@ -1090,8 +1105,58 @@ export default {
       { k: 'slime', n: '糊图层', c: '#6fd06f', c2: '#3f9a3f', hp: 12, dmg: 2, hostile: true, speed: 0.6, drop: 'slimeball' },
       { k: 'creeper', n: '鼓包墨怪', c: '#5fae5f', c2: '#2f6b2f', hp: 16, dmg: 8, hostile: true, speed: 0.85, night: true },
       { k: 'bat', n: '橡皮屑', c: '#4a3a3a', c2: '#2a1f1f', hp: 5, dmg: 1, hostile: true, speed: 1.6 },
+      /* 村民。不打架、不乱跑，站摊位边上跟你换东西。 */
+      { k: 'villager', n: '村民', c: '#c8a878', c2: '#6a5238', hp: 20, dmg: 0, hostile: false, speed: 0.4, villager: true },
+      /* Boss：地心守卫。三个阶段，血越少越凶。 */
+      { k: 'boss', n: '地心守卫', c: '#5a3a6a', c2: '#c84af0', hp: 180, dmg: 7, hostile: true, speed: 0.55, boss: true, light: 0.5, drop: null },
     ]
     item('slimeball', '黏液球', { c: '#6fd06f', c2: '#3f9a3f' })
+    item('mithril_sword', '秘银剑', { c: '#b8e8ff', c2: '#6a7a8a', weapon: 20 })
+    item('gem', '宝石', { c: '#c86af0', c2: '#5a5a7a' })
+    item('boss_crown', '守卫之冠', { c: '#f0c84a', c2: '#c84af0' })
+    item('totem', '护身符', { c: '#f0d06a', c2: '#c84a5a', keep: 1 })
+
+    /* ---------- 种田用的东西 ---------- */
+    item('wood_hoe', '木锄', { c: '#b08a58', c2: '#8f6d42', tool: 'hoe', power: 2 })
+    item('stone_hoe', '石锄', { c: '#8f949b', c2: '#74797f', tool: 'hoe', power: 3 })
+    item('iron_hoe', '铁锄', { c: '#d8dce0', c2: '#a8adb4', tool: 'hoe', power: 5 })
+    item('bucket', '水桶', { c: '#c8d8e8', c2: '#8aa8c8', water: 1 })
+    item('bucket_full', '装满水的桶', { c: '#3a76c8', c2: '#c8d8e8', water: 2 })
+    // 六种种子
+    item('seed_wheat', '麦种', { c: '#c8b060', c2: '#8aa04a', seed: 'wheat' })
+    item('seed_carrot', '萝卜种', { c: '#e08a4a', c2: '#4a9e42', seed: 'carrot' })
+    item('seed_pumpkin', '南瓜种', { c: '#e0a02a', c2: '#8aa04a', seed: 'pumpkin' })
+    item('seed_melon', '西瓜种', { c: '#4a9e42', c2: '#c84a5a', seed: 'melon' })
+    item('seed_berry', '浆果种', { c: '#c8324a', c2: '#3f7a45', seed: 'berry' })
+    item('seed_corn', '玉米种', { c: '#f0d04a', c2: '#4a9e42', seed: 'corn' })
+    // 收成（也能吃）
+    item('wheat', '小麦', { c: '#d8b860', c2: '#a8903a', food: 2, feed: 1 })
+    item('carrot', '胡萝卜', { c: '#e08a3a', c2: '#4a9e42', food: 3, feed: 1 })
+    item('pumpkin_item', '南瓜', { c: '#e08a2a', c2: '#c86a1a', food: 4 })
+    item('melon_item', '西瓜', { c: '#4f9a45', c2: '#e0555a', food: 3 })
+    item('corn', '玉米', { c: '#f0c84a', c2: '#4a9e42', food: 4, feed: 1 })
+    item('hay_bale', '干草捆', { c: '#d8c04a', c2: '#b8a038', feed: 1 })
+
+    /* ===================== 种田 =====================
+       作物状态不占方块位，单独存在 crops 里：
+         'x,y,layer' -> { k: 种类, s: 阶段, t: 计时, wet: 浇过水 }
+       好处是：同一个农场方块能长出不同的作物，
+       而且加一种新作物不用加 4 个新方块。
+       阶段画在农田方块上面（见 render 里的画法）。 */
+    const CROPS = {
+      wheat:   { n: '小麦',   s: 4, dur: 22, out: ['wheat', 2],        c: ['#8aa04a', '#a8b850', '#c8c860', '#e0c860'] },
+      carrot:  { n: '胡萝卜', s: 4, dur: 20, out: ['carrot', 2],       c: ['#4a9e42', '#5aae4a', '#7ab84a', '#e08a3a'] },
+      pumpkin: { n: '南瓜',   s: 4, dur: 30, out: ['pumpkin_item', 1], c: ['#4a9e42', '#5aae4a', '#7ab84a', '#e08a2a'] },
+      melon:   { n: '西瓜',   s: 4, dur: 28, out: ['melon_item', 1],   c: ['#4a9e42', '#5aae4a', '#7ab84a', '#5fae4a'] },
+      berry:   { n: '浆果',   s: 3, dur: 16, out: ['berry', 3],        c: ['#3f7a45', '#4a8a4a', '#c8324a'] },
+      corn:    { n: '玉米',   s: 4, dur: 26, out: ['corn', 2],         c: ['#4a9e42', '#5aae4a', '#8ab84a', '#f0c84a'] },
+    }
+    let crops = {}          // 'x,y,layer' -> { k, s, t, wet }
+    const cropKey = (x, y, l) => x + ',' + y + ',' + (l == null ? P.layer : l)
+    /** 这个格子能锄地吗 */
+    function tillable(t) {
+      return t.k === 'grass' || t.k === 'grass_dry' || t.k === 'dirt' || t.k === 'mud' || t.k === 'sand'
+    }
 
     /* ===================== 游戏状态 ===================== */
     const P = {
@@ -1113,11 +1178,34 @@ export default {
     let tick = 0
     let tab = 'bag'
     let deathCount = 0
+    let tilledCount = 0     // 锄了多少次地
+    let plantedCount = 0    // 种了多少次
+    let harvestedCount = 0  // 收了多少次
+    let bossKills = 0       // 打倒了几只 Boss
+    let tradedCount = 0     // 和村民交易了多少次
     let minedCount = 0
     let placedCount = 0
     const dexSeen = {}
     const dexMob = {}     // 见过哪些生物（图鉴用）
     const kills = {}      // 每种生物打死了多少（冒险者工会的悬赏要用）
+
+    /* ===================== 村民交易 =====================
+       给材料换东西。价格是「给多少 / 拿多少」，
+       每种只能换有限的次数 —— 不然刷起来没边。 */
+    const TRADES = [
+      { give: ['wheat', 6],     get: ['bread', 2],        left: 8, n: '换面包' },
+      { give: ['wheat', 10],    get: ['torch_item', 6],   left: 8, n: '换火把' },
+      { give: ['coal', 8],      get: ['iron_ingot', 1],   left: 6, n: '煤炭换铁' },
+      { give: ['iron_ingot', 4], get: ['diamond', 1],     left: 3, n: '铁换钻石' },
+      { give: ['diamond', 3],   get: ['mithril_sword', 1], left: 1, n: '换秘银剑' },
+      { give: ['wheat', 4],     get: ['seed_pumpkin', 2], left: 9, n: '换南瓜种' },
+      { give: ['carrot', 6],    get: ['seed_melon', 2],   left: 9, n: '换西瓜种' },
+      { give: ['cobble', 16],   get: ['glass', 4],        left: 9, n: '圆石换玻璃' },
+      { give: ['gold_ingot', 2], get: ['totem', 1],       left: 1, n: '换护身符' },
+    ]
+    let tradeUsed = {}
+    function resetTrades() { TRADES.forEach((t) => { t.left = t._max || t.left }); }
+    TRADES.forEach((t) => { t._max = t.left })
 
     /* ===================== 存档（多世界） =====================
        localStorage 里 'lw-town-save' 的形状：
@@ -1199,6 +1287,9 @@ export default {
         x: P.x, y: P.y, layer: P.layer, hp: P.hp, food: P.food, time: time,
         bag: bag, hotbar: hotbar, sel: sel,
         ed: ed.slice(-4000), // 最多存 4000 格改动
+        crops: crops,
+        trades: TRADES.map((t) => t.left),
+        farm: { tilled: tilledCount, planted: plantedCount, harvested: harvestedCount, traded: tradedCount, boss: bossKills },
         found: FOUND,
         dex: dexSeen, dmob: dexMob,
         kills: kills,
@@ -1257,6 +1348,18 @@ export default {
       minedCount = Number(d.mined) || 0
       placedCount = Number(d.placed) || 0
       deathCount = Number(d.deaths) || 0
+      crops = d.crops || {}
+      if (Array.isArray(d.trades)) d.trades.forEach((v, i) => { if (TRADES[i]) TRADES[i].left = Number(v) || 0 })
+      if (d.farm) {
+        tilledCount = Number(d.farm.tilled) || 0
+        plantedCount = Number(d.farm.planted) || 0
+        harvestedCount = Number(d.farm.harvested) || 0
+        tradedCount = Number(d.farm.traded) || 0
+        bossKills = Number(d.farm.boss) || 0
+      } else {
+        tilledCount = 0; plantedCount = 0; harvestedCount = 0; tradedCount = 0; bossKills = 0
+      }
+      bossRef = null
       P.rx = P.x; P.ry = P.y
       ensureAround(P.x, P.y, 3, P.layer)
       return true
@@ -1452,17 +1555,82 @@ export default {
         }
       }
 
+      /* 作物。种在农田方块上，按阶段画不同的样子：
+         刚开始是两片小芽，长高了加茎，熟了顶上冒出果实色。 */
+      Object.keys(crops).forEach((key) => {
+        const cr = crops[key]
+        if (!cr) return
+        const parts = key.split(',')
+        const cx2 = Number(parts[0]), cy2 = Number(parts[1]), cl = Number(parts[2])
+        if (cl !== P.layer) return
+        const tx = cx2 - x0, ty = cy2 - y0
+        if (tx < -1 || ty < -1 || tx > VIEW_W || ty > VIEW_H) return
+        const def = CROPS[cr.k]
+        if (!def) return
+        const px2 = tx * c, py2 = ty * c
+        const ripe = cr.s >= def.s
+        const col = def.c[Math.min(cr.s, def.c.length - 1)]
+        const grow = (cr.s + 1) / (def.s + 1)     // 0.2 ~ 1
+        const hgt = c * (0.22 + 0.55 * grow)
+        // 茎
+        ctx.fillStyle = '#3f7a35'
+        ctx.fillRect(px2 + c * 0.46, py2 + c - hgt, Math.max(1, c * 0.09), hgt)
+        // 叶子：阶段越高越多
+        ctx.fillStyle = col
+        const leaves = 1 + Math.min(3, cr.s)
+        for (let q = 0; q < leaves; q++) {
+          const ly = py2 + c - hgt + (hgt / leaves) * q
+          const lw = c * (0.14 + 0.1 * grow)
+          ctx.fillRect(px2 + c * 0.5 - lw - c * 0.04, ly, lw, Math.max(1, c * 0.1))
+          ctx.fillRect(px2 + c * 0.5 + c * 0.04, ly, lw, Math.max(1, c * 0.1))
+        }
+        // 熟了：顶上一颗果实 + 轻微闪一下
+        if (ripe) {
+          const pulse = 0.7 + 0.3 * Math.sin(Date.now() / 300 + cx2)
+          ctx.globalAlpha = pulse
+          ctx.fillStyle = def.c[def.c.length - 1]
+          ctx.fillRect(px2 + c * 0.3, py2 + c - hgt - c * 0.1, c * 0.4, c * 0.24)
+          ctx.globalAlpha = 1
+        }
+        // 浇过水的农田颜色深一点
+        if (cr.wet) {
+          ctx.fillStyle = 'rgba(60,120,200,.18)'
+          ctx.fillRect(px2, py2, c, c)
+        }
+      })
+
       // 生物
       mobs.forEach((m) => {
         const sx = (m.x - x0) * c, sy = (m.y - y0) * c
         if (sx < -c || sy < -c || sx > VIEW_W * c || sy > VIEW_H * c) return
         const M = m.def
         const bob = Math.sin(m.t * 6) * c * 0.06
+        // 幼崽画小一圈
+        const sc = m.baby ? 0.55 : 1
+        const off = (1 - sc) / 2
+        // Boss 加一圈紫光，一眼能认出来
+        if (M.boss) {
+          ctx.fillStyle = 'rgba(200,74,240,.28)'
+          ctx.fillRect(sx - c * 0.15, sy - c * 0.15, c * 1.3, c * 1.3)
+        }
         ctx.fillStyle = M.c
-        ctx.fillRect(sx + c * 0.16, sy + c * 0.2 + bob, c * 0.68, c * 0.6)
+        ctx.fillRect(sx + c * (off + 0.16 * sc), sy + c * (off + 0.2 * sc) + bob, c * 0.68 * sc, c * 0.6 * sc)
         ctx.fillStyle = M.c2
-        ctx.fillRect(sx + c * 0.3, sy + c * 0.34 + bob, c * 0.14, c * 0.14)
-        ctx.fillRect(sx + c * 0.56, sy + c * 0.34 + bob, c * 0.14, c * 0.14)
+        ctx.fillRect(sx + c * (off + 0.3 * sc), sy + c * (off + 0.34 * sc) + bob, c * 0.14 * sc, c * 0.14 * sc)
+        ctx.fillRect(sx + c * (off + 0.56 * sc), sy + c * (off + 0.34 * sc) + bob, c * 0.14 * sc, c * 0.14 * sc)
+        // 村民：头顶一个「换」的标记
+        if (M.villager) {
+          ctx.fillStyle = '#f0d06a'
+          ctx.fillRect(sx + c * 0.42, sy - c * 0.16, c * 0.16, c * 0.16)
+        }
+        // 冒爱心：表示可以配对了
+        if (m.love > 0) {
+          const hy2 = sy - c * 0.3 - Math.abs(Math.sin(m.t * 4)) * c * 0.16
+          ctx.fillStyle = '#e0557a'
+          ctx.fillRect(sx + c * 0.34, hy2, c * 0.14, c * 0.14)
+          ctx.fillRect(sx + c * 0.52, hy2, c * 0.14, c * 0.14)
+          ctx.fillRect(sx + c * 0.42, hy2 + c * 0.1, c * 0.16, c * 0.14)
+        }
         // 血条
         if (m.hp < M.hp) {
           ctx.fillStyle = 'rgba(0,0,0,.5)'
@@ -1523,6 +1691,27 @@ export default {
         const d2 = Math.max(1, c * 0.1)
         ctx.fillRect(hx + 2, hy + 2, d2, d2)
         ctx.fillRect(hx + c - 2 - d2, hy + c - 2 - d2, d2, d2)
+      }
+
+      /* Boss 血条：横在画面顶上，带阶段标记 */
+      if (bossRef && bossRef.hp > 0) {
+        const bw = VIEW_W * 0.66, bx = (VIEW_W - bw) / 2, by = 0.7
+        ctx.fillStyle = 'rgba(0,0,0,.55)'
+        ctx.fillRect(bx - 0.3, by - 0.3, bw + 0.6, 1.7)
+        ctx.fillStyle = '#2a1a33'
+        ctx.fillRect(bx, by, bw, 1)
+        const bk = Math.max(0, bossRef.hp / bossRef.def.hp)
+        ctx.fillStyle = bossRef.phase === 3 ? '#e0453a' : bossRef.phase === 2 ? '#e08a2a' : '#c84af0'
+        ctx.fillRect(bx, by, bw * bk, 1)
+        // 2/3、1/3 的分段刻度
+        ctx.fillStyle = 'rgba(255,255,255,.6)'
+        ctx.fillRect(bx + bw * 0.3333, by - 0.1, 0.1, 1.2)
+        ctx.fillRect(bx + bw * 0.6666, by - 0.1, 0.1, 1.2)
+        ctx.fillStyle = '#fff'
+        ctx.font = '600 1px sans-serif'
+        ctx.textAlign = 'left'
+        ctx.fillText('地心守卫 第 ' + bossRef.phase + ' 阶段  ' + Math.max(0, Math.round(bossRef.hp)) + '/' + bossRef.def.hp, bx, by + 2.6)
+        ctx.textAlign = 'left'
       }
 
       // 夜色
@@ -1710,6 +1899,10 @@ export default {
       Object.keys(dexMob).forEach((k) => { delete dexMob[k] })
       Object.keys(bag).forEach((k) => { delete bag[k] })
       minedCount = 0; placedCount = 0; deathCount = 0
+      tilledCount = 0; plantedCount = 0; harvestedCount = 0; tradedCount = 0; bossKills = 0
+      crops = {}
+      TRADES.forEach((t) => { t.left = t._max })
+      bossRef = null
       mobs = []
       P.layer = 0
       P.moving = null
@@ -1791,10 +1984,96 @@ export default {
       const it = ITEMS[k]
       if (!it) return
       const placeAs = it.place || k
-      if (!TILE[placeAs]) return toast('这个放不了')
+      /* ★ 这一句原来在最前面，会把道具挡在外面：
+         锄头、种子、水桶都不在方块表里，`TILE[placeAs]` 是空的，
+         于是直接 return 「这个放不了」—— 后面那些「用手上的东西」
+         的分支根本走不到。现在挪到下面，等道具分支都判完了再说。 */
       if (count(k) <= 0) return toast('没有了')
       const f = frontTile()
       const cur = getTile(f.x, f.y)
+
+      /* ---------- 先看手上是什么，能不能「用」在目标格上 ----------
+         锄头 → 锄地；种子 → 种；水桶 → 浇水；成熟的作物 → 收。
+         都不是的话，才走下面的「放一个方块」。 */
+      const held = ITEMS[k]
+      // 收成：目标格上有熟了的作物，手上有东西也优先收
+      const ck2 = cropKey(f.x, f.y)
+      const cr = crops[ck2]
+      if (cr && cr.s >= CROPS[cr.k].s) {
+        const def = CROPS[cr.k]
+        const out = def.out
+        give(out[0], out[1])
+        dexSeen[out[0]] = 1
+        delete crops[ck2]
+        harvestedCount++
+        toast('收到 ' + ITEMS[out[0]].n + ' × ' + out[1])
+        try { window.sfx && window.sfx('coin') } catch (e) {}
+        render(); refreshBar(); refreshPane()
+        return
+      }
+      // 空桶对着水 → 装满
+      if (held && held.water === 1 && (cur.k === 'water' || cur.k === 'deep_water')) {
+        take(k, 1); give('bucket_full', 1)
+        toast('打了一桶水')
+        try { window.sfx && window.sfx('pop') } catch (e) {}
+        refreshBar(); refreshPane()
+        return
+      }
+      // 浇水：拿装满水的桶
+      if (held && held.water === 2) {
+        if (cr) { cr.wet = 1; cr.t = cr.t; toast('浇了水，长得更快'); }
+        else if (cur.k === 'farmland' || cur.k === 'farmland_wet') {
+          setTile(f.x, f.y, 'farmland_wet')
+          crops[ck2] = null
+          delete crops[ck2]
+          toast('浇了水')
+        } else return toast('这儿不用浇水')
+        take(k, 1); give('bucket', 1)
+        try { window.sfx && window.sfx('pop') } catch (e) {}
+        render(); refreshBar(); refreshPane()
+        return
+      }
+      // 锄地
+      if (held && held.tool === 'hoe') {
+        if (cr) return toast('这儿种着东西')
+        if (!tillable(cur)) return toast('这儿锄不动')
+        setTile(f.x, f.y, 'farmland')
+        tilledCount++
+        try { window.sfx && window.sfx('hit') } catch (e) {}
+        render(); refreshBar(); refreshPane()
+        return
+      }
+      // 种
+      if (held && held.seed) {
+        if (cur.k !== 'farmland' && cur.k !== 'farmland_wet') return toast('要先锄成农田')
+        if (crops[ck2]) return toast('这儿已经种了')
+        crops[ck2] = { k: held.seed, s: 0, t: 0, wet: cur.k === 'farmland_wet' ? 1 : 0 }
+        take(k, 1)
+        plantedCount++
+        toast('种下了 ' + ITEMS[k].n)
+        try { window.sfx && window.sfx('pop') } catch (e) {}
+        render(); refreshBar(); refreshPane()
+        return
+      }
+      // 喂动物（要排在方块检查前面：小麦这些不是方块）
+      if (held && held.feed) {
+        // 喂给面前那一格上的温顺生物（幼崽不吃，吃了也不发情）
+        const m = mobs.find((mm) => !mm.def.hostile && !mm.def.boss && !mm.def.villager &&
+          mm.x === f.x && mm.y === f.y)
+        if (!m) return toast('面前没有能喂的动物')
+        if (m.baby) return toast('它还小，等长大再说')
+        if ((m.breedCd || 0) > 0) return toast('它刚生过，歇一会儿')
+        take(k, 1)
+        m.love = 14
+        toast('喂了 ' + m.def.n + '，它在冒爱心')
+        try { window.sfx && window.sfx('ok') } catch (e) {}
+        render(); refreshBar(); refreshPane()
+        return
+      }
+
+      /* 到这儿说明手上这个东西不是「用在方块或生物上的道具」，
+         那就只能是拿来放的方块了。 */
+      if (!TILE[placeAs]) return toast('这个没法用在这儿')
       /* ★ 这里原来是「目标必须是 air 才能放」—— 但这是俯视视角，
          地表每一格都是草地/沙地/石头，**根本没有 air**，
          所以放东西必然提示「那儿有东西」，一个都放不下去。
@@ -1809,6 +2088,11 @@ export default {
          一并去掉。 */
       if (blocks(cur)) return toast('那儿有东西挡着，先挖掉')
       setTile(f.x, f.y, placeAs)
+      // 放下讨伐台就地召唤 Boss（深层限定，免得在地表乱刷）
+      if (placeAs === 'boss_altar') {
+        if (P.layer < 2) toast('讨伐台要在深层才有效果（R 键往下钻）')
+        else if (!spawnBoss(f.x, f.y - 1)) toast('这儿已经有一只了')
+      }
       take(k, 1)
       placedCount++
       try { window.sfx && window.sfx('pop') } catch (e) {}
@@ -1896,6 +2180,49 @@ export default {
       }
     }
 
+    /** 养殖：两只同类都在冒爱心，而且挨得近 → 生一只幼崽 */
+    function tryBreed() {
+      const loved = mobs.filter((m) => m.love > 0 && !m.baby && !m.def.hostile)
+      for (let i = 0; i < loved.length; i++) {
+        for (let j = i + 1; j < loved.length; j++) {
+          const a = loved[i], b = loved[j]
+          if (a.def.k !== b.def.k) continue
+          if (Math.abs(a.x - b.x) + Math.abs(a.y - b.y) > 3) continue
+          a.love = 0; b.love = 0
+          a.breedCd = 30; b.breedCd = 30
+          const bx = Math.round((a.x + b.x) / 2), by = Math.round((a.y + b.y) / 2)
+          if (getTile(bx, by).solid || blocks(getTile(bx, by))) return
+          mobs.push({
+            def: a.def, x: bx, y: by, hp: a.def.hp, t: Math.random() * 6, cd: 0,
+            baby: true, grow: 75, love: 0, breedCd: 0,
+          })
+          dexMob['baby_' + a.def.k] = 1
+          toast('生了一只小' + a.def.n)
+          try { window.sfx && window.sfx('levelup') } catch (e) {}
+          return
+        }
+      }
+    }
+    /* ===================== Boss =====================
+       地心守卫。三个阶段的判定很简单：血量过 2/3、1/3 各变凶一次，
+       攻击力和移动速度都往上加，第二阶段开始召小怪。
+       它只在深层活动，用讨伐台可以主动召唤。 */
+    let bossRef = null
+    function spawnBoss(x, y) {
+      if (bossRef) return false
+      const def = MOBS.find((m) => m.k === 'boss')
+      const b = { def: def, x: x, y: y, hp: def.hp, t: 0, cd: 0, phase: 1, summons: 0 }
+      mobs.push(b)
+      bossRef = b
+      toast('地心守卫醒了！')
+      try { window.sfx && window.sfx('warn') } catch (e) {}
+      return true
+    }
+    function bossPhase(b) {
+      const k = b.hp / b.def.hp
+      return k > 0.66 ? 1 : k > 0.33 ? 2 : 3
+    }
+
     function updateMobs(dt) {
       const night = isNight()
       for (let i = mobs.length - 1; i >= 0; i--) {
@@ -1909,9 +2236,53 @@ export default {
           m.hp -= 20
           if (m.hp <= 0) { mobs.splice(i, 1); continue }
         }
+        // 爱心倒计时、幼崽长大、繁殖冷却
+        if (m.love > 0) m.love -= dt
+        if (m.breedCd > 0) m.breedCd -= dt
+        if (m.baby) {
+          m.grow -= dt
+          if (m.grow <= 0) { m.baby = false; toast('小' + m.def.n + '长大了') }
+        }
+        // Boss 阶段
+        if (m.def.boss) {
+          const ph = bossPhase(m)
+          if (ph !== m.phase) {
+            m.phase = ph
+            toast('地心守卫进入第 ' + ph + ' 阶段！')
+            try { window.sfx && window.sfx('warn') } catch (e) {}
+          }
+          // 第二、三阶段召小怪（各一次）
+          if (ph >= 2 && m.summons < ph - 1) {
+            m.summons++
+            for (let q = 0; q < 2; q++) {
+              const sx = m.x + (q ? 1 : -1), sy = m.y + (q ? 1 : -1)
+              if (!blocks(getTile(sx, sy))) {
+                const d2 = MOBS.find((z) => z.k === 'skeleton')
+                mobs.push({ def: d2, x: sx, y: sy, hp: d2.hp, t: Math.random() * 6, cd: 0 })
+              }
+            }
+            toast('它召来了帮手')
+          }
+        }
         m.cd -= dt
         if (m.cd > 0) continue
-        m.cd = 0.5
+        m.cd = m.def.boss ? (m.phase === 3 ? 0.3 : m.phase === 2 ? 0.4 : 0.5) : 0.5
+        if (m.def.boss) {
+          // Boss 追得更远、打得更狠
+          if (dist < 16 && dist > 1) {
+            const dxb = Math.sign(P.x - m.x), dyb = Math.sign(P.y - m.y)
+            const optsB = Math.abs(P.x - m.x) > Math.abs(P.y - m.y)
+              ? [[dxb, 0], [0, dyb]] : [[0, dyb], [dxb, 0]]
+            for (const ob of optsB) {
+              if (!ob[0] && !ob[1]) continue
+              const nx = m.x + ob[0], ny = m.y + ob[1]
+              const nt = getTile(nx, ny)
+              if (!blocks(nt) && nt.k !== 'lava') { m.x = nx; m.y = ny; break }
+            }
+          }
+          if (dist <= 2) hurt(m.dmg + (m.phase - 1) * 3, '地心守卫撞了你一下')
+          continue
+        }
         if (m.def.hostile && dist < 9 && dist > 0) {
           // 追玩家：朝玩家走一格
           const dx = Math.sign(P.x - m.x), dy = Math.sign(P.y - m.y)
@@ -1945,6 +2316,8 @@ export default {
       const f = frontTile()
       const idx = mobs.findIndex((m) => m.x === f.x && m.y === f.y)
       if (idx < 0) return false
+      /* 对着村民动手就打开交易，而不是打它 */
+      if (mobs[idx].def.villager) { openTrade(mobs[idx]); return true }
       const m = mobs[idx]
       const it = ITEMS[heldItem()]
       const dmg = (it && it.weapon) || 1
@@ -1952,10 +2325,25 @@ export default {
       try { window.sfx && window.sfx('hit') } catch (e) {}
       toast('打中 ' + m.def.n + ' −' + dmg)
       if (m.hp <= 0) {
-        if (m.def.drop) give(m.def.drop, 1)
+        if (m.def.boss) {
+          // Boss 的专属掉落
+          give('mithril_sword', 1)
+          give('gem', 3)
+          give('boss_crown', 1)
+          give('totem', 1)
+          bossRef = null
+          bossKills++
+          toast('地心守卫被打倒了！掉落了秘银剑 · 宝石 ×3 · 守卫之冠 · 护身符')
+          try { window.sfx && window.sfx('achieve') } catch (e) {}
+        } else if (m.def.drop) {
+          give(m.def.drop, 1)
+          toast(m.def.n + ' 倒下了')
+        } else {
+          toast(m.def.n + ' 倒下了')
+        }
         kills[m.def.k] = (kills[m.def.k] || 0) + 1
-        toast(m.def.n + ' 倒下了（已讨伐 ' + kills[m.def.k] + ' 只）')
         mobs.splice(idx, 1)
+        render(); refreshBar(); refreshPane()
       }
       return true
     }
@@ -1997,6 +2385,59 @@ export default {
     }
 
     /* ===================== UI ===================== */
+    /* 和村民交易。用 lwPanel（能吃 HTML）弹一张换货表。 */
+    function openTrade(v) {
+      const rows = TRADES.map((t, i) => {
+        const can = count(t.give[0]) >= t.give[1] && t.left > 0
+        const gn = ITEMS[t.give[0]] ? ITEMS[t.give[0]].n : t.give[0]
+        const rn = ITEMS[t.get[0]] ? ITEMS[t.get[0]].n : t.get[0]
+        return '<div style="display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px dashed rgba(150,120,80,.32)">' +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="font-size:13px;font-weight:800">' + esc(rn) + ' × ' + t.get[1] + '</div>' +
+            '<div style="font-size:11.5px;opacity:.75">给 ' + esc(gn) + ' × ' + t.give[1] +
+            '（你有 ' + count(t.give[0]) + '）</div>' +
+          '</div>' +
+          '<div style="font-size:11px;opacity:.65;flex:none">剩 ' + t.left + ' 次</div>' +
+          '<button data-trade="' + i + '"' + (can ? '' : ' disabled') +
+          ' style="flex:none;padding:8px 13px;border:1px solid #c9a06a;border-radius:9px;background:' +
+          (can ? 'linear-gradient(180deg,#fff2dc,#f2dcb8)' : '#f0ece2') + ';color:' + (can ? '#5a3a1a' : '#a89c8a') +
+          ';font-family:inherit;font-size:12px;font-weight:800;cursor:' + (can ? 'pointer' : 'default') + '">换</button>' +
+        '</div>'
+      }).join('')
+      lwPanel(
+        '<b style="font-size:15px">🧑‍🌾 村民</b>' +
+        '<div style="font-size:11.5px;opacity:.72;line-height:1.8;margin:4px 0 6px">' +
+        '用身上的东西换点别的。每种能换的次数有限。</div>' +
+        '<div id="wdTradeList">' + rows + '</div>' +
+        '<button data-close style="width:100%;margin-top:12px;padding:11px;border:1px solid #d3bb93;' +
+        'border-radius:12px;background:#fff6e4;color:#4a3a20;font-family:inherit;font-size:14px;font-weight:800;cursor:pointer">关了</button>'
+      ).then(() => {})
+      const mount = () => {
+        const list = $('wdTradeList')
+        if (!list) return false
+        list.querySelectorAll('[data-trade]').forEach((b) => {
+          b.onclick = () => {
+            const t = TRADES[Number(b.getAttribute('data-trade'))]
+            if (!t) return
+            if (t.left <= 0) return toast('这个换完了')
+            if (count(t.give[0]) < t.give[1]) return toast('材料不够')
+            take(t.give[0], t.give[1])
+            give(t.get[0], t.get[1])
+            t.left--
+            tradedCount++
+            try { window.sfx && window.sfx('buy') } catch (e) {}
+            toast('换了 ' + (ITEMS[t.get[0]] ? ITEMS[t.get[0]].n : t.get[0]) + ' × ' + t.get[1])
+            const box = list.parentNode
+            if (box) { box.innerHTML = box.innerHTML; }
+            openTrade(v)
+            refreshBar(); refreshPane()
+          }
+        })
+        return true
+      }
+      if (!mount()) { let k3 = 0; const t3 = setInterval(() => { if (mount() || ++k3 > 20) clearInterval(t3) }, 30) }
+    }
+
     function toast(t) {
       const el = $('wdToast')
       el.textContent = t
@@ -2225,6 +2666,10 @@ export default {
           '倒下 <b>' + deathCount + '</b> 次<br>' +
           '背包物品种类 <b>' + Object.keys(bag).filter((k) => bag[k] > 0).length + '</b><br>' +
           '发现的结构 <b>' + Object.keys(FOUND).length + '</b> 处<br>' +
+          '种下的作物 <b>' + Object.keys(crops).length + '</b> 株（累计种过 ' + plantedCount + '）<br>' +
+          '收成 <b>' + harvestedCount + '</b> 次 · 锄地 ' + tilledCount + ' 次<br>' +
+          '和村民交易 <b>' + tradedCount + '</b> 次<br>' +
+          '打倒 Boss <b>' + bossKills + '</b> 只<br>' +
           '附近生物 <b>' + mobs.length + '</b> 只' +
           '</div>' +
           '<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">' +
@@ -2607,6 +3052,25 @@ export default {
         else if (held.right) tryMove('right')
       }
       updateMobs(dt)
+      /* 作物生长。只在玩家附近推进 —— 全图都算太贵，
+         而且远处的作物本来也看不见，等走过去再看就是「长大了」。 */
+      if (tick % 30 === 0) {
+        const px = Math.floor(P.x), py = Math.floor(P.y)
+        Object.keys(crops).forEach((key) => {
+          const c = crops[key]
+          if (!c) return
+          const parts = key.split(',')
+          const cx2 = Number(parts[0]), cy2 = Number(parts[1]), cl = Number(parts[2])
+          if (cl !== P.layer) return
+          if (Math.abs(cx2 - px) > 26 || Math.abs(cy2 - py) > 26) return
+          const def = CROPS[c.k]
+          if (!def) { delete crops[key]; return }
+          if (c.s >= def.s) return
+          c.t += (c.wet ? 2 : 1)
+          if (c.t >= def.dur) { c.t = 0; c.s++; c.wet = 0 }
+        })
+      }
+      tryBreed()
       // 饥饿：每 20 秒掉一点
       if (tick % 1200 === 0 && P.food > 0) { P.food--; refreshClock() }
       if (P.food <= 0 && tick % 600 === 0) hurt(1, '饿着肚子')
@@ -2690,6 +3154,16 @@ export default {
       hold: (dir, on) => { held[dir] = !!on },
       at: () => ({ x: P.x, y: P.y, layer: P.layer, moving: !!P.moving }),
       seed: () => WORLD_SEED,
+      crops: () => crops,
+      cropKey: (x, y, l) => cropKey(x, y, l),
+      trades: () => TRADES.map((t) => ({ n: t.n, left: t.left, give: t.give, get: t.get })),
+      spawnAt: (k, x, y) => { const d2 = MOBS.find((m) => m.k === k); if (!d2) return null; const m2 = { def: d2, x: x, y: y, hp: d2.hp, t: 0, cd: 0 }; mobs.push(m2); return mobs.length - 1 },
+      mobs: () => mobs.map((m) => ({ k: m.def.k, x: m.x, y: m.y, hp: m.hp, baby: !!m.baby, love: m.love || 0, phase: m.phase || 0 })),
+      spawnBoss: (x, y) => spawnBoss(x, y),
+      boss: () => (bossRef ? { hp: bossRef.hp, phase: bossRef.phase, max: bossRef.def.hp } : null),
+      hurtBoss: (n) => { if (bossRef) bossRef.hp -= n },
+      layer: (l) => { P.layer = l },
+      farm: () => ({ tilled: tilledCount, planted: plantedCount, harvested: harvestedCount, traded: tradedCount, boss: bossKills }),
       setSeed: (v) => { switchWorld(v); return WORLD_SEED },
       seedOf: (v) => seedOf(v),
       randomSeed: () => randomSeed(),
