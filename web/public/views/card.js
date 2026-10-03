@@ -138,31 +138,74 @@ export default {
     const token = () => { try { return localStorage.getItem('lw-token') || '' } catch (e) { return '' } }
     let state = null
 
-    const CARD_POOL = [
-      { k: 'pixel', n: '逐格像素画', i: '🖌️', d: '造成 6 点伤害', cost: 1, dmg: 6 },
-      { k: 'spray', n: '像素喷漆', i: '💨', d: '造成 4 点伤害，抽 1 张', cost: 1, dmg: 4, draw: 1 },
-      { k: 'gravity', n: '像素重力', i: '⏳', d: '造成 3~9 随机伤害', cost: 1, rand: [3, 9] },
-      { k: 'like', n: '佳作点赞', i: '❤️', d: '回复 5 点生命', cost: 1, heal: 5 },
-      { k: 'dust', n: '光尘补给', i: '✨', d: '本回合 +1 能量', cost: 0, energy: 1 },
-      { k: 'guard', n: '防抄袭护盾', i: '🛡️', d: '获得 6 点护甲', cost: 1, block: 6 },
-      { k: 'coop', n: '联机协作', i: '🤝', d: '本回合伤害牌 +2', cost: 1, buff: 2 },
-      { k: 'champ', n: '比赛冠军', i: '🏆', d: '造成 12 点伤害', cost: 2, dmg: 12 },
-      { k: 'theme', n: '秋收主题', i: '🌾', d: '造成 4 点伤害，回复 3', cost: 1, dmg: 4, heal: 3 },
-      { k: 'town', n: '小镇巡逻', i: '🏘️', d: '获得 4 护甲，抽 1 张', cost: 1, block: 4, draw: 1 },
+    /* ================= 牌库 =================
+       原来只有 10 张手写牌，打两把就见底了。
+       现在是**30 个主题 × 4 个档位 = 120 张**，用矩阵生成而不是手打 ——
+       手打一百多张既容易数值失衡，也没法一眼看出「哪张是同一类的第几档」。
+
+       主题都取自站内本来就有的东西（画笔、喷漆、图层、比赛…），
+       每张牌的名字读起来是一回事、效果也对应得上，
+       而不是「攻击力 1/2/3/4」这种换汤不换药。
+
+       四个档位固定：
+         ① 轻：1 能量，小效果
+         ② 中：1 能量，值高一点，或带一点附带
+         ③ 重：2 能量，大效果
+         ④ 绝：3 能量，最大效果
+       这样任何主题都不会出现「2 费比 3 费还强」这种倒挂。 */
+    const CARD_THEMES = [
+      ['画笔', '🖌️'], ['喷漆', '💨'], ['重力', '⏳'], ['橡皮', '🧽'],
+      ['吸管', '💉'], ['填充', '🪣'], ['直线', '📏'], ['圆规', '⭕'],
+      ['图层', '📚'], ['描边', '🖊️'], ['渐变', '🌈'], ['对称', '🪞'],
+      ['调色', '🎨'], ['滤镜', '🫧'], ['像素', '🟦'], ['网格', '▦'],
+      ['画框', '🖼️'], ['展厅', '🏛️'], ['点赞', '❤️'], ['光尘', '✨'],
+      ['护盾', '🛡️'], ['协作', '🤝'], ['比赛', '🏆'], ['冠军', '👑'],
+      ['临摹', '📐'], ['灵感', '💡'], ['魔法', '🪄'], ['火箭', '🚀'],
+      ['星尘', '🌟'], ['暴风', '🌪️'],
     ]
-    const STARTERS = ['pixel', 'pixel', 'spray', 'like', 'guard', 'dust', 'gravity', 'pixel', 'coop', 'theme']
-    const FOES = [
-      { n: '鸽子小妖', img: '/images/dotown/thing_pigeon_01.png', hp: 10, atk: 3 },
-      { n: '阿布怪', img: '/images/dotown/thing_abu.png', hp: 14, atk: 4 },
-      { n: '小猎犬幽灵', img: '/images/dotown/thing_dachshund_01.png', hp: 18, atk: 5 },
-      { n: '猫魂', img: '/images/dotown/thing_cats_13.png', hp: 24, atk: 6 },
-      { n: '猴子巡逻兵', img: '/images/dotown/thing_monkey_01.png', hp: 30, atk: 7 },
-      { n: '猴王', img: '/images/dotown/thing_monkey_02.png', hp: 36, atk: 8 },
-      { n: '疯猴', img: '/images/dotown/thing_monkey_03.png', hp: 46, atk: 9 },
-      { n: '旧图廊鸽王', img: '/images/dotown/thing_pigeon_04.png', hp: 60, atk: 11 },
-      { n: '旧图廊守卫', img: '/images/dotown/thing_cats_13.png', hp: 80, atk: 13 },
-      { n: '像素末日', img: '/images/dotown/thing_monkey_03.png', hp: 110, atk: 15 },
-    ]
+
+    /** 第 tier 档、某个主题的牌 */
+    function makeCard(theme, icon, tier, idx) {
+      const [name] = theme
+      const k = 'c' + idx
+      const scale = [1, 1.6, 2.4, 3.6][tier]
+      const cost = [1, 1, 2, 3][tier]
+      // 同一档里让不同主题偏重不同效果，不然 120 张全是「造成 X 伤害」
+      const kind = idx % 5
+      const base = { k: k, n: name + ['· 轻触', '· 描绘', '· 挥洒', '· 绝笔'][tier], i: icon, cost: cost }
+      if (kind === 0) {
+        const dmg = Math.round(5 * scale)
+        return { ...base, d: '造成 ' + dmg + ' 点伤害', dmg: dmg }
+      }
+      if (kind === 1) {
+        const lo = Math.round(3 * scale)
+        const hi = Math.round(8 * scale)
+        return { ...base, d: '造成 ' + lo + '~' + hi + ' 点随机伤害', rand: [lo, hi] }
+      }
+      if (kind === 2) {
+        const b = Math.round(5 * scale)
+        return { ...base, d: '获得 ' + b + ' 点护甲', block: b }
+      }
+      if (kind === 3) {
+        const h = Math.round(4 * scale)
+        return { ...base, d: '回复 ' + h + ' 点生命', heal: h }
+      }
+      // kind 4：功能牌。低档给能量/抽牌，高档给增伤
+      if (tier <= 1) {
+        return { ...base, d: '本回合 +1 能量，抽 1 张', energy: 1, draw: 1, cost: 0 }
+      }
+      const bf = Math.round(2 * scale)
+      return { ...base, d: '本回合伤害牌 +' + bf + '，并抽 1 张', buff: bf, draw: 1 }
+    }
+
+    const CARD_POOL = (() => {
+      const out = []
+      let i = 0
+      for (const [name, icon] of CARD_THEMES) {
+        for (let tier = 0; tier < 4; tier++) out.push(makeCard([name], icon, tier, i++))
+      }
+      return out
+    })()
 
     const byK = (k) => CARD_POOL.find((c) => c.k === k)
 

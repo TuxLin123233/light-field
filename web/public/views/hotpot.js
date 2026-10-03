@@ -75,7 +75,28 @@ export default {
         box-shadow: inset 0 0 34px rgba(0,0,0,.35), 0 4px 0 #241f19;
       }
       html[data-mood='dark'] .hp-arena b { color: #f3e7d3 }
-    .hp-ing { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin: 10px 0; }
+    /* 选料区。112 样食材平铺会有三十多行，所以做成
+       「分类标签 + 限高的可滚动格子」。 */
+    .hp-cats { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 10px 0 8px; }
+    .hp-cats button {
+      padding: 5px 12px; border: 1px solid #d9c0a0; border-radius: 999px;
+      background: #fffaf1; color: #6a563c;
+      font-family: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer;
+    }
+    .hp-cats button.on {
+      background: linear-gradient(180deg, #c98a4f, #a96f38);
+      border-color: #8f5c2c; color: #fff; box-shadow: 0 2px 0 #8f5c2c;
+    }
+    html[data-mood='dark'] .hp-cats button { background: #3a332a; border-color: #4d453a; color: #e6d8c2; }
+    html[data-mood='dark'] .hp-cats button.on {
+      background: linear-gradient(180deg, #8a6236, #6f4d2a); border-color: #5a3f22; color: #fff;
+    }
+    .hp-ing {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+      margin: 0 0 10px;
+      max-height: 246px; overflow-y: auto; padding: 2px;
+      -webkit-overflow-scrolling: touch;
+    }
     .hp-ing button { border: 1px solid var(--border); border-radius: 12px; padding: 10px 4px; background: var(--surface-2); cursor: pointer; font-family: inherit; font-size: 12px; color: var(--text); }
     .hp-ing button.picked { outline: 3px solid var(--accent); }
     .hp-dot { width: 18px; height: 18px; border-radius: 6px; margin: 0 auto 4px; }
@@ -150,10 +171,57 @@ export default {
     const esc = (x) =>
       String(x == null ? '' : x).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
 
-    const ING = [
-      { n: '番茄', c: '#e5574b' }, { n: '鸡蛋', c: '#f2d04b' }, { n: '豆腐', c: '#fbf7ef' },
-      { n: '青菜', c: '#45b581' }, { n: '茄子', c: '#9b6dd6' }, { n: '土豆', c: '#e8c07a' },
+    /* ================= 食材库 =================
+       原来只有 6 样，两把就全见过了。
+       现在按**六类**列，每类十几样，一共 100+ 样。
+       分类不只是为了好看 —— 100 多样平铺成三列网格会有三十多行，
+       翻都翻不完，所以选料区做成「分类标签 + 限高的可滚动格子」。
+       颜色是按每样东西真实的颜色给的，不是随机分的。 */
+    const ING_CATS = [
+      ['蔬菜', [
+        ['番茄', '#e5574b'], ['青菜', '#45b581'], ['菠菜', '#3f9e63'], ['生菜', '#7ec86a'],
+        ['白菜', '#eaf3d6'], ['芹菜', '#8fc46b'], ['韭菜', '#3d8f4e'], ['黄瓜', '#5fbf6a'],
+        ['冬瓜', '#d9e8cf'], ['南瓜', '#e08a33'], ['茄子', '#9b6dd6'], ['青椒', '#4caf50'],
+        ['红椒', '#e5533d'], ['洋葱', '#c9a0d8'], ['胡萝卜', '#e8842c'], ['白萝卜', '#f2f0e6'],
+        ['土豆', '#e8c07a'], ['红薯', '#c96a3a'], ['山药', '#e6dcc6'], ['莲藕', '#f0e6d2'],
+        ['竹笋', '#e3d9a8'], ['香菇', '#8a6a4a'], ['金针菇', '#f0e8d0'], ['木耳', '#4a3a34'],
+        ['豆芽', '#f2f0d8'], ['豌豆', '#5cb85c'],
+      ]],
+      ['肉蛋', [
+        ['鸡蛋', '#f2d04b'], ['鸭蛋', '#dfe6c8'], ['鹌鹑蛋', '#efe4c0'], ['皮蛋', '#4a4a3a'],
+        ['猪肉', '#e8a0a8'], ['五花肉', '#e88f96'], ['排骨', '#d98a80'], ['牛肉', '#a8453a'],
+        ['牛腩', '#96443c'], ['羊肉', '#d98f8f'], ['鸡肉', '#e8c9a0'], ['鸡翅', '#d9a86a'],
+        ['鸭肉', '#c98f6a'], ['培根', '#c9605a'], ['香肠', '#b8423a'], ['火腿', '#d97070'],
+        ['腊肉', '#9c5a3c'], ['午餐肉', '#e89a9a'],
+      ]],
+      ['海鲜', [
+        ['虾', '#ef8f6a'], ['龙虾', '#d9553d'], ['螃蟹', '#e0703a'], ['鱿鱼', '#e8d0d0'],
+        ['章鱼', '#c96a6a'], ['蛤蜊', '#d9c9a8'], ['扇贝', '#e8d8b8'], ['生蚝', '#b8a890'],
+        ['三文鱼', '#ef8a5a'], ['金枪鱼', '#a84a5a'], ['带鱼', '#c8d4dc'], ['鲈鱼', '#b8c8d0'],
+        ['紫菜', '#3a3a4a'], ['海带', '#4a6a4a'], ['鱼丸', '#f0e8e0'], ['虾滑', '#f2c9b0'],
+      ]],
+      ['主食', [
+        ['米饭', '#f7f4ea'], ['面条', '#f0e2b8'], ['米粉', '#f2ecd8'], ['馒头', '#f5f0e0'],
+        ['包子', '#f7f2e4'], ['饺子', '#f5eeda'], ['馄饨', '#f2ecd8'], ['年糕', '#f0e8d8'],
+        ['粉丝', '#e8e0c8'], ['玉米', '#f2d04b'], ['面包', '#d9a86a'], ['吐司', '#e0b478'],
+        ['豆腐', '#fbf7ef'], ['豆皮', '#f0d9a8'], ['腐竹', '#e8c98a'], ['魔芋', '#c8c0b0'],
+      ]],
+      ['调料', [
+        ['盐', '#f2f2f2'], ['糖', '#f7f2e8'], ['酱油', '#5a3a22'], ['醋', '#8a6a32'],
+        ['辣椒', '#d93a2a'], ['花椒', '#8a4a3a'], ['八角', '#6a4a2a'], ['桂皮', '#8a5a2a'],
+        ['姜', '#e8d08a'], ['蒜', '#f0eadc'], ['葱', '#5cb85c'], ['香菜', '#3f9e63'],
+        ['孜然', '#b89a5a'], ['胡椒', '#4a4038'], ['料酒', '#e8dcc0'], ['蚝油', '#4a3a2a'],
+        ['芝麻', '#3a342c'], ['香油', '#d9a83a'],
+      ]],
+      ['水果', [
+        ['苹果', '#e5574b'], ['香蕉', '#f2d04b'], ['橘子', '#f08a2a'], ['柠檬', '#f5e04a'],
+        ['葡萄', '#8a5ab8'], ['草莓', '#e84a6a'], ['蓝莓', '#5a6ab8'], ['西瓜', '#e5535a'],
+        ['哈密瓜', '#c8e08a'], ['菠萝', '#e8c04a'], ['芒果', '#f0b03a'], ['桃子', '#f0a08a'],
+        ['梨', '#d8e8a8'], ['樱桃', '#c92a3a'], ['猕猴桃', '#8ab85a'], ['椰枣', '#8a5a3a'],
+        ['红枣', '#9c3a32'], ['枸杞', '#d94a2a'],
+      ]],
     ]
+    const ING = ING_CATS.reduce((acc, [, list]) => acc.concat(list.map(([n, c]) => ({ n, c }))), [])
     const COLORS4 = ['#e5574b', '#f2d04b', '#45b581', '#5b8def']
     const state = { best: 0, stars: 0, cooks: 0 }
     try {
@@ -253,21 +321,54 @@ export default {
         '<b style="color:var(--text)">' + esc(who ? who.name : '路过的镇民') + ' 点餐：</b>' +
         (who && servedToday[who.uid] ? '<div class="hp-log">今天已经给这位端过了，这次就当练手</div>' : '') +
         '<div style="margin:6px 0;font-size:14px;color:var(--text)">想点「' + need.join('、') + '」各一份 <img src="' + FOOD_IMG[(customer-1) % FOOD_IMG.length] + '" style="width:36px;height:36px;vertical-align:middle;image-rendering:pixelated"></div>' +
+        '<div class="hp-cats" id="hpCats"></div>' +
         '<div class="hp-ing" id="hpIng"></div>' +
         '<button class="hp-btn primary" id="hpOk">凑齐了</button>'
       const g = $('hpIng')
-      ING.forEach((ing) => {
-        const b = document.createElement('button')
-        b.innerHTML = '<div class="hp-dot" style="background:' + ing.c + '"></div>' + ing.n
-        b.onclick = () => {
-          const i = picked.indexOf(ing)
-          if (i >= 0) { picked.splice(i, 1); b.classList.remove('picked') }
-          else if (picked.length < 3) { picked.push(ing); b.classList.add('picked') }
-        }
-        g.appendChild(b)
-      })
+      const catsBox = $('hpCats')
+      /* 选了哪类就在哪类里翻。要的三样如果分散在不同类，
+         标签后面点一个小圆点提示「这类里有你要的」——
+         不然用户得六类挨着翻一遍。 */
+      let cat = 0
+      for (let ci = 0; ci < ING_CATS.length; ci++) {
+        if (ING_CATS[ci][1].some(([nm]) => need.indexOf(nm) >= 0)) { cat = ci; break }
+      }
+      function paintCats() {
+        catsBox.innerHTML = ''
+        ING_CATS.forEach(([name, list], ci) => {
+          const has = list.some(([nm]) => need.indexOf(nm) >= 0)
+          const b = document.createElement('button')
+          b.type = 'button'
+          b.textContent = name + (has ? ' •' : '')
+          if (ci === cat) b.classList.add('on')
+          b.onclick = () => { cat = ci; paintCats(); paintIng() }
+          catsBox.appendChild(b)
+        })
+      }
+      function paintIng() {
+        g.innerHTML = ''
+        ING_CATS[cat][1].forEach(([nm, col]) => {
+          const b = document.createElement('button')
+          b.innerHTML = '<div class="hp-dot" style="background:' + col + '"></div>' + nm
+          if (picked.some((x) => x.n === nm)) b.classList.add('picked')
+          b.onclick = () => {
+            const i = picked.findIndex((x) => x.n === nm)
+            if (i >= 0) picked.splice(i, 1)
+            else if (picked.length < 3) picked.push({ n: nm, c: col })
+            paintIng()
+          }
+          g.appendChild(b)
+        })
+      }
+      paintCats()
+      paintIng()
       $('hpOk').onclick = () => {
-        const ok = picked.length === 3 && order.every((o) => picked.includes(o))
+        /* ★ 必须**按名字**比，不能比对象身份。
+           分类渲染之后 picked 里放的是新建的 {n,c}，
+           而 order 里是 ING 里的另一批对象 ——
+           includes() 比的是引用，永远 false，备料永远判不过。
+           原来两者都直接引用 ING 里的同一批对象，所以碰巧能用。 */
+        const ok = picked.length === 3 && order.every((o) => picked.some((x) => x.n === o.n))
         log(ok ? '备料齐了！' : '食材不对，食客摇头…')
         stepFire(ok)
       }
