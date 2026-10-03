@@ -65,6 +65,22 @@ export default {
       @media (max-width: 340px) {
         .tw-grid { grid-template-columns: repeat(3, 1fr); }
       }
+      /* 收起 / 展开住户区。默认只显示前 8 户 ——
+         镇上人多了以后，一屏全是房子，往下滑半天看不到「回我的小屋」。 */
+      .tw-fold {
+        display: flex; align-items: center; justify-content: center; gap: 6px;
+        width: 100%; margin-top: 8px; padding: 9px;
+        border: 1px dashed rgba(255,255,255,.45);
+        border-radius: 10px;
+        background: rgba(255,255,255,.16);
+        color: #2f4a20; font-family: inherit; font-size: 12.5px; font-weight: 700;
+        cursor: pointer;
+      }
+      .tw-fold:active { transform: scale(.98); }
+      .tw-fold .tw-fold-caret { transition: transform .2s }
+      .tw-fold.open .tw-fold-caret { transform: rotate(180deg) }
+      .tw-plot.hidden-by-fold { display: none }
+
       .tw-plot {
         border: 0; background: transparent; padding: 5px 2px 3px;
         display: flex; flex-direction: column; align-items: center;
@@ -775,13 +791,22 @@ export default {
     }
 
     /* ---------- 地图 ---------- */
+    /* 住户区默认只显示这么多，多的收起来 */
+    const FOLD_LIMIT = 8
+    let townFoldOpen = false
+    try { townFoldOpen = localStorage.getItem('lw-town-fold') === '1' } catch (e) {}
+
     function drawMap(data) {
       const list = data.list || []
       const grid = list
-        .map((h) => {
+        .map((h, i) => {
           const top = findItem(h.top)
           return (
-            '<button class="tw-plot" type="button" data-uid="' + esc(h.uid) + '">' +
+            /* ★ 只有「当前是收起状态」才加 hidden-by-fold。
+               一开始我写的是无条件 `i >= FOLD_LIMIT` 就加 ——
+               那样用户展开过、状态也存进 localStorage 了，
+               下次进来重新渲染又会被收起来，展开状态等于没记住。 */
+            '<button class="tw-plot' + (i >= FOLD_LIMIT && !townFoldOpen ? ' hidden-by-fold' : '') + '" type="button" data-uid="' + esc(h.uid) + '">' +
             '<canvas data-house="' + esc(h.uid) + '" data-stuff="' + (h.n > 0 ? '1' : '') + '"></canvas>' +
             '<span class="tw-plot-name">' + esc(h.name) + '</span>' +
             '<span class="tw-plot-top">' + (top ? esc(top.name) + ' ×' + h.n : '空屋子') + '</span>' +
@@ -790,16 +815,26 @@ export default {
         })
         .join('')
 
+      /* 折叠按钮只在住户超过限额时出现 */
+      const folded = list.length > FOLD_LIMIT && !townFoldOpen
+      const more = list.length - FOLD_LIMIT
+      const foldHtml = list.length > FOLD_LIMIT
+        ? '<button class="tw-fold' + (townFoldOpen ? ' open' : '') + '" type="button" id="twFold">' +
+          '<span>' + (townFoldOpen ? '收起，只看最近 ' + FOLD_LIMIT + ' 户' : '展开另外 ' + more + ' 户') + '</span>' +
+          '<span class="tw-fold-caret">▾</span>' +
+          '</button>'
+        : ''
+
       $('twTitle').textContent = '🏘️ 像素小镇'
       $('twSub').textContent = list.length
-        ? list.length + ' 户人家' + (list.length > 8 ? ' · 地图可以上下滑' : '')
+        ? list.length + ' 户人家' + (folded ? ' · 已收起 ' + more + ' 户' : '')
         : '还没有人盖房子'
       $('twBody').innerHTML =
         '<div class="tw-map">' +
         '<div class="tw-road"></div>' +
         '<div class="tw-map-scroll">' +
         (list.length
-          ? '<div class="tw-grid">' + grid + '</div>'
+          ? '<div class="tw-grid">' + grid + '</div>' + foldHtml
           : '<div class="tw-empty">镇上还空着。<br />回自己的小屋摆几件家具，<br />你就是这里的第一户人家。</div>') +
         '</div>' +
         '<div class="tw-sign">🏠 点谁家的房子，就去谁家串门<br />串门只能看，动不了人家的东西</div>' +
@@ -811,7 +846,25 @@ export default {
 '<button class="tw-btn" type="button" id="twGoHotpot">🍲 大锅饭</button>' +
         '</div>'
 
-      $('twBody').querySelectorAll('canvas[data-house]').forEach((cv) => {
+      /* 收起 / 展开。只切 class，不重画整张地图 —— 重画会把已经画好的
+       房子 canvas 全部丢掉重来，点了会闪一下。 */
+    const foldBtn = $('twFold')
+    if (foldBtn) {
+      foldBtn.addEventListener('click', () => {
+        townFoldOpen = !townFoldOpen
+        try { localStorage.setItem('lw-town-fold', townFoldOpen ? '1' : '0') } catch (e) {}
+        const plots = $('twBody').querySelectorAll('.tw-plot')
+        plots.forEach((el, i) => el.classList.toggle('hidden-by-fold', !townFoldOpen && i >= FOLD_LIMIT))
+        foldBtn.classList.toggle('open', townFoldOpen)
+        foldBtn.querySelector('span').textContent = townFoldOpen
+          ? '收起，只看最近 ' + FOLD_LIMIT + ' 户'
+          : '展开另外 ' + (plots.length - FOLD_LIMIT) + ' 户'
+        $('twSub').textContent = plots.length + ' 户人家' + (townFoldOpen ? '' : ' · 已收起 ' + (plots.length - FOLD_LIMIT) + ' 户')
+        if (window.sfx) window.sfx('tap')
+      })
+    }
+
+    $('twBody').querySelectorAll('canvas[data-house]').forEach((cv) => {
         drawHouse(cv, cv.getAttribute('data-house'), cv.getAttribute('data-stuff') === '1')
       })
       $('twBody').querySelectorAll('.tw-plot').forEach((b) => {
