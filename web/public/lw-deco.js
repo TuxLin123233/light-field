@@ -1,7 +1,7 @@
 // 装饰与功能增强层（第四层）
 //
 // 前三层：lw-anim 管「动」、lw-polish 管「静」、lw-fx 管「手感」。
-// 这一层补的是「具体场景的样子」——奖牌、网格、等级条、下拉刷新、
+// 这一层补的是「具体场景的样子」——奖牌、网格、等级条、
 // 引导光圈、作品放大过渡这些，全局 CSS 覆盖不到、但又不想每个视图各写一遍的。
 
 ;(function () {
@@ -170,32 +170,7 @@ html[data-theme='dark'] .lwdeco-grid {
   to   { opacity: 1; transform: none }
 }
 
-/* ============ 6. 下拉刷新 ============ */
-#lwdecoPtr {
-  position: fixed;
-  top: 0; left: 50%;
-  z-index: 120;
-  width: 34px; height: 34px;
-  margin-left: -17px;
-  border-radius: 50%;
-  background: var(--surface, #fff);
-  box-shadow: var(--lwp-sh-3);
-  display: flex; align-items: center; justify-content: center;
-  color: var(--text-faint);
-  font-size: 15px;
-  opacity: 0;
-  transform: translateY(-46px);
-  pointer-events: none;
-  transition: opacity .18s, transform .22s cubic-bezier(.2,1.2,.4,1);
-}
-#lwdecoPtr.on { opacity: 1; transform: translateY(12px) }
-#lwdecoPtr.ready { color: var(--accent, #5b8def) }
-#lwdecoPtr.spin { animation: lwd-spin .7s linear infinite }
-@keyframes lwd-spin { to { transform: rotate(360deg) } }
-/* 转起来的时候不要再被 translate 覆盖 */
-#lwdecoPtr.spin { transform: translateY(12px) }
-
-/* ============ 7. 拖动吸附提示 ============ */
+/* ============ 6. 拖动吸附提示 ============ */
 .lwdeco-snap {
   position: absolute;
   pointer-events: none;
@@ -209,7 +184,7 @@ html[data-theme='dark'] .lwdeco-grid {
   100% { opacity: 0; transform: scaleX(1.5) }
 }
 
-/* ============ 8. 音频可视化（音效开关旁的小波形） ============ */
+/* ============ 7. 音频可视化（音效开关旁的小波形） ============ */
 .lwdeco-wave { display: inline-flex; align-items: flex-end; gap: 2px; height: 14px }
 .lwdeco-wave i {
   width: 2.5px;
@@ -227,7 +202,7 @@ html[data-theme='dark'] .lwdeco-grid {
 }
 .lwdeco-wave.off i { animation: none; height: 3px; opacity: .35 }
 
-/* ============ 9. 雨雪落地溅开 ============ */
+/* ============ 8. 雨雪落地溅开 ============ */
 /* 给小镇页的天气加一层溅落效果。天气画布是 JS 画的，
    这里只提供类名和关键帧，具体由 town.js 决定要不要用。 */
 .lwdeco-splash {
@@ -248,7 +223,6 @@ html[data-theme='dark'] .lwdeco-grid {
   .rank-item:nth-child(1) .rank-no,
   .lwdeco-typing i,
   .lwdeco-wave i,
-  #lwdecoPtr.spin { animation: none !important }
 }
 `
 
@@ -334,88 +308,6 @@ html[data-theme='dark'] .lwdeco-grid {
     return box
   }
 
-  /* ================= 下拉刷新 ================= */
-  function initPullRefresh() {
-    if (reduce) return
-    try {
-      if (!window.matchMedia('(pointer: coarse)').matches) return
-    } catch (e) { return }
-
-    var ind = null
-    var startY = 0
-    var pulling = false
-    var dist = 0
-    var THRESHOLD = 68
-
-    function indicator() {
-      if (!ind) {
-        ind = el('div', '', '↓')
-        ind.id = 'lwdecoPtr'
-        document.body.appendChild(ind)
-      }
-      return ind
-    }
-
-    document.addEventListener(
-      'touchstart',
-      function (e) {
-        // 只有已经滚到顶部才触发
-        var y = window.scrollY || document.documentElement.scrollTop || 0
-        if (y > 2 || e.touches.length !== 1) return
-        // 输入框上不要触发（会跟选择文字打架）
-        var t = e.target
-        if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return
-        startY = e.touches[0].clientY
-        pulling = true
-        dist = 0
-      },
-      { passive: true }
-    )
-
-    document.addEventListener(
-      'touchmove',
-      function (e) {
-        if (!pulling) return
-        var y = window.scrollY || document.documentElement.scrollTop || 0
-        if (y > 2) { pulling = false; hide(); return }
-        dist = e.touches[0].clientY - startY
-        if (dist <= 0) { hide(); return }
-        var i = indicator()
-        i.classList.add('on')
-        i.classList.toggle('ready', dist > THRESHOLD)
-        i.textContent = dist > THRESHOLD ? '↻' : '↓'
-        i.style.transform = 'translateY(' + Math.min(12 + dist / 3.2, 74) + 'px) rotate(' + dist * 1.6 + 'deg)'
-      },
-      { passive: true }
-    )
-
-    function hide() {
-      if (!ind) return
-      ind.classList.remove('on', 'ready', 'spin')
-      ind.style.transform = ''
-    }
-
-    document.addEventListener(
-      'touchend',
-      function () {
-        if (!pulling) return
-        pulling = false
-        if (dist > THRESHOLD) {
-          var i = indicator()
-          i.classList.add('spin')
-          i.textContent = '↻'
-          // 站内没有「重新拉数据」的统一入口，所以直接整页刷新。
-          // SPA 里整页刷新会重拉脚本，慢一点，但行为最可预期。
-          setTimeout(function () { location.reload() }, 260)
-        } else {
-          hide()
-        }
-        dist = 0
-      },
-      { passive: true }
-    )
-  }
-
   /* ================= 吸附提示 ================= */
   /** 在容器里画一条吸附线，400ms 后自己消失 */
   function snapLine(container, x, y, vertical) {
@@ -445,12 +337,6 @@ html[data-theme='dark'] .lwdeco-grid {
     return el('div', 'lwdeco-typing', '<i></i><i></i><i></i>')
   }
 
-  /* ================= 启动 ================= */
-  function start() {
-    initPullRefresh()
-  }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start)
-  else start()
 
   /* ================= 对外接口 ================= */
   window.LWDeco = {
