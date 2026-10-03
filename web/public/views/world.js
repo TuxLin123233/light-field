@@ -83,6 +83,62 @@ export default {
     .wd-mini canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated }
 
     /* 热键栏 */
+    /* 世界生成动画 */
+    .wd-gen {
+      position: absolute; inset: 0; z-index: 40;
+      display: flex; flex-direction: column;
+      background: #0a0f1c;
+      overflow: hidden;
+    }
+    .wd-gen[hidden] { display: none }
+    .wd-gen canvas {
+      display: block; width: 100%;
+      image-rendering: pixelated;
+    }
+    /* 画布下面的信息条 */
+    .wd-genbox {
+      flex: 1; min-height: 0;
+      padding: 12px 16px 14px;
+      background: linear-gradient(180deg, #16203a, #0d1424);
+      border-top: 3px solid #000;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.1);
+      color: #dce8ff;
+      display: flex; flex-direction: column; justify-content: center; gap: 7px;
+    }
+    .wd-gentitle {
+      font-size: 15px; font-weight: 800; letter-spacing: 1px;
+      text-shadow: 0 2px 0 rgba(0,0,0,.6);
+      color: #fff;
+    }
+    .wd-gentxt {
+      font-size: 12px; color: #9fb4d8; min-height: 1.4em;
+      font-variant-numeric: tabular-nums;
+    }
+    /* 进度条：做成像素风的一段段格子，和游戏本身一个味道 */
+    .wd-genbar {
+      height: 12px; border-radius: 3px;
+      background: #0a1120;
+      border: 2px solid #2b3a5c;
+      overflow: hidden;
+    }
+    .wd-genbar i {
+      display: block; height: 100%; width: 0;
+      background: linear-gradient(180deg, #7fd08a, #4a9e42);
+      box-shadow: inset 0 -3px 0 rgba(0,0,0,.25);
+      transition: width .12s linear;
+    }
+    .wd-genpct {
+      font-size: 11px; color: #7f93b8; text-align: right;
+      font-variant-numeric: tabular-nums; margin-top: -3px;
+    }
+    .wd-genskip {
+      align-self: flex-start;
+      padding: 6px 14px; border: 1px solid #2b3a5c; border-radius: 8px;
+      background: #1b2740; color: #cfe0ff;
+      font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
+    }
+    .wd-genskip:active { transform: scale(.96) }
+
     /* 热键栏。原来 40px 一格，手机上手指点不准 —— 放大到 54。
        9 格总共 526px，窄屏放不下，所以让它能横向滑。 */
     .wd-bar {
@@ -233,6 +289,17 @@ export default {
 
       <div class="wd-stage" id="wdStage">
         <canvas id="wdCv"></canvas>
+        <!-- 世界生成动画。盖在舞台上面，开始新世界时演一遍 -->
+        <div class="wd-gen" id="wdGen" hidden>
+          <canvas id="wdGenCv"></canvas>
+          <div class="wd-genbox">
+            <div class="wd-gentitle">正在生成世界</div>
+            <div class="wd-gentxt" id="wdGenTxt">正在计算地形高度…</div>
+            <div class="wd-genbar"><i id="wdGenBar"></i></div>
+            <div class="wd-genpct" id="wdGenPct">0%</div>
+            <button class="wd-genskip" id="wdGenSkip" type="button">跳过</button>
+          </div>
+        </div>
         <div class="wd-hud">
           <div class="wd-chip" id="wdWhere">—</div>
           <div class="wd-spacer"></div>
@@ -1793,11 +1860,15 @@ export default {
           '<button id="wdEat" style="padding:8px 16px;border:1px solid #d3bb93;border-radius:8px;background:#fff6e4;font-family:inherit;font-size:13px;cursor:pointer">🍗 吃东西</button>' +
           '<button id="wdSpawn" style="padding:8px 16px;border:1px solid #d3bb93;border-radius:8px;background:#fff6e4;font-family:inherit;font-size:13px;cursor:pointer">🐾 引一只生物过来</button>' +
           '<button id="wdFind" style="padding:8px 16px;border:1px solid #d3bb93;border-radius:8px;background:#fff6e4;font-family:inherit;font-size:13px;cursor:pointer">🧭 找最近的结构</button>' +
+          '<button id="wdReplay" style="padding:8px 16px;border:1px solid #d3bb93;border-radius:8px;background:#fff6e4;font-family:inherit;font-size:13px;cursor:pointer">🌍 重看世界生成</button>' +
           '</div>'
         const e1 = $('wdEat')
         if (e1) e1.onclick = eat
         const e2 = $('wdSpawn')
         if (e2) e2.onclick = () => { spawnMob(); toast('附近出现了一只生物'); refreshPane() }
+        const e4 = $('wdReplay')
+        if (e4) e4.onclick = () => { playGenAnim(() => { render(); refreshClock() }) }
+
         const e3 = $('wdFind')
         if (e3) e3.onclick = () => {
           // 在周围 6 个大格里找最近的一个结构，给方向和距离
@@ -1928,8 +1999,118 @@ export default {
     document.querySelectorAll('#wdTabs button').forEach((b) => {
       b.addEventListener('click', () => switchTab(b.getAttribute('data-tab')))
     })
+/* ================= 世界生成动画 =================
+       开始一个新世界时演一遍，像别的方块游戏那样「从无到有长出来」。
 
-    /* ===================== 主循环 ===================== */
+       重点：**预览画的是真实地形**，不是随便糊的色块。
+       每格的颜色都是当场 getTile() 取出来的 ——
+       所以演完之后看到的这个世界，就是待会儿真的要去走的那个。
+       揭示顺序打乱（不是从上往下刷），配一条扫描光和进度条。
+
+       那几个阶段的文案对应生成里真的按顺序算的东西：
+       高度 → 群系 → 洞穴 → 矿脉 → 结构 → 树木。 */
+    let genRaf = 0
+    function playGenAnim(done) {
+      const wrap = $('wdGen')
+      const gc = $('wdGenCv')
+      const bar = $('wdGenBar')
+      const txt = $('wdGenTxt')
+      const pct = $('wdGenPct')
+      const skip = $('wdGenSkip')
+      if (!wrap || !gc) { if (done) done(); return }
+      const stageW = stage.clientWidth || 430
+      if (!stageW) { if (done) done(); return }
+
+      const GW = 52, GH = 30                       // 预览格数
+      const cpx = Math.max(3, Math.floor(stageW / GW))
+      const cpxH = Math.max(3, Math.floor(cpx * 0.92))
+      const dpr = Math.min(window.devicePixelRatio || 1, 2)
+      gc.width = GW * cpx * dpr
+      gc.height = GH * cpxH * dpr
+      gc.style.height = (GH * cpxH) + 'px'
+      const g2 = gc.getContext('2d')
+      g2.setTransform(cpx * dpr, 0, 0, cpxH * dpr, 0, 0)
+      g2.imageSmoothingEnabled = false
+
+      const ox = P.x - Math.floor(GW / 2), oy = P.y - Math.floor(GH / 2)
+      // 取真实地形（顺便把这一带的块都生成出来）
+      const cells = []
+      for (let j = 0; j < GH; j++) {
+        for (let i = 0; i < GW; i++) {
+          const t = getTile(ox + i, oy + j)
+          cells.push({ i: i, j: j, c: t.c, c2: t.c2, at: Math.random() })
+        }
+      }
+      const total = cells.length
+      // 从玩家脚下往外长更自然：按到中心点的距离 + 一点随机
+      const ccx = (GW - 1) / 2, ccy = (GH - 1) / 2
+      cells.sort((a, b) =>
+        (Math.hypot(a.i - ccx, a.j - ccy) + a.at * 12) -
+        (Math.hypot(b.i - ccx, b.j - ccy) + b.at * 12))
+
+      const STAGES = [
+        [0.00, '正在计算地形高度…'],
+        [0.12, '正在划分生物群系…'],
+        [0.30, '正在挖开洞穴…'],
+        [0.48, '正在埋下矿脉…'],
+        [0.66, '正在放置遗迹与村庄…'],
+        [0.84, '正在种树、铺草…'],
+        [0.96, '世界准备好了'],
+      ]
+
+      wrap.hidden = false
+      let t0 = 0, finished = false
+      const DUR = 2600
+
+      function stop(v) {
+        if (finished) return
+        finished = true
+        cancelAnimationFrame(genRaf)
+        clearTimeout(bail)
+        try { skip.onclick = null } catch (e) {}
+        wrap.hidden = true
+        if (done) done(v)
+      }
+      if (skip) skip.onclick = () => stop(false)
+      /* 保险：万一 requestAnimationFrame 被浏览器节流（切到后台、
+         省电模式…），动画会卡住不结束，那整个世界就进不去了。
+         所以再挂一个定时器兜底，到点无论如何都收场。 */
+      const bail = setTimeout(() => stop(true), DUR + 1500)
+
+      function frame(ts) {
+        if (finished) return
+        if (!t0) t0 = ts
+        const k = Math.min(1, (ts - t0) / DUR)
+        const want = Math.floor(total * Math.min(1, k * 1.06))
+        g2.fillStyle = '#0a0f1c'
+        g2.fillRect(0, 0, GW, GH)
+        for (let i2 = 0; i2 < want && i2 < total; i2++) {
+          const c2 = cells[i2]
+          g2.fillStyle = c2.c
+          g2.fillRect(c2.i, c2.j, 1, 1)
+          if (hash2(c2.i + ox, c2.j + oy, 555) < 0.42) {
+            g2.fillStyle = c2.c2
+            g2.fillRect(c2.i + 0.62, c2.j + 0.62, 0.34, 0.34)
+          }
+        }
+        // 前沿的十字扫描光
+        const edge = cells[Math.min(total - 1, Math.max(0, want - 1))]
+        if (edge && k < 0.99) {
+          g2.fillStyle = 'rgba(180,225,255,.5)'
+          g2.fillRect(edge.i - 1, edge.j - 0.12, 3, 1.24)
+          g2.fillRect(edge.i - 0.12, edge.j - 1, 1.24, 3)
+        }
+        const realK = want / total
+        if (bar) bar.style.width = (realK * 100).toFixed(1) + '%'
+        if (pct) pct.textContent = Math.floor(realK * 100) + '%'
+        let label = STAGES[0][1]
+        for (const st of STAGES) { if (k >= st[0]) label = st[1] }
+        if (txt) txt.textContent = label
+        if (k >= 1) { stop(true); return }
+        genRaf = requestAnimationFrame(frame)
+      }
+      genRaf = requestAnimationFrame(frame)
+    }
     let raf = 0, last = 0, fpsAcc = 0, fpsN = 0
 
     function tickWorld(dt) {
@@ -1991,10 +2172,22 @@ export default {
     render()
     raf = requestAnimationFrame(loop)
     window.addEventListener('resize', resize)
+    /* 第一次进来演一遍生成动画。之后不再自动演 ——
+       想看可以到「统计」页点「🌍 重看世界生成」。 */
+    let genSeen = false
+    try { genSeen = localStorage.getItem('lw-world-gen') === '1' } catch (e) {}
+    if (!genSeen) {
+      playGenAnim(() => {
+        try { localStorage.setItem('lw-world-gen', '1') } catch (e) {}
+        render(); refreshClock()
+      })
+    }
+
 
     // 离开时停掉，并自动存一次
     const stop = () => {
       cancelAnimationFrame(raf)
+      cancelAnimationFrame(genRaf)
       saveAll()
     }
     window.addEventListener('lw-leave', stop)
