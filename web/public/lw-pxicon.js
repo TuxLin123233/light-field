@@ -1690,6 +1690,46 @@
       ],
     },
 
+    /* 冒险世界：一个俯视的方块地形，云影在地面上移动 */
+    adventuring: {
+      frames: [
+        [
+          '..............',
+          '..JJJJ..JJJJ..',
+          '.JccccJJccccJ.',
+          '.JcJJccJJccJJ.',
+          'JJJJJJJJJJJJJJ',
+          'ccccJJJJJJcccc',
+          'cJJcJJJJJJcJJc',
+          'ccccJJJJJJcccc',
+          'ccccJJssJJcccc',
+          'ccccJJssJJcccc',
+          'JJJJJJJJJJJJJJ',
+          '.ssss..JJJJJJ.',
+          '.ssss..JJJJJJ.',
+          '.MMMM..MMMMMM.',
+          '.TTTT..TTTTTT.',
+        ],
+        [
+          '..............',
+          '..JJJJ..JJJJ..',
+          '.JccccJJccccJ.',
+          '.JcJJccJJccJJ.',
+          'JJJJJJJJJJJJJJ',
+          '.JJJJJJJJJJJJJ',
+          '.cJJcJJJJJJcJc',
+          '.JJJJJJJJJJJJJ',
+          '.JJJJJJssJJJJJ',
+          '.JJJJJJssJJJJJ',
+          'JJJJJJJJJJJJJJ',
+          '.ssss..JJJJJJ.',
+          '.MMMM..JJJJJJ.',
+          '.MMMM..MMMMMM.',
+          '.TTTT..TTTTTT.',
+        ],
+      ],
+    },
+
   }
 
   /* ================= 绘制 ================= */
