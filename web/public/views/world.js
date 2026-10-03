@@ -922,7 +922,8 @@ export default {
     let minedCount = 0
     let placedCount = 0
     const dexSeen = {}
-    const dexMob = {}
+    const dexMob = {}     // 见过哪些生物（图鉴用）
+    const kills = {}      // 每种生物打死了多少（冒险者工会的悬赏要用）
 
     /* ===================== 存档 ===================== */
     const SAVE_KEY = 'lw-town-save'
@@ -936,6 +937,7 @@ export default {
         ed: ed.slice(-4000), // 最多存 4000 格改动
         found: FOUND,
         dex: dexSeen, dmob: dexMob,
+          kills: kills,
         mined: minedCount, placed: placedCount, deaths: deathCount,
       }
       let combo = {}
@@ -971,6 +973,7 @@ export default {
         })
         Object.assign(dexSeen, d.dex || {})
         Object.assign(dexMob, d.dmob || {})
+        Object.assign(kills, d.kills || {})
         if (d.found) Object.assign(FOUND, d.found)
         minedCount = Number(d.mined) || 0
         placedCount = Number(d.placed) || 0
@@ -1463,7 +1466,8 @@ export default {
       toast('打中 ' + m.def.n + ' −' + dmg)
       if (m.hp <= 0) {
         if (m.def.drop) give(m.def.drop, 1)
-        toast(m.def.n + ' 倒下了')
+        kills[m.def.k] = (kills[m.def.k] || 0) + 1
+        toast(m.def.n + ' 倒下了（已讨伐 ' + kills[m.def.k] + ' 只）')
         mobs.splice(idx, 1)
       }
       return true
@@ -1823,7 +1827,8 @@ export default {
 
     // 给外部（成就/统计）用
     window.__lwWorld = {
-      stats: () => ({ mined: minedCount, placed: placedCount, deaths: deathCount, mobs: Object.keys(dexMob).length, blocks: Object.keys(dexSeen).length }),
+      stats: () => ({ mined: minedCount, placed: placedCount, deaths: deathCount, mobs: Object.keys(dexMob).length, blocks: Object.keys(dexSeen).length,
+        kills: kills, structs: Object.keys(FOUND).length, layer: P.layer, }),
     }
   },
 }
