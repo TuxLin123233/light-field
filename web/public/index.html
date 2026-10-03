@@ -1274,13 +1274,17 @@
         }
         /* gamersounds.com 的音效：有的场景直接用真实文件，
            没有文件的退回上面的合成音。
-           用法：window.sfx('hit') / ('fire') / ('eat') / ('coin') / ('success') / ('fail') / ('levelup') / ('buy') */
-        const AUDIO_SFX = {
-          hit: '/audio/hit.mp3', fire: '/audio/fire.mp3', eat: '/audio/eat.mp3',
-          coin: '/audio/coin.mp3', success: '/audio/success.mp3', fail: '/audio/fail.mp3',
-          levelup: '/audio/levelup.mp3', buy: '/audio/buy.mp3', click: '/audio/click.mp3',
-          button: '/audio/button.mp3',
-        }
+           用法：window.sfx('hit') / ('fire') / ('coin') / ('fail') / ('levelup') / ('buy') */
+        /* eat 和 success 这两个不在这里了 ——
+             用户反馈大锅饭和「游戏成功」的音效要换一个，
+             改成用下面的合成音（ding / win / achieve），
+             音色更贴像素风，也省掉两个 mp3 的下载。 */
+          const AUDIO_SFX = {
+            hit: '/audio/hit.mp3', fire: '/audio/fire.mp3',
+            coin: '/audio/coin.mp3', fail: '/audio/fail.mp3',
+            levelup: '/audio/levelup.mp3', buy: '/audio/buy.mp3',
+            click: '/audio/click.mp3', button: '/audio/button.mp3',
+          }
         window.sfx = function (name) {
           if (isSilent()) return
           const src = AUDIO_SFX[name]

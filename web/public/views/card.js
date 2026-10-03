@@ -135,7 +135,7 @@ export default {
     }
     function winFloor() {
       log('打败了「' + state.enemy.n + '」！')
-      try { window.sfx && window.sfx('success') } catch (e) {}
+      try { window.sfx && window.sfx('achieve') } catch (e) {}
       state.run.floor++
       if (state.run.floor > 10) return winRun()
       const opts = shuffle(CARD_POOL.slice()).slice(0, 3)

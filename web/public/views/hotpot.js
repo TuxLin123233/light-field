@@ -16,9 +16,54 @@ export default {
     .hp-fire { height: 22px; border-radius: 999px; background: linear-gradient(90deg,#2f5fb8,#f2d04b 45%,#e5574b 80%,#7a1f1a); position: relative; margin: 14px 0; }
     .hp-zone { position: absolute; top: 0; bottom: 0; width: 22%; left: 55%; background: rgba(255,255,255,.55); border-radius: 999px; }
     .hp-marker { position: absolute; top: -4px; bottom: -4px; width: 6px; background: #fff; border: 2px solid #3b342c; border-radius: 4px; }
-    .hp-plate { display: grid; grid-template-columns: repeat(2,52px); gap: 8px; justify-content: center; margin: 10px 0; }
-    .hp-plate button { width: 52px; height: 52px; border-radius: 12px; border: 2px solid var(--border-strong); cursor: pointer; }
-    .hp-plate button.sel { outline: 3px solid var(--accent); }
+    /* 四色拼盘：目标盘和当前盘必须一模一样大，否则看起来是错位的。
+       ★ button 默认是 content-box：写了 width:52px 再加 2px 边框，
+       实际占 56px，撑出 52px 的网格列，两个盘子就对不齐了。
+       加 box-sizing 让边框算进 52px 里。
+       目标盘那边是 div，没有边框，所以两边都是 52×52。 */
+    .hp-plate {
+      display: grid;
+      grid-template-columns: repeat(2, 52px);
+      grid-auto-rows: 52px;
+      gap: 8px;
+      justify-content: center;
+      margin: 10px 0;
+    }
+    /* 目标盘和当前盘用同一套格子尺寸。
+       box-sizing 是必须的：button 在 Chrome 里默认是 border-box，
+       但显式写一遍更保险，换个浏览器也不会因为 2px 边框把格子撑成 56px
+       而和目标盘错开。 */
+    .hp-plate > * {
+      box-sizing: border-box;
+      width: 52px;
+      height: 52px;
+      padding: 0;
+      border-radius: 12px;
+      border: 2px solid transparent;
+    }
+    /* ★ 目标盘只是给人看的，绝不能吃点击。
+       它和可点的当前盘上下紧挨着 —— 只要有任何一条全局样式让它多占一点
+       高度、或者盖住下面的按钮，上面那两格就点不动了（用户反馈的
+       「只能拼下面两个」就是这个现象）。这里直接把它的指针事件关掉，
+       不管布局怎么变都抢不走点击。 */
+    .hp-plate.target {
+      pointer-events: none;
+      user-select: none;
+      opacity: .96;
+    }
+    .hp-plate.target > * { border-color: var(--border); }
+    /* 当前盘：明确可点 */
+    .hp-plate.cur > * {
+      border-color: var(--border-strong);
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .hp-plate.cur > *:active { transform: scale(.95); }
+    .hp-plate.cur > .sel {
+      outline: 3px solid var(--accent);
+      outline-offset: 1px;
+      border-color: var(--accent);
+    }
     .hp-btn { border: 1px solid var(--border-strong); background: var(--surface-2); color: var(--text); border-radius: 999px; padding: 9px 20px; font-size: 13px; font-weight: 800; cursor: pointer; font-family: inherit; margin: 4px; }
     .hp-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
     .hp-log { font-size: 12px; color: var(--text-muted); margin-top: 8px; min-height: 18px; }
@@ -110,22 +155,31 @@ export default {
         clearInterval(timer); timer = null
         const ok = pos >= zoneL && pos <= zoneR
         log(ok ? '火候正好！' : '火候没到家…')
-        try { window.sfx && window.sfx(ok ? 'success' : 'fail') } catch (e) {}
+        try { window.sfx && window.sfx(ok ? 'ding' : 'fail') } catch (e) {}
         stepPlate(preOk && ok)
       }
     }
     function stepPlate(preFireOk) {
       const target = COLORS4.slice()
       let cur = shuffle(COLORS4.slice())
+      /* ★ 打乱的结果有 1/24 的概率正好和目标一致 ——
+         那样开局就是完成态，点一下「装盘完成」就赢了。
+         重打几次，保证至少要动一下。 */
+      for (let guard = 0; guard < 12 && cur.every((c, i) => c === target[i]); guard++) {
+        cur = shuffle(COLORS4.slice())
+      }
       let sel = null
       const draw = () => {
         $('hpArena').innerHTML =
           '<b style="color:var(--text)">最后：把四色摆成和目标一样的花格！<br>点两个格子交换位置</b>' +
           '<div style="margin:8px 0;font-size:12px;color:var(--text-muted)">目标</div>' +
-          '<div class="hp-plate">' + target.map((c) => '<div style="width:52px;height:52px;border-radius:12px;background:' + c + '"></div>').join('') + '</div>' +
-          '<div class="hp-plate" id="hpPlate"></div>' +
+          '<div class="hp-plate target">' + target.map((c) => '<div style="background:' + c + '"></div>').join('') + '</div>' +
+          '<div class="hp-plate cur" id="hpPlate"></div>' +
           '<button class="hp-btn primary" id="hpDone">装盘完成</button>'
         const g = $('hpPlate')
+        /* 万一 hpPlate 没拿到（比如 id 被别的元素占了），
+           至少让日志里能看出来，而不是「点了没反应」查半天。 */
+        if (!g) { log('拼盘没渲染出来，刷新一下'); return }
         cur.forEach((c, i) => {
           const b = document.createElement('button')
           b.style.background = c
@@ -142,7 +196,7 @@ export default {
           log(ok ? '装盘好看到流泪！' : '摆歪了…')
           const full = preFireOk && ok
           if (full) satisfied++
-          try { window.sfx && window.sfx(full ? 'eat' : 'fail') } catch (e) {}
+          try { window.sfx && window.sfx(full ? 'win' : 'fail') } catch (e) {}
           customerInfo(full)
         }
       }
