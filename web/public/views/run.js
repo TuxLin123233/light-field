@@ -388,6 +388,52 @@ export default {
       return 'flat'
     }
 
+    /* ================= 粒子 =================
+       跑动时的尘土、起跳/落地的火星、吃到光尘的金星。
+       纯装饰，但有没有这个，观感差很多 —— 尤其跑起来的时候。 */
+    let parts = []
+    function spawnDust(x, y, n2) {
+      for (let i = 0; i < (n2 || 3); i++) {
+        parts.push({
+          x: x + Math.random() * 0.8, y: y + Math.random() * 0.3,
+          vx: -0.6 - Math.random() * 1.6, vy: -0.6 - Math.random() * 1.8,
+          life: 0.34 + Math.random() * 0.3, t: 0, c: 'rgba(220,210,190,',
+        })
+      }
+      if (parts.length > 160) parts = parts.slice(-160)
+    }
+    function spawnSpark(x, y, c, n2) {
+      for (let i = 0; i < (n2 || 5); i++) {
+        const a = Math.random() * 6.28
+        const sp = 1 + Math.random() * 2.6
+        parts.push({
+          x: x + 0.5, y: y + 0.5,
+          vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 0.5,
+          life: 0.4 + Math.random() * 0.35, t: 0, c: c,
+        })
+      }
+    }
+    function updateParts(dt) {
+      for (let i = parts.length - 1; i >= 0; i--) {
+        const p2 = parts[i]
+        p2.t += dt
+        if (p2.t >= p2.life) { parts.splice(i, 1); continue }
+        p2.x += p2.vx * dt
+        p2.y += p2.vy * dt
+        p2.vy += 9 * dt
+        p2.vx *= 0.94
+      }
+    }
+    function drawParts() {
+      parts.forEach((p2) => {
+        const k = 1 - p2.t / p2.life
+        const sx = Math.round(p2.x - camX)
+        if (sx < -2 || sx > W + 2) return
+        ctx.fillStyle = p2.c + (k * 0.9).toFixed(2) + ')'
+        ctx.fillRect(sx, Math.round(p2.y), 1, 1)
+      })
+    }
+
     /* ================= 游戏状态 ================= */
     const cv = $('rkCv')
     const ctx = cv.getContext('2d')
@@ -534,6 +580,29 @@ export default {
         if (xx < W) ctx.fillRect(Math.floor(xx), s.y, s.s, s.s)
       })
 
+      /* 远景城市剪影：像素小镇的天际线，随镜头缓慢移动。
+         比纯山好看，也更贴「像素小镇」这个主题。 */
+      const skyOff = -camX * 0.12
+      const skyH = 5
+      for (let i = 0; i < 40; i++) {
+        const bw = 3 + ((i * 7) % 5)
+        const bh = skyH + ((i * 13) % 7)
+        const bx = Math.round((i * 11 + skyOff) % (W + 120))
+        const x2 = bx < -60 ? bx + W + 120 : bx
+        if (x2 > W + 20) continue
+        ctx.fillStyle = '#151d33'
+        ctx.fillRect(x2, H - 2 - bh, bw, bh)
+        // 窗户：几颗亮点
+        ctx.fillStyle = 'rgba(255,220,150,.5)'
+        for (let wy = 1; wy < bh - 1; wy += 2) {
+          for (let wx = 0; wx < bw - 1; wx += 2) {
+            if (((i * 31 + wy * 7 + wx * 13 + Math.floor(camX / 8)) % 5) < 2) {
+              ctx.fillRect(x2 + wx, H - 2 - bh + wy, 1, 1)
+            }
+          }
+        }
+      }
+
       // 远山：两层视差
       for (let layer = 0; layer < 2; layer++) {
         ctx.fillStyle = layer === 0 ? PAL.mount : PAL.mount2
@@ -613,10 +682,19 @@ export default {
         })
       }
 
-      // 加速特效：屏幕边缘泛绿
+      // 粒子（在地形之上、玩家之下）
+      drawParts()
+
+      // 加速特效：屏幕边缘泛绿 + 速度线
       if (boostLeft > 0) {
-        ctx.fillStyle = 'rgba(94,224,160,.14)'
+        ctx.fillStyle = 'rgba(94,224,160,.12)'
         ctx.fillRect(0, 0, W, H)
+        ctx.fillStyle = 'rgba(180,255,220,.5)'
+        for (let i = 0; i < 7; i++) {
+          const y = (i * 7 + Math.floor(Date.now() / 30) % 7) % H
+          const x = (Date.now() / 2 + i * 40) % (W + 30) - 15
+          ctx.fillRect(Math.floor(W - x), y, 9, 1)
+        }
       }
 
       // 玩家
@@ -644,23 +722,55 @@ export default {
     }
 
     /* ================= 逻辑 ================= */
-    const GRAV = 34 // 格/秒²
-    const JUMP_V = 11.2
+    /* ---------- 手感参数 ----------
+       跑酷好不好玩基本就看这几个数。都调过：
+         GRAV/JUMP_V   跳跃高度约 1.8 格、滞空约 0.66 秒 —— 够跨过两格坑
+         COYOTE        离开地面后 0.12 秒内还能起跳（「土狼时间」）。
+                       没有这个，差一帧没按到就直接摔死，非常劝退。
+         BUFFER        落地前 0.14 秒按的跳，落地瞬间自动生效。
+                       没有这个，连按也常常按不出来。 */
+    const GRAV = 30
+    const JUMP_V = 10.6
+    const COYOTE = 0.12
+    const BUFFER = 0.14
+
+    let coyoteLeft = 0
+    let bufferLeft = 0
 
     function jump() {
       if (!playing) return
+      // 还没落地？先记下来，落地那一刻自动跳
+      if (!player.onGround && coyoteLeft <= 0) {
+        const maxJumps = 1 + (lv('air') > 0 ? 1 : 0)
+        if (player.jumps < maxJumps) {
+          // 二段跳：立刻生效
+          doJump()
+          return
+        }
+        bufferLeft = BUFFER
+        return
+      }
       const maxJumps = 1 + (lv('air') > 0 ? 1 : 0)
       if (player.jumps >= maxJumps) return
+      doJump()
+    }
+
+    function doJump() {
       player.vy = -JUMP_V * (1 + lv('jump') * 0.08)
       player.jumps++
       player.onGround = false
       player.sliding = 0
+      coyoteLeft = 0
+      bufferLeft = 0
+      spawnDust(player.x, player.y + 1, 6)
       try { window.sfx && window.sfx('tap') } catch (e) {}
     }
 
     function slide() {
-      if (!playing || !player.onGround) return
-      player.sliding = 0.42 + lv('slide') * 0.08
+      if (!playing) return
+      // 空中也能滑（会变成快速下坠），不然「跳起来发现前面有管道」就没办法了
+      if (!player.onGround) player.vy = Math.max(player.vy, 9)
+      player.sliding = 0.5 + lv('slide') * 0.1
       try { window.sfx && window.sfx('swish') } catch (e) {}
     }
 
@@ -726,15 +836,23 @@ export default {
       const feet = player.y + 1
       if (feet >= gy) {
         // 落地
+        const wasAir = !player.onGround
         player.y = gy - 1
         player.vy = 0
-        if (!player.onGround) {
-          player.onGround = true
-          player.jumps = 0
+        player.onGround = true
+        player.jumps = 0
+        coyoteLeft = COYOTE
+        if (wasAir) spawnDust(player.x, player.y + 1, 4)
+        // 落地前按过的跳，这时候补上
+        if (bufferLeft > 0) {
+          bufferLeft = 0
+          doJump()
         }
       } else {
         player.onGround = false
+        if (coyoteLeft > 0) coyoteLeft -= dt
       }
+      if (bufferLeft > 0) bufferLeft -= dt
 
       // 滑铲计时
       if (player.sliding > 0) player.sliding -= dt
@@ -765,6 +883,7 @@ export default {
           if (cc && cc.coin) {
             cc.coin = 0
             coins++
+            spawnSpark(col + dx, 2, 'rgba(255,220,120,', 4)
             try { window.sfx && window.sfx('coin') } catch (e) {}
           }
         }
@@ -794,6 +913,11 @@ export default {
       while (acc >= FIXED && guard++ < 20) {
         step(FIXED)
         acc -= FIXED
+      }
+      updateParts(dt)
+      // 跑动时不停扬尘
+      if (playing && player.onGround && Math.random() < dt * 22) {
+        spawnDust(player.x, player.y + 1, 1)
       }
       draw()
       raf = requestAnimationFrame(loop)
@@ -834,23 +958,27 @@ export default {
     window.addEventListener('keydown', kd)
     window.addEventListener('keyup', ku)
 
-    // 触摸 / 鼠标：上半屏跳，下半屏滑
-    let downY = 0, downT = 0
+    /* 触摸 / 鼠标。
+       ★ 原来是把屏幕切成上下两块：上半屏跳、下半屏滑铲。
+       这个分法很难用 —— 想跳的时候稍微点低了就变成滑铲，直接摔死。
+       现在改成：**在哪儿点都是跳**，**往下滑才是滑铲**。
+       跳是最常用的动作，不该有「点错位置」这回事。 */
+    let downY = 0, downX = 0, downT = 0, slidThisTouch = false
     function pointerDown(e) {
       if (!playing) { start(); return }
-      const r = stage.getBoundingClientRect()
-      const y = (e.touches ? e.touches[0].clientY : e.clientY) - r.top
-      downY = y
+      const p2 = e.touches ? e.touches[0] : e
+      downY = p2.clientY
+      downX = p2.clientX
       downT = Date.now()
-      if (y > r.height * 0.62) slide()
-      else jump()
+      slidThisTouch = false
+      jump()
     }
     function pointerMove(e) {
-      if (e.touches && e.touches[0]) {
-        const r = stage.getBoundingClientRect()
-        const dy = e.touches[0].clientY - r.top - downY
-        if (dy > 34 && Date.now() - downT < 500) { slide(); downT = 0 }
-      }
+      if (!e.touches || !e.touches[0] || slidThisTouch) return
+      const dy = e.touches[0].clientY - downY
+      const dx = Math.abs(e.touches[0].clientX - downX)
+      // 往下滑超过 18px、而且不是横着划 —— 判定为滑铲
+      if (dy > 18 && dy > dx) { slide(); slidThisTouch = true }
     }
     const md = (e) => { if (!e.target.closest('button')) pointerDown(e) }
     stage.addEventListener('touchstart', md, { passive: true })

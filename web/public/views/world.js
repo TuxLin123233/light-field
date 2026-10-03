@@ -83,24 +83,37 @@ export default {
     .wd-mini canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated }
 
     /* 热键栏 */
+    /* 热键栏。原来 40px 一格，手机上手指点不准 —— 放大到 54。
+       9 格总共 526px，窄屏放不下，所以让它能横向滑。 */
     .wd-bar {
-      position: absolute; left: 0; right: 0; bottom: 6px;
-      display: flex; gap: 4px; justify-content: center; padding: 0 6px;
+      position: absolute; left: 0; right: 0; bottom: 8px;
+      display: flex; gap: 5px; justify-content: center; padding: 0 8px;
+      overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
     }
+    .wd-bar::-webkit-scrollbar { display: none }
     .wd-slot {
-      position: relative; width: 40px; height: 40px; flex: none;
-      border: 2px solid rgba(255,255,255,.28);
-      border-radius: 8px;
-      background: rgba(8,20,16,.62);
+      position: relative; width: 54px; height: 54px; flex: none;
+      border: 2px solid rgba(255,255,255,.32);
+      border-radius: 12px;
+      background: rgba(8,20,16,.72);
       display: flex; align-items: center; justify-content: center;
       cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,.35);
     }
-    .wd-slot.on { border-color: #ffd36e; box-shadow: 0 0 0 2px rgba(255,211,110,.4) }
-    .wd-slot .wd-sq { width: 22px; height: 22px; border-radius: 4px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.35) }
+    .wd-slot.on {
+      border-color: #ffd36e;
+      box-shadow: 0 0 0 3px rgba(255,211,110,.45), 0 2px 8px rgba(0,0,0,.4);
+      transform: translateY(-3px);
+    }
+    .wd-slot .wd-sq { width: 32px; height: 32px; border-radius: 6px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.35) }
     .wd-slot .wd-n {
-      position: absolute; right: 2px; bottom: 0;
-      font-size: 10px; font-weight: 800; color: #fff;
-      text-shadow: 0 1px 2px #000;
+      position: absolute; right: 4px; bottom: 2px;
+      font-size: 12px; font-weight: 900; color: #fff;
+      text-shadow: 0 1px 3px #000, 0 0 6px #000;
+    }
+    .wd-slot .wd-k {
+      position: absolute; left: 4px; top: 1px;
+      font-size: 10px; font-weight: 800; color: rgba(255,255,255,.55);
     }
 
     /* 底部面板（背包 / 合成 / 图鉴） */
@@ -173,33 +186,41 @@ export default {
 
     /* 下沉 / 上来 */
     .wd-layerbtns {
-      position: absolute; right: 8px; bottom: 56px;
-      display: flex; flex-direction: column; gap: 5px;
+      position: absolute; right: 10px; bottom: 74px;
+      display: flex; flex-direction: column; gap: 6px;
     }
     .wd-layerbtns button {
-      padding: 7px 12px; border: 1px solid rgba(255,255,255,.3);
-      border-radius: 8px; background: rgba(8,20,16,.6);
-      color: #eafff3; font-family: inherit; font-size: 12px; font-weight: 700;
+      padding: 11px 16px; border: 2px solid rgba(255,255,255,.34);
+      border-radius: 12px; background: rgba(8,20,16,.68);
+      color: #eafff3; font-family: inherit; font-size: 14px; font-weight: 800;
       cursor: pointer; white-space: nowrap;
+      box-shadow: 0 2px 6px rgba(0,0,0,.35);
+      -webkit-tap-highlight-color: transparent;
     }
-    .wd-layerbtns button:active { background: rgba(255,255,255,.25) }
-    .wd-layerbtns button:disabled { opacity: .38; cursor: default }
+    .wd-layerbtns button:active { background: rgba(255,255,255,.3); transform: scale(.96) }
+    .wd-layerbtns button:disabled { opacity: .35; cursor: default }
 
     /* 触屏方向键 */
+    /* 方向键。原来 34px，拇指按不准 —— 放大到 52。
+       正中间那格放「挖/打」，那是最常用的动作。 */
     .wd-dpad {
-      position: absolute; left: 10px; bottom: 56px;
-      display: grid; grid-template-columns: repeat(3, 34px); grid-template-rows: repeat(3, 34px);
-      gap: 3px;
+      position: absolute; left: 10px; bottom: 74px;
+      display: grid; grid-template-columns: repeat(3, 52px); grid-template-rows: repeat(3, 52px);
+      gap: 5px;
     }
     .wd-dpad button {
-      border: 1px solid rgba(255,255,255,.3); border-radius: 8px;
-      background: rgba(8,20,16,.55); color: #eafff3;
-      font-size: 15px; font-family: inherit; cursor: pointer;
+      border: 2px solid rgba(255,255,255,.34); border-radius: 12px;
+      background: rgba(8,20,16,.68); color: #eafff3;
+      font-size: 20px; font-family: inherit; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,.35);
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
     }
-    .wd-dpad button:active { background: rgba(255,255,255,.25) }
+    .wd-dpad button:active { background: rgba(255,255,255,.3); transform: scale(.94) }
+    .wd-dpad button[data-dir='act'] { background: rgba(200,140,60,.78); border-color: rgba(255,210,140,.7) }
     .wd-dpad .sp { visibility: hidden }
-    @media (min-width: 620px) { .wd-dpad { display: none } }
+    @media (min-width: 760px) { .wd-dpad { display: none } }
   `,
   template: `
     <div class="wd-page">
