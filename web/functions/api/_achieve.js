@@ -28,6 +28,7 @@ export const CATEGORIES = [
   { key: 'canvas', name: '画布运用' },
   { key: 'play', name: '玩法探索' },
   { key: 'moment', name: '创作时刻' },
+  { key: 'adventure', name: '冒险世界' },
 ]
 
 /** 进度型成就：need 是门槛，reward 是解锁时发的光尘 */
@@ -190,6 +191,28 @@ export const PROGRESS = [
   { id: 'cl400', ico: '🎇', name: '见过四百色', desc: '作品里一共出现过 400 种以上颜色', cat: 'play', type: 'progress', metric: 'colors', need: 400, reward: 40 },
   { id: 'hr20', ico: '🕗', name: '二十时段', desc: '在 20 个不同时段发布过作品', cat: 'moment', type: 'progress', metric: 'hourCount', need: 20, reward: 35 },
   { id: 'hr24', ico: '🌐', name: '全天候满勤', desc: '24 个时段全都发布过作品', cat: 'moment', type: 'progress', metric: 'hourCount', need: 24, reward: 80 },
+  /* ---------- 冒险世界 ----------
+     数据来自 lw-town-save 的 world 段。由 computeMetrics 的第四个参数
+     town 传进来；不传就全是 0，所以别的路径（每日任务）上这些只会
+     显示成未解锁，不会误判成已达成。 */
+  { id: 'adv_mine10', ico: '⛏️', name: '第一镐', desc: '挖掉 10 个方块', cat: 'adventure', type: 'progress', metric: 'mined', need: 10, reward: 5 },
+  { id: 'adv_mine200', ico: '🪨', name: '挖穿一层', desc: '挖掉 200 个方块', cat: 'adventure', type: 'progress', metric: 'mined', need: 200, reward: 12 },
+  { id: 'adv_mine2000', ico: '🏔️', name: '愚公移山', desc: '挖掉 2000 个方块', cat: 'adventure', type: 'progress', metric: 'mined', need: 2000, reward: 30 },
+  { id: 'adv_place100', ico: '🧱', name: '开始盖了', desc: '放下 100 个方块', cat: 'adventure', type: 'progress', metric: 'placed', need: 100, reward: 12 },
+  { id: 'adv_place1000', ico: '🏰', name: '营造师', desc: '放下 1000 个方块', cat: 'adventure', type: 'progress', metric: 'placed', need: 1000, reward: 30 },
+  { id: 'adv_block20', ico: '📖', name: '见过世面', desc: '图鉴里收集 20 种方块', cat: 'adventure', type: 'progress', metric: 'blocks', need: 20, reward: 10 },
+  { id: 'adv_block50', ico: '📚', name: '博物学者', desc: '图鉴里收集 50 种方块', cat: 'adventure', type: 'progress', metric: 'blocks', need: 50, reward: 25 },
+  { id: 'adv_block80', ico: '🗂️', name: '全方块图鉴', desc: '图鉴里收集 80 种方块', cat: 'adventure', type: 'progress', metric: 'blocks', need: 80, reward: 40 },
+  { id: 'adv_mob3', ico: '🐾', name: '见过活物', desc: '遇到过 3 种生物', cat: 'adventure', type: 'progress', metric: 'mobs', need: 3, reward: 8 },
+  { id: 'adv_mob8', ico: '🦌', name: '荒野向导', desc: '遇到过 8 种生物', cat: 'adventure', type: 'progress', metric: 'mobs', need: 8, reward: 25 },
+  { id: 'adv_mob12', ico: '🐉', name: '全都见过了', desc: '遇到过全部 12 种生物', cat: 'adventure', type: 'progress', metric: 'mobs', need: 12, reward: 40 },
+  { id: 'adv_struct1', ico: '🗿', name: '发现遗迹', desc: '找到第一处结构', cat: 'adventure', type: 'progress', metric: 'structs', need: 1, reward: 10 },
+  { id: 'adv_struct5', ico: '🏛️', name: '考古学家', desc: '找到 5 处结构', cat: 'adventure', type: 'progress', metric: 'structs', need: 5, reward: 25 },
+  { id: 'adv_struct15', ico: '🌍', name: '踏遍小镇', desc: '找到 15 处结构', cat: 'adventure', type: 'progress', metric: 'structs', need: 15, reward: 40 },
+  { id: 'adv_cave', ico: '🕳️', name: '下过洞穴', desc: '第一次下到洞穴层', cat: 'adventure', type: 'progress', metric: 'deepest', need: 1, reward: 12 },
+  { id: 'adv_deep', ico: '🌑', name: '深入地心', desc: '下到最深的深层', cat: 'adventure', type: 'progress', metric: 'deepest', need: 2, reward: 30 },
+  { id: 'adv_safe', ico: '🛡️', name: '毫发无伤', desc: '动手了但一次都没倒下', cat: 'adventure', type: 'progress', metric: 'advSafe', need: 1, reward: 20 },
+
 ]
 
 /* 里程碑型：只判断条件，不看累计数 */
@@ -223,7 +246,7 @@ const SIGN_MILESTONES = [3, 7, 15, 30, 60, 100, 200, 365]
  * 从作品历史算出各项指标。
  * entries：该用户的作品列表（已按归属过滤）
  */
-export function computeMetrics(entries, book, user) {
+export function computeMetrics(entries, book, user, town) {
   let works = 0
   let cells = 0
   let likes = 0
@@ -352,7 +375,26 @@ export function computeMetrics(entries, book, user) {
     if (run > dayRun) dayRun = run
   }
 
+  /* 冒险世界的指标。town 是 /api/towngame 里那份存档的 world 段；
+     没传就全是 0。 */
+  const WD = (town && town.world) || null
+  const mined = WD ? Number(WD.mined) || 0 : 0
+  const placed = WD ? Number(WD.placed) || 0 : 0
+  const deaths = WD ? Number(WD.deaths) || 0 : 0
+  const blocks = WD && WD.dex ? Object.keys(WD.dex).length : 0
+  const mobs = WD && WD.dmob ? Object.keys(WD.dmob).length : 0
+  const structs = WD && WD.found ? Object.keys(WD.found).length : 0
+  const deepest = WD ? Number(WD.layer) || 0 : 0
+  const advSafe = WD && deaths === 0 && mined + placed > 0 ? 1 : 0
+
   return {
+    mined,
+    placed,
+    blocks,
+    mobs,
+    structs,
+    deepest,
+    advSafe,
     works,
     cells,
     likes,
