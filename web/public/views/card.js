@@ -207,6 +207,44 @@ export default {
       return out
     })()
 
+    /* 初始牌组。★ 这里必须是**新卡池里真实存在的 key** ——
+       换卡池的时候我把 key 从 pixel/spray 改成了 c0/c1…，
+       结果 STARTERS 还引用旧 key，byK 全部返回 undefined，
+       一按「开始一局」就 ReferenceError，看起来就是「卡在开始按钮」。
+       现在按主题下标挑：
+         c0  画笔·轻触   （1 费 5 伤）
+         c4  喷漆·轻触   （1 费 3~8 随机）
+         c8  重力·轻触   （1 费 5 护甲）
+         c12 橡皮·轻触   （1 费 4 治疗）
+         c16 吸管·轻触   （0 费 +1 能量抽 1）
+         c1  画笔·描绘   （1 费 5~13 随机）
+         c5  喷漆·描绘   （1 费 5 护甲）
+         c9  重力·描绘   （1 费 6 治疗）
+         c13 橡皮·描绘   （0 费 +1 能量抽 1）
+         c2  画笔·挥洒   （2 费 12 护甲） */
+    const STARTERS = ['c0', 'c0', 'c4', 'c8', 'c12', 'c16', 'c1', 'c5', 'c9', 'c2']
+
+    const FOES = [
+      { n: '鸽子小妖', img: '/images/dotown/thing_pigeon_01.png', hp: 10, atk: 3 },
+      { n: '阿布怪', img: '/images/dotown/thing_abu.png', hp: 14, atk: 4 },
+      { n: '小猎犬幽灵', img: '/images/dotown/thing_dachshund_01.png', hp: 18, atk: 5 },
+      { n: '猫魂', img: '/images/dotown/thing_cats_13.png', hp: 24, atk: 6 },
+      { n: '猴子巡逻兵', img: '/images/dotown/thing_monkey_01.png', hp: 30, atk: 7 },
+      { n: '猴王', img: '/images/dotown/thing_monkey_02.png', hp: 36, atk: 8 },
+      { n: '疯猴', img: '/images/dotown/thing_monkey_03.png', hp: 46, atk: 9 },
+      { n: '旧图廊鸽王', img: '/images/dotown/thing_pigeon_04.png', hp: 60, atk: 11 },
+      { n: '旧图廊守卫', img: '/images/dotown/thing_cats_13.png', hp: 80, atk: 13 },
+      { n: '像素末日', img: '/images/dotown/thing_monkey_03.png', hp: 110, atk: 15 },
+    ]
+
+    /* ★ 启动自检：初始牌组里任何一个 key 在卡池里找不到，
+       就是牌库和牌组脱节了，直接报出来。
+       以前这种情况只会表现为「点了开始没反应」，要查很久。 */
+    ;(function () {
+      const miss = STARTERS.filter((k) => !CARD_POOL.some((c) => c.k === k))
+      if (miss.length) console.error('[card] 初始牌组里有卡池里没有的 key：', miss)
+    })()
+
     const byK = (k) => CARD_POOL.find((c) => c.k === k)
 
     function saveBest() {

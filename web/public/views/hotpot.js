@@ -472,21 +472,6 @@ export default {
       if (t) fetch('/api/towngame', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t }, body: JSON.stringify({ action: 'claim', kind: 'hotpot', score: satisfied }) })
         .then((r) => r.json()).then((d) => { if (d && d.book && window.dust) window.dust.take(d.book) }).catch(() => {})
       $('hpSum').innerHTML = sumHtml()
-    /* 先把镇民名单拉回来，再让「开火！」可用 ——
-       拉到之前就开局的话，第一位客人会变成「路过的镇民」，看起来像没生效。
-       这里只拉数据、不自动开局，开始界面还是要用户自己点。 */
-    loadResidents().then(() => {
-      $('hpSum').innerHTML = sumHtml()
-      const b = $('hpStart')
-      if (b) {
-        b.disabled = false
-        b.textContent = residents.length ? '开火！给镇上 ' + residents.length + ' 户人家做饭' : '开火！'
-      }
-      if (!residents.length) {
-        const t = $('hpLog')
-        if (t) t.textContent = '镇上还没有别人盖房子 —— 先去小镇安家，或者等邻居搬来。'
-      }
-    })
       try { window.sfx && window.sfx('levelup') } catch (e) {}
       $('hpArena').innerHTML = '<b style="color:var(--text)">今日出餐结束！满意 ' + satisfied + '/5 位食客</b><br><button class="hp-btn primary" id="hpAgain" style="margin-top:8px">再开一轮</button>'
       $('hpAgain').onclick = () => { customer = 0; satisfied = 0; nextCustomer() }
@@ -500,5 +485,28 @@ export default {
       '<span style="font-size:11px;color:var(--text-faint)">餐品素材：DOTOWN ドット絵ダウンロードサイト（无料素材）</span><br>' +
       '<button class="hp-btn primary" id="hpStart" style="margin-top:8px" disabled>正在看镇上都有谁…</button>'
     $('hpStart').onclick = () => { customer = 0; satisfied = 0; nextCustomer() }
+
+    /* ★ 先把镇民名单拉回来，再让「开火！」可点。
+       拉到之前就开局的话，第一位客人会变成「路过的镇民」，看着像没生效；
+       所以按钮初始是 disabled，这里拉完再打开。
+
+       ★ 这段原来被我插错了地方 ——
+       锚点 `$('hpSum').innerHTML = sumHtml()` 在这个文件里出现两次
+       （一次在 finish() 里、一次在这里），replace(…, 1) 命中了第一次，
+       于是 loadResidents() 被塞进了 finish()，挂载时根本不执行，
+       按钮永远是禁用的 —— 现象就是「卡在开始按钮」。
+       教训：锚点在文件里不唯一时，必须先确认它的上下文，别直接 replace。 */
+    loadResidents().then(() => {
+      $('hpSum').innerHTML = sumHtml()
+      const b = $('hpStart')
+      if (b) {
+        b.disabled = false
+        b.textContent = residents.length ? '开火！给镇上 ' + residents.length + ' 户人家做饭' : '开火！'
+      }
+      if (!residents.length) {
+        const t = $('hpLog')
+        if (t) t.textContent = '镇上还没有别人盖房子 —— 先去小镇安家，或者等邻居搬来。'
+      }
+    })
   },
 }
