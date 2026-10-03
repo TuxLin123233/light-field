@@ -1203,6 +1203,31 @@ export default {
       <section class="group">
         <div class="group-title">致谢</div>
         <div class="credit-card">
+          <!-- 美术与音效素材。这两个是站里唯一「不是自己画/自己合成」的东西，
+               单独放最前面，写清楚来源、许可和改了哪里。
+               DOTOWN 的条款里署名不是必须的，但写着更好；
+               gamersounds 也建议署名。 -->
+          <a class="entry" href="https://dotown.maeda-design-room.net/" target="_blank" rel="noopener noreferrer">
+            <span class="entry-ico">👾</span>
+            <span class="entry-body">
+              <span class="entry-label">DOTOWN ドット絵</span>
+              <div class="entry-desc">
+                卡牌屋的妖怪、大锅饭的餐品用的像素素材 · 前田デザイン室 · 免费可商用 ·
+                仅缩放到合适尺寸，未改画
+              </div>
+            </span>
+            <span class="entry-arrow">›</span>
+          </a>
+          <div class="entry-sep"></div>
+          <a class="entry" href="https://gamersounds.com/" target="_blank" rel="noopener noreferrer">
+            <span class="entry-ico">🔊</span>
+            <span class="entry-body">
+              <span class="entry-label">gamersounds.com</span>
+              <div class="entry-desc">十个音效文件（点击 / 命中 / 火焰 / 金币 / 升级等）· 免费游戏音效素材</div>
+            </span>
+            <span class="entry-arrow">›</span>
+          </a>
+          <div class="entry-sep"></div>
           <a class="entry" href="https://github.com/Konsheng/Sensitive-lexicon" target="_blank" rel="noopener noreferrer">
             <span class="entry-ico">🛡️</span>
             <span class="entry-body">
