@@ -210,16 +210,21 @@ export default {
     /* ================= 像素绘制 =================
        全部用 fillRect 画方块 —— 和站里别处的像素风格一致，
        也不用任何美术资源。 */
+    /* 调色板。原来那套偏灰、几种褐色糊在一起，跑起来看不出层次。
+       现在天空用蓝紫渐变、地面用「草皮 + 泥土 + 石粒」三层，
+       亮部暗部拉开，同时保持和站里其它像素图一个味道。 */
     const PAL = {
-      sky1: '#0d1428', sky2: '#1b2a4d', sky3: '#33406b',
-      mount: '#1a2440', mount2: '#232f52',
-      ground: '#4a3b2a', ground2: '#3a2e21', grass: '#3f7a45', grass2: '#4f9455',
-      block: '#6b5540', block2: '#57432f', edge: '#8a6f52',
-      player: '#ffd36e', player2: '#e0a83c', playerD: '#2f2a22',
-      coin: '#f6d34e', coin2: '#d89a4a',
-      saw: '#c8ccd4', saw2: '#8a909c',
-      boost: '#5ee0a0',
-      spike: '#c0453b',
+      sky1: '#141b3a', sky2: '#2a3260', sky3: '#5a5f9e', sky4: '#a86f8a',
+      mount: '#1d2450', mount2: '#2b3468', mount3: '#3d4780',
+      grassTop: '#6ec25a', grass: '#4a9e42', grassDark: '#357a33',
+      dirt: '#8a6440', dirt2: '#6f4e30', dirt3: '#573c24',
+      stone: '#9aa0a8', stone2: '#7c828a', edge: '#b8a888',
+      player: '#ffd97a', player2: '#f0a93c', playerD: '#2a2320',
+      playerSkin: '#ffd0a8', playerHair: '#3a2a1e', playerShirt: '#e8564a',
+      coin: '#ffe45c', coin2: '#f0a93c',
+      saw: '#d8dce4', saw2: '#8f96a4', saw3: '#5a6070',
+      boost: '#5ee0a0', boost2: '#2fc888',
+      spike: '#d9503f', spike2: '#8f2f28',
     }
 
     /* ================= 地形生成 =================
@@ -276,8 +281,8 @@ export default {
         '.......oo.......',
         '................',
         '................',
-        '####........####',
-        '####........####',
+        '######....######',
+        '######....######',
       ],
       gapWide: [
         '................',
@@ -285,8 +290,8 @@ export default {
         '....o......o....',
         '................',
         '................',
-        '###..........###',
-        '###..........###',
+        '#####.....#####',
+        '#####.....#####',
       ],
       stepUp: [
         '................',
@@ -309,7 +314,7 @@ export default {
       double: [
         '................',
         '.....oooooo.....',
-        '....########....',
+        '...##########...',
         '................',
         '..oo............',
         '################',
@@ -318,9 +323,9 @@ export default {
       bridge: [
         '................',
         '..........oo....',
-        '....##...##.....',
-        '..##...##.......',
-        '.#...##.........',
+        '....##..##......',
+        '..##..##........',
+        '.##..##.........',
         '................',
         '................',
       ],
@@ -386,6 +391,15 @@ export default {
         if (r <= 0) return x.k
       }
       return 'flat'
+    }
+
+    /* ================= 小工具 =================
+       地面纹理用：同一个坐标永远得到同一个值，这样纹理不会随帧闪。 */
+    function hash2(x, y, seed) {
+      let h = x * 374761393 + y * 668265263 + (seed || 0) * 2147483647
+      h = (h ^ (h >> 13)) * 1274126177
+      h = h ^ (h >> 16)
+      return ((h >>> 0) % 100000) / 100000
     }
 
     /* ================= 粒子 =================
@@ -506,7 +520,7 @@ export default {
       distance = 0
       coins = 0
       boostLeft = 0
-      speed = 5.2
+      speed = 6.4
       // 起步给一段平地，别一上来就是坑
       for (let i = 0; i < 3; i++) {
         const seg = buildSeg('flat', 1)
@@ -569,8 +583,9 @@ export default {
       // 天空：上深下浅
       const g = ctx.createLinearGradient(0, 0, 0, H)
       g.addColorStop(0, PAL.sky1)
-      g.addColorStop(0.55, PAL.sky2)
-      g.addColorStop(1, PAL.sky3)
+      g.addColorStop(0.42, PAL.sky2)
+      g.addColorStop(0.74, PAL.sky3)
+      g.addColorStop(1, PAL.sky4)
       ctx.fillStyle = g
       ctx.fillRect(0, 0, W, H)
 
@@ -605,16 +620,16 @@ export default {
         }
       }
 
-      // 远山：两层视差
-      for (let layer = 0; layer < 2; layer++) {
-        ctx.fillStyle = layer === 0 ? PAL.mount : PAL.mount2
-        const par = layer === 0 ? 0.25 : 0.42
+      // 远山：三层视差
+      for (let layer = 0; layer < 3; layer++) {
+        ctx.fillStyle = layer === 0 ? PAL.mount : layer === 1 ? PAL.mount2 : PAL.mount3
+        const par = layer === 0 ? 0.18 : layer === 1 ? 0.32 : 0.48
         const base = H - 2.4 - layer * 0.6
         hills.forEach((hh, i) => {
           const x = hh.x + i * 0 - camX * par
           const xx = ((x % (W + 500)) + W + 500) % (W + 500)
           if (xx > W + 40) return
-          const h = hh.h * (layer === 0 ? 1 : 0.66)
+          const h = hh.h * (layer === 0 ? 1.1 : layer === 1 ? 0.78 : 0.5)
           ctx.beginPath()
           ctx.moveTo(Math.floor(xx), Math.floor(base))
           ctx.lineTo(Math.floor(xx + hh.w / 2), Math.floor(base - h))
@@ -636,19 +651,39 @@ export default {
           if (!c.solid[r]) continue
           const sy = r
           const top = r === 0 || !c.solid[r - 1]
-          ctx.fillStyle = top ? PAL.grass : PAL.block
-          ctx.fillRect(sx, sy, 1, 1)
           if (top) {
-            ctx.fillStyle = PAL.grass2
+            /* 最上面一格是草皮：底色 + 顶上一道亮线 + 往下垂几根草 */
+            ctx.fillStyle = PAL.grass
             ctx.fillRect(sx, sy, 1, 1)
+            ctx.fillStyle = PAL.grassTop
+            ctx.fillRect(sx, sy, 1, 0.26)
+            ctx.fillStyle = PAL.grassDark
+            ctx.fillRect(sx, sy + 0.62, 1, 0.38)
+            // 草尖：按坐标决定垂几根，稳定不闪
+            const g1 = hash2(x, 0, 77)
+            if (g1 < 0.45) {
+              ctx.fillStyle = PAL.grassTop
+              ctx.fillRect(sx + Math.floor(g1 * 80) / 100, sy - 0.22, 0.14, 0.24)
+            }
+            if (g1 > 0.72) {
+              ctx.fillStyle = PAL.grass
+              ctx.fillRect(sx + 0.6, sy - 0.16, 0.12, 0.18)
+            }
           } else {
-            // 砖缝：让大块地面不至于是一坨纯色
-            if ((x + r) % 4 === 0) {
-              ctx.fillStyle = PAL.block2
-              ctx.fillRect(sx, sy, 1, 1)
-            } else if ((x * 3 + r * 5) % 7 === 0) {
+            /* 下面是泥土：分两层色 + 石粒点缀 */
+            const deep = r - (top ? 0 : 1)
+            ctx.fillStyle = deep <= 1 ? PAL.dirt : deep <= 3 ? PAL.dirt2 : PAL.dirt3
+            ctx.fillRect(sx, sy, 1, 1)
+            const h2 = hash2(x, r, 991)
+            if (h2 < 0.1) {
+              ctx.fillStyle = PAL.stone
+              ctx.fillRect(sx + 0.3, sy + 0.35, 0.4, 0.34)
+            } else if (h2 < 0.2) {
               ctx.fillStyle = PAL.edge
-              ctx.fillRect(sx, sy, 1, 1)
+              ctx.fillRect(sx + 0.55, sy + 0.2, 0.28, 0.24)
+            } else if (h2 > 0.9) {
+              ctx.fillStyle = PAL.dirt3
+              ctx.fillRect(sx + 0.15, sy + 0.5, 0.5, 0.4)
             }
           }
         }
@@ -699,22 +734,63 @@ export default {
         }
       }
 
-      // 玩家
-      const px = Math.round(player.x - camX)
-      const py = player.sliding > 0 ? player.y + 0.34 : player.y
-      const ph = player.sliding > 0 ? 0.66 : 1
-      ctx.fillStyle = player.hit ? '#ff8a7a' : PAL.player2
-      ctx.fillRect(px, py + 0.2, 1, ph - 0.2)
-      ctx.fillStyle = player.hit ? '#fff' : PAL.player
-      ctx.fillRect(px, py, 1, ph * 0.62)
+      /* 玩家。原来就是一个黄方块加一个黑点，是画面里最显眼也最难看的地方。
+         现在按「头 / 身体 / 两条腿 / 两条胳膊」分开画，
+         腿和胳膊的摆动跟着跑步相位走，跑起来有跑的样子。
+         滑铲时整体压扁、头往前伸。 */
+      const px = player.x - camX
+      const sliding = player.sliding > 0
+      const py = player.y
+      const hurt = player.hit
+      // 跑步相位：跑得越快摆得越快
+      const phase = Math.sin(distance * 3.2)
+      const armSw = phase * 0.5
+
+      const headY = sliding ? py + 0.42 : py + 0.02
+      const bodyY = headY + 0.38
+      const bodyH = sliding ? 0.22 : 0.34
+      const legY = bodyY + bodyH
+
+      // 影子
+      ctx.fillStyle = 'rgba(0,0,0,.22)'
+      ctx.fillRect(px + 0.14, py + 0.94, 0.72, 0.12)
+
+      // 腿（两条，前后错开）
+      if (!sliding) {
+        ctx.fillStyle = PAL.playerD
+        ctx.fillRect(px + 0.24 + armSw * 0.18, legY, 0.2, 0.28)
+        ctx.fillRect(px + 0.56 - armSw * 0.18, legY, 0.2, 0.28)
+      }
+      // 身体（红上衣）
+      ctx.fillStyle = hurt ? '#fff' : PAL.playerShirt
+      ctx.fillRect(px + 0.2, bodyY, 0.6, bodyH)
+      // 胳膊
+      ctx.fillStyle = PAL.playerSkin
+      if (!sliding) {
+        ctx.fillRect(px + 0.06, bodyY + 0.04 + armSw * 0.12, 0.16, 0.22)
+        ctx.fillRect(px + 0.78, bodyY + 0.04 - armSw * 0.12, 0.16, 0.22)
+      } else {
+        ctx.fillRect(px + 0.02, bodyY + 0.02, 0.2, 0.14)
+      }
+      // 头
+      ctx.fillStyle = PAL.playerSkin
+      ctx.fillRect(px + 0.26, headY, 0.48, 0.36)
+      // 头发
+      ctx.fillStyle = PAL.playerHair
+      ctx.fillRect(px + 0.26, headY, 0.48, 0.12)
+      ctx.fillRect(px + 0.2, headY + 0.02, 0.1, 0.2)
       // 眼睛
       ctx.fillStyle = PAL.playerD
-      ctx.fillRect(px + 0.6, py + 0.2, 0.24, 0.24)
+      const eyeX = sliding ? 0.56 : 0.44
+      ctx.fillRect(px + eyeX, headY + 0.16, 0.1, 0.1)
+      ctx.fillRect(px + eyeX + 0.18, headY + 0.16, 0.1, 0.1)
       // 护盾光圈
       if (player.shield > 0) {
         ctx.strokeStyle = 'rgba(120,200,255,.85)'
-        ctx.lineWidth = 0.12
-        ctx.strokeRect(px - 0.22, py - 0.22, 1.44, ph + 0.44)
+        ctx.lineWidth = 0.1
+        ctx.beginPath()
+        ctx.arc(px + 0.5, py + 0.5, 0.78, 0, 6.284)
+        ctx.stroke()
       }
 
       // 地面阴影线（让贴地感更强）
@@ -731,8 +807,16 @@ export default {
                        没有这个，差一帧没按到就直接摔死，非常劝退。
          BUFFER        落地前 0.14 秒按的跳，落地瞬间自动生效。
                        没有这个，连按也常常按不出来。 */
-    const GRAV = 30
-    const JUMP_V = 10.6
+    /* ★ 这两个数是跑酷的核心，之前配错了：
+         旧值 GRAV=30 / JUMP_V=10.6
+         → 跳高 = V²/(2g) = 1.87 格，滞空 0.71 秒，水平只能跨 3.67 格
+         可地形里的台阶有 3 格高、坑有 8~10 格宽 ——
+         **怎么按都过不去**。用户说的「不能跳很高」就是这个：
+         不是手感问题，是数值和地形根本对不上。
+         新值跳高 4.5 格、滞空 1.06 秒、水平约 6.5 格，
+         同时把坑修窄（见下面的地形图案），两边一起对上。 */
+    const GRAV = 32
+    const JUMP_V = 17
     const COYOTE = 0.12
     const BUFFER = 0.14
 
@@ -819,7 +903,7 @@ export default {
 
     function step(dt) {
       // 速度：基础 + 距离加成 + 加速带
-      const base = 5.2 + Math.min(6, distance / 420)
+      const base = 6.4 + Math.min(5.5, distance / 460)
       const target = base + (boostLeft > 0 ? 4.2 : 0)
       speed += (target - speed) * Math.min(1, dt * 3)
       if (boostLeft > 0) boostLeft -= dt
