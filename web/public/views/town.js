@@ -885,7 +885,7 @@ export default {
           ? '<div class="tw-grid">' + grid + '</div>' + foldHtml
           : '<div class="tw-empty">镇上还空着。<br />回自己的小屋摆几件家具，<br />你就是这里的第一户人家。</div>') +
         '</div>' +
-        '<div class="tw-sign">🏠 点谁家的房子，就去谁家串门<br />串门只能看，动不了人家的东西</div><br />友链：<a href=\"https://www.fayederolex.top\" target=\"_blank\" rel=\"noopener\">fayederolex.top</a></div>' +
+        '<div class="tw-sign">🏠 点谁家的房子，就去谁家串门<br />串门只能看，动不了人家的东西<br />友链：<a href=\"https://www.fayederolex.top\" target=\"_blank\" rel=\"noopener\">fayederolex.top</a></div>' +
         '</div>' +
         '<div class="tw-entries">' +
         entryCard('twGoHome', 'home', '我的小屋', '摆家具、贴墙纸、挑窗外天气') +

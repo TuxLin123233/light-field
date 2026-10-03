@@ -1253,6 +1253,20 @@ export default {
         <div class="credit-note">本项目源码与词库均遵循各自许可证要求，词库仅在服务端用于发布内容校验。</div>
       </section>
 
+      <section class="group">
+        <div class="group-title">友链</div>
+        <div class="credit-card">
+          <a class="entry" href="https://www.fayederolex.top" target="_blank" rel="noopener noreferrer">
+            <span class="entry-ico">🔗</span>
+            <span class="entry-body">
+              <span class="entry-label">Fayeder Olex</span>
+              <div class="entry-desc">www.fayederolex.top</div>
+            </span>
+            <span class="entry-arrow">›</span>
+          </a>
+        </div>
+      </section>
+
       <div class="notice">
         本画板仅用于个人学习与技术交流。请勿上传、绘制、发布任何违反中华人民共和国法律法规的内容。上传者须对自己发布的内容负全部法律责任。本平台有权在不事先通知的情况下删除违规内容，并保留追究法律责任的权利。
       </div>
