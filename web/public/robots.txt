@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /404.html
+
+Sitemap: https://light-field.pages.dev/sitemap.xml
