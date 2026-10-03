@@ -2710,12 +2710,6 @@ color: var(--text-muted);
               return c.trim().indexOf('paint_consent=') === 0
             })
           if (!has) document.getElementById('consentOverlay').removeAttribute('hidden')
-          else if (window.LWGuides) {
-            /* 老用户（已同意过）才弹引导 —— 新用户先看到的是法律确认，
-               两个浮层叠着会很乱。
-               内容与「看过没」都由 lw-guides.js 管，各页共用一套。 */
-            window.LWGuides.auto('paint', 900)
-          }
         } catch (e) {}
       })()
       let size = 16

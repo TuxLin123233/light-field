@@ -8,14 +8,6 @@
   if (window.__lwDeco) return
   window.__lwDeco = true
 
-  /* 引导按钮的动作锁。
-     ★ 必须是**模块级**的，不能放在每次 guide() 里面 ——
-     触摸端 pointerup 和 click 会各触发一次动作，而第一次点击
-     往往就推进到下一步、生成了一个新浮层；新浮层的锁如果是新的一份，
-     紧接着那个 click 就拦不住了，表现是「点一下跳两步」。
-     放在模块级，跨浮层也拦得住。 */
-  var GUIDE_ACT_LOCK = 0
-
   var reduce = false
   try {
     reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
@@ -203,137 +195,7 @@ html[data-theme='dark'] .lwdeco-grid {
 /* 转起来的时候不要再被 translate 覆盖 */
 #lwdecoPtr.spin { transform: translateY(12px) }
 
-/* ============ 7. 新手引导光圈 ============ */
-#lwdecoGuide {
-  position: fixed;
-  inset: 0;
-  z-index: 99995;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity .22s;
-}
-#lwdecoGuide.on { opacity: 1 }
-#lwdecoGuide .hole {
-  position: absolute;
-  border-radius: 14px;
-  box-shadow: 0 0 0 9999px rgba(24,18,12,.62), 0 0 0 2px var(--accent, #5b8def) inset;
-  transition: all .3s cubic-bezier(.2,.9,.3,1);
-}
-#lwdecoGuide .bubble {
-  position: absolute;
-  max-width: 250px;
-  padding: 11px 14px;
-  border-radius: var(--lwp-r-sm);
-  background: var(--surface, #fff);
-  color: var(--text);
-  font-size: 13px;
-  line-height: 1.65;
-  box-shadow: var(--lwp-sh-4);
-  transition: all .3s cubic-bezier(.2,.9,.3,1);
-}
-#lwdecoGuide .b-head {
-  display: flex; align-items: baseline; gap: 8px;
-  margin-bottom: 5px;
-}
-#lwdecoGuide .b-head b { font-weight: 800; font-size: 13.5px; }
-#lwdecoGuide .b-step {
-  margin-left: auto;
-  font-size: 11px;
-  color: var(--text-faint);
-  font-variant-numeric: tabular-nums;
-}
-#lwdecoGuide .b-text {
-  color: var(--text-muted);
-  line-height: 1.7;
-  font-size: 12.5px;
-}
-#lwdecoGuide .b-acts {
-  display: flex;
-  gap: 8px;
-  margin-top: 11px;
-}
-#lwdecoGuide .b-acts button {
-  flex: 1;
-  padding: 8px 0;
-  border: 0; border-radius: 999px;
-  font-family: inherit; font-size: 12.5px; font-weight: 800;
-  cursor: pointer; pointer-events: auto;
-  -webkit-tap-highlight-color: transparent;
-}
-#lwdecoGuide .b-acts .go {
-  background: var(--accent, #5b8def); color: #fff;
-}
-#lwdecoGuide .b-acts .go:active { transform: scale(.96); }
-#lwdecoGuide .b-acts .skip {
-  flex: 0 0 auto;
-  padding-left: 14px; padding-right: 14px;
-  background: var(--surface-2, #f6f2ea);
-  color: var(--text-faint);
-  border: 1px solid var(--border, #efe7da);
-}
-/* 气泡宽一点，否则「1 / 8」和按钮会挤 */
-#lwdecoGuide .bubble { max-width: 270px; }
-
-/* ---------- 沉浸模式 ----------
-   给「全站逛一遍」用的：遮罩更暗、气泡更大、有进度条和进度点、
-   还能上一步。普通引导不受影响。 */
-#lwdecoGuide.immersive .hole {
-  box-shadow: 0 0 0 9999px rgba(16,11,6,.82), 0 0 0 2px var(--accent, #5b8def) inset,
-              0 0 22px 4px rgba(91,141,239,.35);
-}
-#lwdecoGuide.immersive .bubble {
-  max-width: 320px;
-  padding: 16px 16px 14px;
-  border-radius: 16px;
-  box-shadow: 0 18px 50px rgba(0,0,0,.42);
-  animation: lwdeco-tour-in .32s cubic-bezier(.2,1.25,.4,1) both;
-}
-@keyframes lwdeco-tour-in {
-  from { opacity: 0; transform: translateY(14px) scale(.96) }
-  to   { opacity: 1; transform: none }
-}
-#lwdecoGuide.immersive .b-head b { font-size: 15.5px }
-#lwdecoGuide.immersive .b-text { font-size: 13.5px; line-height: 1.85 }
-/* 顶部进度条 */
-#lwdecoGuide .b-prog {
-  height: 3px;
-  margin: -4px -4px 11px;
-  border-radius: 999px;
-  background: var(--border, #efe7da);
-  overflow: hidden;
-}
-#lwdecoGuide .b-prog i {
-  display: block;
-  height: 100%;
-  width: 0;
-  border-radius: 999px;
-  background: var(--accent, #5b8def);
-  transition: width .3s cubic-bezier(.2,.9,.3,1);
-}
-/* 进度点 */
-#lwdecoGuide .b-dots {
-  display: flex;
-  gap: 5px;
-  margin-top: 11px;
-  justify-content: center;
-}
-#lwdecoGuide .b-dots i {
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: var(--border-strong, #ded4c6);
-}
-#lwdecoGuide .b-dots i.on { background: var(--accent, #5b8def); transform: scale(1.35) }
-#lwdecoGuide .b-dots i.done { background: var(--accent, #5b8def); opacity: .45 }
-/* 上一步 */
-#lwdecoGuide .b-acts .prev {
-  flex: 0 0 auto;
-  padding-left: 14px; padding-right: 14px;
-  background: none;
-  border: 1px solid var(--border, #efe7da);
-  color: var(--text-muted);
-}
-
-/* ============ 8. 拖动吸附提示 ============ */
+/* ============ 7. 拖动吸附提示 ============ */
 .lwdeco-snap {
   position: absolute;
   pointer-events: none;
@@ -347,7 +209,7 @@ html[data-theme='dark'] .lwdeco-grid {
   100% { opacity: 0; transform: scaleX(1.5) }
 }
 
-/* ============ 9. 音频可视化（音效开关旁的小波形） ============ */
+/* ============ 8. 音频可视化（音效开关旁的小波形） ============ */
 .lwdeco-wave { display: inline-flex; align-items: flex-end; gap: 2px; height: 14px }
 .lwdeco-wave i {
   width: 2.5px;
@@ -365,7 +227,7 @@ html[data-theme='dark'] .lwdeco-grid {
 }
 .lwdeco-wave.off i { animation: none; height: 3px; opacity: .35 }
 
-/* ============ 10. 雨雪落地溅开 ============ */
+/* ============ 9. 雨雪落地溅开 ============ */
 /* 给小镇页的天气加一层溅落效果。天气画布是 JS 画的，
    这里只提供类名和关键帧，具体由 town.js 决定要不要用。 */
 .lwdeco-splash {
@@ -554,229 +416,6 @@ html[data-theme='dark'] .lwdeco-grid {
     )
   }
 
-  /* ================= 新手引导光圈 ================= */
-  var guideEl = null
-
-  /* 引导浮层。
-     ★ 每次调用都**重建** DOM，不在同一个元素上反复 addEventListener ——
-       之前是复用 guideEl，结果每弹一次引导就在它身上多叠一个 click 监听，
-       点一下会触发好几次，看似「点了没反应」。
-     ★ 按钮的监听**立即绑定**，不等布局完成。
-       之前按钮是放在 setTimeout(340ms) 里创建并绑定的，
-       那 340 毫秒内点它完全无效 —— 用户点了没反应就再点，
-       于是要「点很多次」才跳过。
-     ★ 带「跳过」和步骤计数。8 步的引导要按 8 次「下一步」才出得去，
-       没有一键跳过太折磨人。 */
-  function guide(steps, opts) {
-    if (!steps || !steps.length) return
-    var o = opts || {}
-
-    /* ★ 上一次没关干净要先**走完整的关闭流程**，不能只删元素。
-       只 removeChild 的话：
-         · 它挂在 document 上的 click 监听（capture）不会被摘掉
-         · 它自己的定时器还在跑
-       结果每弹一次就多留一个野监听。跨页总引导连着弹七八次之后，
-       点一下「下一站」会同时触发好几个旧浮层的监听，
-       每个都调自己的 onDone —— 引导就跳到别的站去了，看起来就是「断开」。
-       所以这里存一个全局的清理函数，新建之前先把它执行掉。 */
-    try {
-      if (window.__lwGuideCleanup) window.__lwGuideCleanup()
-      window.__lwGuideCleanup = null
-    } catch (e) {}
-    var old = document.getElementById('lwdecoGuide')
-    if (old && old.parentNode) old.parentNode.removeChild(old)
-
-    var idx = 0
-    var closed = false
-    var pendingTimer = 0
-
-    var wrap = document.createElement('div')
-    wrap.id = 'lwdecoGuide'
-    wrap.innerHTML =
-      '<div class="hole"></div>' +
-      '<div class="bubble">' +
-      '<div class="b-prog"><i></i></div>' +
-      '<div class="b-head"><b class="b-title"></b><span class="b-step"></span></div>' +
-      '<div class="b-text"></div>' +
-      '<div class="b-dots"></div>' +
-      '<div class="b-acts">' +
-      '<button class="prev" type="button" hidden>上一步</button>' +
-      '<button class="skip" type="button">跳过</button>' +
-      '<button class="go" type="button">下一步</button>' +
-      '</div>' +
-      '</div>'
-    document.body.appendChild(wrap)
-    if (o.immersive) wrap.classList.add('immersive')
-
-    var hole = wrap.querySelector('.hole')
-    var bubble = wrap.querySelector('.bubble')
-    var bTitle = wrap.querySelector('.b-title')
-    var bStep = wrap.querySelector('.b-step')
-    var bText = wrap.querySelector('.b-text')
-    var btnGo = wrap.querySelector('.go')
-    var btnSkip = wrap.querySelector('.skip')
-    var btnPrev = wrap.querySelector('.prev')
-    var progBar = wrap.querySelector('.b-prog')
-    var progFill = wrap.querySelector('.b-prog i')
-    var dotsBox = wrap.querySelector('.b-dots')
-
-    function clearHL() {
-      var prev = document.querySelector('.lwdeco-hl')
-      if (prev) prev.classList.remove('lwdeco-hl')
-    }
-
-    function onDocClick(e) {
-      if (closed) return
-      if (bubble.contains(e.target)) return
-      close('outside')
-    }
-
-    function close(reason) {
-      if (closed) return
-      closed = true
-      if (pendingTimer) clearTimeout(pendingTimer)
-      document.removeEventListener('click', onDocClick, true)
-      document.removeEventListener('click', onAct, true)
-      if (window.__lwGuideCleanup === hardCleanup) window.__lwGuideCleanup = null
-      clearHL()
-      wrap.classList.remove('on')
-      setTimeout(function () {
-        if (wrap.parentNode) wrap.parentNode.removeChild(wrap)
-      }, 220)
-      /* reason 让调用方能分清「用户点完了」和「用户退出了」——
-         两者都走 onDone，但后续动作完全相反：
-         一个是去下一站，一个是收工。 */
-      if (o.onDone) o.onDone(reason || 'next')
-    }
-
-    /* 不走 onDone 的强制清理：只拆自己，不通知外部。
-       被新浮层顶掉时用这个，避免旧浮层的 onDone 把引导跳乱。 */
-    function hardCleanup() {
-      closed = true
-      if (pendingTimer) clearTimeout(pendingTimer)
-      document.removeEventListener('click', onDocClick, true)
-      document.removeEventListener('click', onAct, true)
-      clearHL()
-      if (wrap.parentNode) wrap.parentNode.removeChild(wrap)
-      if (window.__lwGuideCleanup === hardCleanup) window.__lwGuideCleanup = null
-    }
-    window.__lwGuideCleanup = hardCleanup
-
-    function next() {
-      if (closed) return
-      idx++
-      if (idx >= steps.length) return close()
-      show()
-    }
-
-    /* 先按当前这一步把内容写进去，再等下一帧量位置。
-       内容和按钮在「写进去」时就生效，不等布局 ——
-       用户手指快的话，第一帧点下去也一定有效。 */
-    function show() {
-      if (closed) return
-      var st = steps[idx]
-      if (!st) return close()
-
-      var target = typeof st.el === 'string' ? document.querySelector(st.el) : st.el
-      if (!target) {
-        // 这一步的目标不在这个页面上（跨页引导常见），直接跳到下一步
-        // 用 setTimeout 而不是同步递归，避免一长串都不存在时爆栈
-        return setTimeout(next, 0)
-      }
-
-      clearHL()
-      target.classList.add('lwdeco-hl')
-      try {
-        target.scrollIntoView({ block: 'center', behavior: reduce ? 'auto' : 'smooth' })
-      } catch (e) {}
-
-      bTitle.textContent = st.title || ''
-      bText.textContent = st.text || ''
-      /* 进度可以外部指定 —— 跨页总引导每一步是单独一次 guide() 调用，
-         它自己只知道「1 / 1」，得让调用方告诉它整趟走到哪了。 */
-      var pi = o.progress ? o.progress.i : idx
-      var pn = o.progress ? o.progress.n : steps.length
-      bStep.textContent = (pi + 1) + ' / ' + pn
-      if (progFill) progFill.style.width = Math.round(((pi + 1) / pn) * 100) + '%'
-      if (progBar) progBar.hidden = pn <= 1
-      if (dotsBox) {
-        dotsBox.hidden = pn <= 1 || !o.immersive
-        if (!dotsBox.hidden) {
-          dotsBox.innerHTML = ''
-          for (var d = 0; d < pn; d++) {
-            var dot = document.createElement('i')
-            if (d < pi) dot.className = 'done'
-            else if (d === pi) dot.className = 'on'
-            dotsBox.appendChild(dot)
-          }
-        }
-      }
-      btnGo.textContent = pi === pn - 1 ? o.doneText || '知道了' : (o.nextText || '下一步')
-      btnSkip.hidden = false
-      btnSkip.textContent = o.immersive ? '退出' : '跳过'
-      if (btnPrev) {
-        /* 只在沉浸模式下给上一步 —— 普通引导就一两步，加了反而碍事 */
-        btnPrev.hidden = !o.immersive || pi === 0 || !o.onPrev
-      }
-      wrap.classList.add('on')
-      // 先把气泡放到一个可见的兜底位置，量完再摆正 —— 避免第一帧闪在左上角
-      bubble.style.cssText = 'left:12px;top:12px;visibility:hidden'
-
-      if (pendingTimer) clearTimeout(pendingTimer)
-      pendingTimer = setTimeout(function () {
-        if (closed) return
-        var r = target.getBoundingClientRect()
-        var pad = st.pad == null ? 6 : st.pad
-        hole.style.cssText =
-          'left:' + (r.left - pad) + 'px;top:' + (r.top - pad) + 'px;' +
-          'width:' + (r.width + pad * 2) + 'px;height:' + (r.height + pad * 2) + 'px;'
-        var bh = bubble.offsetHeight || 140
-        var below = r.bottom + 12
-        var top = below + bh < window.innerHeight ? below : Math.max(12, r.top - bh - 12)
-        var left = Math.max(12, Math.min(window.innerWidth - (bubble.offsetWidth || 250) - 12, r.left))
-        bubble.style.cssText = 'left:' + left + 'px;top:' + top + 'px;'
-      }, reduce ? 0 : 60)
-    }
-
-    /* ---------- 按钮交互 ----------
-       ★ 为什么改成「一个 document 委托 + 防抖」而不是给每个按钮挂监听：
-       用户报过「下一步要点很多次才走」。除了监听泄漏（已修），
-       还有一个结构性隐患：三个按钮各自挂监听、各自可能被残留的
-       旧浮层监听干扰，一次点击可能走两步、或者被旧浮层的
-       「点外面关闭」抢先处理掉。
-       改成统一在 document 上委托一次：
-         · 一次点击只可能匹配一个分支（next / prev / skip）
-         · 250ms 的锁保证一次点击只前进一步
-         · 浮层关掉时只摘这一个监听，不会漏
-       这样无论外面有多少历史遗留，行为都是确定的。 */
-    function onAct(e) {
-      if (closed) return
-      var t = e.target
-      if (!t || !t.closest) return
-      var btn = t.closest('.b-acts button')
-      if (!btn || !bubble.contains(btn)) return
-      e.preventDefault()
-      e.stopPropagation()
-      var now = Date.now()
-      if (now - GUIDE_ACT_LOCK < 350) return
-      GUIDE_ACT_LOCK = now
-      if (btn.classList.contains('go')) next()
-      else if (btn.classList.contains('prev')) { if (o.onPrev) o.onPrev() }
-      else close('skip')
-    }
-    document.addEventListener('click', onAct, true)
-    // 触摸设备上 pointerup 比 click 早，反馈更即时（防抖锁会挡掉重复）
-    document.addEventListener('pointerup', function (e) {
-      if (e.pointerType === 'touch') onAct(e)
-    }, true)
-    /* 点气泡以外的地方也跳过。
-       浮层本身不能吃 pointer-events（否则挡住画布），所以不挂在浮层上，
-       改挂 document 并用 capture —— 这样盖在下面的按钮不会被误触。 */
-    document.addEventListener('click', onDocClick, true)
-
-    show()
-  }
-
   /* ================= 吸附提示 ================= */
   /** 在容器里画一条吸附线，400ms 后自己消失 */
   function snapLine(container, x, y, vertical) {
@@ -818,7 +457,6 @@ html[data-theme='dark'] .lwdeco-grid {
     levelBar: levelBar,
     levelOf: function (stats) { return levelOf(expOf(stats)) },
     expOf: expOf,
-    guide: guide,
     snapLine: snapLine,
     wave: waveEl,
     setWave: setWave,

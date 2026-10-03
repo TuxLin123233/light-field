@@ -840,7 +840,7 @@
 
       /* ---- 大卡片 / 弹层 ---- */
       .card, .in-card, .mp-row, .mod-row, .ch-msg, .lwdeco-lv,
-      .cp-card, .guide-row, .radio-row + .radio-row,
+      .cp-card, .radio-row + .radio-row,
       .faq-item, .rank-item, .entry, .m-card, .ach-item,
       .ver-item, .tw-plot, .bg-item, .u-grid > *, .tk-item {
         border-radius: var(--r-lg);
@@ -856,14 +856,14 @@
       .lwdeco-typing, .ch-chip, .radio-chip, .mode-chip,
       .li-tag, .ver-tag, .ml-num, .card-tag,
       .anim-badge, .room-badge, .img-badge,
-      .lwp-retry, .guide-replay, .mod-add input, .mod-add button {
+      .lwp-retry, .mod-add input, .mod-add button {
         border-radius: var(--r-md);
       }
       /* 胶囊：这些本来该是圆的，别被上面的规则拉成方角 */
       .tw-btn, .auth-btn, .lw-refresh, .enter, .save, .tip-btn,
       .lwd-btns button, .like-btn, .share-btn, .vote-btn, .report-hold,
       .ch-send, .tw-tab, .mini-hide, .mini-size, .mini-show,
-      .fn-btn, .guide-row, .radio-chip, .mode-chip,
+      .fn-btn, .radio-chip, .mode-chip,
       .li-tag, .ver-tag, .ml-num, .card-tag, .lwp-skel-row {
         border-radius: var(--r-pill);
       }
@@ -878,7 +878,7 @@
       /* ============ 字号收敛 ============
          把这些类里出现的 11.5 / 13.5 / 17 / 19 / 15 统一到阶梯上。
          只用类选择器，不动行内样式和 canvas。 */
-      .entry-desc, .row-desc, .guide-note, .hint, .anim-lv-tip,
+      .entry-desc, .row-desc, .hint, .anim-lv-tip,
       .card-sub, .mine-cap, .tw-plot-name, .tip-note, .qr-note {
         font-size: var(--fs-base);
       }
@@ -908,7 +908,7 @@
       /* ============ 间距统一 ============
          把奇数内边距收到 4 的倍数上 ——
          奇数间距在 2 倍屏上会落在半像素，边缘会发虚。 */
-      .entry, .guide-row, .inline-card, .in-card {
+      .entry, .inline-card, .in-card {
         padding: var(--sp-3);
       }
       .card { padding: var(--sp-4); }
@@ -917,7 +917,7 @@
       /* ============ 图标与文字的对齐 ============
          emoji 的基线和中文字不一样，用 vertical-align 硬拉总会差一点。
          统一交给 flex 居中。 */
-      .entry, .m-link, .guide-row, .tw-btn, .lwd-btns button {
+      .entry, .m-link, .tw-btn, .lwd-btns button {
         align-items: center;
       }
       .entry-ico, .ml-ico, .nav-icon, .px-ico-host {
@@ -943,14 +943,14 @@
 
       /* ============ 细节：长文本不撑破容器 ============ */
       .entry-label, .entry-desc, .card-title, .mp-row .mi b,
-      .mine-cap .mc-title, .tw-plot-name, .guide-row .gt {
+      .mine-cap .mc-title, .tw-plot-name {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
         min-width: 0;
       }
       /* 但多行说明要能换行 */
-      .entry-desc, .row-desc, .hint, .guide-note, .cp-card p {
+      .entry-desc, .row-desc, .hint, .cp-card p {
         white-space: normal;
       }
 
@@ -1424,7 +1424,6 @@
     <script src="/lw-fx.js"></script>
     <script src="/lw-pxicon.js"></script>
     <script src="/lw-deco.js"></script>
-    <script src="/lw-guides.js"></script>
     <script src="/lw-dialog.js"></script>
     <script src="/lw-workmenu.js"></script>
   </head>

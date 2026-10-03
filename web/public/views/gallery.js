@@ -1905,11 +1905,6 @@ export default {
       </div>
     </div>`,
   mounted() {
-    /* 首次进这页自动弹一次引导（看过就不再弹）。
-       内容在 lw-guides.js，这里只声明「这页有引导」。 */
-    try {
-      if (window.LWGuides) window.LWGuides.auto('gallery', 1400)
-    } catch (e) {}
 
       function workSize(rec) {
         const s = (rec && rec.size) || 0

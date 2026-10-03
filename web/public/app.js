@@ -303,12 +303,6 @@ router.afterEach(function () {
   // 换页后 DOM 才建好，等一帧再扫
   requestAnimationFrame(paintIcons)
   setTimeout(paintIcons, 120)
-  /* 有预约的引导就在这次换页后跑掉。
-     放在这里而不是各视图里 —— 各视图的定时器会被 withAutoCleanup
-     在换页时清掉，只有钩子里的不会。 */
-  if (window.LWGuides && window.LWGuides.flushPending) {
-    window.LWGuides.flushPending()
-  }
 })
 // 视图内部动态插内容（列表、弹层）时也能补上
 try {
