@@ -807,6 +807,8 @@ export default {
         '<div class="tw-acts">' +
         '<button class="tw-btn" type="button" id="twGoHome">🏠 回我的小屋</button>' +
         '<button class="tw-btn ghost" type="button" id="twGoBag">🏠 家具商店</button>' +
+'<button class="tw-btn" type="button" id="twGoCard">🃏 卡牌屋</button>' +
+'<button class="tw-btn" type="button" id="twGoHotpot">🍲 大锅饭</button>' +
         '</div>'
 
       $('twBody').querySelectorAll('canvas[data-house]').forEach((cv) => {
@@ -820,6 +822,10 @@ export default {
           else location.href = to
         })
       })
+      const gc = $('twGoCard')
+      if (gc) gc.addEventListener('click', () => { if (window.sfx) window.sfx('tick'); const to = '/town/card'; if (window.__lwRouter) window.__lwRouter.push(to); else location.href = to })
+      const gh = $('twGoHotpot')
+      if (gh) gh.addEventListener('click', () => { if (window.sfx) window.sfx('tick'); const to = '/town/hotpot'; if (window.__lwRouter) window.__lwRouter.push(to); else location.href = to })
       const gb = $('twGoBag')
       if (gb) {
         gb.addEventListener('click', () => {

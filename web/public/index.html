@@ -1253,7 +1253,24 @@
           /* 心跳：低低一记，联机时有人动笔 */
           heartbeat: () => note(196, 0, 0.16, 0.035, 'sine'),
         }
+        /* gamersounds.com 的音效：有的场景直接用真实文件，
+           没有文件的退回上面的合成音。
+           用法：window.sfx('hit') / ('fire') / ('eat') / ('coin') / ('success') / ('fail') / ('levelup') / ('buy') */
+        const AUDIO_SFX = {
+          hit: '/audio/hit.mp3', fire: '/audio/fire.mp3', eat: '/audio/eat.mp3',
+          coin: '/audio/coin.mp3', success: '/audio/success.mp3', fail: '/audio/fail.mp3',
+          levelup: '/audio/levelup.mp3', buy: '/audio/buy.mp3', click: '/audio/click.mp3',
+          button: '/audio/button.mp3',
+        }
         window.sfx = function (name) {
+          if (isSilent()) return
+          const src = AUDIO_SFX[name]
+          if (src) {
+            try { new Audio(src).play() } catch (e) {}
+            try { window.__lwSfxAt = performance.now() } catch (e) {}
+            return
+          }
+
           if (isSilent()) return
           const fn = SFX[name]
           if (fn) {

@@ -20,6 +20,8 @@ import rank from './views/rank.js'
 import user from './views/user.js'
 import chat from './views/chat.js'
 import town from './views/town.js'
+import townCard from './views/card.js'
+import townHotpot from './views/hotpot.js'
 import bag from './views/bag.js'
 
 const { createApp } = window.Vue
@@ -129,6 +131,8 @@ const routes = [
   { path: '/town/home', component: withAutoCleanup(town) },
   // 家具商店：二级页，导航会自动收起来
   { path: '/town/bag', component: withAutoCleanup(bag) },
+  { path: '/town/card', component: withAutoCleanup(townCard) },
+  { path: '/town/hotpot', component: withAutoCleanup(townHotpot) },
   { path: '/avatar', component: withAutoCleanup(avatar) },
   { path: '/intro', component: withAutoCleanup(intro) },
   { path: '/settings', component: withAutoCleanup(settings) },
