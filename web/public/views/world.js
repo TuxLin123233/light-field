@@ -356,6 +356,23 @@ export default {
     T('gem_ore', '宝石矿', '#5a5a7a', '#c86af0', { hard: 4.2, tool: 'pick', light: 0.4 }),
     T('mithril_ore', '秘银矿', '#6a7a8a', '#b8e8ff', { hard: 5.0, tool: 'pick', light: 0.5 }),
     T('cave_mushroom', '洞穴菇', '#8a6ac8', '#e0d0ff', { hard: 0.15, solid: false, light: 0.3 }),
+    // --- 结构用 ---
+    T('ruin_brick', '遗迹砖', '#8a8272', '#6b6353', { hard: 2.0, tool: 'pick' }),
+    T('ruin_pillar', '遗迹柱', '#9a9282', '#7a7262', { hard: 2.2, tool: 'pick' }),
+    T('mossy_ruin', '苔藓遗迹砖', '#7a8a6a', '#5c6b4a', { hard: 2.0, tool: 'pick' }),
+    T('dungeon_brick', '地牢砖', '#4a3f3a', '#332b28', { hard: 3.0, tool: 'pick' }),
+    T('dungeon_floor', '地牢地砖', '#5a4f48', '#413834', { hard: 2.8, tool: 'pick' }),
+    T('bars', '铁栏', '#8a8f96', '#5c6168', { hard: 2.4, tool: 'pick', solid: true }),
+    T('spawner', '刷怪笼', '#3a3a42', '#8a5ad0', { hard: 3.6, tool: 'pick', light: 0.4 }),
+    T('book_shelf', '书架', '#a8895c', '#c85a5a', { hard: 0.9, tool: 'axe' }),
+    T('banner', '旗帜', '#c84a5a', '#f0d06a', { hard: 0.5, solid: false }),
+    T('path', '石板路', '#a8a294', '#8a8478', { hard: 1.0, tool: 'pick' }),
+    T('farmland', '农田', '#6b4f2f', '#8fc46b', { hard: 0.4, tool: 'shovel' }),
+    T('hay', '干草块', '#d8c04a', '#b8a038', { hard: 0.4 }),
+    T('well', '水井', '#8a8f96', '#3a76c8', { hard: 2.0, tool: 'pick' }),
+    T('altar', '祭坛', '#5a5a8a', '#c86af0', { hard: 2.6, tool: 'pick', light: 0.6 }),
+    T('nether_portal', '传送门', '#3a2a5a', '#a06af0', { hard: 8.0, tool: 'pick', light: 0.8 }),
+    T('rune_stone', '符文碑', '#6a6a8a', '#8a8af0', { hard: 2.8, tool: 'pick', light: 0.35 }),
     ]
 
     const TILE = {}
@@ -462,8 +479,186 @@ export default {
       return fbm(x / 90, y / 90, WORLD_SEED, 4) > 0.42 && hash2(x, y, WORLD_SEED + 661) < 0.004
     }
 
+    /* ===================== 结构 =====================
+       在「粗网格」上决定结构的位置：把世界切成 48×48 的大格，
+       每个大格用哈希决定这里放不放结构、放哪种。
+       这样结构是稀疏但确定的 —— 同一个位置永远能找到同一座遗迹，
+       不会因为「这次没生成」而白跑一趟。
+
+       结构用字符画写，'#'=主体 '.'=空 'o'=箱子 'L'=灯 'W'=水
+       'P'=柱子 'F'=农田 'B'=书架 'S'=刷怪笼 */
+    const STRUCT_GRID = 48
+
+    const STRUCTS = {
+      ruins: {
+        n: '远古遗迹', layer: 0,
+        rows: [
+          'P....P....P....P',
+          '................',
+          '..##..####..##..',
+          '..##..####..##..',
+          '..#o..#LL#..o#..',
+          '..####....####..',
+          '.....#....#.....',
+          '..####....####..',
+          '..#o..#LL#..o#..',
+          '..##..####..##..',
+          '..##..####..##..',
+          '................',
+          'P....P....P....P',
+        ],
+        legend: { '#': 'ruin_brick', 'P': 'ruin_pillar', 'o': 'chest', 'L': 'lantern', '.': null },
+      },
+      dungeon: {
+        n: '地牢', layer: 1,
+        rows: [
+          '################',
+          '#..............#',
+          '#.####.#####.#.#',
+          '#.#o.#.....#.#.#',
+          '#.#..#.###.#.#.#',
+          '#....#.#S#.#...#',
+          '#.####.#.#.####',
+          '#......#.#.....#',
+          '#.####.#####.#.#',
+          '#.#o.#.....#.#.#',
+          '#.#..#.###.#.#.#',
+          '#....#...#.#...#',
+          '#.####.#.#.#####',
+          '#..............#',
+          '################',
+        ],
+        legend: { '#': 'dungeon_brick', '.': 'dungeon_floor', 'o': 'chest', 'S': 'spawner' },
+      },
+      village: {
+        n: '小村庄', layer: 0,
+        rows: [
+          'FFFFFFFFFFFFFF',
+          'F############F',
+          'F#..o#..L..#.F',
+          'F#....#....#.F',
+          'F####.####.#.F',
+          'F...P......#.F',
+          'F...#..####..F',
+          'F...#..#o.#..F',
+          'F###.#.#..#..F',
+          'F..#.#.####..F',
+          'F..#.P.......F',
+          'F..#####..J..F',
+          'F.....WW.....F',
+          'FFFFFFFFFFFFFF',
+        ],
+        legend: { 'F': 'farmland', '#': 'planks', 'o': 'chest', 'L': 'lantern', 'P': 'path', 'W': 'well', 'J': 'hay', '.': null },
+      },
+      tower: {
+        n: '法师塔', layer: 0,
+        rows: [
+          '..####..',
+          '.#LLLL#.',
+          '#.#..#.#',
+          '#.#..#.#',
+          '#.#..#.#',
+          '#.#..#.#',
+          '#.#..#.#',
+          '#.#oo#.#',
+          '#.####.#',
+          '#......#',
+          '#..##..#',
+          '#..#A#.#',
+          '####A###',
+        ],
+        legend: { '#': 'stone_brick', 'L': 'lantern', 'o': 'chest', 'A': 'altar', '.': null },
+      },
+      mineshaft: {
+        n: '废弃矿洞', layer: 1,
+        rows: [
+          '................',
+          '.#....#....#...',
+          '.#....#....#...',
+          '.#o...#..o.#...',
+          '.#....#....#...',
+          '.#....#....#...',
+          '......#........',
+          '.#....#....#...',
+          '.#o...#....#...',
+          '.#....#..o.#...',
+          '.#....#....#...',
+          '.#....#....#...',
+        ],
+        legend: { '#': 'log_oak', 'o': 'chest', '.': null },
+      },
+      rune_circle: {
+        n: '符文阵', layer: 0,
+        rows: [
+          '....MMM.....',
+          '..MM...MM...',
+          '.M..RRR..M..',
+          '.M.R.R.R.M..',
+          'M..R...R..M.',
+          'M.R..A..R.M.',
+          'M..R...R..M.',
+          '.M.R.R.R.M..',
+          '.M..RRR..M..',
+          '..MM...MM...',
+          '....MMM.....',
+        ],
+        legend: { 'M': 'mossy_ruin', 'R': 'rune_stone', 'A': 'altar', '.': null },
+      },
+    }
+
+    /** 这一大格里有没有结构、是哪种 */
+    function structAt(gx, gy, layer) {
+      const h = hash2(gx, gy, WORLD_SEED + 1301 + layer * 17)
+      if (h > 0.42) return null // 一半以上的大格是空的
+      const keys = Object.keys(STRUCTS).filter((k) => STRUCTS[k].layer === layer)
+      if (!keys.length) return null
+      const w = hash2(gx, gy, WORLD_SEED + 1302 + layer * 17)
+      const k = keys[Math.floor(w * keys.length) % keys.length]
+      // 结构在大格里的位置（留边，别压到格子边界上）
+      const ox = Math.floor(hash2(gx, gy, WORLD_SEED + 1303) * (STRUCT_GRID - 20)) + 2
+      const oy = Math.floor(hash2(gx, gy, WORLD_SEED + 1304) * (STRUCT_GRID - 20)) + 2
+      return { key: k, x: gx * STRUCT_GRID + ox, y: gy * STRUCT_GRID + oy }
+    }
+
+    /** 某个格是不是落在某个结构里；是的话返回该放的方块（null = 不动） */
+    function structTile(x, y, layer) {
+      const gx = Math.floor(x / STRUCT_GRID), gy = Math.floor(y / STRUCT_GRID)
+      // 结构可能跨到隔壁大格，所以周围 3×3 的都要查
+      for (let j = gy - 1; j <= gy + 1; j++) {
+        for (let i = gx - 1; i <= gx + 1; i++) {
+          const st = structAt(i, j, layer)
+          if (!st) continue
+          const def = STRUCTS[st.key]
+          const lx = x - st.x, ly = y - st.y
+          if (ly < 0 || ly >= def.rows.length) continue
+          const row = def.rows[ly]
+          if (lx < 0 || lx >= row.length) continue
+          const ch = row.charAt(lx)
+          const k = def.legend[ch === undefined ? '.' : ch]
+          if (k !== undefined) return { k: k, name: def.n }
+        }
+      }
+      return null
+    }
+
+    const FOUND = {} // 发现过的结构（存档会存）
+
     function genTile(x, y, layer) {
       layer = layer || 0
+
+      /* ---------- 洞穴口要**优先于结构** ----------
+         结构（地牢、遗迹、塔…）会按自己的字符画覆盖地形，
+         如果先放结构，正好压在洞穴口上的那几个就会被盖掉 ——
+         地表没有入口、或者洞穴层没有回程梯子，
+         玩家下去了就回不来。实测有 15/1006 个口被盖掉。
+         所以洞口（和它对应的梯子）放在结构前面判定，
+         结构让位 —— 顶多在墙上多一个小洞，不影响结构本身。 */
+      if (layer === 0 && isHoleSpot(x, y)) return 'cave_entrance'
+      if (layer === 1 && isHoleSpot(x, y)) return 'ladder_up'
+
+      /* ---------- 结构 ---------- */
+      const st = structTile(x, y, layer)
+      if (st && st.k) return st.k
 
       /* ---------- 洞穴层 / 深层 ---------- */
       if (layer > 0) {
@@ -485,9 +680,6 @@ export default {
       }
 
       /* ---------- 地表 ---------- */
-      // 洞穴口：稀稀落落地开在地表，踩上去能下到洞穴层
-      if (isHoleSpot(x, y)) return 'cave_entrance'
-
       // 高度：大陆
       const e = fbm(x / 90, y / 90, WORLD_SEED, 4)
       const m = fbm(x / 60 + 1000, y / 60 + 1000, WORLD_SEED + 31, 3) // 湿度
@@ -721,6 +913,7 @@ export default {
         x: P.x, y: P.y, layer: P.layer, hp: P.hp, food: P.food, time: time,
         bag: bag, hotbar: hotbar, sel: sel,
         ed: ed.slice(-4000), // 最多存 4000 格改动
+        found: FOUND,
         dex: dexSeen, dmob: dexMob,
         mined: minedCount, placed: placedCount, deaths: deathCount,
       }
@@ -757,6 +950,7 @@ export default {
         })
         Object.assign(dexSeen, d.dex || {})
         Object.assign(dexMob, d.dmob || {})
+        if (d.found) Object.assign(FOUND, d.found)
         minedCount = Number(d.mined) || 0
         placedCount = Number(d.placed) || 0
         deathCount = Number(d.deaths) || 0
@@ -1020,7 +1214,28 @@ export default {
       }
     }
 
+    /* 走到结构附近就记一笔「发现」。结构可能很大，
+       所以按大格记录，不是按格子。 */
+    function checkDiscover() {
+      const gx = Math.floor(P.x / STRUCT_GRID), gy = Math.floor(P.y / STRUCT_GRID)
+      for (let j = gy - 1; j <= gy + 1; j++) {
+        for (let i = gx - 1; i <= gx + 1; i++) {
+          const st = structAt(i, j, P.layer)
+          if (!st) continue
+          const d = Math.max(Math.abs(st.x - P.x), Math.abs(st.y - P.y))
+          if (d > 14) continue
+          const id = st.key + '@' + i + ',' + j
+          if (FOUND[id]) continue
+          FOUND[id] = { key: st.key, name: STRUCTS[st.key].n, at: Date.now(), layer: P.layer, x: st.x, y: st.y }
+          toast('发现了 ' + STRUCTS[st.key].n + '！')
+          try { window.sfx && window.sfx('achieve') } catch (e) {}
+          refreshPane()
+        }
+      }
+    }
+
     function onEnterTile() {
+      checkDiscover()
       const t = getTile(P.x, P.y)
       if (t.k === 'berry_bush') {
         if (Math.random() < 0.5) { give('berry', 1); toast('摘到浆果') }
@@ -1378,6 +1593,14 @@ export default {
             return '<div class="wd-cell' + (got ? '' : ' locked') + '" title="' + esc(t.n) + '">' +
               '<div class="wd-sq" style="background:' + (got ? t.c : '#888') + '"></div></div>'
           }).join('') + '</div>' +
+          '<h4 style="margin-top:14px">🏛️ 发现的结构（' + Object.keys(FOUND).length + '）</h4>' +
+          (Object.keys(FOUND).length
+            ? '<div style="line-height:2;font-size:12px">' +
+              Object.keys(FOUND).map((id) => {
+                const f = FOUND[id]
+                return '· ' + esc(f.name) + ' <span style="opacity:.6">' + LAYER_NAME[f.layer] + ' ' + f.x + ',' + f.y + '</span>'
+              }).join('<br>') + '</div>'
+            : '<div style="opacity:.7;font-size:12px">还没发现什么。地表上的遗迹、村庄、塔，洞穴里的地牢和矿洞，都是随机散布的 —— 出去走走吧。</div>') +
           '<h4 style="margin-top:14px">🐾 生物</h4>' +
           '<div class="wd-grid">' + MOBS.map((m) => {
             const got = dexMob[m.k]
@@ -1395,16 +1618,39 @@ export default {
           '放置方块 <b>' + placedCount + '</b> 个<br>' +
           '倒下 <b>' + deathCount + '</b> 次<br>' +
           '背包物品种类 <b>' + Object.keys(bag).filter((k) => bag[k] > 0).length + '</b><br>' +
+          '发现的结构 <b>' + Object.keys(FOUND).length + '</b> 处<br>' +
           '附近生物 <b>' + mobs.length + '</b> 只' +
           '</div>' +
           '<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">' +
           '<button id="wdEat" style="padding:8px 16px;border:1px solid #d3bb93;border-radius:8px;background:#fff6e4;font-family:inherit;font-size:13px;cursor:pointer">🍗 吃东西</button>' +
           '<button id="wdSpawn" style="padding:8px 16px;border:1px solid #d3bb93;border-radius:8px;background:#fff6e4;font-family:inherit;font-size:13px;cursor:pointer">🐾 引一只生物过来</button>' +
+          '<button id="wdFind" style="padding:8px 16px;border:1px solid #d3bb93;border-radius:8px;background:#fff6e4;font-family:inherit;font-size:13px;cursor:pointer">🧭 找最近的结构</button>' +
           '</div>'
         const e1 = $('wdEat')
         if (e1) e1.onclick = eat
         const e2 = $('wdSpawn')
         if (e2) e2.onclick = () => { spawnMob(); toast('附近出现了一只生物'); refreshPane() }
+        const e3 = $('wdFind')
+        if (e3) e3.onclick = () => {
+          // 在周围 6 个大格里找最近的一个结构，给方向和距离
+          const gx = Math.floor(P.x / STRUCT_GRID), gy = Math.floor(P.y / STRUCT_GRID)
+          let bestN = null
+          for (let r = 1; r <= 6 && !bestN; r++) {
+            for (let j = gy - r; j <= gy + r; j++) {
+              for (let i = gx - r; i <= gx + r; i++) {
+                const st = structAt(i, j, P.layer)
+                if (!st) continue
+                const d = Math.hypot(st.x - P.x, st.y - P.y)
+                if (!bestN || d < bestN.d) bestN = { st: st, d: d }
+              }
+            }
+          }
+          if (!bestN) { toast('这一带没什么结构，走远点看看'); return }
+          const dx = bestN.st.x - P.x, dy = bestN.st.y - P.y
+          const dir = Math.abs(dx) > Math.abs(dy)
+            ? (dx > 0 ? '东' : '西') : (dy > 0 ? '南' : '北')
+          toast(STRUCTS[bestN.st.key].n + ' 在' + dir + '边约 ' + Math.round(bestN.d) + ' 格')
+        }
       }
     }
 
